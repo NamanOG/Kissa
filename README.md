@@ -16,7 +16,22 @@
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/NamanOG/Kissa/releases/latest">
+    <img src="https://img.shields.io/badge/Download%20for%20Windows-.exe%20(Installer%20%26%20Portable)-0078d4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Kissa for Windows" />
+  </a>
+</p>
+
 Named after Japan’s iconic *Jazz Kissa* (ジャズ喫茶) listening bars, **Kissa** brings the intimate ritual of analog vinyl and room atmospheres to your desktop. It listens to Windows System Media Transport Controls (Spotify, Apple Music, Tidal, web browsers) in real time and renders an animated 3D turntable, precision tonearm, and synchronized lyrics overlay in a calm, distraction-free window.
+
+---
+
+## 💾 Download & Install
+
+Get the latest version for **Windows 10 / 11** from the [**Releases Page**](https://github.com/NamanOG/Kissa/releases/latest):
+
+- **`Kissa-Setup-x.x.x.exe`**: Full installer with desktop shortcut and start menu entry.
+- **`Kissa-Portable-x.x.x.exe`**: Single standalone executable — run directly without installing.
 
 ---
 

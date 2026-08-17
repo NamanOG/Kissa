@@ -7,7 +7,7 @@ import { MediaDetectionService } from './services/MediaDetectionService'
 // initialization and is ready to create browser windows.
 app.whenReady().then(() => {
   // Set app user model id for windows
-  electronApp.setAppUserModelId('com.kissa.app')
+  electronApp.setAppUserModelId('com.namanog.kissa')
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.

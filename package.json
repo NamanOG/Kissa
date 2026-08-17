@@ -8,6 +8,9 @@
   ],
   "scripts": {
     "dev": "npm --workspace apps-desktop run dev",
+    "build": "npm --workspace apps-desktop run build",
+    "build:win": "npm --workspace apps-desktop run build:win",
+    "build:unpack": "npm --workspace apps-desktop run build:unpack",
     "format": "npm --workspace apps-desktop run format",
     "lint": "npm --workspace apps-desktop run lint",
     "test": "npm --workspace apps-desktop run test",
