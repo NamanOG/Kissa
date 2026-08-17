@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build and distribution outputs
+dist/
+out/
+build/
+release/
+apps/desktop/out/
+apps/desktop/.vite/
+apps/desktop/release/
+apps/desktop/dist/
+
+# Cache and logs
+.eslintcache
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.playwright-cli/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

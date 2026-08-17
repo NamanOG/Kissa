@@ -1,0 +1,24 @@
+{
+  "name": "kissa",
+  "version": "1.0.0",
+  "description": "A contemplative desktop vinyl player & listening environment for Windows.",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps-desktop run dev",
+    "format": "npm --workspace apps-desktop run format",
+    "lint": "npm --workspace apps-desktop run lint",
+    "test": "npm --workspace apps-desktop run test",
+    "typecheck": "npm --workspace apps-desktop run typecheck"
+  },
+  "devDependencies": {
+    "electron": "39.8.10"
+  },
+  "overrides": {
+    "tailwindcss-animate": {
+      "tailwindcss": "3.4.19"
+    }
+  }
+}
