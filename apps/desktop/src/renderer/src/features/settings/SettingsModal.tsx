@@ -234,11 +234,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ className }) => {
               </div>
             </div>
           </div>
+
+          {/* Section 5: Guide & Overview */}
+          <div>
+            <div className="flex items-baseline gap-2.5 mb-4 border-b border-white/[0.06] pb-2">
+              <span className="font-mono text-[10px] text-[#d7a76c] font-bold tracking-widest">05</span>
+              <h4 className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#d6c9bb] font-semibold">
+                Introduction & Help
+              </h4>
+            </div>
+
+            <div className="flex items-center justify-between px-4 py-3.5 rounded-xl border border-white/[0.06] bg-black/35">
+              <div>
+                <p className="text-xs font-mono font-semibold text-[#f5efe6]">Welcome Tour</p>
+                <p className="text-[10px] text-[#887b70] mt-0.5">Revisit the first-time interactive walkthrough and vinyl ritual guide</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  toggleSettings()
+                  usePlayerStore.getState().setIsOnboardingOpen(true)
+                }}
+                className="px-3.5 py-1.5 rounded-lg border border-[#d7a76c]/40 bg-[#d7a76c]/15 text-[#f5efe6] hover:bg-[#d7a76c]/25 text-[11px] font-medium transition-all cursor-pointer active:scale-95 shadow-sm"
+              >
+                Open Guide
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between px-7 py-4 border-t border-white/[0.08] bg-black/30 text-xs text-[#887b70]">
-          <span className="font-mono text-[11px]">Kissa Desktop v1.0.0</span>
+          <span className="font-mono text-[11px]">Kissa Desktop v1.0.1</span>
           <div className="flex items-center gap-2 text-[12px] text-[#b7a99b]">
             <span>
               Crafted by{' '}

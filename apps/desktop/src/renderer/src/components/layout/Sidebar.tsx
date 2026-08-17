@@ -1,7 +1,7 @@
 import React from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
-import { Quote, Settings } from 'lucide-react'
+import { Quote, Settings, HelpCircle } from 'lucide-react'
 import phonoLogo from '@renderer/media/phono_logo.png'
 
 export interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -16,6 +16,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const setActiveView = usePlayerStore((s) => s.setActiveView)
     const isSettingsOpen = usePlayerStore((s) => s.isSettingsOpen)
     const toggleSettings = usePlayerStore((s) => s.toggleSettings)
+    const isOnboardingOpen = usePlayerStore((s) => s.isOnboardingOpen)
+    const setIsOnboardingOpen = usePlayerStore((s) => s.setIsOnboardingOpen)
 
     return (
       <aside
@@ -76,8 +78,25 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
           </button>
         </nav>
 
-        {/* Bottom: Settings Icon */}
-        <div className="mt-auto w-full px-2 flex justify-center">
+        {/* Bottom: Guide / Help & Settings */}
+        <div className="mt-auto w-full px-2 flex flex-col items-center gap-2">
+          {/* Welcome Guide / Introduction Button */}
+          <button
+            aria-label="Welcome Guide & Overview"
+            type="button"
+            onClick={() => setIsOnboardingOpen(true)}
+            className={cn(
+              'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.96]',
+              isOnboardingOpen
+                ? 'bg-[#d7a76c]/20 text-[#d7a76c] border border-[#d7a76c]/40 shadow-[0_0_12px_rgba(215,167,108,0.25)]'
+                : 'text-[#a99b90] hover:text-[#f5efe6] hover:bg-white/[0.06]'
+            )}
+            title="Open Welcome Guide & Instructions"
+          >
+            <HelpCircle className="w-5 h-5" strokeWidth={1.75} />
+          </button>
+
+          {/* Settings Button */}
           <button
             aria-label="Settings"
             type="button"

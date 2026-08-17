@@ -7,6 +7,7 @@ import { TurntableEngine } from './features/turntable'
 import { ControlDock } from './features/controls'
 import { SyncedLyrics } from './features/lyrics'
 import { SettingsModal } from './features/settings'
+import { OnboardingModal } from './features/onboarding'
 import { usePlayerStore } from './stores/playerStore'
 import { useAudioPlayback } from './hooks/useAudioPlayback'
 import { useSystemMediaSync } from './hooks/useSystemMediaSync'
@@ -150,6 +151,9 @@ function App(): React.JSX.Element {
 
       {/* ── Settings & Preferences Modal ── */}
       <SettingsModal />
+
+      {/* ── First-Time User Introduction & Guide Modal ── */}
+      <OnboardingModal />
     </AppLayout>
   )
 }

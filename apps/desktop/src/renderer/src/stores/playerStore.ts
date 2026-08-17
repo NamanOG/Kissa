@@ -35,6 +35,7 @@ export interface PlayerState {
   showSideLyrics: boolean
   theme: AppTheme
   isSettingsOpen: boolean
+  isOnboardingOpen: boolean
   needleSound: boolean
   autoScrollLyrics: boolean
 
@@ -56,6 +57,8 @@ export interface PlayerState {
   setTheme: (theme: AppTheme) => void
   setIsSettingsOpen: (open: boolean) => void
   toggleSettings: () => void
+  setIsOnboardingOpen: (open: boolean) => void
+  toggleOnboarding: () => void
   setNeedleSound: (enabled: boolean) => void
   setAutoScrollLyrics: (enabled: boolean) => void
 }
@@ -84,7 +87,14 @@ function getInitialTheme(): AppTheme {
   return validThemes.includes(saved as AppTheme) ? (saved as AppTheme) : 'quiet-room'
 }
 
+function getInitialOnboarding(): boolean {
+  if (typeof localStorage === 'undefined') return false
+  const seen = localStorage.getItem('kissa_intro_seen') || localStorage.getItem('kissa_onboarding_completed')
+  return !seen
+}
+
 const savedTheme = getInitialTheme()
+const initialOnboarding = getInitialOnboarding()
 
 export const usePlayerStore = create<PlayerState>((set) => ({
   isPlaying: false,
@@ -105,6 +115,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   showSideLyrics: false,
   theme: savedTheme,
   isSettingsOpen: false,
+  isOnboardingOpen: initialOnboarding,
   needleSound: true,
   autoScrollLyrics: true,
 
@@ -144,6 +155,20 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   },
   setIsSettingsOpen: (isSettingsOpen) => set({ isSettingsOpen }),
   toggleSettings: () => set((state) => ({ isSettingsOpen: !state.isSettingsOpen })),
+  setIsOnboardingOpen: (isOnboardingOpen) => {
+    if (!isOnboardingOpen && typeof localStorage !== 'undefined') {
+      localStorage.setItem('kissa_intro_seen', 'true')
+    }
+    set({ isOnboardingOpen })
+  },
+  toggleOnboarding: () =>
+    set((state) => {
+      const next = !state.isOnboardingOpen
+      if (!next && typeof localStorage !== 'undefined') {
+        localStorage.setItem('kissa_intro_seen', 'true')
+      }
+      return { isOnboardingOpen: next }
+    }),
   setNeedleSound: (needleSound) => set({ needleSound }),
   setAutoScrollLyrics: (autoScrollLyrics) => set({ autoScrollLyrics })
 }))
