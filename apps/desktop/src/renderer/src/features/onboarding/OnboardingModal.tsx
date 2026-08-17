@@ -5,7 +5,6 @@ import { usePlayerStore, AppTheme } from '@renderer/stores/playerStore'
 import { LISTENING_ENVIRONMENTS } from '../settings/themes'
 import { cn } from '@renderer/utils/cn'
 import kissaHeroImg from '@renderer/media/kissa_welcome_hero.jpg'
-import phonoLogo from '@renderer/media/phono_logo.png'
 
 export interface OnboardingModalProps {
   className?: string
@@ -46,7 +45,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 min-[640px]:p-8 select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 min-[640px]:p-8 select-none font-sans">
       {/* Dark Ambient Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -90,14 +89,14 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
             <X className="w-4 h-4" />
           </button>
 
-          {/* Clean Header Title */}
+          {/* Clean Header Title with Cormorant Garamond */}
           <div className="absolute bottom-3.5 left-7 right-7 z-10">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#d7a76c] font-semibold">
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.25em] text-[#d7a76c] font-medium">
                 喫茶 • JAZZ KISSA
               </span>
             </div>
-            <h1 className="font-serif text-2xl min-[640px]:text-3xl text-[#f5efe6] font-normal tracking-tight">
+            <h1 className="font-serif text-3xl min-[640px]:text-4xl text-[#f5efe6] font-normal tracking-wide leading-tight">
               Welcome to Kissa
             </h1>
           </div>
@@ -124,7 +123,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
                   )}
                 >
                   <span className="font-mono text-[10px] opacity-75">{step.number}</span>
-                  <span className="text-[11.5px]">{step.title}</span>
+                  <span className="text-[11.5px] font-sans">{step.title}</span>
                 </button>
               )
             })}
@@ -146,54 +145,54 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              <div className="space-y-1">
-                <h3 className="font-serif text-xl text-[#f5efe6] font-normal">
+              <div className="space-y-1.5">
+                <h3 className="font-serif text-2xl text-[#f5efe6] font-normal tracking-wide">
                   How sound enters the room
                 </h3>
-                <p className="text-xs min-[640px]:text-sm text-[#b7a99b] leading-relaxed">
+                <p className="text-xs min-[640px]:text-sm text-[#b7a99b] leading-relaxed font-light">
                   Kissa listens to your favorite desktop music player and creates an analog vinyl sanctuary on your screen.
                 </p>
               </div>
 
-              {/* 3 Clean Minimal Cards (No double boxes) */}
+              {/* 3 Clean Minimal Cards */}
               <div className="grid grid-cols-1 min-[640px]:grid-cols-3 gap-3.5 pt-1">
                 <div className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[9.5px] text-[#d7a76c] font-semibold">01 • PLAY</span>
+                    <span className="font-mono text-[9.5px] text-[#d7a76c] font-medium tracking-wider">01 • PLAY</span>
                     <Volume2 className="w-3.5 h-3.5 text-[#887b70]" />
                   </div>
-                  <h4 className="text-xs font-medium text-[#f5efe6]">Play Any Music</h4>
-                  <p className="text-[11px] text-[#887b70] leading-relaxed">
+                  <h4 className="text-xs font-medium text-[#f5efe6] font-sans">Play Any Music</h4>
+                  <p className="text-[11.5px] text-[#887b70] leading-relaxed font-light">
                     Start a song in Spotify, Apple Music, Tidal, or YouTube on Windows.
                   </p>
                 </div>
 
                 <div className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[9.5px] text-[#d7a76c] font-semibold">02 • SYNC</span>
+                    <span className="font-mono text-[9.5px] text-[#d7a76c] font-medium tracking-wider">02 • SYNC</span>
                     <Disc className="w-3.5 h-3.5 text-[#d7a76c]" />
                   </div>
-                  <h4 className="text-xs font-medium text-[#f5efe6]">Platter Spins Live</h4>
-                  <p className="text-[11px] text-[#887b70] leading-relaxed">
+                  <h4 className="text-xs font-medium text-[#f5efe6] font-sans">Platter Spins Live</h4>
+                  <p className="text-[11.5px] text-[#887b70] leading-relaxed font-light">
                     Kissa auto-detects playback, prints cover art on vinyl, and drops the needle.
                   </p>
                 </div>
 
                 <div className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[9.5px] text-[#d7a76c] font-semibold">03 • UNWIND</span>
+                    <span className="font-mono text-[9.5px] text-[#d7a76c] font-medium tracking-wider">03 • UNWIND</span>
                     <Quote className="w-3.5 h-3.5 text-[#887b70]" />
                   </div>
-                  <h4 className="text-xs font-medium text-[#f5efe6]">Synced Lyrics & Mood</h4>
-                  <p className="text-[11px] text-[#887b70] leading-relaxed">
+                  <h4 className="text-xs font-medium text-[#f5efe6] font-sans">Synced Lyrics & Mood</h4>
+                  <p className="text-[11.5px] text-[#887b70] leading-relaxed font-light">
                     Sit back with warm ambient lighting and real-time karaoke lyrics.
                   </p>
                 </div>
               </div>
 
               {/* Clean minimal footer tip */}
-              <p className="text-[11px] text-[#887b70] pt-1 leading-relaxed">
-                <strong className="text-[#d7a76c] font-medium">Offline Demo:</strong> When no music is playing, Kissa plays an offline record (<em>Self Control — Frank Ocean</em>) so you can test the deck anytime.
+              <p className="text-[11.5px] text-[#887b70] pt-1 leading-relaxed font-light">
+                <strong className="text-[#d7a76c] font-medium font-sans">Offline Demo:</strong> When no music is playing, Kissa plays an offline record (<em>Self Control — Frank Ocean</em>) so you can test the deck anytime.
               </p>
             </motion.div>
           )}
@@ -207,36 +206,36 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
               transition={{ duration: 0.2 }}
               className="space-y-6"
             >
-              <div className="space-y-1">
-                <h3 className="font-serif text-xl text-[#f5efe6] font-normal">
+              <div className="space-y-1.5">
+                <h3 className="font-serif text-2xl text-[#f5efe6] font-normal tracking-wide">
                   Tactile deck mechanics
                 </h3>
-                <p className="text-xs min-[640px]:text-sm text-[#b7a99b] leading-relaxed">
+                <p className="text-xs min-[640px]:text-sm text-[#b7a99b] leading-relaxed font-light">
                   Every interaction is engineered with physical weight, needle acoustics, and analog inertia.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 min-[640px]:grid-cols-3 gap-3.5 pt-1">
                 <div className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] space-y-2">
-                  <span className="font-mono text-[9.5px] text-[#d7a76c] font-semibold">TONEARM</span>
-                  <h4 className="text-xs font-medium text-[#f5efe6]">Interactive Needle Drops</h4>
-                  <p className="text-[11px] text-[#887b70] leading-relaxed">
+                  <span className="font-mono text-[9.5px] text-[#d7a76c] font-medium tracking-wider">TONEARM</span>
+                  <h4 className="text-xs font-medium text-[#f5efe6] font-sans">Interactive Needle Drops</h4>
+                  <p className="text-[11.5px] text-[#887b70] leading-relaxed font-light">
                     Click anywhere on the platter to drop the tonearm and seek track time with vinyl clicks.
                   </p>
                 </div>
 
                 <div className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] space-y-2">
-                  <span className="font-mono text-[9.5px] text-[#d7a76c] font-semibold">MOTOR</span>
-                  <h4 className="text-xs font-medium text-[#f5efe6]">33⅓ & 45 RPM Speed Dial</h4>
-                  <p className="text-[11px] text-[#887b70] leading-relaxed">
+                  <span className="font-mono text-[9.5px] text-[#d7a76c] font-medium tracking-wider">MOTOR</span>
+                  <h4 className="text-xs font-medium text-[#f5efe6] font-sans">33⅓ & 45 RPM Speed Dial</h4>
+                  <p className="text-[11.5px] text-[#887b70] leading-relaxed font-light">
                     Switch between LP 33⅓ and 45 RPM speeds on the plinth with realistic motor inertia.
                   </p>
                 </div>
 
                 <div className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] space-y-2">
-                  <span className="font-mono text-[9.5px] text-[#d7a76c] font-semibold">LYRICS</span>
-                  <h4 className="text-xs font-medium text-[#f5efe6]">Apple Music Synced Lyrics</h4>
-                  <p className="text-[11px] text-[#887b70] leading-relaxed">
+                  <span className="font-mono text-[9.5px] text-[#d7a76c] font-medium tracking-wider">LYRICS</span>
+                  <h4 className="text-xs font-medium text-[#f5efe6] font-sans">Apple Music Synced Lyrics</h4>
+                  <p className="text-[11.5px] text-[#887b70] leading-relaxed font-light">
                     Click the <strong>Quote (")</strong> icon in the sidebar for full-screen lyrics with optical depth blur.
                   </p>
                 </div>
@@ -253,11 +252,11 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
               transition={{ duration: 0.2 }}
               className="space-y-5"
             >
-              <div className="space-y-1">
-                <h3 className="font-serif text-xl text-[#f5efe6] font-normal">
+              <div className="space-y-1.5">
+                <h3 className="font-serif text-2xl text-[#f5efe6] font-normal tracking-wide">
                   Select your listening environment
                 </h3>
-                <p className="text-xs min-[640px]:text-sm text-[#b7a99b]">
+                <p className="text-xs min-[640px]:text-sm text-[#b7a99b] font-light">
                   Choose a room atmosphere to suit your mood. Click any tile to set it:
                 </p>
               </div>
@@ -295,7 +294,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
                         <span className="font-mono text-[9px] text-[#887b70] uppercase tracking-wider">
                           {theme.number}
                         </span>
-                        <h4 className="text-[11px] font-medium text-[#f5efe6] line-clamp-1">
+                        <h4 className="text-[11.5px] font-medium text-[#f5efe6] font-sans line-clamp-1">
                           {theme.name}
                         </h4>
                       </div>
@@ -314,7 +313,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
               <button
                 type="button"
                 onClick={() => setCurrentStep((s) => s - 1)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-[#b7a99b] hover:text-[#f5efe6] transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-[#b7a99b] hover:text-[#f5efe6] transition-all cursor-pointer font-sans"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 Previous
@@ -323,7 +322,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
               <button
                 type="button"
                 onClick={handleFinish}
-                className="px-3 py-1.5 rounded-xl text-xs text-[#7e7268] hover:text-[#b7a99b] transition-all cursor-pointer"
+                className="px-3 py-1.5 rounded-xl text-xs text-[#7e7268] hover:text-[#b7a99b] transition-all cursor-pointer font-sans"
               >
                 Skip Guide
               </button>
@@ -335,7 +334,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
               <button
                 type="button"
                 onClick={() => setCurrentStep((s) => s + 1)}
-                className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-semibold text-[#14100e] bg-[#d7a76c] hover:bg-[#e4b982] shadow-[0_2px_12px_rgba(215,167,108,0.25)] transition-all cursor-pointer active:scale-95"
+                className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-semibold text-[#14100e] bg-[#d7a76c] hover:bg-[#e4b982] shadow-[0_2px_12px_rgba(215,167,108,0.25)] transition-all cursor-pointer active:scale-95 font-sans"
               >
                 Continue
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -344,7 +343,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
               <button
                 type="button"
                 onClick={handleFinish}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-semibold text-[#14100e] bg-[#d7a76c] hover:bg-[#e4b982] shadow-[0_4px_20px_rgba(215,167,108,0.35)] transition-all cursor-pointer active:scale-95"
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-semibold text-[#14100e] bg-[#d7a76c] hover:bg-[#e4b982] shadow-[0_4px_20px_rgba(215,167,108,0.35)] transition-all cursor-pointer active:scale-95 font-sans"
               >
                 <span>Enter Kissa</span>
                 <ArrowRight className="w-3.5 h-3.5" />
