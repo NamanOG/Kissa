@@ -16,7 +16,7 @@ describe('OnboardingModal component', () => {
     render(<OnboardingModal />)
     expect(screen.getByText('Welcome to Kissa')).toBeInTheDocument()
     expect(screen.getByText('1 / 3')).toBeInTheDocument()
-    expect(screen.getByText(/Play on Spotify or Apple Music/i)).toBeInTheDocument()
+    expect(screen.getByText('Play Any Music')).toBeInTheDocument()
   })
 
   it('navigates across steps and updates atmosphere', () => {
@@ -26,7 +26,7 @@ describe('OnboardingModal component', () => {
     const continueBtn = screen.getByRole('button', { name: /continue/i })
     fireEvent.click(continueBtn)
     expect(screen.getByText('2 / 3')).toBeInTheDocument()
-    expect(screen.getByText('Interactive Needle Scrubbing')).toBeInTheDocument()
+    expect(screen.getByText('Interactive Needle Drops')).toBeInTheDocument()
 
     // Click Continue to go to Step 3
     fireEvent.click(continueBtn)
@@ -39,7 +39,7 @@ describe('OnboardingModal component', () => {
     expect(usePlayerStore.getState().theme).toBe('jazz-bar')
 
     // Click Finish / Enter
-    const enterBtn = screen.getByRole('button', { name: /enter the listening room/i })
+    const enterBtn = screen.getByRole('button', { name: /enter kissa/i })
     fireEvent.click(enterBtn)
 
     expect(usePlayerStore.getState().isOnboardingOpen).toBe(false)
