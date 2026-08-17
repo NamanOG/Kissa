@@ -1,5 +1,6 @@
 import { BrowserWindowConstructorOptions } from 'electron'
 import { join } from 'path'
+
 export const getWindowConfig = (): BrowserWindowConstructorOptions => ({
   width: 900,
   height: 670,
@@ -8,6 +9,7 @@ export const getWindowConfig = (): BrowserWindowConstructorOptions => ({
   titleBarStyle: 'hidden',
   titleBarOverlay: { color: '#00000000', symbolColor: '#ffffff' },
   backgroundMaterial: 'mica',
+  icon: join(__dirname, '../../resources/icon.png'),
   webPreferences: {
     preload: join(__dirname, '../preload/index.js'),
     sandbox: false,
