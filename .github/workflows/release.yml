@@ -27,14 +27,13 @@ jobs:
         run: npm ci
 
       - name: Build Windows Executables
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run build:win
 
       - name: Publish Release to GitHub
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           files: |
             apps/desktop/dist/Kissa-Setup-*.exe
             apps/desktop/dist/Kissa-Portable-*.exe
