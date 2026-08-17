@@ -1,4 +1,22 @@
 /// <reference types="vite/client" />
+/// <reference types="node" />
+
+declare module '*.jpg' {
+  const src: string
+  export default src
+}
+declare module '*.png' {
+  const src: string
+  export default src
+}
+declare module '*.mp3' {
+  const src: string
+  export default src
+}
+declare module '*.svg' {
+  const src: string
+  export default src
+}
 
 import type { ElectronAPI } from '@electron-toolkit/preload'
 import type { SystemMediaPayload } from '../../types/media'
