@@ -1,7 +1,6 @@
 import { BrowserWindow, ipcMain, shell } from 'electron'
-import { Worker } from 'worker_threads'
-import { join } from 'path'
 import { exec } from 'child_process'
+import { SMTCMonitor, PlaybackStatus, type MediaInfo } from '@coooookies/windows-smtc-monitor'
 import type { SystemMediaPayload } from '../../types/media'
 import type { LyricsRequest } from '../../types/lyrics'
 import { LyricsService } from './LyricsService'
@@ -14,10 +13,86 @@ function sendMediaKey(keyCode: number): void {
   }
 }
 
+function getCleanAppName(sourceAppId: string): string {
+  if (!sourceAppId) return 'Media Player'
+  const lower = sourceAppId.toLowerCase()
+  if (lower.includes('applemusic') || lower.includes('apple music') || lower.includes('itunes')) {
+    return 'Apple Music'
+  }
+  if (lower.includes('spotify')) {
+    return 'Spotify'
+  }
+  if (lower.includes('tidal')) {
+    return 'TIDAL'
+  }
+  if (lower.includes('chrome')) {
+    return 'Chrome'
+  }
+  if (lower.includes('msedge') || lower.includes('edge')) {
+    return 'Microsoft Edge'
+  }
+  if (lower.includes('firefox')) {
+    return 'Firefox'
+  }
+  if (lower.includes('foobar')) {
+    return 'foobar2000'
+  }
+  // Strip file extension / path
+  const filename = sourceAppId.split(/[\\/]/).pop() || sourceAppId
+  return filename.replace(/\.(exe|appx)$/i, '')
+}
+
+function normalizeTime(raw: number | undefined | null): number {
+  if (!raw || raw <= 0 || !Number.isFinite(raw)) return 0
+  // If > 10 million, value is in 100ns ticks (Windows TimeSpan)
+  if (raw >= 10_000_000) {
+    return Math.round(raw / 10_000_000)
+  }
+  // If between 86,400 (1 day in seconds) and 10 million, likely in milliseconds
+  if (raw > 86_400) {
+    return Math.round(raw / 1000)
+  }
+  return Math.round(raw)
+}
+
+function formatSession(session: MediaInfo | null): SystemMediaPayload | null {
+  if (!session || !session.media) return null
+
+  let artworkDataUrl: string | undefined = undefined
+  if (session.media.thumbnail && session.media.thumbnail.length > 0) {
+    try {
+      const base64 = session.media.thumbnail.toString('base64')
+      // Detect format or use standard JPEG/PNG
+      const isPng = session.media.thumbnail[0] === 0x89 && session.media.thumbnail[1] === 0x50
+      const mime = isPng ? 'image/png' : 'image/jpeg'
+      artworkDataUrl = `data:${mime};base64,${base64}`
+    } catch {
+      artworkDataUrl = undefined
+    }
+  }
+
+  const isPlaying = session.playback?.playbackStatus === PlaybackStatus.PLAYING // 4
+
+  return {
+    sourceAppId: session.sourceAppId,
+    sourceAppName: getCleanAppName(session.sourceAppId),
+    title: session.media.title || 'Unknown Title',
+    artist: session.media.artist || 'Unknown Artist',
+    album: session.media.albumTitle || '',
+    artworkDataUrl,
+    isPlaying,
+    progress: Math.max(0, normalizeTime(session.timeline?.position || 0)),
+    duration: Math.max(0, normalizeTime(session.timeline?.duration || 0)),
+    lastUpdatedTime: session.lastUpdatedTime || Date.now()
+  }
+}
+
 export class MediaDetectionService {
   private static instance: MediaDetectionService
-  private worker: Worker | null = null
+  private monitor: SMTCMonitor | null = null
   private latestPayload: SystemMediaPayload | null = null
+  private lastPayloadJson: string | null = null
+  private pollInterval: NodeJS.Timeout | null = null
 
   private constructor() {}
 
@@ -29,7 +104,7 @@ export class MediaDetectionService {
   }
 
   public start(): void {
-    if (this.worker) return
+    if (this.monitor) return
 
     // Register IPC handler for one-time fetch
     ipcMain.handle('phono:get-system-media', () => {
@@ -42,17 +117,14 @@ export class MediaDetectionService {
 
     // Register transport control IPC handlers
     ipcMain.handle('phono:media-play-pause', () => {
-      // 179 = 0xB3 (VK_MEDIA_PLAY_PAUSE)
       sendMediaKey(179)
     })
 
     ipcMain.handle('phono:media-next', () => {
-      // 176 = 0xB0 (VK_MEDIA_NEXT_TRACK)
       sendMediaKey(176)
     })
 
     ipcMain.handle('phono:media-prev', () => {
-      // 177 = 0xB1 (VK_MEDIA_PREV_TRACK)
       sendMediaKey(177)
     })
 
@@ -67,27 +139,39 @@ export class MediaDetectionService {
     })
 
     try {
-      const workerPath = join(__dirname, 'smtcWorker.js')
+      this.monitor = new SMTCMonitor()
 
-      this.worker = new Worker(workerPath)
-
-      this.worker.on('message', (msg) => {
-        if (msg?.type === 'MEDIA_UPDATE') {
-          this.latestPayload = msg.payload
-          this.broadcast(msg.payload)
+      const handleUpdate = (): void => {
+        try {
+          const current = SMTCMonitor.getCurrentMediaSession()
+          this.processSessionUpdate(current)
+        } catch {
+          // Ignore
         }
-      })
+      }
 
-      this.worker.on('error', (err) => {
-        console.warn('[MediaDetectionService] Worker encountered error:', err)
-      })
+      this.monitor.on('session-media-changed', handleUpdate)
+      this.monitor.on('session-playback-changed', handleUpdate)
+      this.monitor.on('session-timeline-changed', handleUpdate)
+      this.monitor.on('current-session-changed', handleUpdate)
+      this.monitor.on('session-added', handleUpdate)
+      this.monitor.on('session-removed', handleUpdate)
 
-      this.worker.on('exit', (code) => {
-        console.log('[MediaDetectionService] Worker exited with code:', code)
-        this.worker = null
-      })
+      handleUpdate()
+
+      this.pollInterval = setInterval(handleUpdate, 800)
     } catch (err) {
-      console.warn('[MediaDetectionService] Could not launch SMTC worker:', err)
+      console.warn('[MediaDetectionService] Could not launch SMTC monitor:', err)
+    }
+  }
+
+  private processSessionUpdate(session: MediaInfo | null): void {
+    const payload = formatSession(session)
+    const json = JSON.stringify(payload)
+    if (json !== this.lastPayloadJson) {
+      this.lastPayloadJson = json
+      this.latestPayload = payload
+      this.broadcast(payload)
     }
   }
 
@@ -101,13 +185,17 @@ export class MediaDetectionService {
   }
 
   public stop(): void {
-    if (this.worker) {
+    if (this.monitor) {
       try {
-        this.worker.postMessage({ type: 'DESTROY' })
+        this.monitor.destroy()
       } catch {
         // Ignore
       }
-      this.worker = null
+      this.monitor = null
+    }
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval)
+      this.pollInterval = null
     }
     ipcMain.removeHandler('phono:get-system-media')
     ipcMain.removeHandler('phono:get-lyrics')
