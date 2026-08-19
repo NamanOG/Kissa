@@ -31,6 +31,12 @@ function getCleanAppName(sourceAppId: string): string {
   return filename.replace(/\.(exe|appx)$/i, '')
 }
 
+function normalizeTime(raw: number): number {
+  if (!raw || raw <= 0) return 0
+  // Heuristic: if value > 86400 (1 day in seconds), it's in 100ns ticks
+  return raw > 86_400 ? Math.round(raw / 10_000_000) : Math.round(raw)
+}
+
 function formatSession(session: MediaInfo | null): SystemMediaPayload | null {
   if (!session || !session.media) return null
 
@@ -57,8 +63,8 @@ function formatSession(session: MediaInfo | null): SystemMediaPayload | null {
     album: session.media.albumTitle || '',
     artworkDataUrl,
     isPlaying,
-    progress: Math.max(0, Math.round(session.timeline?.position || 0)),
-    duration: Math.max(0, Math.round(session.timeline?.duration || 0)),
+    progress: Math.max(0, normalizeTime(session.timeline?.position || 0)),
+    duration: Math.max(0, normalizeTime(session.timeline?.duration || 0)),
     lastUpdatedTime: session.lastUpdatedTime || Date.now()
   }
 }

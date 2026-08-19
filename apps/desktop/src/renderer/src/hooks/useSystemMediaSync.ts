@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
 import type { SystemMediaPayload } from '../../../types/media'
@@ -17,9 +17,17 @@ export function useSystemMediaSync(): void {
   const setIsPlaying = usePlayerStore((s) => s.setIsPlaying)
   const setProgress = usePlayerStore((s) => s.setProgress)
 
+  const commandCooldownRef = useRef(false)
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   useEffect(() => {
     if (typeof window === 'undefined' || !window.electron?.onSystemMediaUpdate) {
       return
+    }
+
+    window.__kissaMediaCommandCooldown = () => {
+      commandCooldownRef.current = true
+      setTimeout(() => { commandCooldownRef.current = false }, 1500)
     }
 
     const handleMediaPayload = (payload: SystemMediaPayload | null): void => {
@@ -39,7 +47,7 @@ export function useSystemMediaSync(): void {
           artist: payload.artist || 'Unknown Artist',
           album: payload.album || payload.title,
           artworkUrl: payload.artworkDataUrl || albumPlaceholder,
-          duration: payload.duration > 0 ? payload.duration : 240,
+          duration: payload.duration > 0 ? payload.duration : 0,
           source: payload.sourceAppName,
           sourceAppId: payload.sourceAppId
         })
@@ -53,7 +61,7 @@ export function useSystemMediaSync(): void {
       }
 
       // Sync playing state (drives vinyl spin animation)
-      if (usePlayerStore.getState().isPlaying !== payload.isPlaying) {
+      if (!commandCooldownRef.current && usePlayerStore.getState().isPlaying !== payload.isPlaying) {
         setIsPlaying(payload.isPlaying)
       }
 
@@ -78,6 +86,7 @@ export function useSystemMediaSync(): void {
 
     return (): void => {
       cleanup()
+      if (tickRef.current) clearInterval(tickRef.current)
     }
   }, [setTrack, setIsPlaying, setProgress])
 }

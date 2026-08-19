@@ -8,9 +8,12 @@ import { ControlDock } from './features/controls'
 import { SyncedLyrics } from './features/lyrics'
 import { SettingsModal } from './features/settings'
 import { OnboardingModal } from './features/onboarding'
+import { KeyboardHelpOverlay } from './features/keyboard/KeyboardHelpOverlay'
 import { usePlayerStore } from './stores/playerStore'
 import { useAudioPlayback } from './hooks/useAudioPlayback'
 import { useSystemMediaSync } from './hooks/useSystemMediaSync'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { useUpdateChecker } from './hooks/useUpdateChecker'
 import { VinylEngine } from './features/vinyl'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
 import { X } from 'lucide-react'
@@ -27,6 +30,12 @@ function App(): React.JSX.Element {
   // Live Windows system media detection (Apple Music, Spotify, etc.)
   useSystemMediaSync()
 
+  // Global Keyboard Shortcuts
+  useKeyboardShortcuts()
+
+  // Check for app updates
+  useUpdateChecker()
+
   return (
     <AppLayout>
       {/* Fixed atmospheric background */}
@@ -41,15 +50,15 @@ function App(): React.JSX.Element {
       {/* Main content area */}
       <ContentArea>
         <div className="app-region-no-drag relative flex-1 min-h-0 overflow-hidden pt-4 min-[900px]:pt-0">
-          <AnimatePresence mode="wait">
+          <AnimatePresence initial={false}>
             {activeView === 'deck' ? (
               /* ═════════ VIEW 1: 3D Turntable Deck View (Default Hero) ═════════ */
               <motion.div
                 key="deck-view"
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.16, ease: 'easeOut' }}
                 className={[
                   'relative h-full w-full overflow-hidden no-scrollbar grid grid-rows-1',
                   showSideLyrics
@@ -73,11 +82,11 @@ function App(): React.JSX.Element {
                 {/* Optional Side Lyrics Panel (Only shown when user requests) */}
                 {showSideLyrics && (
                   <motion.div
-                    initial={{ opacity: 0, x: 20 }}
+                    initial={{ opacity: 0, x: 12 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                    className="hidden min-[1100px]:flex flex-col min-h-0 border-l border-white/[0.08] bg-[#221a17]/40 backdrop-blur-xl px-5 py-6"
+                    exit={{ opacity: 0, x: 12 }}
+                    transition={{ duration: 0.16, ease: 'easeOut' }}
+                    className="hidden min-[1100px]:flex flex-col min-h-0 border-l border-white/[0.08] bg-[#1a1412]/90 px-5 py-6"
                   >
                     <div className="flex items-center justify-between pb-3 shrink-0 border-b border-white/[0.06]">
                       <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#b7a99b] font-bold">
@@ -102,10 +111,10 @@ function App(): React.JSX.Element {
               /* ═════════ VIEW 2: Apple Music Immersive Lyrics View ═════════ */
               <motion.div
                 key="lyrics-view"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.16, ease: 'easeOut' }}
                 className="relative h-full w-full grid grid-cols-1 min-[900px]:grid-cols-[minmax(0,0.65fr)_minmax(280px,0.35fr)] overflow-hidden"
               >
                 {/* Left/Center: Large Fluid Apple Music Lyrics Stream */}
@@ -114,10 +123,10 @@ function App(): React.JSX.Element {
                 </div>
 
                 {/* Right: Floating Vinyl Album Card Widget */}
-                <div className="hidden min-[900px]:flex flex-col items-center justify-center p-8 border-l border-white/[0.06] bg-[#221a17]/25 backdrop-blur-xl">
+                <div className="hidden min-[900px]:flex flex-col items-center justify-center p-8 border-l border-white/[0.06] bg-[#1a1412]/90">
                   {/* Floating Spinning Vinyl */}
                   <div className="relative w-full max-w-[280px] aspect-square flex items-center justify-center">
-                    <div className="absolute inset-4 rounded-full bg-[#d7a76c]/10 blur-3xl pointer-events-none" />
+                    <div className="absolute inset-4 rounded-full bg-[#d7a76c]/10 blur-2xl pointer-events-none" />
                     <VinylEngine
                       albumArt={currentTrack?.artworkUrl ?? albumPlaceholder}
                       className="w-full h-full drop-shadow-[0_24px_48px_rgba(14,9,7,0.6)]"
@@ -154,6 +163,9 @@ function App(): React.JSX.Element {
 
       {/* ── First-Time User Introduction & Guide Modal ── */}
       <OnboardingModal />
+
+      {/* ── Keyboard Shortcuts Quick Reference ── */}
+      <KeyboardHelpOverlay />
     </AppLayout>
   )
 }

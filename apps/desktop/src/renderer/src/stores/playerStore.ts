@@ -38,6 +38,8 @@ export interface PlayerState {
   isOnboardingOpen: boolean
   needleSound: boolean
   autoScrollLyrics: boolean
+  isKeyboardHelpOpen: boolean
+  updateAvailable: { version: string; url: string } | null
 
   play: () => void
   pause: () => void
@@ -61,6 +63,8 @@ export interface PlayerState {
   toggleOnboarding: () => void
   setNeedleSound: (enabled: boolean) => void
   setAutoScrollLyrics: (enabled: boolean) => void
+  toggleKeyboardHelp: () => void
+  setUpdateAvailable: (updateInfo: { version: string; url: string } | null) => void
 }
 
 function getInitialTheme(): AppTheme {
@@ -118,6 +122,8 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   isOnboardingOpen: initialOnboarding,
   needleSound: true,
   autoScrollLyrics: true,
+  isKeyboardHelpOpen: false,
+  updateAvailable: null,
 
   play: () => set({ isPlaying: true, isPowered: true }),
   pause: () => set({ isPlaying: false }),
@@ -170,5 +176,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
       return { isOnboardingOpen: next }
     }),
   setNeedleSound: (needleSound) => set({ needleSound }),
-  setAutoScrollLyrics: (autoScrollLyrics) => set({ autoScrollLyrics })
+  setAutoScrollLyrics: (autoScrollLyrics) => set({ autoScrollLyrics }),
+  toggleKeyboardHelp: () => set((state) => ({ isKeyboardHelpOpen: !state.isKeyboardHelpOpen })),
+  setUpdateAvailable: (updateAvailable) => set({ updateAvailable })
 }))

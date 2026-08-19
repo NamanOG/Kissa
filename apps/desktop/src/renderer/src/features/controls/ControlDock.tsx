@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { SkipBack, SkipForward, Play, Pause, Volume2, Quote } from 'lucide-react'
+import { SleepTimer } from './SleepTimer'
 
 /** Format seconds as m:ss */
 function formatTime(seconds: number): string {
@@ -14,6 +15,51 @@ export interface ControlDockProps {
   className?: string
 }
 
+const Scrubber = memo(() => {
+  const progress = usePlayerStore((s) => s.progress)
+  const setProgress = usePlayerStore((s) => s.setProgress)
+  const currentTrack = usePlayerStore((s) => s.currentTrack)
+  
+  const duration = currentTrack?.duration ?? 0
+  const elapsed = Math.min(progress, duration)
+  const progressPercent = duration > 0 ? (elapsed / duration) * 100 : 0
+
+  return (
+    <div className="flex items-center gap-2 min-[900px]:gap-3 flex-1 min-w-[50px] min-[800px]:min-w-[100px] min-[1100px]:min-w-[160px]">
+      <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums text-neutral-400 font-medium shrink-0">
+        {formatTime(elapsed)}
+      </span>
+
+      <div
+        className="relative flex-1 h-5 flex items-center cursor-pointer group"
+        onClick={(e) => {
+          if (duration <= 0) return
+          const rect = e.currentTarget.getBoundingClientRect()
+          const clickX = e.clientX - rect.left
+          const ratio = Math.max(0, Math.min(1, clickX / rect.width))
+          setProgress(Math.round(ratio * duration))
+        }}
+      >
+        <div className="w-full h-[3px] bg-[#5a4940]/70 rounded-full relative">
+          <div
+            className="h-full bg-[#d7a76c] rounded-full"
+            style={{ width: `${progressPercent}%` }}
+          />
+          <div
+            className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-[#e0bd8c] rounded-full shadow-[0_1px_4px_rgba(20,12,8,0.5)] -translate-x-1/2 transition-transform group-hover:scale-125"
+            style={{ left: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
+
+      <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums text-neutral-500 font-medium shrink-0">
+        {formatTime(duration)}
+      </span>
+    </div>
+  )
+})
+Scrubber.displayName = 'Scrubber'
+
 /**
  * Bottom Playback Control Dock.
  * Highly responsive floating audio dock that fits gracefully on all window sizes.
@@ -21,21 +67,17 @@ export interface ControlDockProps {
 export const ControlDock = memo(({ className }: ControlDockProps) => {
   const isPlaying = usePlayerStore((s) => s.isPlaying)
   const togglePlayPause = usePlayerStore((s) => s.togglePlayPause)
-  const progress = usePlayerStore((s) => s.progress)
-  const setProgress = usePlayerStore((s) => s.setProgress)
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const volume = usePlayerStore((s) => s.volume)
   const setVolume = usePlayerStore((s) => s.setVolume)
   const activeView = usePlayerStore((s) => s.activeView)
+  const setProgress = usePlayerStore((s) => s.setProgress)
 
   const showSideLyrics = usePlayerStore((s) => s.showSideLyrics)
   const toggleSideLyrics = usePlayerStore((s) => s.toggleSideLyrics)
   const setActiveView = usePlayerStore((s) => s.setActiveView)
 
   const hasTrack = currentTrack !== null
-  const duration = currentTrack?.duration ?? 0
-  const elapsed = Math.min(progress, duration)
-  const progressPercent = duration > 0 ? (elapsed / duration) * 100 : 0
   const isLyricsActive = activeView === 'lyrics' || showSideLyrics
 
   return (
@@ -101,6 +143,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           onClick={() => {
             togglePlayPause()
             if (currentTrack?.sourceAppId && window.electron?.mediaPlayPause) {
+              window.__kissaMediaCommandCooldown?.()
               window.electron.mediaPlayPause()
             }
           }}
@@ -132,41 +175,14 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
         </button>
 
         {/* Scrubber Bar Area */}
-        <div className="flex items-center gap-2 min-[900px]:gap-3 flex-1 min-w-[50px] min-[800px]:min-w-[100px] min-[1100px]:min-w-[160px]">
-          <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums text-neutral-400 font-medium shrink-0">
-            {formatTime(elapsed)}
-          </span>
-
-          <div
-            className="relative flex-1 h-5 flex items-center cursor-pointer group"
-            onClick={(e) => {
-              if (duration <= 0) return
-              const rect = e.currentTarget.getBoundingClientRect()
-              const clickX = e.clientX - rect.left
-              const ratio = Math.max(0, Math.min(1, clickX / rect.width))
-              setProgress(Math.round(ratio * duration))
-            }}
-          >
-            <div className="w-full h-[3px] bg-[#5a4940]/70 rounded-full relative">
-              <div
-                className="h-full bg-[#d7a76c] rounded-full"
-                style={{ width: `${progressPercent}%` }}
-              />
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-[#e0bd8c] rounded-full shadow-[0_1px_4px_rgba(20,12,8,0.5)] -translate-x-1/2 transition-transform group-hover:scale-125"
-                style={{ left: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
-
-          <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums text-neutral-500 font-medium shrink-0">
-            {formatTime(duration)}
-          </span>
-        </div>
+        <Scrubber />
       </div>
 
       {/* ── Right: Lyrics Toggle, Source Pill & Equalizer ── */}
       <div className="flex items-center gap-1.5 min-[900px]:gap-2.5 shrink-0 justify-end">
+        {/* Sleep Timer Popover */}
+        <SleepTimer />
+
         {/* Apple Music Style Live Lyrics Toggle */}
         <button
           type="button"

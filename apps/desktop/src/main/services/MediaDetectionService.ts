@@ -62,8 +62,11 @@ export class MediaDetectionService {
       }
     })
 
+    ipcMain.handle('phono:get-app-version', () => {
+      return require('electron').app.getVersion()
+    })
+
     try {
-      // In development and production, the compiled worker will be in the same output directory as main/index.js
       const workerPath = join(__dirname, 'smtcWorker.js')
 
       this.worker = new Worker(workerPath)

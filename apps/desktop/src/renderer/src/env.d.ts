@@ -30,10 +30,12 @@ export interface PhonoSystemMediaAPI {
   mediaNext: () => Promise<void>
   mediaPrev: () => Promise<void>
   openExternal?: (url: string) => Promise<void>
+  getAppVersion?: () => Promise<string>
 }
 
 declare global {
   interface Window {
     electron: ElectronAPI & PhonoSystemMediaAPI
+    __kissaMediaCommandCooldown?: () => void
   }
 }

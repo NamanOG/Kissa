@@ -14,6 +14,14 @@ export interface ThemeDefinition {
   name: string
   description: string
   image: string
+  /** Dominant accent colour: scrubber fill, LEDs, active lyric glow, button highlights */
+  accentColor: string
+  /** Panel / card surface colour */
+  surfaceColor: string
+  /** Primary text colour on surfaces */
+  onSurfaceColor: string
+  /** Secondary / muted text */
+  mutedColor: string
   ambient: {
     bgColor: string
     gradient: string
@@ -21,100 +29,202 @@ export interface ThemeDefinition {
 }
 
 export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
+  // ── 01  WARM WALNUT STUDIO ─────────────────────────────────────────────────
   {
     id: 'quiet-room',
     number: '01',
-    name: 'Quiet Listening Room',
-    description: 'Walnut, warm paper, late-night lamp glow',
+    name: 'Warm Walnut Studio',
+    description: 'Amber lamplight, walnut grain, late-night warmth',
     image: env01,
+    accentColor: '#d4884a',
+    surfaceColor: '#1e1510',
+    onSurfaceColor: '#f5ece0',
+    mutedColor: '#9c7b60',
     ambient: {
-      bgColor: '#120f0d',
-      gradient:
-        'radial-gradient(ellipse 65% 55% at 80% 30%, rgba(215, 167, 108, 0.055) 0%, transparent 70%), radial-gradient(ellipse 50% 45% at 20% 80%, rgba(140, 105, 70, 0.035) 0%, transparent 65%), linear-gradient(180deg, #15110e 0%, #0d0a09 100%)'
+      bgColor: '#0f0b07',
+      gradient: [
+        // Amber studio lamp — top-right key light
+        'radial-gradient(ellipse 70% 55% at 88% 12%, rgba(220,145,60,0.15) 0%, transparent 65%)',
+        // Warm walnut-brown floor fill
+        'radial-gradient(ellipse 50% 60% at 8% 92%, rgba(130,75,30,0.10) 0%, transparent 60%)',
+        // Deep tobacco base
+        'linear-gradient(158deg, #1a1109 0%, #0f0c08 50%, #0b0906 100%)'
+      ].join(', ')
     }
   },
+
+  // ── 02  VINTAGE AMBER ──────────────────────────────────────────────────────
   {
     id: 'dusty-record',
     number: '02',
-    name: 'Dusty Record Store',
-    description: 'Faded sleeves, cardboard, muted olive',
+    name: 'Vintage Amber',
+    description: 'Sepia photographs, aged cardboard, faded gold sleeves',
     image: env02,
+    accentColor: '#c9a255',
+    surfaceColor: '#1c1810',
+    onSurfaceColor: '#ede0c4',
+    mutedColor: '#937f58',
     ambient: {
-      bgColor: '#131210',
-      gradient:
-        'radial-gradient(ellipse 60% 50% at 25% 35%, rgba(142, 130, 96, 0.05) 0%, transparent 65%), radial-gradient(ellipse 55% 45% at 75% 75%, rgba(120, 75, 70, 0.035) 0%, transparent 60%), linear-gradient(180deg, #161512 0%, #0f0e0c 100%)'
+      bgColor: '#121008',
+      gradient: [
+        // Warm tungsten-sepia wash from the top
+        'radial-gradient(ellipse 80% 50% at 50% 15%, rgba(200,150,60,0.13) 0%, transparent 65%)',
+        // Olive-brown shadows on the flanks
+        'radial-gradient(ellipse 35% 80% at 3% 65%, rgba(105,82,28,0.09) 0%, transparent 55%)',
+        'radial-gradient(ellipse 35% 80% at 97% 65%, rgba(105,82,28,0.07) 0%, transparent 55%)',
+        // Base: warm parchment-black
+        'linear-gradient(180deg, #1a1508 0%, #100e07 60%, #0d0b06 100%)'
+      ].join(', ')
     }
   },
+
+  // ── 03  INDIGO JAZZ CLUB ───────────────────────────────────────────────────
   {
     id: 'jazz-bar',
     number: '03',
-    name: 'Japanese Jazz Bar',
-    description: 'Charcoal, indigo, warm wood, dim light',
+    name: 'Indigo Jazz Club',
+    description: 'Neon signs, velvet booths, smoky violet haze',
     image: env03,
+    accentColor: '#a78bfa',
+    surfaceColor: '#0f0d1a',
+    onSurfaceColor: '#e8e4ff',
+    mutedColor: '#7066a8',
     ambient: {
-      bgColor: '#0c0d12',
-      gradient:
-        'radial-gradient(ellipse 60% 50% at 20% 30%, rgba(45, 60, 105, 0.12) 0%, transparent 65%), radial-gradient(ellipse 55% 45% at 80% 70%, rgba(215, 155, 90, 0.05) 0%, transparent 65%), linear-gradient(180deg, #101117 0%, #090a0d 100%)'
+      bgColor: '#07060e',
+      gradient: [
+        // Electric indigo overhead neon — main character light
+        'radial-gradient(ellipse 65% 50% at 62% 8%, rgba(105,65,210,0.22) 0%, transparent 65%)',
+        // Warm amber bar-counter glow — bottom-left
+        'radial-gradient(ellipse 45% 45% at 12% 88%, rgba(205,120,45,0.09) 0%, transparent 55%)',
+        // Red neon edge-bleed — top-left corner
+        'radial-gradient(ellipse 28% 28% at 4% 6%, rgba(210,35,80,0.08) 0%, transparent 50%)',
+        // Base: deep midnight-indigo
+        'linear-gradient(155deg, #0d0c1c 0%, #070710 55%, #040508 100%)'
+      ].join(', ')
     }
   },
+
+  // ── 04  COLD MIDNIGHT ──────────────────────────────────────────────────────
   {
     id: 'midnight-apartment',
     number: '04',
-    name: 'Midnight Apartment',
-    description: 'Smoky blue, graphite, midnight quiet',
+    name: 'Cold Midnight',
+    description: 'Insomnia blue, graphite walls, city glow from a window',
     image: env04,
+    accentColor: '#60a5fa',
+    surfaceColor: '#0b0e16',
+    onSurfaceColor: '#cdd8f0',
+    mutedColor: '#4a6080',
     ambient: {
-      bgColor: '#090b0f',
-      gradient:
-        'radial-gradient(ellipse 65% 55% at 75% 30%, rgba(50, 80, 125, 0.1) 0%, transparent 70%), radial-gradient(ellipse 45% 40% at 25% 75%, rgba(30, 45, 70, 0.08) 0%, transparent 65%), linear-gradient(180deg, #0d1015 0%, #07080b 100%)'
+      bgColor: '#060810',
+      gradient: [
+        // Icy-blue city window light — top-right
+        'radial-gradient(ellipse 60% 50% at 92% 5%, rgba(70,130,220,0.18) 0%, transparent 65%)',
+        // Cold silver-blue floor reflection — bottom
+        'radial-gradient(ellipse 80% 30% at 50% 100%, rgba(15,25,55,0.55) 0%, transparent 70%)',
+        // Subtle cool left shadow
+        'radial-gradient(ellipse 35% 60% at 0% 50%, rgba(35,70,145,0.08) 0%, transparent 60%)',
+        // Base: near-black with a cold blue cast
+        'linear-gradient(168deg, #090d18 0%, #060810 55%, #040608 100%)'
+      ].join(', ')
     }
   },
+
+  // ── 05  PETRICHOR ──────────────────────────────────────────────────────────
   {
     id: 'rainy-window',
     number: '05',
-    name: 'Rainy Window',
-    description: 'Grey skies, soft reflections, warm indoor light',
+    name: 'Petrichor',
+    description: 'Rain on glass, slate sky, warm indoor refuge',
     image: env05,
+    accentColor: '#94a3b8',
+    surfaceColor: '#10131a',
+    onSurfaceColor: '#dce4f0',
+    mutedColor: '#556070',
     ambient: {
-      bgColor: '#0f1215',
-      gradient:
-        'radial-gradient(ellipse 65% 50% at 70% 30%, rgba(70, 95, 115, 0.1) 0%, transparent 65%), radial-gradient(ellipse 50% 45% at 25% 75%, rgba(185, 145, 100, 0.04) 0%, transparent 65%), linear-gradient(180deg, #13171b 0%, #0b0d0f 100%)'
+      bgColor: '#0c0f14',
+      gradient: [
+        // Diffused steel-blue sky wash — full top
+        'radial-gradient(ellipse 100% 55% at 50% 0%, rgba(80,102,135,0.16) 0%, transparent 70%)',
+        // Warm amber-peach interior lamp — bottom center
+        'radial-gradient(ellipse 50% 40% at 50% 100%, rgba(195,148,92,0.07) 0%, transparent 60%)',
+        // Base: cool slate-charcoal
+        'linear-gradient(178deg, #141820 0%, #0d1018 55%, #09090e 100%)'
+      ].join(', ')
     }
   },
+
+  // ── 06  HI-FI LIBRARY ──────────────────────────────────────────────────────
   {
     id: 'hifi-library',
     number: '06',
     name: 'Hi-Fi Library',
-    description: 'Dark wood, parchment, aged brass',
+    description: 'Hunter green walls, mahogany shelves, polished brass',
     image: env06,
+    accentColor: '#6ee7b7',
+    surfaceColor: '#091209',
+    onSurfaceColor: '#d2f0e0',
+    mutedColor: '#3d6050',
     ambient: {
-      bgColor: '#110d0b',
-      gradient:
-        'radial-gradient(ellipse 60% 55% at 75% 35%, rgba(195, 145, 80, 0.06) 0%, transparent 70%), radial-gradient(ellipse 50% 45% at 20% 75%, rgba(130, 80, 45, 0.04) 0%, transparent 65%), linear-gradient(180deg, #15100d 0%, #0c0908 100%)'
+      bgColor: '#060d06',
+      gradient: [
+        // Forest-green ambient — dark British racing green walls
+        'radial-gradient(ellipse 72% 58% at 28% 18%, rgba(18,80,38,0.24) 0%, transparent 65%)',
+        // Warm brass/gold desk lamp — right-side fill
+        'radial-gradient(ellipse 38% 52% at 92% 72%, rgba(185,135,45,0.11) 0%, transparent 55%)',
+        // Deep moss shadow from the floor
+        'radial-gradient(ellipse 85% 38% at 50% 100%, rgba(8,26,12,0.65) 0%, transparent 70%)',
+        // Base: deep forest-black with green cast
+        'linear-gradient(158deg, #0c1609 0%, #080e07 55%, #050805 100%)'
+      ].join(', ')
     }
   },
+
+  // ── 07  CONCRETE LOFT ────────────────────────────────────────────────────────
   {
     id: 'concrete-vinyl',
     number: '07',
-    name: 'Concrete & Vinyl',
-    description: 'Soft concrete, terracotta, matte black',
+    name: 'Concrete Loft',
+    description: 'Raw concrete, warm terracotta, sunlit industrial windows',
     image: env07,
+    accentColor: '#c87056', // Terracotta
+    surfaceColor: '#e0e2e5',
+    onSurfaceColor: '#2b2e33',
+    mutedColor: '#7a818c',
     ambient: {
-      bgColor: '#121214',
-      gradient:
-        'radial-gradient(ellipse 60% 50% at 80% 30%, rgba(180, 95, 75, 0.06) 0%, transparent 65%), radial-gradient(ellipse 55% 45% at 25% 75%, rgba(140, 140, 150, 0.035) 0%, transparent 65%), linear-gradient(180deg, #161619 0%, #0e0e10 100%)'
+      bgColor: '#d4d6db',
+      gradient: [
+        // Bright window sunlight wash — top-left
+        'radial-gradient(ellipse 75% 65% at 20% 15%, rgba(255,250,240,0.85) 0%, transparent 70%)',
+        // Warm terracotta shadow cast — bottom-right
+        'radial-gradient(ellipse 55% 45% at 90% 90%, rgba(200,112,86,0.18) 0%, transparent 60%)',
+        // Base: industrial warm grey
+        'linear-gradient(155deg, #ebedef 0%, #d8dadf 50%, #c4c7cc 100%)'
+      ].join(', ')
     }
   },
+
+  // ── 08  SUNDAY MORNING (LIGHT) ─────────────────────────────────────────────
   {
     id: 'sunday-morning',
     number: '08',
     name: 'Sunday Morning',
-    description: 'Warm linen, pale wood, faded sage',
+    description: 'Linen sheets, warm cream light, slow coffee mornings',
     image: env08,
+    accentColor: '#b45309',
+    surfaceColor: '#f0e8d8',
+    onSurfaceColor: '#3d2a14',
+    mutedColor: '#8a6840',
     ambient: {
-      bgColor: '#e6dfd5',
-      gradient:
-        'radial-gradient(ellipse 65% 55% at 30% 25%, rgba(255, 255, 255, 0.8) 0%, transparent 70%), radial-gradient(ellipse 55% 50% at 75% 70%, rgba(195, 205, 185, 0.35) 0%, transparent 65%), linear-gradient(180deg, #ece6dd 0%, #ded7cc 100%)'
+      bgColor: '#eee5d5',
+      gradient: [
+        // Warm morning sunlight from top-left — bleached linen tone
+        'radial-gradient(ellipse 80% 60% at 18% 0%, rgba(255,248,228,0.92) 0%, transparent 70%)',
+        // Soft sage shadow — bottom-right
+        'radial-gradient(ellipse 60% 48% at 88% 100%, rgba(182,198,168,0.35) 0%, transparent 65%)',
+        // Warm peachy base
+        'linear-gradient(168deg, #f2e8d2 0%, #e9dfc9 50%, #e1d5ba 100%)'
+      ].join(', ')
     }
   }
 ]

@@ -12,12 +12,13 @@ export interface TurntableBaseProps extends React.HTMLAttributes<HTMLDivElement>
 export const TurntableBase = memo(
   ({ className, style, children, ...props }: TurntableBaseProps): React.JSX.Element => {
     return (
-      <div className={cn('absolute inset-0', className)} style={style} {...props}>
+      <div className={cn('absolute inset-0 pointer-events-none', className)} style={style} {...props}>
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none"
           viewBox="0 0 1000 700"
           xmlns="http://www.w3.org/2000/svg"
           preserveAspectRatio="none"
+          filter="url(#plinth-shadow)"
         >
           <defs>
             {/* Smoked acrylic / graphite satin composite */}
@@ -51,16 +52,21 @@ export const TurntableBase = memo(
               <stop offset="100%" stopColor="#211a18" />
             </radialGradient>
 
-            {/* Micro noise texture for anodized aluminium plinth */}
-            <filter id="plinth-noise" x="0%" y="0%" width="100%" height="100%">
+            {/* Authentic Wood grain texture for plinth */}
+            <filter id="plinth-wood" x="0%" y="0%" width="100%" height="100%">
               <feTurbulence
                 type="fractalNoise"
-                baseFrequency="0.75"
-                numOctaves="3"
+                baseFrequency="0.01 0.12"
+                numOctaves="4"
                 stitchTiles="stitch"
               />
-              <feColorMatrix type="matrix" values="1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 0.035 0" />
+              <feColorMatrix type="matrix" values="1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 0.04 0" />
               <feBlend mode="overlay" in2="SourceGraphic" />
+            </filter>
+
+            {/* Realistic directional cast shadow */}
+            <filter id="plinth-shadow" x="-10%" y="-10%" width="120%" height="130%">
+              <feDropShadow dx="-4" dy="12" stdDeviation="12" floodColor="#000" floodOpacity="0.6" />
             </filter>
 
             {/* Chamfer highlight along top rim */}
@@ -95,7 +101,7 @@ export const TurntableBase = memo(
             rx="18"
             ry="18"
             fill="url(#plinth-top)"
-            filter="url(#plinth-noise)"
+            filter="url(#plinth-wood)"
           />
 
           {/* Top Chamfer Edge Highlight */}
@@ -108,8 +114,24 @@ export const TurntableBase = memo(
             ry="17"
             fill="none"
             stroke="url(#top-edge-highlight)"
-            strokeWidth="1.2"
+            strokeWidth="2"
           />
+
+          {/* Inner bevel shadow stroke */}
+          <rect
+            x="12"
+            y="12"
+            width="976"
+            height="636"
+            rx="16"
+            ry="16"
+            fill="none"
+            stroke="rgba(0,0,0,0.4)"
+            strokeWidth="1"
+          />
+
+          {/* Specular catchlight from key studio lamp */}
+          <ellipse cx="180" cy="80" rx="140" ry="70" fill="rgba(255,240,210,0.12)" filter="blur(20px)" />
 
           {/* ── Front Face (3D vertical thickness) ──────────── */}
           <path

@@ -113,25 +113,30 @@ export function useAudioPlayback(): void {
   }, [isPlaying])
 
   // ── 4. React to external seek (scrubber click, tonearm drag) ──────
-  const progress = usePlayerStore((s) => s.progress)
-
   useEffect(() => {
-    // Skip if WE just pushed this value from timeupdate
-    if (isSyncingTimeRef.current) return
+    const unsubscribe = usePlayerStore.subscribe((state, prevState) => {
+      const progress = state.progress
+      if (progress === prevState.progress) return
 
-    const audio = audioRef.current
-    if (!audio || !audio.src) return
+      // Skip if WE just pushed this value from timeupdate
+      if (isSyncingTimeRef.current) return
 
-    // Only seek if the audio position actually differs meaningfully
-    if (Math.abs(audio.currentTime - progress) > 1.5) {
-      isSeekingRef.current = true
-      audio.currentTime = progress
-      // Small delay so the next timeupdate doesn't fight the seek
-      setTimeout(() => {
-        isSeekingRef.current = false
-      }, 150)
-    }
-  }, [progress])
+      const audio = audioRef.current
+      if (!audio || !audio.src) return
+
+      // Only seek if the audio position actually differs meaningfully
+      if (Math.abs(audio.currentTime - progress) > 1.5) {
+        isSeekingRef.current = true
+        audio.currentTime = progress
+        // Small delay so the next timeupdate doesn't fight the seek
+        setTimeout(() => {
+          isSeekingRef.current = false
+        }, 150)
+      }
+    })
+
+    return () => unsubscribe()
+  }, [])
 
   // ── 5. React to volume changes ────────────────────────────────────
   const volume = usePlayerStore((s) => s.volume)
@@ -145,16 +150,18 @@ export function useAudioPlayback(): void {
   // ── 6. Fallback timer for tracks WITHOUT an audioUrl ──────────────
   //    (keeps the UI timer ticking for mock/test tracks)
   const currentTrack = usePlayerStore((s) => s.currentTrack)
+  const currentAudioUrl = currentTrack?.audioUrl
+  const duration = currentTrack?.duration
 
   useEffect(() => {
-    if (!isPlaying || !currentTrack || currentTrack.audioUrl) return
+    if (!isPlaying || !currentTrack || currentAudioUrl) return
     const interval = setInterval(() => {
       usePlayerStore.getState().setProgress((prev) => {
-        const dur = currentTrack.duration ?? 0
+        const dur = duration ?? 0
         if (dur > 0 && prev >= dur) return 0
         return prev + 1
       })
     }, 1000)
     return () => clearInterval(interval)
-  }, [isPlaying, currentTrack])
+  }, [isPlaying, audioUrl, duration])
 }

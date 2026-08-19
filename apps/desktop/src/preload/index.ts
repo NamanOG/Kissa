@@ -11,6 +11,7 @@ export interface PhonoSystemMediaAPI {
   mediaNext: () => Promise<void>
   mediaPrev: () => Promise<void>
   openExternal: (url: string) => Promise<void>
+  getAppVersion: () => Promise<string>
 }
 
 const phonoMediaAPI: PhonoSystemMediaAPI = {
@@ -28,7 +29,8 @@ const phonoMediaAPI: PhonoSystemMediaAPI = {
   mediaPlayPause: () => ipcRenderer.invoke('phono:media-play-pause'),
   mediaNext: () => ipcRenderer.invoke('phono:media-next'),
   mediaPrev: () => ipcRenderer.invoke('phono:media-prev'),
-  openExternal: (url: string) => ipcRenderer.invoke('phono:open-external', url)
+  openExternal: (url: string) => ipcRenderer.invoke('phono:open-external', url),
+  getAppVersion: () => ipcRenderer.invoke('phono:get-app-version')
 }
 
 contextBridge.exposeInMainWorld('electron', {

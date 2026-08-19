@@ -53,6 +53,19 @@ export const Platter = memo(({ className, style, size = '100%', ...props }: Plat
             <stop offset="95%" stopColor="rgba(0,0,0,0.4)" />
             <stop offset="100%" stopColor="transparent" />
           </radialGradient>
+
+          {/* Vertical lathe-machining lines pattern */}
+          <pattern id="machining-lines" width="4" height="20" patternUnits="userSpaceOnUse">
+            <rect x="0" y="0" width="1" height="20" fill="rgba(0,0,0,0.15)" />
+            <rect x="2" y="0" width="1" height="20" fill="rgba(255,255,255,0.08)" />
+          </pattern>
+
+          {/* Micro-scratches for top disc */}
+          <filter id="platter-scratches">
+            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="noise" />
+            <feColorMatrix type="matrix" values="1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 0.1 0" />
+            <feBlend mode="multiply" in2="SourceGraphic" />
+          </filter>
         </defs>
 
         {/* ── 1. Contact shadow cast by platter onto plinth ── */}
@@ -62,26 +75,24 @@ export const Platter = memo(({ className, style, size = '100%', ...props }: Plat
         {/* ── 2. Platter Vertical Side Face (3D cylinder thickness ~12px drop) ── */}
         {/* Front drop arc */}
         <path
-          d="M 4 200 A 196 196 0 0 0 396 200 L 396 210 A 196 196 0 0 1 4 210 Z"
+          d="M 4 200 A 196 196 0 0 0 396 200 L 396 220 A 196 196 0 0 1 4 220 Z"
           fill="url(#platter-side-metal)"
         />
         {/* Fine vertical machining lines on side face */}
         <path
-          d="M 4 200 A 196 196 0 0 0 396 200 L 396 210 A 196 196 0 0 1 4 210 Z"
-          fill="none"
-          stroke="rgba(0,0,0,0.5)"
-          strokeWidth="0.5"
+          d="M 4 200 A 196 196 0 0 0 396 200 L 396 220 A 196 196 0 0 1 4 220 Z"
+          fill="url(#machining-lines)"
         />
         {/* Bottom rim edge line */}
         <path
-          d="M 6 210 A 194 194 0 0 0 394 210"
+          d="M 6 220 A 194 194 0 0 0 394 220"
           fill="none"
           stroke="rgba(0,0,0,0.9)"
-          strokeWidth="1.5"
+          strokeWidth="2.5"
         />
 
         {/* ── 3. Platter Top Disc & Thin Chamfer Bevel Lip ── */}
-        <circle cx="200" cy="200" r="196" fill="#141416" />
+        <circle cx="200" cy="200" r="196" fill="#141416" filter="url(#platter-scratches)" />
         <circle cx="200" cy="200" r="196" fill="url(#platter-top-lip)" />
 
         {/* Crisp metallic bevel rim stroke */}

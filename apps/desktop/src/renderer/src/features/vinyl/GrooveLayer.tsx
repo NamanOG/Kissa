@@ -62,6 +62,25 @@ export const GrooveLayer = memo(
               'radial-gradient(circle at center, transparent 94%, black 95%, black 98%, transparent 99%)'
           }}
         />
+
+        {/* Soft-light PVC vinyl material noise */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-full" viewBox="0 0 100 100">
+          <filter id="vinyl-noise">
+            <feTurbulence type="fractalNoise" baseFrequency="2.5" numOctaves="3" result="noise" />
+            <feColorMatrix type="matrix" values="1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 0.12 0" />
+            <feBlend mode="soft-light" in2="SourceGraphic" />
+          </filter>
+          <circle cx="50" cy="50" r="50" fill="transparent" filter="url(#vinyl-noise)" />
+        </svg>
+
+        {/* Physical SVG groove rings catching light */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.15" />
+          <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.1" />
+          <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.15" />
+          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.2" />
+          <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.1" />
+        </svg>
       </div>
     )
   }

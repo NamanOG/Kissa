@@ -1,7 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { OnboardingModal } from '../OnboardingModal'
 import { usePlayerStore } from '@renderer/stores/playerStore'
+
+// Mock framer-motion AnimatePresence to render children synchronously without waiting for exit transitions
+vi.mock('framer-motion', async () => {
+  const actual = await vi.importActual('framer-motion')
+  return {
+    ...actual,
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>
+  }
+})
 
 describe('OnboardingModal component', () => {
   beforeEach(() => {
@@ -26,15 +35,15 @@ describe('OnboardingModal component', () => {
     const continueBtn = screen.getByRole('button', { name: /continue/i })
     fireEvent.click(continueBtn)
     expect(screen.getByText('2 / 3')).toBeInTheDocument()
-    expect(screen.getByText('Interactive Needle Drops')).toBeInTheDocument()
+    expect(screen.getByText('Interactive Needle Drop')).toBeInTheDocument()
 
     // Click Continue to go to Step 3
     fireEvent.click(continueBtn)
     expect(screen.getByText('3 / 3')).toBeInTheDocument()
-    expect(screen.getByText('Select your listening environment')).toBeInTheDocument()
+    expect(screen.getByText('Choose your atmosphere')).toBeInTheDocument()
 
-    // Select Japanese Jazz Bar
-    const jazzBarBtn = screen.getByRole('button', { name: /japanese jazz bar/i })
+    // Select Indigo Jazz Club
+    const jazzBarBtn = screen.getByRole('button', { name: /indigo jazz club/i })
     fireEvent.click(jazzBarBtn)
     expect(usePlayerStore.getState().theme).toBe('jazz-bar')
 

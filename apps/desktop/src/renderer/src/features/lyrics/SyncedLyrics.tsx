@@ -146,6 +146,11 @@ export const SyncedLyrics = memo(({
       return
     }
 
+    if (!currentTrack.duration || currentTrack.duration < 5) {
+      setStatus('loading')
+      return
+    }
+
     setStatus('loading')
     setFetchedLyrics(null)
 
@@ -259,10 +264,6 @@ export const SyncedLyrics = memo(({
         className
       )}
     >
-      {/* Top & Bottom Depth Vignette Fades */}
-      <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[#181311] via-[#181311]/80 to-transparent pointer-events-none z-20" />
-      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#181311] via-[#181311]/80 to-transparent pointer-events-none z-20" />
-
       {/* Manual Scroll Sync Button */}
       {userIsScrolling && (
         <button
@@ -289,6 +290,10 @@ export const SyncedLyrics = memo(({
         onWheel={handleScroll}
         onTouchMove={handleScroll}
         className="relative flex-1 min-h-0 overflow-y-auto px-6 py-12 min-[900px]:px-10 no-scrollbar"
+        style={{
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)'
+        }}
       >
         {status === 'ready' && lyricLines.length > 0 && (
           <div className="space-y-6 min-[900px]:space-y-8 py-[38vh]">
@@ -297,54 +302,48 @@ export const SyncedLyrics = memo(({
               const distance = Math.abs(index - activeIndex)
               const isHovered = hoveredLineIndex === index
 
-              // Apple Music style depth of field calculations
-              let opacityClass = 'opacity-15'
-              let blurStyle = 'blur(3px)'
+              // Apple Music optical depth via GPU-accelerated opacity & subtle scale
+              let opacityClass = 'opacity-20'
               let scaleVal = 0.95
 
               if (isActive) {
                 opacityClass = 'opacity-100'
-                blurStyle = 'blur(0px)'
                 scaleVal = isLargeView ? 1.03 : 1.02
               } else if (distance === 1) {
-                opacityClass = isHovered ? 'opacity-70' : 'opacity-40'
-                blurStyle = isHovered ? 'blur(0px)' : 'blur(1.2px)'
+                opacityClass = isHovered ? 'opacity-75' : 'opacity-45'
                 scaleVal = 0.98
               } else if (distance === 2) {
-                opacityClass = isHovered ? 'opacity-55' : 'opacity-25'
-                blurStyle = isHovered ? 'blur(0.5px)' : 'blur(2.2px)'
+                opacityClass = isHovered ? 'opacity-60' : 'opacity-30'
                 scaleVal = 0.96
               } else {
-                opacityClass = isHovered ? 'opacity-40' : 'opacity-12'
-                blurStyle = isHovered ? 'blur(1px)' : 'blur(3.5px)'
+                opacityClass = isHovered ? 'opacity-40' : 'opacity-15'
                 scaleVal = 0.94
               }
 
               return (
-                <motion.div
+                <div
                   key={line.id}
                   ref={isActive ? activeLineRef : null}
                   onClick={() => handleLineClick(line.time)}
                   onMouseEnter={() => setHoveredLineIndex(index)}
                   onMouseLeave={() => setHoveredLineIndex(null)}
                   className={cn(
-                    'group relative cursor-pointer rounded-xl px-3 py-1.5 transition-all duration-300 transform-gpu',
+                    'group relative cursor-pointer rounded-xl px-3 py-1.5 transition-all duration-200 transform-gpu',
                     isActive && 'cursor-default'
                   )}
                   style={{
-                    filter: blurStyle,
                     transform: `scale(${scaleVal})`,
                     transformOrigin: 'left center'
                   }}
                 >
                   <p
                     className={cn(
-                      'font-serif tracking-[-0.015em] transition-colors duration-400',
+                      'font-serif tracking-[-0.015em] transition-colors duration-200',
                       isLargeView
                         ? 'text-[clamp(1.9rem,3.2vw,3.1rem)] leading-[1.08]'
                         : 'text-[clamp(1.35rem,2.1vw,1.95rem)] leading-[1.12]',
                       isActive
-                        ? 'font-medium text-[#f5efe6] drop-shadow-[0_2px_12px_rgba(245,239,230,0.18)]'
+                        ? 'font-medium text-[#f5efe6]'
                         : isHovered
                           ? 'text-[#d6c9bb]'
                           : 'text-[#9d9187]',
@@ -360,7 +359,7 @@ export const SyncedLyrics = memo(({
                       <Play className="w-3 h-3 fill-current" />
                     </div>
                   )}
-                </motion.div>
+                </div>
               )
             })}
           </div>

@@ -30,13 +30,16 @@ Named after Japan’s iconic *Jazz Kissa* (ジャズ喫茶) listening bars, **Ki
 
 Get the latest version for **Windows 10 / 11** from the [**Releases Page**](https://github.com/NamanOG/Kissa/releases/latest):
 
-- **`Kissa-Setup-x.x.x.exe`**: Full installer with desktop shortcut and start menu entry.
+- **`Kissa-Setup-x.x.x.exe`**: Full installer with desktop shortcut and start menu entry (featuring custom Japanese minimalist branding).
 - **`Kissa-Portable-x.x.x.exe`**: Single standalone executable — run directly without installing.
+
+> **Note on Windows SmartScreen**: As an indie open-source app, Kissa's installer is currently unsigned. You may see a blue "Windows protected your PC" warning. Simply click **More info** -> **Run anyway** to continue safely.
 
 ---
 
 ## Key Features
 
+- **Automatic Update Checking**: Kissa automatically checks for new GitHub releases and elegantly notifies you in the Settings menu when a new version is ready, providing a direct download link.
 - **3D Animated Turntable Plinth**: Physical turntable chassis with machined aluminum platter, felt slipmat, rubber isolation feet, and rotational inertia (33⅓ RPM and 45 RPM).
 - **Precision Tonearm Mechanics**: Dieter Rams / Braun-inspired gimbal bearing pivot, knurled counterweight, and continuous needle tracking across record grooves with realistic needle lift/drop depth.
 - **Apple Music-Grade Synced Lyrics**: Full LRC timing support with dynamic optical depth-of-field blur, smooth spring auto-centering, and interactive click-to-seek karaoke.

@@ -25,8 +25,18 @@ nsis:
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
+  createStartMenuShortcut: true
   oneClick: false
+  perMachine: false
   allowToChangeInstallationDirectory: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  installerHeaderIcon: build/icon.ico
+  installerSidebar: build/installerSidebar.bmp
+  uninstallerSidebar: build/uninstallerSidebar.bmp
+  installerHeader: build/installerHeader.bmp
+  runAfterFinish: true
+  deleteAppDataOnUninstall: false
 portable:
   artifactName: ${productName}-Portable-${version}.${ext}
 mac:

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { X, ArrowRight, ArrowLeft, CheckCircle2, Volume2, Disc, Quote } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { X, ArrowRight, ArrowLeft, Volume2, Disc3, FileText, Settings2, Play } from 'lucide-react'
 import { usePlayerStore, AppTheme } from '@renderer/stores/playerStore'
 import { LISTENING_ENVIRONMENTS } from '../settings/themes'
+import { ThemeCard } from '../settings/ThemeCard'
 import { cn } from '@renderer/utils/cn'
 import kissaHeroImg from '@renderer/media/kissa_welcome_hero.jpg'
 
@@ -10,342 +11,306 @@ export interface OnboardingModalProps {
   className?: string
 }
 
+const STEPS = [
+  { id: 'ritual', label: 'The Ritual' },
+  { id: 'deck', label: 'The Deck' },
+  { id: 'atmosphere', label: 'Atmosphere' }
+]
+
+const FEATURES = [
+  {
+    icon: Volume2,
+    title: 'Play Any Music',
+    body: 'Start a song in Spotify, Apple Music, Tidal, or any Windows browser. Kissa detects it automatically.'
+  },
+  {
+    icon: Disc3,
+    title: 'Platter Spins Live',
+    body: 'Cover art maps onto the vinyl. The platter accelerates and decelerates with real motor physics.'
+  },
+  {
+    icon: FileText,
+    title: 'Synced Lyrics',
+    body: 'Sit back with timed lyrics that scroll line by line as the song plays.'
+  }
+]
+
+const DECK_FEATURES = [
+  {
+    title: 'Interactive Needle Drop',
+    body: 'Drag the tonearm or click anywhere on the platter to seek through the track — vinyl clicks included.'
+  },
+  {
+    title: '33⅓ & 45 RPM Speeds',
+    body: 'Switch between LP 33⅓ and single 45 RPM on the plinth dial with real motor spin-up inertia.'
+  },
+  {
+    title: 'Karaoke Depth View',
+    body: 'Hit the Quote icon for a full-screen lyrics stream with optical depth-of-field blur on inactive lines.'
+  }
+]
+
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) => {
   const isOnboardingOpen = usePlayerStore((s) => s.isOnboardingOpen)
   const setIsOnboardingOpen = usePlayerStore((s) => s.setIsOnboardingOpen)
   const currentTheme = usePlayerStore((s) => s.theme)
   const setTheme = usePlayerStore((s) => s.setTheme)
 
-  const [currentStep, setCurrentStep] = useState<number>(0)
+  const [step, setStep] = useState<number>(0)
 
-  const steps = [
-    { id: 'ritual', number: '01', title: 'The Ritual' },
-    { id: 'deck', number: '02', title: 'The Deck' },
-    { id: 'atmosphere', number: '03', title: 'Atmospheres' }
-  ]
-
+  // Keyboard navigation
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape' && isOnboardingOpen) {
-        setIsOnboardingOpen(false)
-      } else if (e.key === 'ArrowRight' && isOnboardingOpen && currentStep < 2) {
-        setCurrentStep((s) => s + 1)
-      } else if (e.key === 'ArrowLeft' && isOnboardingOpen && currentStep > 0) {
-        setCurrentStep((s) => s - 1)
-      }
+    const onKey = (e: KeyboardEvent): void => {
+      if (!isOnboardingOpen) return
+      if (e.key === 'ArrowRight' && step < 2) setStep((s) => s + 1)
+      if (e.key === 'ArrowLeft' && step > 0) setStep((s) => s - 1)
     }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOnboardingOpen, currentStep, setIsOnboardingOpen])
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isOnboardingOpen, step])
 
   if (!isOnboardingOpen) return null
 
-  const handleFinish = (): void => {
-    setIsOnboardingOpen(false)
-  }
+  const close = (): void => setIsOnboardingOpen(false)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 min-[640px]:p-8 select-none font-sans">
-      {/* Dark Ambient Backdrop */}
+    <div
+      className={cn(
+        'fixed inset-0 z-50 flex items-center justify-center p-4 min-[640px]:p-8 select-none',
+        className
+      )}
+    >
+      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.25 }}
-        className="fixed inset-0 bg-black/80 backdrop-blur-2xl"
-        onClick={handleFinish}
+        transition={{ duration: 0.15 }}
+        className="fixed inset-0 bg-black/65"
+        onClick={close}
       />
 
-      {/* Editorial Modal Surface */}
+      {/* Modal surface */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.97, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.97, y: 10 }}
-        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        className={cn(
-          'relative z-50 w-full max-w-[680px] max-h-[90vh] flex flex-col rounded-3xl border border-white/[0.1] bg-[#14100e] shadow-[0_32px_80px_rgba(0,0,0,0.85)] overflow-hidden',
-          className
-        )}
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.98 }}
+        transition={{ duration: 0.18, ease: 'easeOut' }}
+        className="relative z-50 w-full max-w-[720px] max-h-[85vh] flex flex-col rounded-[24px] bg-[#1a1715] border border-white/[0.08] shadow-[0_30px_80px_rgba(0,0,0,0.7)] overflow-hidden"
       >
-        {/* Top Photographic Header */}
-        <div className="relative h-44 min-[640px]:h-48 w-full overflow-hidden shrink-0 bg-[#120d0b]">
+        {/* ── Hero photograph ─────────────────────────────── */}
+        <div className="relative h-44 w-full overflow-hidden shrink-0 bg-[#0d0b09]">
           <img
             src={kissaHeroImg}
-            alt="Japanese Jazz Kissa Listening Bar"
-            className="w-full h-full object-cover object-center brightness-[0.85] contrast-[1.05]"
+            alt="Kissa listening bar"
+            className="w-full h-full object-cover object-center"
+            style={{ filter: 'brightness(0.8) contrast(1.05) saturate(0.9)' }}
           />
+          {/* Gradient into modal body (#1a1715) */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1a1715] via-[#1a1715]/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1715]/60 via-transparent to-[#1a1715]/40" />
 
-          {/* Smooth Gradient Fades */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#14100e] via-[#14100e]/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#14100e]/70 via-transparent to-[#14100e]/50" />
-
-          {/* Close Button */}
+          {/* Close */}
           <button
             type="button"
-            onClick={handleFinish}
-            className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full flex items-center justify-center text-[#d6c9bb] bg-black/40 hover:bg-black/70 hover:text-white border border-white/[0.1] backdrop-blur-md transition-all cursor-pointer"
-            title="Close Guide"
+            onClick={close}
+            className="absolute top-5 right-5 z-20 w-8 h-8 rounded-full flex items-center justify-center border border-white/[0.08] bg-black/40 text-[#b7a99b] hover:text-white hover:bg-black/75 backdrop-blur-md transition-all cursor-pointer"
+            aria-label="Close guide"
           >
             <X className="w-4 h-4" />
           </button>
 
-          {/* Clean Header Title with Cormorant Garamond */}
-          <div className="absolute bottom-3.5 left-7 right-7 z-10">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-mono text-[9.5px] uppercase tracking-[0.25em] text-[#d7a76c] font-medium">
-                喫茶 • JAZZ KISSA
-              </span>
-            </div>
-            <h1 className="font-serif text-3xl min-[640px]:text-4xl text-[#f5efe6] font-normal tracking-wide leading-tight">
+          {/* Wordmark */}
+          <div className="absolute bottom-5 left-8 z-10">
+            <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#d7a76c] mb-1.5 opacity-90">
+              喫茶 · Jazz Kissa
+            </p>
+            <h1 className="font-serif text-[2.2rem] text-[#f5efe6] font-normal tracking-wide leading-none">
               Welcome to Kissa
             </h1>
           </div>
         </div>
 
-        {/* Minimal Stepper Bar */}
-        <div className="flex items-center justify-between px-7 py-2.5 border-y border-white/[0.06] bg-[#191412] shrink-0">
-          <div className="flex items-center gap-2">
-            {steps.map((step, idx) => {
-              const isActive = currentStep === idx
-              const isPast = currentStep > idx
-              return (
-                <button
-                  key={step.id}
-                  type="button"
-                  onClick={() => setCurrentStep(idx)}
+        {/* ── Step bar ─────────────────────────────────────── */}
+        <div className="flex items-center justify-between px-8 py-3.5 shrink-0 border-b border-white/[0.04] bg-white/[0.01]">
+          <div className="flex items-center gap-6">
+            {STEPS.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setStep(i)}
+                className="flex items-center gap-2 cursor-pointer group"
+              >
+                <motion.div
+                  className="rounded-full"
+                  animate={{
+                    width: step === i ? 16 : 4,
+                    height: 4,
+                    backgroundColor: step === i ? '#d7a76c' : step > i ? '#6b5040' : '#3a322d'
+                  }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+                <span
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs transition-all cursor-pointer',
-                    isActive
-                      ? 'bg-[#d7a76c]/15 text-[#f5efe6] font-medium border border-[#d7a76c]/40'
-                      : isPast
-                        ? 'text-[#d7a76c] hover:bg-white/[0.03]'
-                        : 'text-[#7e7268] hover:text-[#b7a99b]'
+                    'font-mono text-[9.5px] uppercase tracking-[0.15em] transition-colors',
+                    step === i ? 'text-[#d7a76c]' : 'text-[#5a4940] group-hover:text-[#887b70]'
                   )}
                 >
-                  <span className="font-mono text-[10px] opacity-75">{step.number}</span>
-                  <span className="text-[11.5px] font-sans">{step.title}</span>
-                </button>
-              )
-            })}
+                  {s.label}
+                </span>
+              </button>
+            ))}
           </div>
-
-          <span className="font-mono text-[11px] text-[#887b70]">
-            {currentStep + 1} / 3
-          </span>
         </div>
 
-        {/* Main Content Area — Airy & Spacious */}
-        <div className="flex-1 overflow-y-auto no-scrollbar p-7 space-y-6">
-          {/* ═════════ STEP 1: THE RITUAL ═════════ */}
-          {currentStep === 0 && (
-            <motion.div
-              key="step-0"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
-            >
-              <div className="space-y-1.5">
-                <h3 className="font-serif text-2xl text-[#f5efe6] font-normal tracking-wide">
-                  How sound enters the room
-                </h3>
-                <p className="text-xs min-[640px]:text-sm text-[#b7a99b] leading-relaxed font-light">
-                  Kissa listens to your favorite desktop music player and creates an analog vinyl sanctuary on your screen.
-                </p>
-              </div>
-
-              {/* 3 Clean Minimal Cards */}
-              <div className="grid grid-cols-1 min-[640px]:grid-cols-3 gap-3.5 pt-1">
-                <div className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[9.5px] text-[#d7a76c] font-medium tracking-wider">01 • PLAY</span>
-                    <Volume2 className="w-3.5 h-3.5 text-[#887b70]" />
-                  </div>
-                  <h4 className="text-xs font-medium text-[#f5efe6] font-sans">Play Any Music</h4>
-                  <p className="text-[11.5px] text-[#887b70] leading-relaxed font-light">
-                    Start a song in Spotify, Apple Music, Tidal, or YouTube on Windows.
+        {/* ── Step content ─────────────────────────────────── */}
+        <div className="flex-1 overflow-x-hidden overflow-y-auto no-scrollbar relative">
+          <AnimatePresence mode="wait" initial={false}>
+            {step === 0 && (
+              <motion.div
+                key="step-0"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="px-8 py-10 flex flex-col h-full justify-center"
+              >
+                <div className="max-w-lg mb-8">
+                  <h2 className="font-serif text-[1.7rem] text-[#f5efe6] font-normal leading-tight mb-2">
+                    How sound enters the room
+                  </h2>
+                  <p className="text-[13.5px] text-[#9c8e82] leading-relaxed font-light mb-10">
+                    Kissa translates your desktop media into a living vinyl sanctuary.
+                    No setup required — just play music.
                   </p>
-                </div>
 
-                <div className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[9.5px] text-[#d7a76c] font-medium tracking-wider">02 • SYNC</span>
-                    <Disc className="w-3.5 h-3.5 text-[#d7a76c]" />
-                  </div>
-                  <h4 className="text-xs font-medium text-[#f5efe6] font-sans">Platter Spins Live</h4>
-                  <p className="text-[11.5px] text-[#887b70] leading-relaxed font-light">
-                    Kissa auto-detects playback, prints cover art on vinyl, and drops the needle.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono text-[9.5px] text-[#d7a76c] font-medium tracking-wider">03 • UNWIND</span>
-                    <Quote className="w-3.5 h-3.5 text-[#887b70]" />
-                  </div>
-                  <h4 className="text-xs font-medium text-[#f5efe6] font-sans">Synced Lyrics & Mood</h4>
-                  <p className="text-[11.5px] text-[#887b70] leading-relaxed font-light">
-                    Sit back with warm ambient lighting and real-time karaoke lyrics.
-                  </p>
-                </div>
-              </div>
-
-              {/* Clean minimal footer tip */}
-              <p className="text-[11.5px] text-[#887b70] pt-1 leading-relaxed font-light">
-                <strong className="text-[#d7a76c] font-medium font-sans">Offline Demo:</strong> When no music is playing, Kissa plays an offline record (<em>Self Control — Frank Ocean</em>) so you can test the deck anytime.
-              </p>
-            </motion.div>
-          )}
-
-          {/* ═════════ STEP 2: THE DECK ═════════ */}
-          {currentStep === 1 && (
-            <motion.div
-              key="step-1"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
-            >
-              <div className="space-y-1.5">
-                <h3 className="font-serif text-2xl text-[#f5efe6] font-normal tracking-wide">
-                  Tactile deck mechanics
-                </h3>
-                <p className="text-xs min-[640px]:text-sm text-[#b7a99b] leading-relaxed font-light">
-                  Every interaction is engineered with physical weight, needle acoustics, and analog inertia.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 min-[640px]:grid-cols-3 gap-3.5 pt-1">
-                <div className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] space-y-2">
-                  <span className="font-mono text-[9.5px] text-[#d7a76c] font-medium tracking-wider">TONEARM</span>
-                  <h4 className="text-xs font-medium text-[#f5efe6] font-sans">Interactive Needle Drops</h4>
-                  <p className="text-[11.5px] text-[#887b70] leading-relaxed font-light">
-                    Click anywhere on the platter to drop the tonearm and seek track time with vinyl clicks.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] space-y-2">
-                  <span className="font-mono text-[9.5px] text-[#d7a76c] font-medium tracking-wider">MOTOR</span>
-                  <h4 className="text-xs font-medium text-[#f5efe6] font-sans">33⅓ & 45 RPM Speed Dial</h4>
-                  <p className="text-[11.5px] text-[#887b70] leading-relaxed font-light">
-                    Switch between LP 33⅓ and 45 RPM speeds on the plinth with realistic motor inertia.
-                  </p>
-                </div>
-
-                <div className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] space-y-2">
-                  <span className="font-mono text-[9.5px] text-[#d7a76c] font-medium tracking-wider">LYRICS</span>
-                  <h4 className="text-xs font-medium text-[#f5efe6] font-sans">Apple Music Synced Lyrics</h4>
-                  <p className="text-[11.5px] text-[#887b70] leading-relaxed font-light">
-                    Click the <strong>Quote (")</strong> icon in the sidebar for full-screen lyrics with optical depth blur.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ═════════ STEP 3: ATMOSPHERES ═════════ */}
-          {currentStep === 2 && (
-            <motion.div
-              key="step-2"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-5"
-            >
-              <div className="space-y-1.5">
-                <h3 className="font-serif text-2xl text-[#f5efe6] font-normal tracking-wide">
-                  Select your listening environment
-                </h3>
-                <p className="text-xs min-[640px]:text-sm text-[#b7a99b] font-light">
-                  Choose a room atmosphere to suit your mood. Click any tile to set it:
-                </p>
-              </div>
-
-              {/* Clean Atmosphere Grid */}
-              <div className="grid grid-cols-2 min-[640px]:grid-cols-4 gap-2.5 pt-1">
-                {LISTENING_ENVIRONMENTS.map((theme) => {
-                  const isSelected = currentTheme === theme.id
-                  return (
-                    <button
-                      key={theme.id}
-                      type="button"
-                      onClick={() => setTheme(theme.id as AppTheme)}
-                      className={cn(
-                        'group relative flex flex-col rounded-2xl overflow-hidden border p-2 text-left transition-all cursor-pointer active:scale-95',
-                        isSelected
-                          ? 'border-[#d7a76c] bg-[#d7a76c]/15 shadow-[0_0_16px_rgba(215,167,108,0.25)]'
-                          : 'border-white/[0.07] bg-white/[0.01] hover:border-white/[0.18] hover:bg-white/[0.03]'
-                      )}
-                    >
-                      <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-black/40">
-                        <img
-                          src={theme.image}
-                          alt={theme.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        {isSelected && (
-                          <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-[#d7a76c] text-[#14100e] flex items-center justify-center shadow-md">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          </div>
-                        )}
+                  <div className="space-y-6">
+                    {FEATURES.map(({ icon: Icon, title, body }) => (
+                      <div key={title} className="flex gap-5">
+                        <div className="mt-0.5 shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white/[0.03] border border-white/[0.05]">
+                          <Icon className="w-4 h-4 text-[#887b70]" />
+                        </div>
+                        <div>
+                          <h4 className="text-[13.5px] font-medium text-[#f5efe6]">{title}</h4>
+                          <p className="mt-1 text-[12.5px] text-[#887b70] leading-relaxed font-light">{body}</p>
+                        </div>
                       </div>
+                    ))}
+                  </div>
 
-                      <div className="mt-2">
-                        <span className="font-mono text-[9px] text-[#887b70] uppercase tracking-wider">
-                          {theme.number}
-                        </span>
-                        <h4 className="text-[11.5px] font-medium text-[#f5efe6] font-sans line-clamp-1">
-                          {theme.name}
-                        </h4>
+                  {/* Subtle Callout */}
+                  <div className="mt-10 flex items-center gap-3 text-[12px] text-[#887b70]">
+                    <Play className="w-3.5 h-3.5 text-[#d7a76c] shrink-0" />
+                    <p>
+                      <span className="text-[#d7a76c] font-medium">Offline Demo:</span> If no music is playing, Kissa queues an offline track so you can explore.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {step === 1 && (
+              <motion.div
+                key="step-1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="px-8 py-10 flex flex-col h-full justify-center"
+              >
+                <div className="max-w-lg mb-8">
+                  <h2 className="font-serif text-[1.7rem] text-[#f5efe6] font-normal leading-tight mb-2">
+                    Tactile Deck Mechanics
+                  </h2>
+                  <p className="text-[13.5px] text-[#9c8e82] leading-relaxed font-light mb-10">
+                    Every interaction carries physical weight, needle acoustics, and analog inertia.
+                  </p>
+
+                  <div className="space-y-6">
+                    {DECK_FEATURES.map(({ title, body }) => (
+                      <div key={title} className="flex gap-5">
+                        <div className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-[#d7a76c]/40" />
+                        <div>
+                          <h4 className="text-[13.5px] font-medium text-[#f5efe6]">{title}</h4>
+                          <p className="mt-1.5 text-[12.5px] text-[#887b70] leading-relaxed font-light">{body}</p>
+                        </div>
                       </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </motion.div>
-          )}
+                    ))}
+                  </div>
+
+                  <div className="mt-10 flex items-center gap-3 text-[12px] text-[#887b70]">
+                    <Settings2 className="w-3.5 h-3.5 text-[#d7a76c] shrink-0" />
+                    <p>
+                      <span className="text-[#d7a76c] font-medium">Pro tip:</span> Press <kbd className="font-mono text-[#b7a99b] bg-white/[0.05] px-1 rounded">?</kbd> at any time to view keyboard shortcuts.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {step === 2 && (
+              <motion.div
+                key="step-2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="px-8 py-10"
+              >
+                <h2 className="font-serif text-[1.7rem] text-[#f5efe6] font-normal leading-tight mb-2">
+                  Choose your atmosphere
+                </h2>
+                <p className="text-[13.5px] text-[#9c8e82] font-light mb-8">
+                  Eight distinct listening environments — each with its own lighting, palette, and mood.
+                </p>
+
+                <div className="grid grid-cols-2 min-[500px]:grid-cols-4 gap-4">
+                  {LISTENING_ENVIRONMENTS.map((env) => (
+                    <ThemeCard
+                      key={env.id}
+                      theme={env}
+                      isSelected={currentTheme === env.id}
+                      onSelect={() => setTheme(env.id as AppTheme)}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Clean, Airy Footer */}
-        <div className="flex items-center justify-between px-7 py-4 border-t border-white/[0.06] bg-[#181311] shrink-0">
+        {/* ── Footer ────────────────────────────────────────── */}
+        <div className="flex items-center justify-between px-8 py-6 shrink-0 border-t border-white/[0.04]">
           <div>
-            {currentStep > 0 ? (
+            {step > 0 && (
               <button
                 type="button"
-                onClick={() => setCurrentStep((s) => s - 1)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-[#b7a99b] hover:text-[#f5efe6] transition-all cursor-pointer font-sans"
+                onClick={() => setStep((s) => s - 1)}
+                className="flex items-center gap-1.5 text-[13px] text-[#887b70] hover:text-[#f5efe6] transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                Previous
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleFinish}
-                className="px-3 py-1.5 rounded-xl text-xs text-[#7e7268] hover:text-[#b7a99b] transition-all cursor-pointer font-sans"
-              >
-                Skip Guide
+                Back
               </button>
             )}
           </div>
 
           <div>
-            {currentStep < 2 ? (
+            {step < 2 ? (
               <button
                 type="button"
-                onClick={() => setCurrentStep((s) => s + 1)}
-                className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-semibold text-[#14100e] bg-[#d7a76c] hover:bg-[#e4b982] shadow-[0_2px_12px_rgba(215,167,108,0.25)] transition-all cursor-pointer active:scale-95 font-sans"
+                onClick={() => setStep((s) => s + 1)}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-medium text-[#f5efe6] bg-white/[0.05] border border-white/[0.05] hover:bg-white/[0.1] transition-all cursor-pointer"
               >
-                Continue
+                Next
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             ) : (
               <button
                 type="button"
-                onClick={handleFinish}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-semibold text-[#14100e] bg-[#d7a76c] hover:bg-[#e4b982] shadow-[0_4px_20px_rgba(215,167,108,0.35)] transition-all cursor-pointer active:scale-95 font-sans"
+                onClick={close}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-medium text-[#1a1410] bg-[#d7a76c] hover:bg-[#dfb47e] transition-all cursor-pointer"
               >
-                <span>Enter Kissa</span>
+                Start Listening
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
@@ -355,3 +320,4 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
     </div>
   )
 }
+

@@ -36,11 +36,15 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
     const deltaSeconds = delta / 1000
 
     if (playing) {
-      // Smooth spin up — realistic acceleration
-      speedRef.current = Math.min(TARGET_SPEED, speedRef.current + 320 * deltaSeconds)
+      // Immediate tactile spin up/down to target RPM
+      if (speedRef.current < TARGET_SPEED) {
+        speedRef.current = Math.min(TARGET_SPEED, speedRef.current + 650 * deltaSeconds)
+      } else if (speedRef.current > TARGET_SPEED) {
+        speedRef.current = Math.max(TARGET_SPEED, speedRef.current - 350 * deltaSeconds)
+      }
     } else {
-      // Smooth spin down with friction — realistic deceleration
-      speedRef.current = Math.max(0, speedRef.current - 180 * deltaSeconds)
+      // Crisp smooth spin down with friction
+      speedRef.current = Math.max(0, speedRef.current - 450 * deltaSeconds)
     }
 
     if (speedRef.current > 0) {

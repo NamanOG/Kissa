@@ -1,7 +1,7 @@
 import React from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
-import { Quote, Settings, HelpCircle } from 'lucide-react'
+import { Quote, Settings, HelpCircle, Keyboard } from 'lucide-react'
 import phonoLogo from '@renderer/media/phono_logo.png'
 
 export interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -18,6 +18,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const toggleSettings = usePlayerStore((s) => s.toggleSettings)
     const isOnboardingOpen = usePlayerStore((s) => s.isOnboardingOpen)
     const setIsOnboardingOpen = usePlayerStore((s) => s.setIsOnboardingOpen)
+    const isKeyboardHelpOpen = usePlayerStore((s) => s.isKeyboardHelpOpen)
+    const toggleKeyboardHelp = usePlayerStore((s) => s.toggleKeyboardHelp)
 
     return (
       <aside
@@ -94,6 +96,22 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             title="Open Welcome Guide & Instructions"
           >
             <HelpCircle className="w-5 h-5" strokeWidth={1.75} />
+          </button>
+
+          {/* Keyboard Shortcuts Button */}
+          <button
+            aria-label="Keyboard Shortcuts"
+            type="button"
+            onClick={toggleKeyboardHelp}
+            className={cn(
+              'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.96]',
+              isKeyboardHelpOpen
+                ? 'bg-[#d7a76c]/20 text-[#d7a76c] border border-[#d7a76c]/40 shadow-[0_0_12px_rgba(215,167,108,0.25)]'
+                : 'text-[#a99b90] hover:text-[#f5efe6] hover:bg-white/[0.06]'
+            )}
+            title="Keyboard Shortcuts"
+          >
+            <Keyboard className="w-5 h-5" strokeWidth={1.75} />
           </button>
 
           {/* Settings Button */}

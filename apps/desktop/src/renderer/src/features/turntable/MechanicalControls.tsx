@@ -1,177 +1,437 @@
-import { memo } from 'react'
+import React, { memo, useCallback, useState } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 
+// ─── Acoustic Micro-Impulse Mechanical Sound Synthesis ────────────
+let sharedAudioCtx: AudioContext | null = null
+
+function playMechanicalSound(type: 'switch' | 'button' | 'radio'): void {
+  try {
+    if (!sharedAudioCtx) {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      if (AudioCtx) sharedAudioCtx = new AudioCtx()
+    }
+    if (sharedAudioCtx?.state === 'suspended') {
+      void sharedAudioCtx.resume()
+    }
+    if (!sharedAudioCtx) return
+
+    const ctx = sharedAudioCtx
+    const now = ctx.currentTime
+
+    if (type === 'switch') {
+      // Power switch: short tactile thunk
+      const bufferSize = Math.floor(ctx.sampleRate * 0.015)
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+      const data = buffer.getChannelData(0)
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3))
+      }
+      const noise = ctx.createBufferSource()
+      noise.buffer = buffer
+
+      const filter = ctx.createBiquadFilter()
+      const noiseGain = ctx.createGain()
+      filter.type = 'bandpass'
+      filter.frequency.setValueAtTime(750, now)
+      filter.Q.setValueAtTime(1.5, now)
+      noiseGain.gain.setValueAtTime(0.22, now)
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.02)
+
+      const thud = ctx.createOscillator()
+      const thudGain = ctx.createGain()
+      thud.type = 'sine'
+      thud.frequency.setValueAtTime(95, now)
+      thud.frequency.exponentialRampToValueAtTime(30, now + 0.03)
+      thudGain.gain.setValueAtTime(0.18, now)
+      thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03)
+      thud.connect(thudGain)
+      thudGain.connect(ctx.destination)
+      thud.start(now)
+      thud.stop(now + 0.035)
+
+      noise.connect(filter)
+      filter.connect(noiseGain)
+      noiseGain.connect(ctx.destination)
+      noise.start(now)
+      noise.stop(now + 0.022)
+    } else if (type === 'radio') {
+      // Speed 33/45: crisp, light tactile detent clack (kept strictly unchanged)
+      const bufferSize = Math.floor(ctx.sampleRate * 0.015)
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+      const data = buffer.getChannelData(0)
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3))
+      }
+      const noise = ctx.createBufferSource()
+      noise.buffer = buffer
+
+      const filter = ctx.createBiquadFilter()
+      const noiseGain = ctx.createGain()
+      filter.type = 'bandpass'
+      filter.frequency.setValueAtTime(2200, now)
+      filter.Q.setValueAtTime(2.2, now)
+      noiseGain.gain.setValueAtTime(0.16, now)
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.012)
+
+      noise.connect(filter)
+      filter.connect(noiseGain)
+      noiseGain.connect(ctx.destination)
+      noise.start(now)
+      noise.stop(now + 0.022)
+    } else if (type === 'button') {
+      // Start/Stop: Physical push-button mechanical contact (pure unpitched physical acoustics)
+      // Layer 1: Sharp physical contact snap transient (5ms high-frequency friction burst)
+      const snapLen = Math.floor(ctx.sampleRate * 0.005)
+      const snapBuf = ctx.createBuffer(1, snapLen, ctx.sampleRate)
+      const snapData = snapBuf.getChannelData(0)
+      for (let i = 0; i < snapLen; i++) {
+        snapData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (snapLen * 0.2))
+      }
+      const snapSource = ctx.createBufferSource()
+      snapSource.buffer = snapBuf
+
+      const snapFilter = ctx.createBiquadFilter()
+      snapFilter.type = 'highpass'
+      snapFilter.frequency.setValueAtTime(2800, now)
+
+      const snapGain = ctx.createGain()
+      snapGain.gain.setValueAtTime(0.24, now)
+      snapGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.006)
+
+      snapSource.connect(snapFilter)
+      snapFilter.connect(snapGain)
+      snapGain.connect(ctx.destination)
+      snapSource.start(now)
+      snapSource.stop(now + 0.007)
+
+      // Layer 2: Housing body impulse (shaped unpitched noise, 18ms, broad non-pitched resonance)
+      const bodyLen = Math.floor(ctx.sampleRate * 0.02)
+      const bodyBuf = ctx.createBuffer(1, bodyLen, ctx.sampleRate)
+      const bodyData = bodyBuf.getChannelData(0)
+      for (let i = 0; i < bodyLen; i++) {
+        bodyData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bodyLen * 0.28))
+      }
+      const bodySource = ctx.createBufferSource()
+      bodySource.buffer = bodyBuf
+
+      const bodyFilter = ctx.createBiquadFilter()
+      bodyFilter.type = 'bandpass'
+      bodyFilter.frequency.setValueAtTime(950, now)
+      bodyFilter.Q.setValueAtTime(0.9, now) // Wide Q = completely unpitched physical body
+
+      const bodyGain = ctx.createGain()
+      bodyGain.gain.setValueAtTime(0.16, now)
+      bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.018)
+
+      bodySource.connect(bodyFilter)
+      bodyFilter.connect(bodyGain)
+      bodyGain.connect(ctx.destination)
+      bodySource.start(now)
+      bodySource.stop(now + 0.022)
+
+      // Layer 3: Micro mechanical latch/settle tick (delayed 3.5ms, very short 3ms tick)
+      const tickLen = Math.floor(ctx.sampleRate * 0.004)
+      const tickBuf = ctx.createBuffer(1, tickLen, ctx.sampleRate)
+      const tickData = tickBuf.getChannelData(0)
+      for (let i = 0; i < tickLen; i++) {
+        tickData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (tickLen * 0.25))
+      }
+      const tickSource = ctx.createBufferSource()
+      tickSource.buffer = tickBuf
+
+      const tickFilter = ctx.createBiquadFilter()
+      tickFilter.type = 'bandpass'
+      tickFilter.frequency.setValueAtTime(4500, now)
+      tickFilter.Q.setValueAtTime(1.5, now)
+
+      const tickGain = ctx.createGain()
+      tickGain.gain.setValueAtTime(0.08, now + 0.0035)
+      tickGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.0075)
+
+      tickSource.connect(tickFilter)
+      tickFilter.connect(tickGain)
+      tickGain.connect(ctx.destination)
+      tickSource.start(now + 0.0035)
+      tickSource.stop(now + 0.008)
+    }
+  } catch {
+    // Ignore audio if unsupported
+  }
+}
+
+// ─── 1. Power Control (Flush Rocker Switch) ───────────────────────────────────
+export const PowerControl = memo(({ active, onClick }: { active: boolean; onClick: () => void }) => {
+  const [isPressed, setIsPressed] = useState(false)
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return
+    e.stopPropagation()
+    setIsPressed(true)
+    playMechanicalSound('switch')
+    onClick()
+  }
+
+  const handlePointerUp = () => setIsPressed(false)
+  const handlePointerLeave = () => setIsPressed(false)
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      setIsPressed(true)
+      playMechanicalSound('switch')
+      onClick()
+    }
+  }
+
+  const handleKeyUp = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') setIsPressed(false)
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-1 select-none pointer-events-auto">
+      <button
+        type="button"
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+        onKeyDown={handleKeyDown}
+        onKeyUp={handleKeyUp}
+        aria-label="Power Toggle"
+        className="relative w-5 h-5 rounded-full p-[1.5px] bg-[#110d0a] shadow-[inset_0_1px_2px_rgba(0,0,0,0.9),0_0.5px_0.5px_rgba(255,255,255,0.05)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d7a76c] cursor-pointer"
+      >
+        <div
+          className={cn(
+            'w-full h-full rounded-full border border-black/85 flex items-center justify-center transition-all duration-75',
+            'bg-gradient-to-b from-[#2b221d] via-[#1e1713] to-[#120d0a]',
+            isPressed
+              ? 'translate-y-[1px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.9)]'
+              : active
+                ? 'translate-y-[0.5px] shadow-[0_1px_2px_rgba(0,0,0,0.8),inset_0_0.5px_0.5px_rgba(255,255,255,0.06)]'
+                : 'shadow-[0_1.5px_3px_rgba(0,0,0,0.85),inset_0_0.6px_0.6px_rgba(255,255,255,0.08)]'
+          )}
+        >
+          {/* Micro-Pinhole LED Status Indicator (No glow halo) */}
+          <div
+            className="w-1.5 h-1.5 rounded-full border border-black/90 transition-colors duration-150"
+            style={{
+              backgroundColor: active ? '#22c55e' : '#14100e'
+            }}
+          />
+        </div>
+      </button>
+
+      {/* Silkscreened hardware marking on plinth surface */}
+      <span className="font-mono text-[6.5px] font-bold tracking-[0.2em] text-[#635548] uppercase pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]">
+        Power
+      </span>
+    </div>
+  )
+})
+PowerControl.displayName = 'PowerControl'
+
+// ─── 2. Speed Selector (33 / 45 Dual Interlocking Push Buttons) ───────────────
+export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick: () => void }) => {
+  const [pressedBtn, setPressedBtn] = useState<'33' | '45' | null>(null)
+
+  const handlePointerDown = (targetRpm: '33' | '45') => (e: React.PointerEvent) => {
+    if (e.button !== 0) return
+    e.stopPropagation()
+    setPressedBtn(targetRpm)
+
+    if (rpm !== targetRpm) {
+      playMechanicalSound('radio')
+      onClick()
+    }
+  }
+
+  const handlePointerUp = () => setPressedBtn(null)
+  const handlePointerLeave = () => setPressedBtn(null)
+
+  return (
+    <div className="flex flex-col items-center gap-1 select-none pointer-events-auto">
+      <div className="flex gap-[2px] p-[1.5px] rounded-[2.5px] bg-[#110d0a] shadow-[inset_0_1px_2px_rgba(0,0,0,0.9),0_0.5px_0.5px_rgba(255,255,255,0.05)]">
+        {/* 33 Button */}
+        <button
+          type="button"
+          onPointerDown={handlePointerDown('33')}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onPointerLeave={handlePointerLeave}
+          aria-label="33 RPM"
+          className="relative w-5 h-4.5 rounded-[1.5px] border border-black/85 focus:outline-none flex items-center justify-center cursor-pointer transition-all duration-75 bg-gradient-to-b from-[#281f1a] to-[#140e0b]"
+          style={{
+            transform: pressedBtn === '33' ? 'translateY(1px)' : rpm === '33' ? 'translateY(0.5px)' : 'translateY(0)',
+            boxShadow: pressedBtn === '33' || rpm === '33'
+              ? 'inset 0 1px 2px rgba(0,0,0,0.85)'
+              : '0 1px 2.5px rgba(0,0,0,0.85), inset 0 0.5px 0.5px rgba(255,255,255,0.05)'
+          }}
+        >
+          <span
+            className={cn(
+              'font-mono text-[7px] font-bold tracking-wider transition-colors duration-150 pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]',
+              rpm === '33' ? 'text-[#d7a76c]' : 'text-[#5a4d42]'
+            )}
+          >
+            33
+          </span>
+        </button>
+
+        {/* 45 Button */}
+        <button
+          type="button"
+          onPointerDown={handlePointerDown('45')}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onPointerLeave={handlePointerLeave}
+          aria-label="45 RPM"
+          className="relative w-5 h-4.5 rounded-[1.5px] border border-black/85 focus:outline-none flex items-center justify-center cursor-pointer transition-all duration-75 bg-gradient-to-b from-[#281f1a] to-[#140e0b]"
+          style={{
+            transform: pressedBtn === '45' ? 'translateY(1px)' : rpm === '45' ? 'translateY(0.5px)' : 'translateY(0)',
+            boxShadow: pressedBtn === '45' || rpm === '45'
+              ? 'inset 0 1px 2px rgba(0,0,0,0.85)'
+              : '0 1px 2.5px rgba(0,0,0,0.85), inset 0 0.5px 0.5px rgba(255,255,255,0.05)'
+          }}
+        >
+          <span
+            className={cn(
+              'font-mono text-[7px] font-bold tracking-wider transition-colors duration-150 pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]',
+              rpm === '45' ? 'text-[#d7a76c]' : 'text-[#5a4d42]'
+            )}
+          >
+            45
+          </span>
+        </button>
+      </div>
+
+      {/* Silkscreened hardware marking on plinth surface */}
+      <span className="font-mono text-[6.5px] font-bold tracking-[0.2em] text-[#635548] uppercase pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]">
+        Speed
+      </span>
+    </div>
+  )
+})
+SpeedControl.displayName = 'SpeedControl'
+
+// ─── 3. Start / Stop Motor Control (Refined Tactile Push Button) ─────────────
+export const StartStopControl = memo(({ isPlaying, onClick }: { isPlaying: boolean; onClick: () => void }) => {
+  const [isPressed, setIsPressed] = useState(false)
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return
+    e.stopPropagation()
+    setIsPressed(true)
+    playMechanicalSound('button')
+    onClick()
+  }
+
+  const handlePointerUp = () => setIsPressed(false)
+  const handlePointerLeave = () => setIsPressed(false)
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      setIsPressed(true)
+      playMechanicalSound('button')
+      onClick()
+    }
+  }
+
+  const handleKeyUp = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') setIsPressed(false)
+  }
+
+  return (
+    <div className="flex flex-col items-center select-none pointer-events-auto">
+      {/* Refined recessed chassis well */}
+      <div className="p-[1.5px] rounded-[2.5px] bg-[#110d0a] shadow-[inset_0_1px_2px_rgba(0,0,0,0.9),0_0.5px_0.5px_rgba(255,255,255,0.05)]">
+        <button
+          type="button"
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onPointerLeave={handlePointerLeave}
+          onKeyDown={handleKeyDown}
+          onKeyUp={handleKeyUp}
+          aria-label={isPlaying ? 'Stop Motor' : 'Start Motor'}
+          className="relative w-11 h-5.5 rounded-[1.5px] border border-black/85 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d7a76c] cursor-pointer flex items-center justify-center transition-all duration-75 bg-gradient-to-b from-[#281f1a] to-[#140e0b]"
+          style={{
+            transform: isPressed ? 'translateY(1px)' : 'translateY(0)',
+            boxShadow: isPressed
+              ? 'inset 0 1px 2px rgba(0,0,0,0.9)'
+              : '0 1.2px 2.5px rgba(0,0,0,0.85), inset 0 0.5px 0.5px rgba(255,255,255,0.06)'
+          }}
+        >
+          {/* Dynamic hardware state label: START when stopped, STOP when playing */}
+          <span className="font-mono text-[6.5px] font-bold tracking-[0.18em] text-[#8e8175] uppercase pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]">
+            {isPlaying ? 'STOP' : 'START'}
+          </span>
+        </button>
+      </div>
+    </div>
+  )
+})
+StartStopControl.displayName = 'StartStopControl'
+
+// ─── Main Control Cluster (Classic Turntable Hardware Architecture) ───────────
+export interface MechanicalControlsProps {
+  className?: string
+  style?: React.CSSProperties
+}
+
 /**
- * Tactile On-Plinth Mechanical Controls.
- * Positions the 33/45 RPM rotary dial and recessed POWER / PAUSE buttons
- * comfortably on the top deck with rich tactile interactivity and LED indicators.
+ * Hi-Fi Turntable Physical Controls.
+ * Authentic hardware hierarchy:
+ * - Upper-Left Anchor: Power Switch (top: 7%, left: 4.5%)
+ * - Lower-Left Upper: 33 / 45 Speed Selector (bottom: 16%, left: 4.5%)
+ * - Lower-Left Bottom: Start / Stop Motor Switch (bottom: 9.5%, left: 4.5%)
  */
-export const MechanicalControls = memo(({ className }: { className?: string }): React.JSX.Element => {
+export const MechanicalControls = memo(({ className, style }: MechanicalControlsProps): React.JSX.Element => {
   const isPlaying = usePlayerStore((state) => state.isPlaying)
   const isPowered = usePlayerStore((state) => state.isPowered)
   const rpm = usePlayerStore((state) => state.rpm)
+
   const togglePlayPause = usePlayerStore((state) => state.togglePlayPause)
   const togglePower = usePlayerStore((state) => state.togglePower)
   const toggleRpm = usePlayerStore((state) => state.toggleRpm)
 
-  const handlePowerClick = (e: React.MouseEvent): void => {
-    e.stopPropagation()
+  const handlePower = useCallback(() => {
     togglePower()
     if (usePlayerStore.getState().currentTrack?.sourceAppId && window.electron?.mediaPlayPause && isPlaying) {
+      window.__kissaMediaCommandCooldown?.()
       void window.electron.mediaPlayPause()
     }
-  }
+  }, [togglePower, isPlaying])
 
-  const handlePlayPauseClick = (e: React.MouseEvent): void => {
-    e.stopPropagation()
+  const handlePlayPause = useCallback(() => {
     togglePlayPause()
-    if (usePlayerStore.getState().currentTrack?.sourceAppId && window.electron?.mediaPlayPause) {
+    if (usePlayerStore.getState().isPowered && usePlayerStore.getState().currentTrack?.sourceAppId && window.electron?.mediaPlayPause) {
+      window.__kissaMediaCommandCooldown?.()
       void window.electron.mediaPlayPause()
     }
-  }
-
-  const handleRpmClick = (e: React.MouseEvent): void => {
-    e.stopPropagation()
-    toggleRpm()
-  }
+  }, [togglePlayPause])
 
   return (
-    <div className={cn('absolute inset-0 pointer-events-none select-none z-40', className)}>
-
-      {/* ══ 1. Speed Selector Rotary Knob (Bottom-Left) ══ */}
-      <div
-        className="absolute pointer-events-auto flex flex-col items-center gap-1.5"
-        style={{ left: '7%', bottom: '9%' }}
-      >
-        {/* Machined Dial Knob */}
-        <button
-          type="button"
-          onClick={handleRpmClick}
-          className="relative cursor-pointer active:scale-95 transition-transform focus:outline-none"
-          style={{ width: '42px', height: '42px' }}
-          title={`Speed: ${rpm} RPM (click to toggle)`}
-          aria-label={`Toggle speed, currently ${rpm} RPM`}
-        >
-          <svg
-            className="w-full h-full drop-shadow-[2px_5px_8px_rgba(10,6,4,0.85)]"
-            viewBox="0 0 100 100"
-            style={{
-              transform: `rotate(${rpm === '33' ? -28 : 28}deg)`,
-              transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)'
-            }}
-          >
-            <defs>
-              <linearGradient id="knob-face" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#443731" />
-                <stop offset="50%" stopColor="#2c221e" />
-                <stop offset="100%" stopColor="#181210" />
-              </linearGradient>
-              <radialGradient id="knob-bevel" cx="35%" cy="30%" r="65%">
-                <stop offset="0%" stopColor="rgba(255,255,255,0.24)" />
-                <stop offset="60%" stopColor="rgba(255,255,255,0.02)" />
-                <stop offset="100%" stopColor="transparent" />
-              </radialGradient>
-            </defs>
-
-            {/* Base cylinder */}
-            <circle cx="50" cy="50" r="48" fill="#0f0b09" stroke="rgba(0,0,0,0.9)" strokeWidth="1" />
-            <circle cx="50" cy="50" r="46" fill="url(#knob-face)" />
-            <circle cx="50" cy="50" r="46" fill="url(#knob-bevel)" />
-            <circle cx="50" cy="50" r="45.5" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-
-            {/* Position indicator notch */}
-            <rect x="47.5" y="8" width="5" height="12" rx="2" fill="#0c0907" />
-            <rect x="48.5" y="9" width="3" height="10" rx="1.5" fill="#f5efe6" />
-          </svg>
-        </button>
-
-        {/* Speed typography & LED indicator */}
-        <div className="flex items-center gap-2 font-mono text-[9px] font-bold tracking-[0.2em] pt-0.5">
-          <span className={cn('transition-colors duration-300', rpm === '33' ? 'text-[#d7a76c] font-semibold' : 'text-[#887b70]')}>
-            33
-          </span>
-          <span
-            className={cn(
-              'w-1.5 h-1.5 rounded-full transition-all duration-300',
-              rpm === '45' ? 'bg-[#d7a76c] shadow-[0_0_6px_rgba(215,167,108,0.9)]' : 'bg-[#5a4940]'
-            )}
-          />
-          <span className={cn('transition-colors duration-300', rpm === '45' ? 'text-[#d7a76c] font-semibold' : 'text-[#887b70]')}>
-            45
-          </span>
-        </div>
+    <div
+      className={cn('absolute inset-0 pointer-events-none select-none z-50', className)}
+      style={style}
+    >
+      {/* ── Top-Left Hardware Anchor: Power Switch ── */}
+      <div className="absolute" style={{ left: '4.5%', top: '7%' }}>
+        <PowerControl active={isPowered} onClick={handlePower} />
       </div>
 
-      {/* ══ 2. Power & Pause Pod (Bottom-Right) ══ */}
-      <div
-        className="absolute pointer-events-auto flex items-center gap-2.5"
-        style={{ right: '5%', bottom: '9%' }}
-      >
-        {/* Recessed Pill Housing */}
-        <div
-          className="flex items-center rounded-full p-[3px] border border-white/[0.08] bg-[#221b18]/90 shadow-[inset_0_2px_4px_rgba(0,0,0,0.85),0_1px_1px_rgba(255,255,255,0.06)] backdrop-blur-sm"
-        >
-          {/* POWER button */}
-          <button
-            onClick={handlePowerClick}
-            aria-label={isPowered ? 'Power deck off' : 'Power deck on'}
-            type="button"
-            className="relative h-[28px] px-3.5 rounded-full flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 focus:outline-none"
-            style={{
-              background: isPowered
-                ? 'linear-gradient(to bottom, #3c2f29, #251d19)'
-                : 'linear-gradient(to bottom, #231a16, #16100e)',
-              boxShadow: isPowered
-                ? '0 1px 3px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)'
-                : 'inset 0 1px 2px rgba(0,0,0,0.8)'
-            }}
-          >
-            {/* Amber power indicator LED */}
-            <span
-              className={cn(
-                'w-1.5 h-1.5 rounded-full transition-all duration-300',
-                isPowered
-                  ? 'bg-[#d7a76c] shadow-[0_0_8px_rgba(215,167,108,0.9)]'
-                  : 'bg-[#5a4940]'
-              )}
-            />
-            <span className="font-mono text-[8px] font-bold tracking-[0.2em] text-[#f5efe6] uppercase">
-              Power
-            </span>
-          </button>
+      {/* ── Lower-Left Group: 33 / 45 Speed Selector ── */}
+      <div className="absolute" style={{ left: '4.5%', bottom: '16%' }}>
+        <SpeedControl rpm={rpm} onClick={toggleRpm} />
+      </div>
 
-          {/* PLAY / PAUSE button */}
-          <button
-            onClick={handlePlayPauseClick}
-            aria-label={isPlaying ? 'Pause playback' : 'Start playback'}
-            type="button"
-            className="relative h-[28px] px-3.5 rounded-full flex items-center justify-center cursor-pointer transition-all active:scale-95 focus:outline-none"
-            style={{
-              background: isPlaying
-                ? 'linear-gradient(to bottom, #3c2f29, #251d19)'
-                : 'linear-gradient(to bottom, #2a201b, #19120f)',
-              boxShadow: isPlaying
-                ? '0 1px 3px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)'
-                : 'inset 0 2px 3px rgba(0,0,0,0.85)'
-            }}
-          >
-            <span className="font-mono text-[8px] font-bold tracking-[0.2em] text-[#f5efe6] uppercase">
-              {isPlaying ? 'Pause' : 'Play'}
-            </span>
-          </button>
-        </div>
-
-        {/* Pinhole Motor Status LED */}
-        <div
-          className={cn(
-            'w-1.5 h-1.5 rounded-full transition-colors duration-500',
-            isPlaying && isPowered
-              ? 'bg-[#d7a76c] shadow-[0_0_6px_rgba(215,167,108,0.8)]'
-              : 'bg-[#443731] shadow-[0_0_2px_rgba(0,0,0,0.8)]'
-          )}
-          title={isPlaying && isPowered ? 'Motor Running' : 'Motor Standby'}
-        />
+      {/* ── Lower-Left Group: Start / Stop Motor Switch ── */}
+      <div className="absolute" style={{ left: '4.5%', bottom: '9.5%' }}>
+        <StartStopControl isPlaying={isPlaying} onClick={handlePlayPause} />
       </div>
     </div>
   )

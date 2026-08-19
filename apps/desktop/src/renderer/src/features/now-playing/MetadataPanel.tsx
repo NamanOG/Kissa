@@ -14,10 +14,66 @@ export interface MetadataPanelProps {
   className?: string
 }
 
-export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
-  const currentTrack = usePlayerStore((s) => s.currentTrack)
+interface MiniTrackScrubberProps {
+  duration: number
+  isLightTheme: boolean
+}
+
+const MiniTrackScrubber = memo(({ duration, isLightTheme }: MiniTrackScrubberProps) => {
   const progress = usePlayerStore((s) => s.progress)
   const setProgress = usePlayerStore((s) => s.setProgress)
+  const elapsed = Math.min(progress, duration)
+  const progressPercent = duration > 0 ? (elapsed / duration) * 100 : 0
+
+  return (
+    <div className="mt-2.5 flex items-center justify-between w-full select-none">
+      <span
+        className={cn(
+          'font-mono text-[9.5px] tabular-nums font-medium transition-colors',
+          isLightTheme ? 'text-[#6e6155]' : 'text-[#b7a99b]'
+        )}
+      >
+        {formatTime(elapsed)}
+      </span>
+
+      <div
+        className="relative flex-1 mx-2.5 h-4 flex items-center cursor-pointer group"
+        onClick={(e) => {
+          if (duration <= 0) return
+          const rect = e.currentTarget.getBoundingClientRect()
+          const clickX = e.clientX - rect.left
+          const ratio = Math.max(0, Math.min(1, clickX / rect.width))
+          setProgress(Math.round(ratio * duration))
+        }}
+      >
+        <div
+          className={cn(
+            'w-full h-[2.5px] rounded-full relative transition-colors',
+            isLightTheme ? 'bg-black/15' : 'bg-white/10'
+          )}
+        >
+          <div
+            className="h-full bg-[#d7a76c] rounded-full"
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+      </div>
+
+      <span
+        className={cn(
+          'font-mono text-[9.5px] tabular-nums font-medium transition-colors',
+          isLightTheme ? 'text-[#8a7c6f]' : 'text-[#887b70]'
+        )}
+      >
+        {formatTime(duration)}
+      </span>
+    </div>
+  )
+})
+MiniTrackScrubber.displayName = 'MiniTrackScrubber'
+
+export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
+  const currentTrack = usePlayerStore((s) => s.currentTrack)
 
   const hasTrack = currentTrack !== null
   const artworkUrl = currentTrack?.artworkUrl ?? albumPlaceholder
@@ -25,10 +81,9 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
   const artist = currentTrack?.artist ?? '—'
   const album = currentTrack?.album ?? '—'
   const duration = currentTrack?.duration ?? 0
-  const elapsed = Math.min(progress, duration)
-  const progressPercent = duration > 0 ? (elapsed / duration) * 100 : 0
 
-  const isLightTheme = usePlayerStore((s) => s.theme === 'sunday-morning')
+  const theme = usePlayerStore((s) => s.theme)
+  const isLightTheme = theme === 'sunday-morning' || theme === 'concrete-vinyl'
 
   return (
     <section
@@ -103,48 +158,7 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
           </div>
 
           {/* Mini Track Progress Bar */}
-          <div className="mt-2.5 flex items-center justify-between w-full select-none">
-            <span
-              className={cn(
-                'font-mono text-[9.5px] tabular-nums font-medium transition-colors',
-                isLightTheme ? 'text-[#6e6155]' : 'text-[#b7a99b]'
-              )}
-            >
-              {formatTime(elapsed)}
-            </span>
-
-            <div
-              className="relative flex-1 mx-2.5 h-4 flex items-center cursor-pointer group"
-              onClick={(e) => {
-                if (duration <= 0) return
-                const rect = e.currentTarget.getBoundingClientRect()
-                const clickX = e.clientX - rect.left
-                const ratio = Math.max(0, Math.min(1, clickX / rect.width))
-                setProgress(Math.round(ratio * duration))
-              }}
-            >
-              <div
-                className={cn(
-                  'w-full h-[2.5px] rounded-full relative transition-colors',
-                  isLightTheme ? 'bg-black/15' : 'bg-white/10'
-                )}
-              >
-                <div
-                  className="h-full bg-[#d7a76c] rounded-full"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-            </div>
-
-            <span
-              className={cn(
-                'font-mono text-[9.5px] tabular-nums font-medium transition-colors',
-                isLightTheme ? 'text-[#8a7c6f]' : 'text-[#887b70]'
-              )}
-            >
-              {formatTime(duration)}
-            </span>
-          </div>
+          <MiniTrackScrubber duration={duration} isLightTheme={isLightTheme} />
 
           {/* Editorial Developer Mark */}
           <div className="mt-3.5 flex items-center gap-2 select-none">
