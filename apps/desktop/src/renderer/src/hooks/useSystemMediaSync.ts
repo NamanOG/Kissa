@@ -5,12 +5,10 @@ import type { SystemMediaPayload } from '../../../types/media'
 
 /**
  * Hook that listens to system-wide media updates (Apple Music, Spotify, etc.)
- * forwarded by the Electron main process via Windows SMTC (System Media Transport Controls).
+ * forwarded by the Electron main process via Windows SMTC.
  *
- * When external music is detected:
- * - Updates the current track metadata (Title, Artist, Album, Artwork)
- * - Synchronizes the turntable playback state (Playing vs Paused)
- * - Updates the timeline progress so the tonearm tracks the real groove position
+ * Implements jitter-free monotonic timekeeping, seamless track transitions,
+ * and automatic duration synchronization.
  */
 export function useSystemMediaSync(): void {
   const setTrack = usePlayerStore((s) => s.setTrack)
@@ -18,7 +16,10 @@ export function useSystemMediaSync(): void {
   const setProgress = usePlayerStore((s) => s.setProgress)
 
   const commandCooldownRef = useRef(false)
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const anchorProgressRef = useRef(0)
+  const anchorTimestampRef = useRef(Date.now())
+  const hasSeenNonZeroSmtcRef = useRef(false)
+  const lastTrackKeyRef = useRef('')
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.electron?.onSystemMediaUpdate) {
@@ -27,21 +28,27 @@ export function useSystemMediaSync(): void {
 
     window.__kissaMediaCommandCooldown = () => {
       commandCooldownRef.current = true
-      setTimeout(() => { commandCooldownRef.current = false }, 1500)
+      setTimeout(() => {
+        commandCooldownRef.current = false
+      }, 1500)
     }
 
     const handleMediaPayload = (payload: SystemMediaPayload | null): void => {
       if (!payload || !payload.title) return
 
       const currentStoreTrack = usePlayerStore.getState().currentTrack
+      const isInternalAudio = Boolean(currentStoreTrack?.audioUrl)
+      if (isInternalAudio) return
 
-      // Determine if track changed or needs metadata refresh
-      const isSameTrack =
-        currentStoreTrack?.title === payload.title &&
-        currentStoreTrack?.artist === payload.artist &&
-        currentStoreTrack?.sourceAppId === payload.sourceAppId
+      const trackKey = `${payload.title}|${payload.artist || ''}|${payload.sourceAppId || ''}`
+      const isSameTrack = lastTrackKeyRef.current === trackKey
 
       if (!isSameTrack) {
+        lastTrackKeyRef.current = trackKey
+        hasSeenNonZeroSmtcRef.current = payload.progress > 0
+        anchorProgressRef.current = payload.progress
+        anchorTimestampRef.current = Date.now()
+
         setTrack({
           title: payload.title,
           artist: payload.artist || 'Unknown Artist',
@@ -51,25 +58,61 @@ export function useSystemMediaSync(): void {
           source: payload.sourceAppName,
           sourceAppId: payload.sourceAppId
         })
-      } else if (payload.artworkDataUrl && currentStoreTrack?.artworkUrl !== payload.artworkDataUrl) {
-        // Update artwork if thumbnail arrived later
-        usePlayerStore.setState((state) => ({
-          currentTrack: state.currentTrack
-            ? { ...state.currentTrack, artworkUrl: payload.artworkDataUrl }
-            : null
-        }))
+      } else {
+        // Same track - check for thumbnail updates
+        if (payload.artworkDataUrl && currentStoreTrack?.artworkUrl !== payload.artworkDataUrl) {
+          usePlayerStore.setState((state) => ({
+            currentTrack: state.currentTrack
+              ? { ...state.currentTrack, artworkUrl: payload.artworkDataUrl }
+              : null
+          }))
+        }
+
+        // Update duration if SMTC just learned it
+        if (payload.duration > 0 && (!currentStoreTrack?.duration || currentStoreTrack.duration === 0)) {
+          usePlayerStore.setState((state) => ({
+            currentTrack: state.currentTrack
+              ? { ...state.currentTrack, duration: payload.duration }
+              : null
+          }))
+        }
       }
 
-      // Sync playing state (drives vinyl spin animation)
-      if (!commandCooldownRef.current && usePlayerStore.getState().isPlaying !== payload.isPlaying) {
+      // Sync playback state (Playing vs Paused)
+      const currentIsPlaying = usePlayerStore.getState().isPlaying
+      if (!commandCooldownRef.current && currentIsPlaying !== payload.isPlaying) {
+        // Re-anchor when playback state changes
+        const elapsed = (Date.now() - anchorTimestampRef.current) / 1000
+        anchorProgressRef.current = currentIsPlaying
+          ? anchorProgressRef.current + elapsed
+          : anchorProgressRef.current
+        anchorTimestampRef.current = Date.now()
         setIsPlaying(payload.isPlaying)
       }
 
-      // Sync timeline progress (drives tonearm angle and scrub position)
-      if (payload.progress >= 0) {
+      // Sync timeline progress with monotonic filter (prevents 13, 14, 15, 15, 16 stutter)
+      if (payload.progress > 0) {
+        hasSeenNonZeroSmtcRef.current = true
         const curProgress = usePlayerStore.getState().progress
-        if (Math.abs(curProgress - payload.progress) >= 1) {
-          setProgress(payload.progress)
+        const elapsedSinceAnchor = usePlayerStore.getState().isPlaying
+          ? (Date.now() - anchorTimestampRef.current) / 1000
+          : 0
+        const localEstimate = anchorProgressRef.current + elapsedSinceAnchor
+        const diff = payload.progress - localEstimate
+
+        // If difference is large (> 2.5s) or a distinct seek, accept SMTC position immediately
+        if (Math.abs(diff) > 2.5) {
+          anchorProgressRef.current = payload.progress
+          anchorTimestampRef.current = Date.now()
+          setProgress(Math.floor(payload.progress))
+        } else if (payload.progress > curProgress) {
+          // If SMTC is ahead of store, update anchor
+          anchorProgressRef.current = payload.progress
+          anchorTimestampRef.current = Date.now()
+          setProgress(Math.floor(payload.progress))
+        } else {
+          // Minor delayed timestamp from SMTC polling — calibrate anchor gently without stepping back
+          anchorProgressRef.current = Math.max(anchorProgressRef.current, payload.progress)
         }
       }
     }
@@ -81,12 +124,38 @@ export function useSystemMediaSync(): void {
       }
     })
 
-    // Listen for live changes
+    // Listen for SMTC updates
     const cleanup = window.electron.onSystemMediaUpdate(handleMediaPayload)
+
+    // Dedicated high-resolution monotonic timer for smooth external playback
+    const ticker = setInterval(() => {
+      const state = usePlayerStore.getState()
+      if (!state.isPlaying || !state.currentTrack || state.currentTrack.audioUrl) return
+
+      const elapsed = (Date.now() - anchorTimestampRef.current) / 1000
+      const currentEstimated = anchorProgressRef.current + elapsed
+      const dur = state.currentTrack.duration || 0
+      const clamped = dur > 0 ? Math.min(dur, currentEstimated) : currentEstimated
+      const curFloor = Math.floor(clamped)
+
+      if (curFloor > state.progress) {
+        setProgress(curFloor)
+      }
+    }, 400)
+
+    // Listen for manual seeks (e.g. user dragged scrubber / tonearm)
+    const unsubscribe = usePlayerStore.subscribe((state, prevState) => {
+      if (state.currentTrack?.audioUrl) return
+      if (Math.abs(state.progress - prevState.progress) > 1.5) {
+        anchorProgressRef.current = state.progress
+        anchorTimestampRef.current = Date.now()
+      }
+    })
 
     return (): void => {
       cleanup()
-      if (tickRef.current) clearInterval(tickRef.current)
+      clearInterval(ticker)
+      unsubscribe()
     }
   }, [setTrack, setIsPlaying, setProgress])
 }

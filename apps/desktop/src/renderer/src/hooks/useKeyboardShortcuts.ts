@@ -58,16 +58,24 @@ export function useKeyboardShortcuts(): void {
           break
         }
         case 'ArrowLeft': {
-          if (store.currentTrack?.sourceAppId && window.electron?.mediaPrev) {
+          e.preventDefault()
+          if (e.shiftKey) {
+            store.setProgress((p) => Math.max(0, p - 5))
+          } else if (store.currentTrack?.sourceAppId && window.electron?.mediaPrev) {
             window.electron.mediaPrev()
           } else {
-            store.setProgress(0)
+            store.setProgress((p) => Math.max(0, p - 5))
           }
           break
         }
         case 'ArrowRight': {
-          if (store.currentTrack?.sourceAppId && window.electron?.mediaNext) {
+          e.preventDefault()
+          if (e.shiftKey) {
+            store.setProgress((p) => p + 5)
+          } else if (store.currentTrack?.sourceAppId && window.electron?.mediaNext) {
             window.electron.mediaNext()
+          } else {
+            store.setProgress((p) => p + 5)
           }
           break
         }

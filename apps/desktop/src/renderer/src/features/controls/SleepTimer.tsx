@@ -1,4 +1,4 @@
-import React, { memo, useState, useEffect } from 'react'
+import React, { memo, useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Timer, Clock, X } from 'lucide-react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
@@ -8,8 +8,36 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
   const [isOpen, setIsOpen] = useState(false)
   const [timeLeft, setTimeLeft] = useState<number | null>(null) // in seconds
   const [targetMinutes, setTargetMinutes] = useState<number>(30)
+  const popoverRef = useRef<HTMLDivElement>(null)
   const pause = usePlayerStore((s) => s.pause)
   const setIsPowered = usePlayerStore((s) => s.setIsPowered)
+
+  // Click-outside and Escape dismiss
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('touchstart', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('touchstart', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen])
 
   // Countdown effect
   useEffect(() => {
@@ -71,6 +99,7 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            ref={popoverRef}
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}

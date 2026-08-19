@@ -146,11 +146,6 @@ export const SyncedLyrics = memo(({
       return
     }
 
-    if (!currentTrack.duration || currentTrack.duration < 5) {
-      setStatus('loading')
-      return
-    }
-
     setStatus('loading')
     setFetchedLyrics(null)
 
@@ -158,11 +153,22 @@ export const SyncedLyrics = memo(({
       .getLyrics({
         title: currentTrack.title,
         artist: currentTrack.artist,
-        album: currentTrack.album,
-        duration: currentTrack.duration
+        album: currentTrack.album || '',
+        duration: currentTrack.duration || 0
       })
       .then((res) => {
         if (cancelled) return
+
+        // If lyrics service discovered track duration and store doesn't have it yet, backfill it
+        if (res?.duration && res.duration > 0) {
+          const storeTrack = usePlayerStore.getState().currentTrack
+          if (storeTrack && (!storeTrack.duration || storeTrack.duration === 0)) {
+            usePlayerStore.setState((s) => ({
+              currentTrack: s.currentTrack ? { ...s.currentTrack, duration: res.duration! } : null
+            }))
+          }
+        }
+
         if (res?.instrumental) {
           setStatus('instrumental')
           return
@@ -190,7 +196,7 @@ export const SyncedLyrics = memo(({
     return (): void => {
       cancelled = true
     }
-  }, [currentTrack?.title, currentTrack?.artist, currentTrack?.album, currentTrack?.duration, lyricsSource])
+  }, [currentTrack?.title, currentTrack?.artist, currentTrack?.album, lyricsSource])
 
   // ── 2. Parse active lyrics array ──
   const lyricLines = useMemo(() => {

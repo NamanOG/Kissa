@@ -22,7 +22,7 @@ interface MiniTrackScrubberProps {
 const MiniTrackScrubber = memo(({ duration, isLightTheme }: MiniTrackScrubberProps) => {
   const progress = usePlayerStore((s) => s.progress)
   const setProgress = usePlayerStore((s) => s.setProgress)
-  const elapsed = Math.min(progress, duration)
+  const elapsed = duration > 0 ? Math.min(progress, duration) : progress
   const progressPercent = duration > 0 ? (elapsed / duration) * 100 : 0
 
   return (

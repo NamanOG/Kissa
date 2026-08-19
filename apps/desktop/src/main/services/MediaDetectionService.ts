@@ -115,5 +115,6 @@ export class MediaDetectionService {
     ipcMain.removeHandler('phono:media-next')
     ipcMain.removeHandler('phono:media-prev')
     ipcMain.removeHandler('phono:open-external')
+    ipcMain.removeHandler('phono:get-app-version')
   }
 }

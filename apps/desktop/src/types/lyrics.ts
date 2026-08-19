@@ -9,4 +9,5 @@ export interface LyricsResponse {
   syncedLyrics: string | null
   plainLyrics: string | null
   instrumental: boolean
+  duration?: number
 }

@@ -31,10 +31,17 @@ function getCleanAppName(sourceAppId: string): string {
   return filename.replace(/\.(exe|appx)$/i, '')
 }
 
-function normalizeTime(raw: number): number {
-  if (!raw || raw <= 0) return 0
-  // Heuristic: if value > 86400 (1 day in seconds), it's in 100ns ticks
-  return raw > 86_400 ? Math.round(raw / 10_000_000) : Math.round(raw)
+function normalizeTime(raw: number | undefined | null): number {
+  if (!raw || raw <= 0 || !Number.isFinite(raw)) return 0
+  // If > 10 million, value is in 100ns ticks (Windows TimeSpan)
+  if (raw >= 10_000_000) {
+    return Math.round(raw / 10_000_000)
+  }
+  // If between 86,400 (1 day in seconds) and 10 million, likely in milliseconds
+  if (raw > 86_400) {
+    return Math.round(raw / 1000)
+  }
+  return Math.round(raw)
 }
 
 function formatSession(session: MediaInfo | null): SystemMediaPayload | null {

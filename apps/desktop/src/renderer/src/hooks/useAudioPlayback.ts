@@ -146,22 +146,4 @@ export function useAudioPlayback(): void {
     if (!audio) return
     audio.volume = Math.max(0, Math.min(1, volume / 100))
   }, [volume])
-
-  // ── 6. Fallback timer for tracks WITHOUT an audioUrl ──────────────
-  //    (keeps the UI timer ticking for mock/test tracks)
-  const currentTrack = usePlayerStore((s) => s.currentTrack)
-  const currentAudioUrl = currentTrack?.audioUrl
-  const duration = currentTrack?.duration
-
-  useEffect(() => {
-    if (!isPlaying || !currentTrack || currentAudioUrl) return
-    const interval = setInterval(() => {
-      usePlayerStore.getState().setProgress((prev) => {
-        const dur = duration ?? 0
-        if (dur > 0 && prev >= dur) return 0
-        return prev + 1
-      })
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [isPlaying, audioUrl, duration])
 }

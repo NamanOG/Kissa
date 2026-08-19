@@ -20,7 +20,9 @@ const INNER_GROOVE_ANGLE = 39.5
 export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps): React.JSX.Element => {
   const isPlaying = usePlayerStore((state) => state.isPlaying)
   const isPowered = usePlayerStore((state) => state.isPowered)
-  const duration = usePlayerStore((state) => state.currentTrack?.duration || 1)
+  const duration = usePlayerStore((state) =>
+    state.currentTrack?.duration && state.currentTrack.duration > 0 ? state.currentTrack.duration : 210
+  )
   const [isDragging, setIsDragging] = useState(false)
   const [dragAngle, setDragAngle] = useState<number | null>(null)
   const tonearmRef = useRef<HTMLDivElement>(null)
@@ -49,10 +51,12 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       }
     } else {
       // Smoothly track the groove based on progress
-      const dur = state.currentTrack?.duration || 1
-      const ratio = Math.min(1, Math.max(0, state.progress / dur))
+      const rawDur = state.currentTrack?.duration
+      const dur = rawDur && rawDur > 0 ? rawDur : 210
+      const rawRatio = state.progress / dur
+      const ratio = Number.isFinite(rawRatio) ? Math.min(1, Math.max(0, rawRatio)) : 0
       const target = OUTER_GROOVE_ANGLE + ratio * (INNER_GROOVE_ANGLE - OUTER_GROOVE_ANGLE)
-      
+
       const current = tonearmRotation.get()
       const diff = target - current
       tonearmRotation.set(current + diff * Math.min(1, delta / 180))
@@ -99,7 +103,8 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       } else {
         const clamped = Math.max(OUTER_GROOVE_ANGLE, Math.min(INNER_GROOVE_ANGLE, angle))
         const ratio = (clamped - OUTER_GROOVE_ANGLE) / (INNER_GROOVE_ANGLE - OUTER_GROOVE_ANGLE)
-        state.setProgress(Math.round(ratio * duration))
+        const activeDur = state.currentTrack?.duration && state.currentTrack.duration > 0 ? state.currentTrack.duration : 210
+        state.setProgress(Math.round(ratio * activeDur))
         if (!state.isPlaying) {
           state.play()
           if (state.currentTrack?.sourceAppId && window.electron?.mediaPlayPause) {

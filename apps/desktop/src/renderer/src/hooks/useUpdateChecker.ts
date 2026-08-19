@@ -5,10 +5,19 @@ const GITHUB_REPO = 'NamanOG/Kissa'
 const CHECK_INTERVAL_MS = 1000 * 60 * 60 * 12 // 12 hours
 
 // Semver compare — returns true if remote version is strictly greater than local
+function parseSemver(ver: string): number[] {
+  const clean = ver.replace(/^v/i, '').split(/[-+]/)[0]
+  return clean.split('.').map((p) => {
+    const num = parseInt(p, 10)
+    return Number.isFinite(num) ? num : 0
+  })
+}
+
 function isNewerVersion(remote: string, local: string): boolean {
-  const cleanRemote = remote.replace(/^v/, '').split('.').map(Number)
-  const cleanLocal = local.replace(/^v/, '').split('.').map(Number)
-  
+  if (!remote || !local) return false
+  const cleanRemote = parseSemver(remote)
+  const cleanLocal = parseSemver(local)
+
   for (let i = 0; i < Math.max(cleanRemote.length, cleanLocal.length); i++) {
     const r = cleanRemote[i] || 0
     const l = cleanLocal[i] || 0
@@ -47,7 +56,8 @@ export function useUpdateChecker(): void {
         const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
           headers: {
             'Accept': 'application/vnd.github.v3+json'
-          }
+          },
+          signal: AbortSignal.timeout(6_000)
         })
         
         if (!response.ok) return

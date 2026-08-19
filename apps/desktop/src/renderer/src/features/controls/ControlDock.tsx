@@ -21,7 +21,7 @@ const Scrubber = memo(() => {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   
   const duration = currentTrack?.duration ?? 0
-  const elapsed = Math.min(progress, duration)
+  const elapsed = duration > 0 ? Math.min(progress, duration) : progress
   const progressPercent = duration > 0 ? (elapsed / duration) * 100 : 0
 
   return (

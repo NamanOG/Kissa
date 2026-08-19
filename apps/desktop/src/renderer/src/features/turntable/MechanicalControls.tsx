@@ -7,6 +7,8 @@ let sharedAudioCtx: AudioContext | null = null
 
 function playMechanicalSound(type: 'switch' | 'button' | 'radio'): void {
   try {
+    if (!usePlayerStore.getState().needleSound) return
+
     if (!sharedAudioCtx) {
       const AudioCtx =
         window.AudioContext ||
