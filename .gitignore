@@ -11,6 +11,8 @@ apps/desktop/.vite/
 apps/desktop/release/
 apps/desktop/dist/
 !apps/desktop/build/
+**/bin/
+**/obj/
 
 # Cache and logs
 .eslintcache

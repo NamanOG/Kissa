@@ -38,7 +38,10 @@ export function useSystemMediaSync(): void {
 
       const currentStoreTrack = usePlayerStore.getState().currentTrack
       const isInternalAudio = Boolean(currentStoreTrack?.audioUrl)
-      if (isInternalAudio) return
+      
+      // If we are currently playing the internal demo track, only switch to system media
+      // if the system media is actually playing (active).
+      if (isInternalAudio && !payload.isPlaying) return
 
       const trackKey = `${payload.title}|${payload.artist || ''}|${payload.sourceAppId || ''}`
       const isSameTrack = lastTrackKeyRef.current === trackKey

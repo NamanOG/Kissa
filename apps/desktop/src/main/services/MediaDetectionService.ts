@@ -1,9 +1,11 @@
-import { BrowserWindow, ipcMain, shell } from 'electron'
+import { BrowserWindow, ipcMain, shell, app as electronApp } from 'electron'
 import { exec } from 'child_process'
 import { SMTCMonitor, PlaybackStatus, type MediaInfo } from '@coooookies/windows-smtc-monitor'
 import type { SystemMediaPayload } from '../../types/media'
 import type { LyricsRequest } from '../../types/lyrics'
 import { LyricsService } from './LyricsService'
+import { Worker } from 'worker_threads'
+import { join } from 'path'
 
 function sendMediaKey(keyCode: number): void {
   try {
@@ -89,10 +91,9 @@ function formatSession(session: MediaInfo | null): SystemMediaPayload | null {
 
 export class MediaDetectionService {
   private static instance: MediaDetectionService
-  private monitor: SMTCMonitor | null = null
+  private worker: Worker | null = null
   private latestPayload: SystemMediaPayload | null = null
   private lastPayloadJson: string | null = null
-  private pollInterval: NodeJS.Timeout | null = null
 
   private constructor() {}
 
@@ -104,7 +105,7 @@ export class MediaDetectionService {
   }
 
   public start(): void {
-    if (this.monitor) return
+    if (this.worker) return
 
     // Register IPC handler for one-time fetch
     ipcMain.handle('phono:get-system-media', () => {
@@ -135,33 +136,47 @@ export class MediaDetectionService {
     })
 
     ipcMain.handle('phono:get-app-version', () => {
-      return require('electron').app.getVersion()
+      return electronApp.getVersion()
     })
 
     try {
-      this.monitor = new SMTCMonitor()
-
-      const handleUpdate = (): void => {
-        try {
-          const current = SMTCMonitor.getCurrentMediaSession()
-          this.processSessionUpdate(current)
-        } catch {
-          // Ignore
-        }
+      console.log('[MediaDetectionService] Resolving absolute path to SMTC helper...')
+      
+      let helperPath = ''
+      if (electronApp.isPackaged) {
+        helperPath = join(process.resourcesPath, 'smtc-helper.exe')
+      } else {
+        helperPath = join(electronApp.getAppPath(), 'resources', 'smtc-helper.exe')
       }
+      
+      console.log(`[MediaDetectionService] Resolved helper path: ${helperPath}`)
 
-      this.monitor.on('session-media-changed', handleUpdate)
-      this.monitor.on('session-playback-changed', handleUpdate)
-      this.monitor.on('session-timeline-changed', handleUpdate)
-      this.monitor.on('current-session-changed', handleUpdate)
-      this.monitor.on('session-added', handleUpdate)
-      this.monitor.on('session-removed', handleUpdate)
+      // Spawn the worker and pass the helper path
+      this.worker = new Worker(join(__dirname, 'smtcWorker.js'), {
+        workerData: { helperPath }
+      })
 
-      handleUpdate()
+      this.worker.on('message', (msg) => {
+        if (msg.type === 'update') {
+          this.processSessionUpdate(msg.session)
+        } else if (msg.type === 'error') {
+          console.warn('[MediaDetectionService] Worker reported error:', msg.error)
+        }
+      })
 
-      this.pollInterval = setInterval(handleUpdate, 800)
+      this.worker.on('error', (err) => {
+        console.error('[MediaDetectionService] Worker threw error:', err)
+      })
+
+      this.worker.on('exit', (code) => {
+        if (code !== 0) {
+          console.error(`[MediaDetectionService] Worker stopped with exit code ${code}`)
+        }
+      })
+
+      console.log('[MediaDetectionService] SMTC worker spawned successfully.')
     } catch (err) {
-      console.warn('[MediaDetectionService] Could not launch SMTC monitor:', err)
+      console.warn('[MediaDetectionService] Could not launch SMTC worker:', err)
     }
   }
 
@@ -185,17 +200,14 @@ export class MediaDetectionService {
   }
 
   public stop(): void {
-    if (this.monitor) {
+    if (this.worker) {
       try {
-        this.monitor.destroy()
+        this.worker.postMessage('stop')
+        this.worker.terminate()
       } catch {
         // Ignore
       }
-      this.monitor = null
-    }
-    if (this.pollInterval) {
-      clearInterval(this.pollInterval)
-      this.pollInterval = null
+      this.worker = null
     }
     ipcMain.removeHandler('phono:get-system-media')
     ipcMain.removeHandler('phono:get-lyrics')

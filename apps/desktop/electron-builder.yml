@@ -9,8 +9,14 @@ files:
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+extraResources:
+  - from: "resources"
+    to: "."
+    filter:
+      - "smtc-helper.exe"
 asarUnpack:
   - resources/**
+  - node_modules/@coooookies/windows-smtc-monitor/**/*
 win:
   executableName: Kissa
   target:
