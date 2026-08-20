@@ -32,7 +32,6 @@ function startHelper(): void {
               }
             }
           } catch (e) {
-            // ignore parse error
           }
         }
       }

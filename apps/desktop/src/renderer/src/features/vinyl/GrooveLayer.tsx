@@ -2,16 +2,6 @@ import React, { memo } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { VinylLayerProps } from './types'
 
-/**
- * Groove layer — concentric rings that create the vinyl record's
- * characteristic groove pattern. Three zones:
- *   1. Lead-in groove (outer edge, sparse)
- *   2. Program grooves (main area, dense)
- *   3. Run-out groove (inner, sparse)
- *
- * Opacity is tuned to be subtle but visible — the reference image
- * shows clear groove lines catching light.
- */
 export const GrooveLayer = memo(
   ({ className, style, size = '100%', ...props }: VinylLayerProps): React.JSX.Element => {
     return (

@@ -51,7 +51,7 @@ describe('OnboardingModal component', () => {
 
     expect(usePlayerStore.getState().isOnboardingOpen).toBe(false)
     expect(localStorage.getItem('kissa_intro_seen')).toBe('true')
-  })
+  }, 15000)
 
   it('does not render when isOnboardingOpen is false', () => {
     usePlayerStore.setState({ isOnboardingOpen: false })

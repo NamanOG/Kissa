@@ -117,7 +117,7 @@ export function useSystemMediaSync(): void {
       // Sync master volume from Windows if present
       if (payload.volume !== undefined && typeof payload.volume === 'number') {
         const curVol = usePlayerStore.getState().volume
-        if (Math.abs(curVol - payload.volume) > 1 && !(window as any).__kissaIsDraggingVolume) {
+        if (Math.abs(curVol - payload.volume) > 1 && !window.__kissaIsDraggingVolume) {
           usePlayerStore.getState().setVolume(payload.volume)
         }
       }
@@ -130,7 +130,7 @@ export function useSystemMediaSync(): void {
       }
     })
 
-    window.electron.getVolume?.().then((vol) => {
+    window.electron.getVolume().then((vol: { master: number; isMuted: boolean } | null) => {
       if (vol && typeof vol.master === 'number') {
         usePlayerStore.getState().setVolume(vol.master)
       }

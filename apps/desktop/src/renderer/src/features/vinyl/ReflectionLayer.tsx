@@ -2,11 +2,6 @@ import React, { memo } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { VinylLayerProps } from './types'
 
-/**
- * Anisotropic Light Reflection on the Vinyl Grooves.
- * Creates the sweeping conical reflection beams visible in the reference image.
- * This layer remains static while the record spins beneath it.
- */
 export const ReflectionLayer = memo(
   ({ className, style, size = '100%', ...props }: VinylLayerProps): React.JSX.Element => {
     return (

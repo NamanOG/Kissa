@@ -26,6 +26,8 @@ export interface PhonoSystemMediaAPI {
   getSystemMedia: () => Promise<SystemMediaPayload | null>
   getLyrics: (request: LyricsRequest) => Promise<LyricsResponse | null>
   onSystemMediaUpdate: (callback: (data: SystemMediaPayload | null) => void) => () => void
+  setVolume: (volume: number) => Promise<void>
+  getVolume: () => Promise<{ master: number; isMuted: boolean } | null>
   mediaPlayPause: () => Promise<void>
   mediaNext: () => Promise<void>
   mediaPrev: () => Promise<void>
@@ -37,5 +39,6 @@ declare global {
   interface Window {
     electron: ElectronAPI & PhonoSystemMediaAPI
     __kissaMediaCommandCooldown?: () => void
+    __kissaIsDraggingVolume?: boolean
   }
 }
