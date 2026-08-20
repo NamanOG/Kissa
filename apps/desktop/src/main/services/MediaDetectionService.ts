@@ -84,8 +84,26 @@ function formatSession(session: any): SystemMediaPayload | null {
     }
   }
 
-  const title = session.media.title || 'Unknown Title'
-  const artist = session.media.artist || 'Unknown Artist'
+  let title = (session.media.title || '').trim() || 'Unknown Title'
+  let artist = (session.media.artist || '').trim() || 'Unknown Artist'
+  let album = (session.media.albumTitle || '').trim()
+
+  // Clean Apple Music format: "Artist - Album" in artist field
+  if (artist.includes(' — ')) {
+    const parts = artist.split(' — ')
+    artist = parts[0].trim()
+    if (!album || album === title) {
+      album = parts.slice(1).join(' — ').trim()
+    }
+  } else if (artist.includes(' - ')) {
+    const parts = artist.split(' - ')
+    if (parts[0].length > 1 && parts[1].length > 1) {
+      artist = parts[0].trim()
+      if (!album || album === title) {
+        album = parts.slice(1).join(' - ').trim()
+      }
+    }
+  }
 
   if (artworkDataUrl) {
     ArtworkService.getInstance().setCachedArtwork(title, artist, artworkDataUrl)
@@ -100,7 +118,7 @@ function formatSession(session: any): SystemMediaPayload | null {
     sourceAppName: getCleanAppName(session.sourceAppId),
     title,
     artist,
-    album: session.media.albumTitle || '',
+    album,
     artworkDataUrl,
     isPlaying,
     progress: Math.max(0, normalizeTime(session.timeline?.position || 0)),

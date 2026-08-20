@@ -1,5 +1,6 @@
 appId: com.namanog.kissa
 productName: Kissa
+electronDist: ../../node_modules/electron/dist
 directories:
   buildResources: build
   output: dist
@@ -19,6 +20,7 @@ asarUnpack:
   - node_modules/@coooookies/windows-smtc-monitor/**/*
 win:
   executableName: Kissa
+  signExecutable: false
   target:
     - target: nsis
       arch:

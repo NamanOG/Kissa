@@ -10,7 +10,16 @@ function cleanTrackTitle(title: string): string {
 
 function cleanArtist(artist: string): string {
   if (!artist) return ''
-  return artist
+  let cleaned = artist
+  if (cleaned.includes(' — ')) {
+    cleaned = cleaned.split(' — ')[0]
+  } else if (cleaned.includes(' - ')) {
+    const parts = cleaned.split(' - ')
+    if (parts[0].length > 1 && parts[1].length > 1) {
+      cleaned = parts[0]
+    }
+  }
+  return cleaned
     .replace(/\s*(feat\.|ft\.|featuring).*$/gi, '')
     .replace(/\s*,\s*.*$/g, '')
     .trim()

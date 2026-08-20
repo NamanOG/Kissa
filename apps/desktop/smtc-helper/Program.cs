@@ -114,15 +114,29 @@ namespace SmtcHelper
                 string? thumbnailBase64 = null;
                 if (mediaProps.Thumbnail != null)
                 {
-                    try
+                    for (int attempt = 0; attempt < 3; attempt++)
                     {
-                        using var stream = await mediaProps.Thumbnail.OpenReadAsync();
-                        using var memStream = new MemoryStream();
-                        var classicStream = stream.AsStreamForRead();
-                        await classicStream.CopyToAsync(memStream);
-                        thumbnailBase64 = Convert.ToBase64String(memStream.ToArray());
+                        try
+                        {
+                            using var stream = await mediaProps.Thumbnail.OpenReadAsync();
+                            if (stream != null && stream.Size > 0)
+                            {
+                                using var memStream = new MemoryStream();
+                                var classicStream = stream.AsStreamForRead();
+                                await classicStream.CopyToAsync(memStream);
+                                var bytes = memStream.ToArray();
+                                if (bytes.Length > 0)
+                                {
+                                    thumbnailBase64 = Convert.ToBase64String(bytes);
+                                    break;
+                                }
+                            }
+                        }
+                        catch
+                        {
+                            await Task.Delay(50);
+                        }
                     }
-                    catch { }
                 }
 
                 string sourceAppId = JsonEscape(session.SourceAppUserModelId);

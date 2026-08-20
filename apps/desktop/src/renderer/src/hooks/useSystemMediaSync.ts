@@ -62,11 +62,20 @@ export function useSystemMediaSync(): void {
           sourceAppId: payload.sourceAppId
         })
       } else {
-        // Same track - check for thumbnail updates
-        if (payload.artworkDataUrl && currentStoreTrack?.artworkUrl !== payload.artworkDataUrl) {
+        // Same track - check for metadata and thumbnail updates
+        if (
+          (payload.artworkDataUrl && currentStoreTrack?.artworkUrl !== payload.artworkDataUrl) ||
+          (payload.artist && payload.artist !== currentStoreTrack?.artist) ||
+          (payload.album && payload.album !== currentStoreTrack?.album)
+        ) {
           usePlayerStore.setState((state) => ({
             currentTrack: state.currentTrack
-              ? { ...state.currentTrack, artworkUrl: payload.artworkDataUrl }
+              ? {
+                  ...state.currentTrack,
+                  artist: payload.artist || state.currentTrack.artist,
+                  album: payload.album || state.currentTrack.album,
+                  artworkUrl: payload.artworkDataUrl || state.currentTrack.artworkUrl
+                }
               : null
           }))
         }
