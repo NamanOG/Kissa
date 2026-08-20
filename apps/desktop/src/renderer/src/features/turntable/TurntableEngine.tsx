@@ -29,10 +29,9 @@ export const TurntableEngine = memo(
         {/* Dynamic Album Ambient Glow — GPU-optimized lightweight ambient pool */}
         {albumArt && (
           <div
-            className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-25"
+            className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20"
             style={{
-              transform: 'translateZ(-20px)',
-              background: 'radial-gradient(circle at 45% 45%, rgba(215,167,108,0.18) 0%, transparent 65%)'
+              background: 'radial-gradient(ellipse 80% 70% at 50% 50%, rgba(215,167,108,0.15) 0%, transparent 70%)'
             }}
           />
         )}

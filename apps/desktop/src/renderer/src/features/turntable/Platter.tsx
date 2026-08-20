@@ -49,8 +49,8 @@ export const Platter = memo(({ className, style, size = '100%', ...props }: Plat
 
           {/* Platter Base Well Drop Shadow */}
           <radialGradient id="platter-well-shadow" cx="50%" cy="50%" r="50%">
-            <stop offset="85%" stopColor="rgba(0,0,0,0.85)" />
-            <stop offset="95%" stopColor="rgba(0,0,0,0.4)" />
+            <stop offset="75%" stopColor="rgba(0,0,0,0.9)" />
+            <stop offset="90%" stopColor="rgba(0,0,0,0.4)" />
             <stop offset="100%" stopColor="transparent" />
           </radialGradient>
 
@@ -59,18 +59,11 @@ export const Platter = memo(({ className, style, size = '100%', ...props }: Plat
             <rect x="0" y="0" width="1" height="20" fill="rgba(0,0,0,0.15)" />
             <rect x="2" y="0" width="1" height="20" fill="rgba(255,255,255,0.08)" />
           </pattern>
-
-          {/* Micro-scratches for top disc */}
-          <filter id="platter-scratches">
-            <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="noise" />
-            <feColorMatrix type="matrix" values="1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 0.1 0" />
-            <feBlend mode="multiply" in2="SourceGraphic" />
-          </filter>
         </defs>
 
         {/* ── 1. Contact shadow cast by platter onto plinth ── */}
-        <ellipse cx="200" cy="208" rx="198" ry="196" fill="url(#platter-well-shadow)" filter="blur(6px)" />
-        <ellipse cx="200" cy="210" rx="196" ry="192" fill="rgba(0,0,0,0.9)" filter="blur(3px)" />
+        <ellipse cx="200" cy="208" rx="198" ry="196" fill="url(#platter-well-shadow)" />
+        <ellipse cx="200" cy="210" rx="196" ry="192" fill="rgba(0,0,0,0.85)" opacity="0.6" />
 
         {/* ── 2. Platter Vertical Side Face (3D cylinder thickness ~12px drop) ── */}
         {/* Front drop arc */}
@@ -92,7 +85,7 @@ export const Platter = memo(({ className, style, size = '100%', ...props }: Plat
         />
 
         {/* ── 3. Platter Top Disc & Thin Chamfer Bevel Lip ── */}
-        <circle cx="200" cy="200" r="196" fill="#141416" filter="url(#platter-scratches)" />
+        <circle cx="200" cy="200" r="196" fill="#141416" />
         <circle cx="200" cy="200" r="196" fill="url(#platter-top-lip)" />
 
         {/* Crisp metallic bevel rim stroke */}

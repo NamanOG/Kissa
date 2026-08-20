@@ -21,25 +21,29 @@ export const Slipmat = memo(({ className, style, size = '92%', ...props }: Slipm
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          <filter id="slipmat-felt">
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="1.8"
-              numOctaves="3"
-              stitchTiles="stitch"
-            />
-            <feColorMatrix type="matrix" values="1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 0.06 0" />
-            <feBlend mode="overlay" in2="SourceGraphic" />
-          </filter>
+          <radialGradient id="slipmat-felt-grad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#1e1e22" />
+            <stop offset="60%" stopColor="#151518" />
+            <stop offset="95%" stopColor="#0d0d0f" />
+            <stop offset="100%" stopColor="#08080a" />
+          </radialGradient>
         </defs>
 
         <circle
           cx="50"
           cy="50"
           r="49"
-          fill="#111113"
-          filter="url(#slipmat-felt)"
-          stroke="rgba(0,0,0,0.8)"
+          fill="url(#slipmat-felt-grad)"
+          stroke="rgba(0,0,0,0.85)"
+          strokeWidth="0.5"
+        />
+        {/* Subtle acoustic alignment guide ring */}
+        <circle
+          cx="50"
+          cy="50"
+          r="32"
+          fill="none"
+          stroke="rgba(255,255,255,0.03)"
           strokeWidth="0.5"
         />
       </svg>

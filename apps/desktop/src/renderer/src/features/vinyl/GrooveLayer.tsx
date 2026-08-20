@@ -63,16 +63,6 @@ export const GrooveLayer = memo(
           }}
         />
 
-        {/* Soft-light PVC vinyl material noise */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none rounded-full" viewBox="0 0 100 100">
-          <filter id="vinyl-noise">
-            <feTurbulence type="fractalNoise" baseFrequency="2.5" numOctaves="3" result="noise" />
-            <feColorMatrix type="matrix" values="1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 0.12 0" />
-            <feBlend mode="soft-light" in2="SourceGraphic" />
-          </filter>
-          <circle cx="50" cy="50" r="50" fill="transparent" filter="url(#vinyl-noise)" />
-        </svg>
-
         {/* Physical SVG groove rings catching light */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.15" />

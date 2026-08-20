@@ -18,7 +18,6 @@ export const TurntableBase = memo(
           viewBox="0 0 1000 700"
           xmlns="http://www.w3.org/2000/svg"
           preserveAspectRatio="none"
-          filter="url(#plinth-shadow)"
         >
           <defs>
             {/* Smoked acrylic / graphite satin composite */}
@@ -52,29 +51,19 @@ export const TurntableBase = memo(
               <stop offset="100%" stopColor="#211a18" />
             </radialGradient>
 
-            {/* Authentic Wood grain texture for plinth */}
-            <filter id="plinth-wood" x="0%" y="0%" width="100%" height="100%">
-              <feTurbulence
-                type="fractalNoise"
-                baseFrequency="0.01 0.12"
-                numOctaves="4"
-                stitchTiles="stitch"
-              />
-              <feColorMatrix type="matrix" values="1 0 0 0 0, 0 1 0 0 0, 0 0 1 0 0, 0 0 0 0.04 0" />
-              <feBlend mode="overlay" in2="SourceGraphic" />
-            </filter>
+            {/* Soft specular studio catchlight */}
+            <radialGradient id="plinth-specular" cx="45%" cy="35%" r="55%">
+              <stop offset="0%" stopColor="rgba(255,240,210,0.09)" />
+              <stop offset="50%" stopColor="rgba(255,240,210,0.03)" />
+              <stop offset="100%" stopColor="transparent" />
+            </radialGradient>
 
-            {/* Realistic directional cast shadow */}
-            <filter id="plinth-shadow" x="-10%" y="-10%" width="120%" height="130%">
-              <feDropShadow dx="-4" dy="12" stdDeviation="12" floodColor="#000" floodOpacity="0.6" />
-            </filter>
-
-            {/* Chamfer highlight along top rim */}
+            {/* Chamfer highlight along top rim — warm subtle sheen */}
             <linearGradient id="top-edge-highlight" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="rgba(255,255,255,0.18)" />
-              <stop offset="40%" stopColor="rgba(255,255,255,0.12)" />
-              <stop offset="80%" stopColor="rgba(255,255,255,0.04)" />
-              <stop offset="100%" stopColor="rgba(255,255,255,0.08)" />
+              <stop offset="0%" stopColor="rgba(215,167,108,0.15)" />
+              <stop offset="40%" stopColor="rgba(255,255,255,0.07)" />
+              <stop offset="80%" stopColor="rgba(0,0,0,0.4)" />
+              <stop offset="100%" stopColor="rgba(215,167,108,0.08)" />
             </linearGradient>
           </defs>
 
@@ -101,7 +90,6 @@ export const TurntableBase = memo(
             rx="18"
             ry="18"
             fill="url(#plinth-top)"
-            filter="url(#plinth-wood)"
           />
 
           {/* Top Chamfer Edge Highlight */}
@@ -114,7 +102,7 @@ export const TurntableBase = memo(
             ry="17"
             fill="none"
             stroke="url(#top-edge-highlight)"
-            strokeWidth="2"
+            strokeWidth="1"
           />
 
           {/* Inner bevel shadow stroke */}
@@ -131,7 +119,7 @@ export const TurntableBase = memo(
           />
 
           {/* Specular catchlight from key studio lamp */}
-          <ellipse cx="180" cy="80" rx="140" ry="70" fill="rgba(255,240,210,0.12)" filter="blur(20px)" />
+          <ellipse cx="180" cy="80" rx="140" ry="70" fill="url(#plinth-specular)" />
 
           {/* ── Front Face (3D vertical thickness) ──────────── */}
           <path
