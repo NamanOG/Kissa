@@ -17,12 +17,16 @@ import { useUpdateChecker } from './hooks/useUpdateChecker'
 import { VinylEngine } from './features/vinyl'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
 import { X } from 'lucide-react'
+import { cn } from './utils/cn'
 
 function App(): React.JSX.Element {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const activeView = usePlayerStore((s) => s.activeView)
   const showSideLyrics = usePlayerStore((s) => s.showSideLyrics)
   const toggleSideLyrics = usePlayerStore((s) => s.toggleSideLyrics)
+  const theme = usePlayerStore((s) => s.theme)
+
+  const isLightTheme = theme === 'sunday-morning' || theme === 'concrete-vinyl'
 
   // Real audio playback engine (handles audio elements, time sync, seeking & volume)
   useAudioPlayback()
@@ -49,34 +53,32 @@ function App(): React.JSX.Element {
 
       {/* Main content area */}
       <ContentArea>
-        <div className="app-region-no-drag relative flex-1 min-h-0 overflow-hidden pt-4 min-[900px]:pt-0">
-          <AnimatePresence initial={false}>
+        {/* Dynamic Main View Switcher */}
+        <div className="relative flex-1 min-h-0 w-full overflow-hidden">
+          <AnimatePresence mode="wait">
             {activeView === 'deck' ? (
-              /* ═════════ VIEW 1: 3D Turntable Deck View (Default Hero) ═════════ */
+              /* ═════════ VIEW 1: Vinyl Deck & Listening Room ═════════ */
               <motion.div
                 key="deck-view"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.16, ease: 'easeOut' }}
-                className={[
-                  'relative h-full w-full overflow-hidden no-scrollbar grid grid-rows-1',
+                className={cn(
+                  'h-full w-full grid min-h-0 overflow-hidden',
                   showSideLyrics
-                    ? 'min-[1100px]:grid-cols-[minmax(220px,0.26fr)_minmax(360px,0.48fr)_minmax(240px,0.26fr)] grid-cols-[minmax(200px,0.34fr)_minmax(0,0.66fr)]'
-                    : 'grid-cols-[minmax(200px,0.32fr)_minmax(0,0.68fr)]'
-                ].join(' ')}
+                    ? 'grid-cols-1 min-[900px]:grid-cols-[minmax(280px,0.9fr)_minmax(320px,1.4fr)] min-[1100px]:grid-cols-[minmax(260px,0.8fr)_minmax(320px,1.4fr)_minmax(260px,0.8fr)]'
+                    : 'grid-cols-1 min-[900px]:grid-cols-[minmax(280px,0.9fr)_minmax(340px,1.5fr)] min-[1200px]:grid-cols-[minmax(320px,1fr)_minmax(400px,1.7fr)]'
+                )}
               >
-                {/* Left Column: Metadata & Album Art */}
-                <MetadataPanel className="h-full min-h-0 overflow-y-auto no-scrollbar" />
+                {/* Left: Metadata & Now Playing Panel */}
+                <aside className="min-h-0 flex flex-col justify-center overflow-y-auto no-scrollbar">
+                  <MetadataPanel />
+                </aside>
 
-                {/* Center Hero: 3D Turntable Deck */}
-                <section
-                  className="relative flex min-h-0 min-w-0 h-full w-full items-center justify-center p-2 min-[800px]:p-4 min-[1200px]:p-8 overflow-hidden"
-                >
-                  <TurntableEngine
-                    className="w-full max-w-[840px] max-h-full"
-                    albumArt={currentTrack?.artworkUrl}
-                  />
+                {/* Center: Turntable Deck */}
+                <section className="min-h-0 flex items-center justify-center p-2 min-[900px]:p-4 overflow-hidden">
+                  <TurntableEngine />
                 </section>
 
                 {/* Optional Side Lyrics Panel (Only shown when user requests) */}
@@ -86,16 +88,36 @@ function App(): React.JSX.Element {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 12 }}
                     transition={{ duration: 0.16, ease: 'easeOut' }}
-                    className="hidden min-[1100px]:flex flex-col min-h-0 border-l border-white/[0.08] bg-[#1a1412]/90 px-5 py-6"
+                    className={cn(
+                      'hidden min-[1100px]:flex flex-col min-h-0 border-l px-5 py-6 backdrop-blur-xl',
+                      isLightTheme
+                        ? 'border-black/[0.08] bg-[#f2e8d2]/90 shadow-[-8px_0_24px_rgba(0,0,0,0.06)]'
+                        : 'border-white/[0.08] bg-[#1a1412]/90'
+                    )}
                   >
-                    <div className="flex items-center justify-between pb-3 shrink-0 border-b border-white/[0.06]">
-                      <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#b7a99b] font-bold">
+                    <div
+                      className={cn(
+                        'flex items-center justify-between pb-3 shrink-0 border-b',
+                        isLightTheme ? 'border-black/[0.08]' : 'border-white/[0.06]'
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'font-mono text-[9.5px] uppercase tracking-[0.22em] font-bold',
+                          isLightTheme ? 'text-[#7a6c5f]' : 'text-[#b7a99b]'
+                        )}
+                      >
                         SIDE LYRICS
                       </span>
                       <button
                         type="button"
                         onClick={toggleSideLyrics}
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[#887b70] hover:text-[#f5efe6] hover:bg-white/[0.08] transition-all cursor-pointer"
+                        className={cn(
+                          'w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer',
+                          isLightTheme
+                            ? 'text-[#7a6c5f] hover:text-[#181411] hover:bg-black/[0.06]'
+                            : 'text-[#887b70] hover:text-[#f5efe6] hover:bg-white/[0.08]'
+                        )}
                         title="Close Side Lyrics"
                       >
                         <X className="w-3.5 h-3.5" />
@@ -123,28 +145,53 @@ function App(): React.JSX.Element {
                 </div>
 
                 {/* Right: Floating Vinyl Album Card Widget */}
-                <div className="hidden min-[900px]:flex flex-col items-center justify-center p-8 border-l border-white/[0.06] bg-[#1a1412]/90">
+                <div
+                  className={cn(
+                    'hidden min-[900px]:flex flex-col items-center justify-center p-8 border-l backdrop-blur-xl',
+                    isLightTheme
+                      ? 'border-black/[0.08] bg-[#f2e8d2]/85 shadow-[-12px_0_32px_rgba(0,0,0,0.05)]'
+                      : 'border-white/[0.06] bg-[#1a1412]/90'
+                  )}
+                >
                   {/* Floating Spinning Vinyl */}
                   <div className="relative w-full max-w-[280px] aspect-square flex items-center justify-center">
-                    <div className="absolute inset-4 rounded-full bg-[#d7a76c]/10 blur-2xl pointer-events-none" />
+                    <div
+                      className={cn(
+                        'absolute inset-4 rounded-full blur-2xl pointer-events-none',
+                        isLightTheme ? 'bg-[#b45309]/15' : 'bg-[#d7a76c]/10'
+                      )}
+                    />
                     <VinylEngine
                       albumArt={currentTrack?.artworkUrl ?? albumPlaceholder}
-                      className="w-full h-full drop-shadow-[0_24px_48px_rgba(14,9,7,0.6)]"
+                      className="w-full h-full drop-shadow-[0_24px_48px_rgba(14,9,7,0.4)]"
                     />
                   </div>
 
                   {/* Track Info Below Floating Vinyl */}
                   <div className="mt-8 text-center w-full px-4">
                     <h2
-                      className="font-serif text-2xl text-[#f5efe6] font-medium line-clamp-1 tracking-tight"
+                      className={cn(
+                        'font-serif text-2xl font-medium line-clamp-1 tracking-tight',
+                        isLightTheme ? 'text-[#181411]' : 'text-[#f5efe6]'
+                      )}
                       title={currentTrack?.title}
                     >
                       {currentTrack?.title ?? '—'}
                     </h2>
-                    <p className="mt-1 text-sm text-[#b7a99b] line-clamp-1">
+                    <p
+                      className={cn(
+                        'mt-1 text-sm line-clamp-1',
+                        isLightTheme ? 'text-[#6e6052]' : 'text-[#b7a99b]'
+                      )}
+                    >
                       {currentTrack?.artist ?? '—'}
                     </p>
-                    <p className="mt-0.5 text-xs text-[#887b70] line-clamp-1">
+                    <p
+                      className={cn(
+                        'mt-0.5 text-xs line-clamp-1',
+                        isLightTheme ? 'text-[#968778]' : 'text-[#887b70]'
+                      )}
+                    >
                       {currentTrack?.album ?? '—'}
                     </p>
                   </div>

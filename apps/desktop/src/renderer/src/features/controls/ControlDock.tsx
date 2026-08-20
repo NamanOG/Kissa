@@ -19,14 +19,21 @@ const Scrubber = memo(() => {
   const progress = usePlayerStore((s) => s.progress)
   const setProgress = usePlayerStore((s) => s.setProgress)
   const currentTrack = usePlayerStore((s) => s.currentTrack)
-  
+  const theme = usePlayerStore((s) => s.theme)
+
+  const isLightTheme = theme === 'sunday-morning' || theme === 'concrete-vinyl'
   const duration = currentTrack?.duration ?? 0
   const elapsed = duration > 0 ? Math.min(progress, duration) : progress
   const progressPercent = duration > 0 ? (elapsed / duration) * 100 : 0
 
   return (
     <div className="flex items-center gap-2 min-[900px]:gap-3 flex-1 min-w-[50px] min-[800px]:min-w-[100px] min-[1100px]:min-w-[160px]">
-      <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums text-neutral-400 font-medium shrink-0">
+      <span
+        className={cn(
+          'font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0',
+          isLightTheme ? 'text-[#524438]' : 'text-neutral-400'
+        )}
+      >
         {formatTime(elapsed)}
       </span>
 
@@ -40,19 +47,35 @@ const Scrubber = memo(() => {
           setProgress(Math.round(ratio * duration))
         }}
       >
-        <div className="w-full h-[3px] bg-[#5a4940]/70 rounded-full relative">
+        <div
+          className={cn(
+            'w-full h-[3px] rounded-full relative',
+            isLightTheme ? 'bg-black/15' : 'bg-[#5a4940]/70'
+          )}
+        >
           <div
-            className="h-full bg-[#d7a76c] rounded-full"
+            className={cn(
+              'h-full rounded-full',
+              isLightTheme ? 'bg-[#b45309]' : 'bg-[#d7a76c]'
+            )}
             style={{ width: `${progressPercent}%` }}
           />
           <div
-            className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-[#e0bd8c] rounded-full shadow-[0_1px_4px_rgba(20,12,8,0.5)] -translate-x-1/2 transition-transform group-hover:scale-125"
+            className={cn(
+              'absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full shadow-[0_1px_4px_rgba(20,12,8,0.35)] -translate-x-1/2 transition-transform group-hover:scale-125',
+              isLightTheme ? 'bg-[#b45309]' : 'bg-[#e0bd8c]'
+            )}
             style={{ left: `${progressPercent}%` }}
           />
         </div>
       </div>
 
-      <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums text-neutral-500 font-medium shrink-0">
+      <span
+        className={cn(
+          'font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0',
+          isLightTheme ? 'text-[#7a6c5f]' : 'text-neutral-500'
+        )}
+      >
         {formatTime(duration)}
       </span>
     </div>
@@ -72,19 +95,23 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
   const setVolume = usePlayerStore((s) => s.setVolume)
   const activeView = usePlayerStore((s) => s.activeView)
   const setProgress = usePlayerStore((s) => s.setProgress)
+  const theme = usePlayerStore((s) => s.theme)
 
   const showSideLyrics = usePlayerStore((s) => s.showSideLyrics)
   const toggleSideLyrics = usePlayerStore((s) => s.toggleSideLyrics)
   const setActiveView = usePlayerStore((s) => s.setActiveView)
 
+  const isLightTheme = theme === 'sunday-morning' || theme === 'concrete-vinyl'
   const hasTrack = currentTrack !== null
   const isLyricsActive = activeView === 'lyrics' || showSideLyrics
 
   return (
     <div
       className={cn(
-        'relative z-30 mx-2 mb-2 min-[900px]:mx-3 min-[900px]:mb-3 flex h-[62px] min-[900px]:h-[70px] w-[calc(100%-1rem)] min-[900px]:w-[calc(100%-1.5rem)] shrink-0 items-center justify-between rounded-[1.2rem]',
-        'border border-white/[0.09] bg-[#2a211d]/60 shadow-[0_18px_46px_rgba(14,9,7,0.26),inset_0_1px_0_rgba(255,255,255,0.1)] backdrop-blur-xl',
+        'relative z-30 mx-2 mb-2 min-[900px]:mx-3 min-[900px]:mb-3 flex h-[62px] min-[900px]:h-[70px] w-[calc(100%-1rem)] min-[900px]:w-[calc(100%-1.5rem)] shrink-0 items-center justify-between rounded-[1.2rem] backdrop-blur-xl transition-colors',
+        isLightTheme
+          ? 'border border-black/[0.08] bg-[#f0e7d6]/75 shadow-[0_18px_46px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.6)]'
+          : 'border border-white/[0.09] bg-[#2a211d]/60 shadow-[0_18px_46px_rgba(14,9,7,0.26),inset_0_1px_0_rgba(255,255,255,0.1)]',
         'px-3 min-[900px]:px-6 min-[1200px]:px-8 select-none',
         !hasTrack && 'opacity-50 pointer-events-none',
         className
@@ -92,7 +119,13 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
     >
       {/* ── Left: Volume Slider ─────────────────────────── */}
       <div className="flex items-center gap-2 min-[900px]:gap-3 w-[80px] min-[900px]:w-[120px] min-[1200px]:w-[150px] shrink-0">
-        <Volume2 className="h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 text-[#b7a99b] shrink-0" strokeWidth={1.75} />
+        <Volume2
+          className={cn(
+            'h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 shrink-0',
+            isLightTheme ? 'text-[#7a6c5f]' : 'text-[#b7a99b]'
+          )}
+          strokeWidth={1.75}
+        />
 
         <div
           className="relative flex-1 h-6 flex items-center cursor-pointer group"
@@ -104,15 +137,26 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           }}
         >
           {/* Base rail */}
-          <div className="w-full h-[3px] bg-[#5a4940]/70 rounded-full relative">
-            {/* Amber fill */}
+          <div
+            className={cn(
+              'w-full h-[3px] rounded-full relative',
+              isLightTheme ? 'bg-black/15' : 'bg-[#5a4940]/70'
+            )}
+          >
+            {/* Fill */}
             <div
-              className="h-full bg-[#d7a76c] rounded-full"
+              className={cn(
+                'h-full rounded-full',
+                isLightTheme ? 'bg-[#b45309]' : 'bg-[#d7a76c]'
+              )}
               style={{ width: `${volume}%` }}
             />
             {/* Round thumb */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-[#f5efe6] rounded-full -translate-x-1/2 transition-transform group-hover:scale-125"
+              className={cn(
+                'absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full -translate-x-1/2 transition-transform group-hover:scale-125',
+                isLightTheme ? 'bg-[#181411]' : 'bg-[#f5efe6]'
+              )}
               style={{ left: `${volume}%` }}
             />
           </div>
@@ -132,7 +176,10 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             }
           }}
           aria-label="Previous track"
-          className="text-[#b7a99b] hover:text-[#f5efe6] transition-colors cursor-pointer active:scale-95 shrink-0"
+          className={cn(
+            'transition-colors cursor-pointer active:scale-95 shrink-0',
+            isLightTheme ? 'text-[#7a6c5f] hover:text-[#181411]' : 'text-[#b7a99b] hover:text-[#f5efe6]'
+          )}
         >
           <SkipBack className="h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 fill-current" />
         </button>
@@ -150,13 +197,25 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           aria-label={isPlaying ? 'Pause' : 'Play'}
           className={cn(
             'relative h-8 w-8 min-[900px]:h-9 min-[900px]:w-9 rounded-full flex items-center justify-center cursor-pointer transition-all active:scale-95 shrink-0',
-            'border border-[#e0bd8c]/65 bg-[#3a2e27]/80 shadow-[0_4px_12px_rgba(14,9,7,0.34),inset_0_1px_0_rgba(255,255,255,0.13)] hover:border-[#f0d0a2] active:translate-y-px'
+            isLightTheme
+              ? 'border border-[#b45309]/60 bg-[#e4d7c0] shadow-[0_4px_12px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.4)] hover:border-[#b45309] active:translate-y-px'
+              : 'border border-[#e0bd8c]/65 bg-[#3a2e27]/80 shadow-[0_4px_12px_rgba(14,9,7,0.34),inset_0_1px_0_rgba(255,255,255,0.13)] hover:border-[#f0d0a2] active:translate-y-px'
           )}
         >
           {isPlaying ? (
-            <Pause className="h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 text-[#f5efe6] fill-[#f5efe6]" />
+            <Pause
+              className={cn(
+                'h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4',
+                isLightTheme ? 'text-[#181411] fill-[#181411]' : 'text-[#f5efe6] fill-[#f5efe6]'
+              )}
+            />
           ) : (
-            <Play className="h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 text-[#f5efe6] fill-[#f5efe6] ml-0.5" />
+            <Play
+              className={cn(
+                'h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 ml-0.5',
+                isLightTheme ? 'text-[#181411] fill-[#181411]' : 'text-[#f5efe6] fill-[#f5efe6]'
+              )}
+            />
           )}
         </button>
 
@@ -169,7 +228,10 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             }
           }}
           aria-label="Next track"
-          className="text-[#b7a99b] hover:text-[#f5efe6] transition-colors cursor-pointer active:scale-95 shrink-0"
+          className={cn(
+            'transition-colors cursor-pointer active:scale-95 shrink-0',
+            isLightTheme ? 'text-[#7a6c5f] hover:text-[#181411]' : 'text-[#b7a99b] hover:text-[#f5efe6]'
+          )}
         >
           <SkipForward className="h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 fill-current" />
         </button>
@@ -196,20 +258,36 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           className={cn(
             'flex items-center gap-1 px-2 min-[900px]:px-3 py-1 rounded-full border transition-all cursor-pointer select-none active:scale-95',
             isLyricsActive
-              ? 'border-[#d7a76c] bg-[#d7a76c]/15 text-[#f5efe6] shadow-[0_0_12px_rgba(215,167,108,0.3)]'
-              : 'border-white/[0.08] bg-[#342923]/55 text-[#a99b90] hover:text-[#f5efe6] hover:border-white/[0.15]'
+              ? isLightTheme
+                ? 'border-[#b45309] bg-[#b45309]/15 text-[#b45309] shadow-[0_0_12px_rgba(180,83,9,0.25)]'
+                : 'border-[#d7a76c] bg-[#d7a76c]/15 text-[#f5efe6] shadow-[0_0_12px_rgba(215,167,108,0.3)]'
+              : isLightTheme
+                ? 'border-black/[0.08] bg-[#e4d7c0]/60 text-[#7a6c5f] hover:text-[#181411] hover:border-black/[0.15]'
+                : 'border-white/[0.08] bg-[#342923]/55 text-[#a99b90] hover:text-[#f5efe6] hover:border-white/[0.15]'
           )}
           title={isLyricsActive ? 'Hide Lyrics' : 'Show Synced Lyrics'}
           aria-label="Toggle Live Lyrics"
         >
-          <Quote className={cn('w-3 h-3 min-[900px]:w-3.5 min-[900px]:h-3.5', isLyricsActive ? 'text-[#d7a76c]' : 'currentColor')} />
+          <Quote
+            className={cn(
+              'w-3 h-3 min-[900px]:w-3.5 min-[900px]:h-3.5',
+              isLyricsActive ? (isLightTheme ? 'text-[#b45309]' : 'text-[#d7a76c]') : 'currentColor'
+            )}
+          />
           <span className="hidden min-[760px]:inline font-mono text-[8.5px] min-[900px]:text-[9px] font-bold tracking-[0.14em] uppercase">
             Lyrics
           </span>
         </button>
 
         {/* Dynamic Source Pill */}
-        <div className="flex items-center gap-1.5 px-2 min-[900px]:px-2.5 py-1 rounded-full border border-white/[0.08] bg-[#342923]/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] transition-all">
+        <div
+          className={cn(
+            'flex items-center gap-1.5 px-2 min-[900px]:px-2.5 py-1 rounded-full border transition-all',
+            isLightTheme
+              ? 'border-black/[0.08] bg-[#e4d7c0]/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]'
+              : 'border-white/[0.08] bg-[#342923]/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]'
+          )}
+        >
           {currentTrack?.source?.toLowerCase().includes('apple') ? (
             <div className="w-3 h-3 min-[900px]:w-3.5 min-[900px]:h-3.5 rounded-full bg-[#fa243c] flex items-center justify-center shrink-0">
               <svg className="w-1.5 h-1.5 min-[900px]:w-2 min-[900px]:h-2 fill-white -translate-y-[0.5px]" viewBox="0 0 170 170">
@@ -218,13 +296,18 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             </div>
           ) : (
             <div className="w-3 h-3 min-[900px]:w-3.5 min-[900px]:h-3.5 rounded-full bg-[#1db954] flex items-center justify-center shrink-0">
-              <svg className="w-2 h-2 fill-black" viewBox="0 0 24 24">
-                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.494 17.306c-.215.353-.675.467-1.028.252-2.817-1.722-6.362-2.111-10.539-1.157-.403.092-.807-.16-.899-.563-.092-.403.16-.807.563-.899 4.572-1.045 8.492-.595 11.651 1.339.353.215.467.675.252 1.028zm1.467-3.262c-.27.44-.848.58-1.288.31-3.225-1.982-8.14-2.557-11.954-1.399-.496.15-1.023-.133-1.173-.629-.15-.496.133-1.023.629-1.173 4.364-1.324 9.791-.682 13.476 1.583.44.27.58.848.31 1.288zm.126-3.41c-3.868-2.297-10.248-2.508-13.941-1.387-.593.18-1.223-.157-1.403-.75-.18-.593.157-1.223.75-1.403 4.244-1.289 11.282-1.041 15.733 1.601.533.316.708 1.011.392 1.544-.316.533-1.011.708-1.544.392z" />
+              <svg className="w-1.5 h-1.5 min-[900px]:w-2 min-[900px]:h-2 fill-white" viewBox="0 0 24 24">
+                <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
               </svg>
             </div>
           )}
-          <span className="font-mono text-[8.5px] min-[900px]:text-[9px] font-bold tracking-[0.14em] text-[#d6c9bb] uppercase truncate max-w-[55px] min-[900px]:max-w-none">
-            {currentTrack?.source || 'SPOTIFY'}
+          <span
+            className={cn(
+              'font-mono text-[8.5px] min-[900px]:text-[9px] font-bold tracking-[0.14em] uppercase',
+              isLightTheme ? 'text-[#524438]' : 'text-[#f5efe6]'
+            )}
+          >
+            {currentTrack?.source || 'System Audio'}
           </span>
         </div>
 

@@ -20,12 +20,18 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const setIsOnboardingOpen = usePlayerStore((s) => s.setIsOnboardingOpen)
     const isKeyboardHelpOpen = usePlayerStore((s) => s.isKeyboardHelpOpen)
     const toggleKeyboardHelp = usePlayerStore((s) => s.toggleKeyboardHelp)
+    const theme = usePlayerStore((s) => s.theme)
+
+    const isLightTheme = theme === 'sunday-morning' || theme === 'concrete-vinyl'
 
     return (
       <aside
         ref={ref}
         className={cn(
-          'z-40 m-3 flex h-[calc(100%-1.5rem)] w-[60px] shrink-0 flex-col items-center rounded-[1.25rem] border border-white/[0.08] bg-[#2a211d]/55 py-5 select-none shadow-[0_18px_46px_rgba(14,9,7,0.22),inset_0_1px_0_rgba(255,255,255,0.09)] backdrop-blur-xl',
+          'z-40 m-3 flex h-[calc(100%-1.5rem)] w-[60px] shrink-0 flex-col items-center rounded-[1.25rem] py-5 select-none backdrop-blur-xl transition-colors',
+          isLightTheme
+            ? 'border border-black/[0.08] bg-[#f0e7d6]/70 shadow-[0_18px_46px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.6)]'
+            : 'border border-white/[0.08] bg-[#2a211d]/55 shadow-[0_18px_46px_rgba(14,9,7,0.22),inset_0_1px_0_rgba(255,255,255,0.09)]',
           className
         )}
         {...props}
@@ -42,7 +48,14 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
           >
             {/* Active Glow Ring */}
             {activeView === 'deck' && (
-              <div className="absolute -inset-1 rounded-full border border-[#d7a76c]/80 bg-[#d7a76c]/[0.1] shadow-[0_0_14px_rgba(215,167,108,0.35)] transition-all animate-pulse" />
+              <div
+                className={cn(
+                  'absolute -inset-1 rounded-full animate-pulse transition-all',
+                  isLightTheme
+                    ? 'border border-[#b45309]/80 bg-[#b45309]/[0.1] shadow-[0_0_14px_rgba(180,83,9,0.3)]'
+                    : 'border border-[#d7a76c]/80 bg-[#d7a76c]/[0.1] shadow-[0_0_14px_rgba(215,167,108,0.35)]'
+                )}
+              />
             )}
             <div className="relative w-9 h-9 rounded-full overflow-hidden border border-white/[0.14] shadow-md group-hover:scale-105 transition-transform">
               <img
@@ -63,19 +76,31 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             title="Live Synced Lyrics"
           >
             {activeView === 'lyrics' && (
-              <div className="absolute inset-0 rounded-full border border-[#d7a76c]/80 bg-[#d7a76c]/[0.08] shadow-[0_0_12px_rgba(215,167,108,0.3)] transition-all" />
+              <div
+                className={cn(
+                  'absolute inset-0 rounded-full transition-all',
+                  isLightTheme
+                    ? 'border border-[#b45309]/80 bg-[#b45309]/[0.08] shadow-[0_0_12px_rgba(180,83,9,0.25)]'
+                    : 'border border-[#d7a76c]/80 bg-[#d7a76c]/[0.08] shadow-[0_0_12px_rgba(215,167,108,0.3)]'
+                )}
+              />
             )}
             <Quote
               className={cn(
                 'w-5 h-5 transition-colors',
                 activeView === 'lyrics'
-                  ? 'text-[#dfb47e]'
-                  : 'text-[#a99b90] group-hover:text-[#f5efe6]'
+                  ? isLightTheme ? 'text-[#b45309]' : 'text-[#dfb47e]'
+                  : isLightTheme ? 'text-[#7a6c5f] group-hover:text-[#181411]' : 'text-[#a99b90] group-hover:text-[#f5efe6]'
               )}
               strokeWidth={1.75}
             />
             {activeView === 'lyrics' && (
-              <div className="absolute w-1.5 h-1.5 rounded-full bg-[#dfb47e]" />
+              <div
+                className={cn(
+                  'absolute w-1.5 h-1.5 rounded-full',
+                  isLightTheme ? 'bg-[#b45309]' : 'bg-[#dfb47e]'
+                )}
+              />
             )}
           </button>
         </nav>
@@ -90,8 +115,12 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             className={cn(
               'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.96]',
               isOnboardingOpen
-                ? 'bg-[#d7a76c]/20 text-[#d7a76c] border border-[#d7a76c]/40 shadow-[0_0_12px_rgba(215,167,108,0.25)]'
-                : 'text-[#a99b90] hover:text-[#f5efe6] hover:bg-white/[0.06]'
+                ? isLightTheme
+                  ? 'bg-[#b45309]/15 text-[#b45309] border border-[#b45309]/40 shadow-[0_0_12px_rgba(180,83,9,0.2)]'
+                  : 'bg-[#d7a76c]/20 text-[#d7a76c] border border-[#d7a76c]/40 shadow-[0_0_12px_rgba(215,167,108,0.25)]'
+                : isLightTheme
+                  ? 'text-[#7a6c5f] hover:text-[#181411] hover:bg-black/[0.05]'
+                  : 'text-[#a99b90] hover:text-[#f5efe6] hover:bg-white/[0.06]'
             )}
             title="Open Welcome Guide & Instructions"
           >
@@ -106,8 +135,12 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             className={cn(
               'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.96]',
               isKeyboardHelpOpen
-                ? 'bg-[#d7a76c]/20 text-[#d7a76c] border border-[#d7a76c]/40 shadow-[0_0_12px_rgba(215,167,108,0.25)]'
-                : 'text-[#a99b90] hover:text-[#f5efe6] hover:bg-white/[0.06]'
+                ? isLightTheme
+                  ? 'bg-[#b45309]/15 text-[#b45309] border border-[#b45309]/40 shadow-[0_0_12px_rgba(180,83,9,0.2)]'
+                  : 'bg-[#d7a76c]/20 text-[#d7a76c] border border-[#d7a76c]/40 shadow-[0_0_12px_rgba(215,167,108,0.25)]'
+                : isLightTheme
+                  ? 'text-[#7a6c5f] hover:text-[#181411] hover:bg-black/[0.05]'
+                  : 'text-[#a99b90] hover:text-[#f5efe6] hover:bg-white/[0.06]'
             )}
             title="Keyboard Shortcuts"
           >
@@ -122,8 +155,12 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             className={cn(
               'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.96]',
               isSettingsOpen
-                ? 'bg-[#d7a76c]/20 text-[#d7a76c] border border-[#d7a76c]/40 shadow-[0_0_12px_rgba(215,167,108,0.25)]'
-                : 'text-[#a99b90] hover:text-[#f5efe6] hover:bg-white/[0.06]'
+                ? isLightTheme
+                  ? 'bg-[#b45309]/15 text-[#b45309] border border-[#b45309]/40 shadow-[0_0_12px_rgba(180,83,9,0.2)]'
+                  : 'bg-[#d7a76c]/20 text-[#d7a76c] border border-[#d7a76c]/40 shadow-[0_0_12px_rgba(215,167,108,0.25)]'
+                : isLightTheme
+                  ? 'text-[#7a6c5f] hover:text-[#181411] hover:bg-black/[0.05]'
+                  : 'text-[#a99b90] hover:text-[#f5efe6] hover:bg-white/[0.06]'
             )}
             title="Open Preferences & Environments"
           >
