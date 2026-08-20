@@ -142,7 +142,7 @@ export class MediaDetectionService {
   private lastPayloadJson: string | null = null
   private latestVolume: { master: number; isMuted: boolean } = { master: 100, isMuted: false }
 
-  private constructor() {}
+  private constructor() { }
 
   public static getInstance(): MediaDetectionService {
     if (!MediaDetectionService.instance) {
@@ -209,17 +209,16 @@ export class MediaDetectionService {
 
     try {
       console.log('[MediaDetectionService] Resolving absolute path to SMTC helper...')
-      
+
       let helperPath = ''
       if (electronApp.isPackaged) {
         helperPath = join(process.resourcesPath, 'smtc-helper.exe')
       } else {
         helperPath = join(electronApp.getAppPath(), 'resources', 'smtc-helper.exe')
       }
-      
+
       console.log(`[MediaDetectionService] Resolved helper path: ${helperPath}`)
 
-      // Spawn the worker and pass the helper path
       this.worker = new Worker(join(__dirname, 'smtcWorker.js'), {
         workerData: { helperPath }
       })
@@ -263,7 +262,6 @@ export class MediaDetectionService {
       this.broadcast(payload)
     }
 
-    // If artwork was not provided in this payload, fetch in background via iTunes Search API
     if (payload && !payload.artworkDataUrl && payload.title && payload.artist) {
       const currentTitle = payload.title
       const currentArtist = payload.artist
@@ -286,7 +284,6 @@ export class MediaDetectionService {
           }
         })
         .catch(() => {
-          // Ignore network errors
         })
     }
   }
@@ -306,7 +303,6 @@ export class MediaDetectionService {
         this.worker.postMessage('stop')
         this.worker.terminate()
       } catch {
-        // Ignore
       }
       this.worker = null
     }

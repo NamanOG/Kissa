@@ -103,35 +103,35 @@ const LyricRowItem = memo(({
   onLineClick,
   onHover
 }: LyricRowItemProps): React.JSX.Element => {
-  // Apple Music optical depth via GPU-accelerated opacity & subtle scale
+  // Apple Music optical depth via GPU-accelerated opacity & scale
   let opacityClass = 'opacity-20'
   let scaleVal = 0.95
 
   if (isActive) {
     opacityClass = 'opacity-100'
-    scaleVal = isLargeView ? 1.03 : 1.02
+    scaleVal = isLargeView ? 1.04 : 1.03
   } else if (distance === 1) {
-    opacityClass = isHovered ? 'opacity-90' : isLightTheme ? 'opacity-65' : 'opacity-45'
+    opacityClass = isHovered ? 'opacity-95' : isLightTheme ? 'opacity-65' : 'opacity-55'
     scaleVal = 0.98
   } else if (distance === 2) {
-    opacityClass = isHovered ? 'opacity-75' : isLightTheme ? 'opacity-45' : 'opacity-30'
+    opacityClass = isHovered ? 'opacity-80' : isLightTheme ? 'opacity-45' : 'opacity-35'
     scaleVal = 0.96
   } else {
-    opacityClass = isHovered ? 'opacity-55' : isLightTheme ? 'opacity-30' : 'opacity-15'
+    opacityClass = isHovered ? 'opacity-60' : isLightTheme ? 'opacity-30' : 'opacity-20'
     scaleVal = 0.94
   }
 
   const textColorClass = isLightTheme
     ? isActive
-      ? 'font-semibold text-[#181411]'
+      ? 'font-bold text-[#14100d] drop-shadow-[0_1px_2px_rgba(0,0,0,0.12)]'
       : isHovered
         ? 'text-[#2a221b]'
         : 'text-[#524438]'
     : isActive
-      ? 'font-medium text-[#f5efe6]'
+      ? 'font-bold text-[#ffffff] drop-shadow-[0_2px_14px_rgba(255,255,255,0.3)]'
       : isHovered
-        ? 'text-[#d6c9bb]'
-        : 'text-[#9d9187]'
+        ? 'text-[#e6dbcf]'
+        : 'text-[#a8998b]'
 
   return (
     <div
@@ -140,7 +140,7 @@ const LyricRowItem = memo(({
       onMouseEnter={() => onHover(index)}
       onMouseLeave={() => onHover(null)}
       className={cn(
-        'group relative cursor-pointer rounded-xl px-3 py-1.5 transition-all duration-300 ease-out transform-gpu will-change-transform',
+        'group relative cursor-pointer rounded-xl px-3.5 py-2 transition-all duration-300 ease-out transform-gpu will-change-transform',
         isActive && 'cursor-default'
       )}
       style={{
@@ -148,9 +148,21 @@ const LyricRowItem = memo(({
         transformOrigin: 'left center'
       }}
     >
+      {/* Active Line Glowing Amber Accent Indicator */}
+      {isActive && (
+        <div
+          className={cn(
+            'absolute -left-1.5 top-1/2 -translate-y-1/2 w-[3.5px] h-[70%] rounded-full transition-all duration-300',
+            isLightTheme
+              ? 'bg-[#b45309] shadow-[0_0_8px_rgba(180,83,9,0.55)]'
+              : 'bg-[#d7a76c] shadow-[0_0_10px_rgba(215,167,108,0.8)]'
+          )}
+        />
+      )}
+
       <p
         className={cn(
-          'font-serif tracking-[-0.015em] transition-colors duration-300 ease-out',
+          'font-serif tracking-[-0.015em] transition-all duration-300 ease-out',
           isLargeView
             ? 'text-[clamp(1.9rem,3.2vw,3.1rem)] leading-[1.08]'
             : 'text-[clamp(1.35rem,2.1vw,1.95rem)] leading-[1.12]',
@@ -165,7 +177,7 @@ const LyricRowItem = memo(({
       {!isActive && isHovered && (
         <div
           className={cn(
-            'absolute -left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-80 pointer-events-none',
+            'absolute -left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-80 pointer-events-none',
             isLightTheme ? 'text-[#b45309]' : 'text-[#d7a76c]'
           )}
         >
@@ -205,6 +217,7 @@ export const SyncedLyrics = memo(({
   const containerRef = useRef<HTMLDivElement>(null)
   const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scrollAnimRef = useRef<number | null>(null)
+  const isProgrammaticScrollRef = useRef(false)
 
   // ── 1. Fetch live LRC lyrics via Electron IPC or fall back to default track lyrics ──
   useEffect(() => {
@@ -313,14 +326,16 @@ export const SyncedLyrics = memo(({
     const container = containerRef.current
     const startTop = container.scrollTop
     const distance = targetTop - startTop
-    if (Math.abs(distance) < 2) return
+    if (Math.abs(distance) < 1.5) return
 
     if (scrollAnimRef.current !== null) {
       cancelAnimationFrame(scrollAnimRef.current)
+      scrollAnimRef.current = null
     }
 
+    isProgrammaticScrollRef.current = true
     const startTime = performance.now()
-    const duration = Math.min(380, Math.max(180, Math.abs(distance) * 0.5))
+    const duration = Math.min(420, Math.max(220, Math.abs(distance) * 0.55))
 
     const step = (currentTime: number): void => {
       const elapsed = currentTime - startTime
@@ -333,6 +348,10 @@ export const SyncedLyrics = memo(({
         scrollAnimRef.current = requestAnimationFrame(step)
       } else {
         scrollAnimRef.current = null
+        // Release programmatic lock after slight delay so trailing scroll events are ignored
+        setTimeout(() => {
+          isProgrammaticScrollRef.current = false
+        }, 50)
       }
     }
 
@@ -345,17 +364,22 @@ export const SyncedLyrics = memo(({
     const activeEl = container.querySelector(`[data-lyric-idx="${activeIndex}"]`) as HTMLElement | null
     if (!activeEl) return
 
+    const containerRect = container.getBoundingClientRect()
+    const activeRect = activeEl.getBoundingClientRect()
+    const currentRelativeTop = activeRect.top - containerRect.top + container.scrollTop
     const containerHeight = container.clientHeight
-    const targetTop = activeEl.offsetTop - containerHeight * 0.40 + activeEl.clientHeight / 2
+    // Center the active line precisely at 42% of the container height (ideal optical focus)
+    const targetTop = currentRelativeTop - containerHeight * 0.42 + activeEl.clientHeight / 2
     smoothScrollTo(Math.max(0, targetTop))
   }, [activeIndex, userIsScrolling, smoothScrollTo])
 
   // Detect manual user scrolling to temporarily suspend auto-scroll
-  const handleScroll = (): void => {
+  const handleUserInteraction = (): void => {
     if (scrollAnimRef.current !== null) {
       cancelAnimationFrame(scrollAnimRef.current)
       scrollAnimRef.current = null
     }
+    isProgrammaticScrollRef.current = false
     setUserIsScrolling(true)
     if (userScrollTimeoutRef.current) {
       clearTimeout(userScrollTimeoutRef.current)
@@ -364,6 +388,14 @@ export const SyncedLyrics = memo(({
     userScrollTimeoutRef.current = setTimeout(() => {
       setUserIsScrolling(false)
     }, 3000)
+  }
+
+  const handleScroll = (): void => {
+    // If this scroll event came from our programmatic smooth scroll, do not cancel auto-scroll!
+    if (isProgrammaticScrollRef.current) {
+      return
+    }
+    handleUserInteraction()
   }
 
   // ── 5. Click-to-seek handler ──
@@ -411,8 +443,14 @@ export const SyncedLyrics = memo(({
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        onWheel={handleScroll}
-        onTouchMove={handleScroll}
+        onWheel={handleUserInteraction}
+        onTouchMove={handleUserInteraction}
+        onPointerDown={(e) => {
+          // If clicking background or scrollbar (not lyric text), mark user interaction
+          if (e.target === containerRef.current) {
+            handleUserInteraction()
+          }
+        }}
         className="relative flex-1 min-h-0 overflow-y-auto px-6 py-12 min-[900px]:px-10 no-scrollbar"
         style={{
           maskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
@@ -420,7 +458,7 @@ export const SyncedLyrics = memo(({
         }}
       >
         {status === 'ready' && lyricLines.length > 0 && (
-          <div className="space-y-6 min-[900px]:space-y-8 py-[38vh]">
+          <div className="space-y-6 min-[900px]:space-y-8 py-[45vh]">
             {lyricLines.map((line, index) => {
               const isActive = index === activeIndex
               const distance = Math.abs(index - activeIndex)

@@ -1,7 +1,6 @@
 import { parentPort, workerData } from 'worker_threads'
 import { spawn, type ChildProcess } from 'child_process'
 
-// We must pass the executable path via workerData
 const helperPath = workerData?.helperPath
 
 if (!helperPath) {
@@ -13,11 +12,11 @@ let helperProcess: ChildProcess | null = null
 function startHelper(): void {
   try {
     helperProcess = spawn(helperPath, [], { stdio: ['pipe', 'pipe', 'pipe'] })
-    
+
     if (!helperProcess.stdout) return
-    
+
     let buffer = ''
-    
+
     helperProcess.stdout.on('data', (data: Buffer) => {
       buffer += data.toString('utf-8')
       let newlineIdx: number
@@ -44,7 +43,7 @@ function startHelper(): void {
         parentPort.postMessage({ type: 'error', error: data.toString('utf-8') })
       }
     })
-    
+
     helperProcess.on('exit', () => {
       helperProcess = null
     })
@@ -64,7 +63,6 @@ parentPort?.on('message', (msg) => {
         helperProcess.stdin.write('stop\n')
         helperProcess.stdin.end()
       } catch (e) {
-        // ignore
       }
     }
     process.exit(0)
@@ -73,7 +71,6 @@ parentPort?.on('message', (msg) => {
       try {
         helperProcess.stdin.write(JSON.stringify(msg) + '\n')
       } catch (e) {
-        // ignore write error
       }
     }
   }

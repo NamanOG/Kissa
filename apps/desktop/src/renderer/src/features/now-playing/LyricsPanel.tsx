@@ -9,10 +9,6 @@ export interface LyricsPanelProps {
   isLargeView?: boolean
 }
 
-/**
- * High-End Lyrics Panel.
- * Embeds Apple Music-style fluid synchronized lyrics with frosted glass styling.
- */
 export const LyricsPanel = memo(({ className, isLargeView = false }: LyricsPanelProps): React.JSX.Element => {
   const currentTrack = usePlayerStore((state) => state.currentTrack)
 
