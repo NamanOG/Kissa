@@ -45,7 +45,7 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       const current = tonearmRotation.get()
       const diff = REST_ANGLE - current
       if (Math.abs(diff) > 0.01) {
-        tonearmRotation.set(current + diff * Math.min(1, delta / 120))
+        tonearmRotation.set(current + diff * Math.min(1, delta / 80))
       } else {
         tonearmRotation.set(REST_ANGLE)
       }
@@ -59,7 +59,13 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
 
       const current = tonearmRotation.get()
       const diff = target - current
-      tonearmRotation.set(current + diff * Math.min(1, delta / 180))
+
+      // Rapid, fluid cueing on track reset or large seek (~80ms), silky smooth during normal playback
+      const speed = diff < -0.8 || Math.abs(diff) > 3.5
+        ? Math.min(1, delta / 35)
+        : Math.min(1, delta / 120)
+
+      tonearmRotation.set(current + diff * speed)
     }
   })
 

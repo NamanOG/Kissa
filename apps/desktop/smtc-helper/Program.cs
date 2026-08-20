@@ -12,6 +12,8 @@ namespace SmtcHelper
         private static GlobalSystemMediaTransportControlsSessionManager? _sessionManager;
         private static GlobalSystemMediaTransportControlsSession? _currentSession;
         private static readonly object _lock = new object();
+        private static string _lastBroadcastJson = "";
+        private static string _lastTrackKey = "";
 
         static async Task Main(string[] args)
         {
@@ -27,6 +29,23 @@ namespace SmtcHelper
                 _sessionManager.CurrentSessionChanged += OnCurrentSessionChanged;
                 
                 await UpdateCurrentSessionAsync();
+
+                // High-frequency polling loop (200ms) to ensure instantaneous track transition detection
+                _ = Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        try
+                        {
+                            await Task.Delay(200);
+                            await BroadcastStateAsync(false);
+                        }
+                        catch
+                        {
+                            // Ignore transient polling exceptions
+                        }
+                    }
+                });
 
                 using (var reader = new StreamReader(Console.OpenStandardInput()))
                 {
@@ -72,25 +91,25 @@ namespace SmtcHelper
                 newSession.TimelinePropertiesChanged += OnTimelinePropertiesChanged;
             }
 
-            await BroadcastStateAsync();
+            await BroadcastStateAsync(true);
         }
 
         private static async void OnMediaPropertiesChanged(GlobalSystemMediaTransportControlsSession sender, MediaPropertiesChangedEventArgs args)
         {
-            await BroadcastStateAsync();
+            await BroadcastStateAsync(true);
         }
 
         private static async void OnPlaybackInfoChanged(GlobalSystemMediaTransportControlsSession sender, PlaybackInfoChangedEventArgs args)
         {
-            await BroadcastStateAsync();
+            await BroadcastStateAsync(true);
         }
 
         private static async void OnTimelinePropertiesChanged(GlobalSystemMediaTransportControlsSession sender, TimelinePropertiesChangedEventArgs args)
         {
-            await BroadcastStateAsync();
+            await BroadcastStateAsync(false);
         }
 
-        private static async Task BroadcastStateAsync()
+        private static async Task BroadcastStateAsync(bool force)
         {
             try
             {
@@ -98,12 +117,21 @@ namespace SmtcHelper
                 lock (_lock)
                 {
                     session = _currentSession;
+                    if (session == null && _sessionManager != null)
+                    {
+                        session = _sessionManager.GetCurrentSession();
+                        _currentSession = session;
+                    }
                 }
 
                 if (session == null)
                 {
-                    Console.WriteLine("{\"type\":\"update\",\"session\":null}");
-                    Console.Out.Flush();
+                    if (force || _lastBroadcastJson != "null")
+                    {
+                        _lastBroadcastJson = "null";
+                        Console.WriteLine("{\"type\":\"update\",\"session\":null}");
+                        Console.Out.Flush();
+                    }
                     return;
                 }
 
@@ -111,39 +139,41 @@ namespace SmtcHelper
                 var playbackInfo = session.GetPlaybackInfo();
                 var timelineInfo = session.GetTimelineProperties();
 
+                string rawTitle = mediaProps?.Title ?? "";
+                string rawArtist = mediaProps?.Artist ?? "";
+                string trackKey = $"{rawTitle}|{rawArtist}";
+                bool isNewTrack = trackKey != _lastTrackKey;
+
                 string? thumbnailBase64 = null;
-                if (mediaProps.Thumbnail != null)
+                if (mediaProps?.Thumbnail != null)
                 {
-                    for (int attempt = 0; attempt < 3; attempt++)
+                    try
                     {
-                        try
+                        using var cts = new CancellationTokenSource(isNewTrack ? 250 : 100);
+                        using var stream = await mediaProps.Thumbnail.OpenReadAsync().AsTask(cts.Token);
+                        if (stream != null && stream.Size > 0)
                         {
-                            using var stream = await mediaProps.Thumbnail.OpenReadAsync();
-                            if (stream != null && stream.Size > 0)
+                            using var memStream = new MemoryStream();
+                            var classicStream = stream.AsStreamForRead();
+                            await classicStream.CopyToAsync(memStream, cts.Token);
+                            var bytes = memStream.ToArray();
+                            if (bytes.Length > 0)
                             {
-                                using var memStream = new MemoryStream();
-                                var classicStream = stream.AsStreamForRead();
-                                await classicStream.CopyToAsync(memStream);
-                                var bytes = memStream.ToArray();
-                                if (bytes.Length > 0)
-                                {
-                                    thumbnailBase64 = Convert.ToBase64String(bytes);
-                                    break;
-                                }
+                                thumbnailBase64 = Convert.ToBase64String(bytes);
                             }
                         }
-                        catch
-                        {
-                            await Task.Delay(50);
-                        }
+                    }
+                    catch
+                    {
+                        // Thumbnail extraction timed out or locked — non-fatal, metadata still broadcasts immediately
                     }
                 }
 
                 string sourceAppId = JsonEscape(session.SourceAppUserModelId);
-                string title = JsonEscape(mediaProps.Title ?? "");
-                string artist = JsonEscape(mediaProps.Artist ?? "");
-                string albumTitle = JsonEscape(mediaProps.AlbumTitle ?? "");
-                string albumArtist = JsonEscape(mediaProps.AlbumArtist ?? "");
+                string title = JsonEscape(rawTitle);
+                string artist = JsonEscape(rawArtist);
+                string albumTitle = JsonEscape(mediaProps?.AlbumTitle ?? "");
+                string albumArtist = JsonEscape(mediaProps?.AlbumArtist ?? "");
                 string thumb = thumbnailBase64 != null ? JsonEscape(thumbnailBase64) : "null";
                 
                 int pStatus = (int)(playbackInfo?.PlaybackStatus ?? 0);
@@ -154,8 +184,14 @@ namespace SmtcHelper
 
                 string json = $@"{{""type"":""update"",""session"":{{""sourceAppId"":{sourceAppId},""media"":{{""title"":{title},""artist"":{artist},""albumTitle"":{albumTitle},""albumArtist"":{albumArtist},""thumbnailBase64"":{thumb}}},""playback"":{{""playbackStatus"":{pStatus},""playbackType"":{pType}}},""timeline"":{{""position"":{pos},""duration"":{dur}}}}}}}";
 
-                Console.WriteLine(json.Replace("\r", "").Replace("\n", ""));
-                Console.Out.Flush();
+                string cleanJson = json.Replace("\r", "").Replace("\n", "");
+                if (force || isNewTrack || cleanJson != _lastBroadcastJson)
+                {
+                    _lastBroadcastJson = cleanJson;
+                    _lastTrackKey = trackKey;
+                    Console.WriteLine(cleanJson);
+                    Console.Out.Flush();
+                }
             }
             catch (Exception ex)
             {

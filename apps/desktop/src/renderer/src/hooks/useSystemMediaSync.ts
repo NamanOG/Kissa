@@ -48,8 +48,7 @@ export function useSystemMediaSync(): void {
 
       if (!isSameTrack) {
         lastTrackKeyRef.current = trackKey
-        hasSeenNonZeroSmtcRef.current = payload.progress > 0
-        anchorProgressRef.current = payload.progress
+        anchorProgressRef.current = payload.progress || 0
         anchorTimestampRef.current = Date.now()
 
         setTrack({
@@ -61,6 +60,8 @@ export function useSystemMediaSync(): void {
           source: payload.sourceAppName,
           sourceAppId: payload.sourceAppId
         })
+        setIsPlaying(payload.isPlaying)
+        setProgress(payload.progress || 0)
       } else {
         // Same track - check for metadata and thumbnail updates
         if (
@@ -88,23 +89,19 @@ export function useSystemMediaSync(): void {
               : null
           }))
         }
-      }
 
-      // Sync playback state (Playing vs Paused)
-      const currentIsPlaying = usePlayerStore.getState().isPlaying
-      if (!commandCooldownRef.current && currentIsPlaying !== payload.isPlaying) {
-        // Re-anchor when playback state changes
-        const elapsed = (Date.now() - anchorTimestampRef.current) / 1000
-        anchorProgressRef.current = currentIsPlaying
-          ? anchorProgressRef.current + elapsed
-          : anchorProgressRef.current
-        anchorTimestampRef.current = Date.now()
-        setIsPlaying(payload.isPlaying)
-      }
+        // Sync playback state (Playing vs Paused)
+        const currentIsPlaying = usePlayerStore.getState().isPlaying
+        if (!commandCooldownRef.current && currentIsPlaying !== payload.isPlaying) {
+          const elapsed = (Date.now() - anchorTimestampRef.current) / 1000
+          anchorProgressRef.current = currentIsPlaying
+            ? anchorProgressRef.current + elapsed
+            : anchorProgressRef.current
+          anchorTimestampRef.current = Date.now()
+          setIsPlaying(payload.isPlaying)
+        }
 
-      // Sync timeline progress with monotonic filter (prevents 13, 14, 15, 15, 16 stutter)
-      if (payload.progress > 0) {
-        hasSeenNonZeroSmtcRef.current = true
+        // Sync timeline progress with monotonic filter
         const curProgress = usePlayerStore.getState().progress
         const elapsedSinceAnchor = usePlayerStore.getState().isPlaying
           ? (Date.now() - anchorTimestampRef.current) / 1000
@@ -112,18 +109,16 @@ export function useSystemMediaSync(): void {
         const localEstimate = anchorProgressRef.current + elapsedSinceAnchor
         const diff = payload.progress - localEstimate
 
-        // If difference is large (> 2.5s) or a distinct seek, accept SMTC position immediately
-        if (Math.abs(diff) > 2.5) {
+        // If difference is large (> 2.0s) or a distinct seek/loop restart, accept SMTC position immediately
+        if (Math.abs(diff) > 2.0 || payload.progress === 0) {
           anchorProgressRef.current = payload.progress
           anchorTimestampRef.current = Date.now()
           setProgress(Math.floor(payload.progress))
         } else if (payload.progress > curProgress) {
-          // If SMTC is ahead of store, update anchor
           anchorProgressRef.current = payload.progress
           anchorTimestampRef.current = Date.now()
           setProgress(Math.floor(payload.progress))
         } else {
-          // Minor delayed timestamp from SMTC polling — calibrate anchor gently without stepping back
           anchorProgressRef.current = Math.max(anchorProgressRef.current, payload.progress)
         }
       }
