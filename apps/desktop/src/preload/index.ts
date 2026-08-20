@@ -7,6 +7,8 @@ export interface PhonoSystemMediaAPI {
   getSystemMedia: () => Promise<SystemMediaPayload | null>
   getLyrics: (request: LyricsRequest) => Promise<LyricsResponse | null>
   onSystemMediaUpdate: (callback: (data: SystemMediaPayload | null) => void) => () => void
+  setVolume: (volume: number) => Promise<void>
+  getVolume: () => Promise<{ master: number; isMuted: boolean } | null>
   mediaPlayPause: () => Promise<void>
   mediaNext: () => Promise<void>
   mediaPrev: () => Promise<void>
@@ -26,6 +28,8 @@ const phonoMediaAPI: PhonoSystemMediaAPI = {
       ipcRenderer.removeListener('phono:system-media-update', handler)
     }
   },
+  setVolume: (volume: number) => ipcRenderer.invoke('phono:set-volume', volume),
+  getVolume: () => ipcRenderer.invoke('phono:get-volume'),
   mediaPlayPause: () => ipcRenderer.invoke('phono:media-play-pause'),
   mediaNext: () => ipcRenderer.invoke('phono:media-next'),
   mediaPrev: () => ipcRenderer.invoke('phono:media-prev'),

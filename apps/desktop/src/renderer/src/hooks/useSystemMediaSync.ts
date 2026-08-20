@@ -3,13 +3,6 @@ import { usePlayerStore } from '@renderer/stores/playerStore'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
 import type { SystemMediaPayload } from '../../../types/media'
 
-/**
- * Hook that listens to system-wide media updates (Apple Music, Spotify, etc.)
- * forwarded by the Electron main process via Windows SMTC.
- *
- * Implements jitter-free monotonic timekeeping, seamless track transitions,
- * and automatic duration synchronization.
- */
 export function useSystemMediaSync(): void {
   const setTrack = usePlayerStore((s) => s.setTrack)
   const setIsPlaying = usePlayerStore((s) => s.setIsPlaying)
@@ -38,9 +31,7 @@ export function useSystemMediaSync(): void {
 
       const currentStoreTrack = usePlayerStore.getState().currentTrack
       const isInternalAudio = Boolean(currentStoreTrack?.audioUrl)
-      
-      // If we are currently playing the internal demo track, only switch to system media
-      // if the system media is actually playing (active).
+
       if (isInternalAudio && !payload.isPlaying) return
 
       const trackKey = `${payload.title}|${payload.artist || ''}|${payload.sourceAppId || ''}`
@@ -72,11 +63,11 @@ export function useSystemMediaSync(): void {
           usePlayerStore.setState((state) => ({
             currentTrack: state.currentTrack
               ? {
-                  ...state.currentTrack,
-                  artist: payload.artist || state.currentTrack.artist,
-                  album: payload.album || state.currentTrack.album,
-                  artworkUrl: payload.artworkDataUrl || state.currentTrack.artworkUrl
-                }
+                ...state.currentTrack,
+                artist: payload.artist || state.currentTrack.artist,
+                album: payload.album || state.currentTrack.album,
+                artworkUrl: payload.artworkDataUrl || state.currentTrack.artworkUrl
+              }
               : null
           }))
         }
@@ -122,12 +113,26 @@ export function useSystemMediaSync(): void {
           anchorProgressRef.current = Math.max(anchorProgressRef.current, payload.progress)
         }
       }
+
+      // Sync master volume from Windows if present
+      if (payload.volume !== undefined && typeof payload.volume === 'number') {
+        const curVol = usePlayerStore.getState().volume
+        if (Math.abs(curVol - payload.volume) > 1 && !(window as any).__kissaIsDraggingVolume) {
+          usePlayerStore.getState().setVolume(payload.volume)
+        }
+      }
     }
 
-    // Initial check
+    // Initial check for media & system volume
     window.electron.getSystemMedia().then((initial) => {
       if (initial) {
         handleMediaPayload(initial)
+      }
+    })
+
+    window.electron.getVolume?.().then((vol) => {
+      if (vol && typeof vol.master === 'number') {
+        usePlayerStore.getState().setVolume(vol.master)
       }
     })
 

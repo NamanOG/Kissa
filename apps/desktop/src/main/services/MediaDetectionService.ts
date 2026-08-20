@@ -59,7 +59,13 @@ function normalizeTime(raw: number | undefined | null): number {
 
 import { ArtworkService } from './ArtworkService'
 
-function formatSession(session: any): SystemMediaPayload | null {
+function formatSession(
+  session: any,
+  volumeInfo?: { master?: number; isMuted?: boolean }
+): SystemMediaPayload | null {
+  const masterVol = volumeInfo?.master !== undefined ? volumeInfo.master : 100
+  const isMuted = volumeInfo?.isMuted ?? false
+
   if (!session || !session.media) return null
 
   let artworkDataUrl: string | undefined = undefined
@@ -123,7 +129,9 @@ function formatSession(session: any): SystemMediaPayload | null {
     isPlaying,
     progress: Math.max(0, normalizeTime(session.timeline?.position || 0)),
     duration: Math.max(0, normalizeTime(session.timeline?.duration || 0)),
-    lastUpdatedTime: session.lastUpdatedTime || Date.now()
+    lastUpdatedTime: session.lastUpdatedTime || Date.now(),
+    volume: masterVol,
+    isMuted
   }
 }
 
@@ -132,6 +140,7 @@ export class MediaDetectionService {
   private worker: Worker | null = null
   private latestPayload: SystemMediaPayload | null = null
   private lastPayloadJson: string | null = null
+  private latestVolume: { master: number; isMuted: boolean } = { master: 100, isMuted: false }
 
   private constructor() {}
 
@@ -140,6 +149,18 @@ export class MediaDetectionService {
       MediaDetectionService.instance = new MediaDetectionService()
     }
     return MediaDetectionService.instance
+  }
+
+  public setVolume(volume: number): void {
+    const clamped = Math.max(0, Math.min(100, Math.round(volume)))
+    this.latestVolume.master = clamped
+    if (this.worker) {
+      try {
+        this.worker.postMessage({ action: 'setVolume', volume: clamped })
+      } catch (err) {
+        console.warn('[MediaDetectionService] Failed to send setVolume to worker:', err)
+      }
+    }
   }
 
   public start(): void {
@@ -152,6 +173,15 @@ export class MediaDetectionService {
 
     ipcMain.handle('phono:get-lyrics', (_event, request: LyricsRequest) => {
       return LyricsService.getInstance().getLyrics(request)
+    })
+
+    // Register volume control IPC handlers
+    ipcMain.handle('phono:set-volume', (_event, vol: number) => {
+      this.setVolume(vol)
+    })
+
+    ipcMain.handle('phono:get-volume', () => {
+      return this.latestVolume
     })
 
     // Register transport control IPC handlers
@@ -196,7 +226,13 @@ export class MediaDetectionService {
 
       this.worker.on('message', (msg) => {
         if (msg.type === 'update') {
-          this.processSessionUpdate(msg.session)
+          if (msg.volume) {
+            this.latestVolume = {
+              master: msg.volume.master ?? 100,
+              isMuted: msg.volume.isMuted ?? false
+            }
+          }
+          this.processSessionUpdate(msg.session, msg.volume)
         } else if (msg.type === 'error') {
           console.warn('[MediaDetectionService] Worker reported error:', msg.error)
         }
@@ -218,8 +254,8 @@ export class MediaDetectionService {
     }
   }
 
-  private processSessionUpdate(session: MediaInfo | null): void {
-    const payload = formatSession(session)
+  private processSessionUpdate(session: MediaInfo | null, volumeInfo?: { master?: number; isMuted?: boolean }): void {
+    const payload = formatSession(session, volumeInfo || this.latestVolume)
     const json = JSON.stringify(payload)
     if (json !== this.lastPayloadJson) {
       this.lastPayloadJson = json
@@ -276,6 +312,8 @@ export class MediaDetectionService {
     }
     ipcMain.removeHandler('phono:get-system-media')
     ipcMain.removeHandler('phono:get-lyrics')
+    ipcMain.removeHandler('phono:set-volume')
+    ipcMain.removeHandler('phono:get-volume')
     ipcMain.removeHandler('phono:media-play-pause')
     ipcMain.removeHandler('phono:media-next')
     ipcMain.removeHandler('phono:media-prev')

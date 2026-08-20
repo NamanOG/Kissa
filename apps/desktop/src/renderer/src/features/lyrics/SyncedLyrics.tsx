@@ -184,14 +184,6 @@ export interface SyncedLyricsProps {
   isLargeView?: boolean
 }
 
-/**
- * Apple Music-grade Synchronized Lyrics Component.
- * Features:
- * - Fluid depth-of-field blur & optical scaling on inactive lines
- * - Warm glowing focus on active lyric
- * - Smooth auto-centering spring scroll with manual user scroll suspension
- * - Interactive click-to-seek karaoke
- */
 export const SyncedLyrics = memo(({
   className,
   lyricsSource,

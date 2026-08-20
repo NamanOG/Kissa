@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
+import { HiFiVisualizer } from '@renderer/components/ui/HiFiVisualizer'
 
 /** Format seconds as m:ss */
 function formatTime(seconds: number): string {
@@ -74,6 +75,7 @@ MiniTrackScrubber.displayName = 'MiniTrackScrubber'
 
 export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
+  const isPlaying = usePlayerStore((s) => s.isPlaying)
 
   const hasTrack = currentTrack !== null
   const artworkUrl = currentTrack?.artworkUrl ?? albumPlaceholder
@@ -95,14 +97,25 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
     >
       {/* ── Top Section: Header & Track Typography Stack ── */}
       <div className="flex flex-col items-start w-full">
-        <span
-          className={cn(
-            'font-mono text-[9.5px] min-[800px]:text-[10px] uppercase tracking-[0.22em] transition-colors',
-            isLightTheme ? 'text-[#6e6155]' : 'text-[#b7a99b]'
+        <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              'font-mono text-[9.5px] min-[800px]:text-[10px] uppercase tracking-[0.22em] transition-colors',
+              isLightTheme ? 'text-[#6e6155]' : 'text-[#b7a99b]'
+            )}
+          >
+            {hasTrack ? 'NOW PLAYING' : 'WAITING FOR MUSIC'}
+          </span>
+          {hasTrack && (
+            <HiFiVisualizer
+              isPlaying={isPlaying}
+              isLightTheme={isLightTheme}
+              barsCount={5}
+              height={10}
+              showPeaks={false}
+            />
           )}
-        >
-          {hasTrack ? 'NOW PLAYING' : 'WAITING FOR MUSIC'}
-        </span>
+        </div>
 
         <div className="w-full">
           <h1

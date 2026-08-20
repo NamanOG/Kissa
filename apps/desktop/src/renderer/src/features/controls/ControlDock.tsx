@@ -1,8 +1,9 @@
-import { memo } from 'react'
+import { memo, useRef } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
-import { SkipBack, SkipForward, Play, Pause, Volume2, Quote } from 'lucide-react'
+import { SkipBack, SkipForward, Play, Pause, Volume2, VolumeX, Quote } from 'lucide-react'
 import { SleepTimer } from './SleepTimer'
+import { HiFiVisualizer } from '@renderer/components/ui/HiFiVisualizer'
 
 /** Format seconds as m:ss */
 function formatTime(seconds: number): string {
@@ -83,10 +84,6 @@ const Scrubber = memo(() => {
 })
 Scrubber.displayName = 'Scrubber'
 
-/**
- * Bottom Playback Control Dock.
- * Highly responsive floating audio dock that fits gracefully on all window sizes.
- */
 export const ControlDock = memo(({ className }: ControlDockProps) => {
   const isPlaying = usePlayerStore((s) => s.isPlaying)
   const togglePlayPause = usePlayerStore((s) => s.togglePlayPause)
@@ -105,6 +102,30 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
   const hasTrack = currentTrack !== null
   const isLyricsActive = activeView === 'lyrics' || showSideLyrics
 
+  const isMuted = volume === 0
+  const lastNonZeroVolumeRef = useRef(volume > 0 ? volume : 75)
+  const isDraggingVolumeRef = useRef(false)
+
+  const handleVolumeChange = (rawVol: number) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(rawVol)))
+    if (clamped > 0) {
+      lastNonZeroVolumeRef.current = clamped
+    }
+    setVolume(clamped)
+    if (window.electron?.setVolume) {
+      window.electron.setVolume(clamped)
+    }
+  }
+
+  const toggleMute = () => {
+    if (volume > 0) {
+      lastNonZeroVolumeRef.current = volume
+      handleVolumeChange(0)
+    } else {
+      handleVolumeChange(lastNonZeroVolumeRef.current || 75)
+    }
+  }
+
   return (
     <div
       className={cn(
@@ -119,22 +140,66 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
     >
       {/* ── Left: Volume Slider ─────────────────────────── */}
       <div className="flex items-center gap-2 min-[900px]:gap-3 w-[80px] min-[900px]:w-[120px] min-[1200px]:w-[150px] shrink-0">
-        <Volume2
-          className={cn(
-            'h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 shrink-0',
-            isLightTheme ? 'text-[#7a6c5f]' : 'text-[#b7a99b]'
+        <button
+          type="button"
+          onClick={toggleMute}
+          className="focus:outline-none cursor-pointer active:scale-90 transition-transform"
+          title={isMuted ? 'Unmute' : 'Mute'}
+          aria-label={isMuted ? 'Unmute' : 'Mute'}
+        >
+          {isMuted ? (
+            <VolumeX
+              className={cn(
+                'h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 shrink-0',
+                isLightTheme ? 'text-[#b45309]' : 'text-[#d7a76c]'
+              )}
+              strokeWidth={1.75}
+            />
+          ) : (
+            <Volume2
+              className={cn(
+                'h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 shrink-0',
+                isLightTheme ? 'text-[#7a6c5f] hover:text-[#181411]' : 'text-[#b7a99b] hover:text-[#f5efe6]'
+              )}
+              strokeWidth={1.75}
+            />
           )}
-          strokeWidth={1.75}
-        />
+        </button>
 
         <div
-          className="relative flex-1 h-6 flex items-center cursor-pointer group"
-          onClick={(e) => {
+          className="relative flex-1 h-6 flex items-center cursor-pointer group touch-none"
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture(e.pointerId)
+            isDraggingVolumeRef.current = true
+              ; (window as any).__kissaIsDraggingVolume = true
             const rect = e.currentTarget.getBoundingClientRect()
             const clickX = e.clientX - rect.left
             const ratio = Math.max(0, Math.min(1, clickX / rect.width))
-            setVolume(Math.round(ratio * 100))
+            handleVolumeChange(ratio * 100)
           }}
+          onPointerMove={(e) => {
+            if (!isDraggingVolumeRef.current) return
+            const rect = e.currentTarget.getBoundingClientRect()
+            const clickX = e.clientX - rect.left
+            const ratio = Math.max(0, Math.min(1, clickX / rect.width))
+            handleVolumeChange(ratio * 100)
+          }}
+          onPointerUp={(e) => {
+            try {
+              e.currentTarget.releasePointerCapture(e.pointerId)
+            } catch {
+              // Ignore
+            }
+            isDraggingVolumeRef.current = false
+            setTimeout(() => {
+              ; (window as any).__kissaIsDraggingVolume = false
+            }, 300)
+          }}
+          onPointerCancel={() => {
+            isDraggingVolumeRef.current = false
+              ; (window as any).__kissaIsDraggingVolume = false
+          }}
+          title={`Volume: ${volume}%`}
         >
           {/* Base rail */}
           <div
@@ -146,7 +211,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             {/* Fill */}
             <div
               className={cn(
-                'h-full rounded-full',
+                'h-full rounded-full transition-all duration-75',
                 isLightTheme ? 'bg-[#b45309]' : 'bg-[#d7a76c]'
               )}
               style={{ width: `${volume}%` }}
@@ -240,7 +305,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
         <Scrubber />
       </div>
 
-      {/* ── Right: Lyrics Toggle, Source Pill & Equalizer ── */}
+      {/* ── Right: Lyrics Toggle, Source Pill & Dynamic Equalizer ── */}
       <div className="flex items-center gap-1.5 min-[900px]:gap-2.5 shrink-0 justify-end">
         {/* Sleep Timer Popover */}
         <SleepTimer />
@@ -311,32 +376,18 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           </span>
         </div>
 
-        {/* Dynamic Equalizer Visualizer */}
+        {/* Dynamic Hi-Fi Equalizer Spectrum Visualizer */}
         <div
-          className="hidden min-[640px]:flex items-end gap-[2px] h-3.5 w-4.5 justify-center px-0.5 py-0.5 select-none"
+          className="hidden min-[600px]:flex items-center h-full px-1 select-none"
           aria-hidden="true"
-          title="Audio Output Engine Live"
+          title="Hi-Fi Precision Spectrum Live"
         >
-          <span
-            className={cn(
-              'w-[2px] rounded-full transition-all duration-300',
-              isPlaying ? 'bg-[#d7a76c] animate-[pulse_0.8s_ease-in-out_infinite]' : 'bg-[#6b584d] h-1'
-            )}
-            style={{ height: isPlaying ? '80%' : '20%' }}
-          />
-          <span
-            className={cn(
-              'w-[2px] rounded-full transition-all duration-300',
-              isPlaying ? 'bg-[#dfb47e] animate-[pulse_1.1s_ease-in-out_infinite_0.2s]' : 'bg-[#6b584d] h-2'
-            )}
-            style={{ height: isPlaying ? '100%' : '40%' }}
-          />
-          <span
-            className={cn(
-              'w-[2px] rounded-full transition-all duration-300',
-              isPlaying ? 'bg-[#d7a76c] animate-[pulse_0.9s_ease-in-out_infinite_0.4s]' : 'bg-[#6b584d] h-1.5'
-            )}
-            style={{ height: isPlaying ? '60%' : '30%' }}
+          <HiFiVisualizer
+            isPlaying={isPlaying}
+            isLightTheme={isLightTheme}
+            barsCount={7}
+            height={18}
+            showPeaks={true}
           />
         </div>
       </div>

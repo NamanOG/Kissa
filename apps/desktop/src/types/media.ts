@@ -9,4 +9,6 @@ export interface SystemMediaPayload {
   progress: number
   duration: number
   lastUpdatedTime?: number
+  volume?: number
+  isMuted?: boolean
 }

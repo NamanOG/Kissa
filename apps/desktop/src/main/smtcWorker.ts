@@ -68,5 +68,13 @@ parentPort?.on('message', (msg) => {
       }
     }
     process.exit(0)
+  } else if (msg && typeof msg === 'object' && msg.action) {
+    if (helperProcess && helperProcess.stdin) {
+      try {
+        helperProcess.stdin.write(JSON.stringify(msg) + '\n')
+      } catch (e) {
+        // ignore write error
+      }
+    }
   }
 })
