@@ -26,15 +26,14 @@ export const TurntableEngine = memo(
         style={{ perspective: '1400px' }}
         {...props}
       >
-        {/* Dynamic Album Ambient Glow — GPU-optimized lightweight ambient pool */}
-        {albumArt && (
-          <div
-            className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20"
-            style={{
-              background: 'radial-gradient(ellipse 80% 70% at 50% 50%, rgba(215,167,108,0.15) 0%, transparent 70%)'
-            }}
-          />
-        )}
+        {/* Ambient Chassis Elevation Pool — Separates the 3D turntable chassis from dark backgrounds */}
+        <div
+          className="absolute inset-[-5%] pointer-events-none -z-10"
+          style={{
+            background:
+              'radial-gradient(ellipse 75% 65% at 50% 45%, rgba(215,167,108,0.12) 0%, rgba(215,167,108,0.03) 50%, transparent 75%)'
+          }}
+        />
 
         {/* Floor and contact shadow */}
         <TurntableShadow />
@@ -43,7 +42,7 @@ export const TurntableEngine = memo(
         <div
           className="relative w-full aspect-[10/6.8] pointer-events-none"
           style={{
-            transform: 'rotateX(12deg) rotateY(-1deg)',
+            transform: 'rotateX(13deg) rotateY(-0.8deg)',
             transformStyle: 'preserve-3d'
           }}
         >

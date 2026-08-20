@@ -188,30 +188,34 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
           aria-hidden="true"
         >
           <defs>
-            {/* Satin brushed titanium-aluminum arm tube */}
+            {/* Polished aerospace-grade titanium-chrome arm tube */}
             <linearGradient id="tonearm-tube-metal" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#352d27" />
-              <stop offset="15%" stopColor="#a5978a" />
-              <stop offset="35%" stopColor="#d5cfc6" />
-              <stop offset="48%" stopColor="#ffffff" />
-              <stop offset="60%" stopColor="#e5dfd6" />
-              <stop offset="80%" stopColor="#8e8175" />
-              <stop offset="100%" stopColor="#28201b" />
+              <stop offset="0%" stopColor="#241d18" />
+              <stop offset="10%" stopColor="#7a6c5f" />
+              <stop offset="26%" stopColor="#ded6cb" />
+              <stop offset="42%" stopColor="#ffffff" />
+              <stop offset="58%" stopColor="#ffffff" />
+              <stop offset="74%" stopColor="#c8beaf" />
+              <stop offset="90%" stopColor="#685b4f" />
+              <stop offset="100%" stopColor="#1a1411" />
             </linearGradient>
 
             {/* Gimbal bearing ring */}
             <radialGradient id="gimbal-ring" cx="35%" cy="30%" r="70%">
-              <stop offset="0%" stopColor="#60534a" />
-              <stop offset="50%" stopColor="#2c241f" />
-              <stop offset="100%" stopColor="#140f0d" />
+              <stop offset="0%" stopColor="#78685c" />
+              <stop offset="45%" stopColor="#362c26" />
+              <stop offset="85%" stopColor="#1c1613" />
+              <stop offset="100%" stopColor="#0e0b09" />
             </radialGradient>
 
-            {/* Machined brass / champagne gold counterweight */}
+            {/* Machined brass / champagne gold counterweight with high-gloss luster */}
             <linearGradient id="counterweight-metal" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#684f36" />
-              <stop offset="35%" stopColor="#e4c399" />
-              <stop offset="65%" stopColor="#b38f65" />
-              <stop offset="100%" stopColor="#4a3723" />
+              <stop offset="0%" stopColor="#543e2a" />
+              <stop offset="25%" stopColor="#caa474" />
+              <stop offset="48%" stopColor="#fff3db" />
+              <stop offset="65%" stopColor="#d7a76c" />
+              <stop offset="85%" stopColor="#9c7244" />
+              <stop offset="100%" stopColor="#3d2a1a" />
             </linearGradient>
           </defs>
 

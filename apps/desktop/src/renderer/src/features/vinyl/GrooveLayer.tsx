@@ -65,11 +65,12 @@ export const GrooveLayer = memo(
 
         {/* Physical SVG groove rings catching light */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.15" />
-          <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.1" />
-          <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.15" />
-          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.2" />
-          <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.1" />
+          <circle cx="50" cy="50" r="28" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="0.2" />
+          <circle cx="50" cy="50" r="33" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="0.15" />
+          <circle cx="50" cy="50" r="37.5" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="0.18" />
+          <circle cx="50" cy="50" r="41.5" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="0.2" />
+          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="0.22" />
+          <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="0.18" />
         </svg>
       </div>
     )
