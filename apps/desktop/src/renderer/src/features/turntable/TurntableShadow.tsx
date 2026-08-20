@@ -7,42 +7,42 @@ export const TurntableShadow = memo(
       <div
         className={cn('absolute inset-0 pointer-events-none -z-10', className)}
       >
-        {/* Soft widespread ambient floor glow/shadow */}
+        {/* Soft natural floor grounding shadow (directional downwards beneath bottom edge) */}
         <div
           className="absolute"
           style={{
-            left: '2%',
-            right: '2%',
-            top: '8%',
+            left: '6%',
+            right: '6%',
+            top: '70%',
             bottom: '-12%',
             background:
-              'radial-gradient(ellipse 95% 85% at 50% 55%, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 45%, rgba(0,0,0,0.15) 70%, transparent 90%)',
-            filter: 'blur(32px)'
+              'radial-gradient(ellipse 85% 70% at 50% 30%, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 50%, transparent 85%)',
+            filter: 'blur(20px)'
           }}
         />
 
-        {/* Dense directional contact shadow right below front edge */}
+        {/* Directional contact shadow directly beneath plinth front face */}
         <div
           className="absolute"
           style={{
-            left: '4%',
-            right: '4%',
-            bottom: '-6%',
-            height: '24%',
+            left: '8%',
+            right: '8%',
+            bottom: '-4%',
+            height: '14%',
             background:
-              'radial-gradient(ellipse 90% 60% at 50% 30%, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 50%, transparent 80%)',
-            filter: 'blur(14px)'
+              'radial-gradient(ellipse 90% 50% at 50% 20%, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 85%)',
+            filter: 'blur(10px)'
           }}
         />
 
         {/* Sharp foot contact shadows */}
         <div
-          className="absolute w-24 h-6 rounded-full bg-black/90 blur-[6px]"
-          style={{ left: '8%', bottom: '-4%' }}
+          className="absolute w-20 h-5 rounded-full bg-black/80 blur-[4px]"
+          style={{ left: '9%', bottom: '-3%' }}
         />
         <div
-          className="absolute w-24 h-6 rounded-full bg-black/90 blur-[6px]"
-          style={{ right: '8%', bottom: '-4%' }}
+          className="absolute w-20 h-5 rounded-full bg-black/80 blur-[4px]"
+          style={{ right: '9%', bottom: '-3%' }}
         />
       </div>
     )

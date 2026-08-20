@@ -14,10 +14,7 @@ export const TurntableBase = memo(
     return (
       <div
         className={cn('absolute inset-0 pointer-events-none', className)}
-        style={{
-          filter: 'drop-shadow(0 20px 35px rgba(0,0,0,0.85)) drop-shadow(0 6px 12px rgba(0,0,0,0.6))',
-          ...style
-        }}
+        style={style}
         {...props}
       >
         <svg
