@@ -100,15 +100,15 @@ export function useSystemMediaSync(): void {
         const localEstimate = anchorProgressRef.current + elapsedSinceAnchor
         const diff = payload.progress - localEstimate
 
-        // If difference is large (> 2.0s) or a distinct seek/loop restart, accept SMTC position immediately
-        if (Math.abs(diff) > 2.0 || payload.progress === 0) {
+        // If difference is large (> 1.5s) or a distinct seek/loop restart, accept SMTC position immediately
+        if (Math.abs(diff) > 1.5 || payload.progress === 0) {
           anchorProgressRef.current = payload.progress
           anchorTimestampRef.current = Date.now()
-          setProgress(Math.floor(payload.progress))
+          setProgress(Math.round(payload.progress * 10) / 10)
         } else if (payload.progress > curProgress) {
           anchorProgressRef.current = payload.progress
           anchorTimestampRef.current = Date.now()
-          setProgress(Math.floor(payload.progress))
+          setProgress(Math.round(payload.progress * 10) / 10)
         } else {
           anchorProgressRef.current = Math.max(anchorProgressRef.current, payload.progress)
         }
@@ -139,7 +139,7 @@ export function useSystemMediaSync(): void {
     // Listen for SMTC updates
     const cleanup = window.electron.onSystemMediaUpdate(handleMediaPayload)
 
-    // Dedicated high-resolution monotonic timer for smooth external playback & zero-lag lyrics
+    // Dedicated high-resolution monotonic timer for fluid sub-second playback & zero-lag lyrics
     const ticker = setInterval(() => {
       const state = usePlayerStore.getState()
       if (!state.isPlaying || !state.currentTrack || state.currentTrack.audioUrl) return
@@ -153,7 +153,7 @@ export function useSystemMediaSync(): void {
       if (Math.abs(rounded - state.progress) >= 0.1) {
         setProgress(rounded)
       }
-    }, 100)
+    }, 50)
 
     // Listen for manual seeks (e.g. user dragged scrubber / tonearm)
     const unsubscribe = usePlayerStore.subscribe((state, prevState) => {

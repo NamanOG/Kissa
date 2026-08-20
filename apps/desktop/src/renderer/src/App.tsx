@@ -60,36 +60,36 @@ function App(): React.JSX.Element {
               /* ═════════ VIEW 1: Vinyl Deck & Listening Room ═════════ */
               <motion.div
                 key="deck-view"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.16, ease: 'easeOut' }}
+                initial={{ opacity: 0, scale: 0.985 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.985 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                 className={cn(
-                  'h-full w-full grid min-h-0 overflow-hidden',
+                  'h-full w-full grid min-h-0 overflow-hidden transform-gpu',
                   showSideLyrics
                     ? 'grid-cols-1 min-[900px]:grid-cols-[minmax(280px,0.9fr)_minmax(320px,1.4fr)] min-[1100px]:grid-cols-[minmax(260px,0.8fr)_minmax(320px,1.4fr)_minmax(260px,0.8fr)]'
                     : 'grid-cols-1 min-[900px]:grid-cols-[minmax(280px,0.9fr)_minmax(340px,1.5fr)] min-[1200px]:grid-cols-[minmax(320px,1fr)_minmax(400px,1.7fr)]'
                 )}
               >
                 {/* Left: Metadata & Now Playing Panel */}
-                <aside className="min-h-0 flex flex-col justify-center overflow-y-auto no-scrollbar">
+                <aside className="min-h-0 flex flex-col justify-center overflow-y-auto no-scrollbar transform-gpu">
                   <MetadataPanel />
                 </aside>
 
                 {/* Center: Turntable Deck */}
-                <section className="min-h-0 flex items-center justify-center p-2 min-[900px]:p-4 overflow-hidden">
+                <section className="min-h-0 flex items-center justify-center p-2 min-[900px]:p-4 overflow-hidden transform-gpu">
                   <TurntableEngine />
                 </section>
 
                 {/* Optional Side Lyrics Panel (Only shown when user requests) */}
                 {showSideLyrics && (
                   <motion.div
-                    initial={{ opacity: 0, x: 12 }}
+                    initial={{ opacity: 0, x: 16 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 12 }}
-                    transition={{ duration: 0.16, ease: 'easeOut' }}
+                    exit={{ opacity: 0, x: 16 }}
+                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                     className={cn(
-                      'hidden min-[1100px]:flex flex-col min-h-0 border-l px-5 py-6 backdrop-blur-xl',
+                      'hidden min-[1100px]:flex flex-col min-h-0 border-l px-5 py-6 backdrop-blur-xl transform-gpu',
                       isLightTheme
                         ? 'border-black/[0.08] bg-[#f2e8d2]/90 shadow-[-8px_0_24px_rgba(0,0,0,0.06)]'
                         : 'border-white/[0.08] bg-[#1a1412]/90'
@@ -133,11 +133,11 @@ function App(): React.JSX.Element {
               /* ═════════ VIEW 2: Apple Music Immersive Lyrics View ═════════ */
               <motion.div
                 key="lyrics-view"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.16, ease: 'easeOut' }}
-                className="relative h-full w-full grid grid-cols-1 min-[900px]:grid-cols-[minmax(0,0.65fr)_minmax(280px,0.35fr)] overflow-hidden"
+                initial={{ opacity: 0, scale: 0.985 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.985 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                className="relative h-full w-full grid grid-cols-1 min-[900px]:grid-cols-[minmax(0,0.65fr)_minmax(280px,0.35fr)] overflow-hidden transform-gpu"
               >
                 {/* Left/Center: Large Fluid Apple Music Lyrics Stream */}
                 <div className="relative h-full min-h-0 flex flex-col px-4 min-[900px]:px-10 py-6 min-[900px]:py-8">

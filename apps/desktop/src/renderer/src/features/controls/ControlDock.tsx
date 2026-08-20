@@ -129,7 +129,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
   return (
     <div
       className={cn(
-        'relative z-30 mx-2 mb-2 min-[900px]:mx-3 min-[900px]:mb-3 flex h-[62px] min-[900px]:h-[70px] w-[calc(100%-1rem)] min-[900px]:w-[calc(100%-1.5rem)] shrink-0 items-center justify-between rounded-[1.2rem] backdrop-blur-xl transition-colors',
+        'relative z-30 mx-2 mb-2 min-[900px]:mx-3 min-[900px]:mb-3 flex h-[62px] min-[900px]:h-[70px] w-[calc(100%-1rem)] min-[900px]:w-[calc(100%-1.5rem)] shrink-0 items-center justify-between rounded-[1.2rem] backdrop-blur-xl transition-colors transform-gpu will-change-transform',
         isLightTheme
           ? 'border border-black/[0.08] bg-[#f0e7d6]/75 shadow-[0_18px_46px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.6)]'
           : 'border border-white/[0.09] bg-[#2a211d]/60 shadow-[0_18px_46px_rgba(14,9,7,0.26),inset_0_1px_0_rgba(255,255,255,0.1)]',

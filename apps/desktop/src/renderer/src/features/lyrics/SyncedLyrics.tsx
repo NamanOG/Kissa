@@ -145,7 +145,10 @@ const LyricRowItem = memo(({
       )}
       style={{
         transform: `scale(${scaleVal})`,
-        transformOrigin: 'left center'
+        transformOrigin: 'left center',
+        contain: 'layout style',
+        contentVisibility: 'auto',
+        containIntrinsicSize: '0 48px'
       }}
     >
       {/* Active Line Glowing Amber Accent Indicator */}
@@ -202,7 +205,6 @@ export const SyncedLyrics = memo(({
   isLargeView = false
 }: SyncedLyricsProps): React.JSX.Element => {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
-  const progress = usePlayerStore((s) => s.progress)
   const setProgress = usePlayerStore((s) => s.setProgress)
   const play = usePlayerStore((s) => s.play)
   const theme = usePlayerStore((s) => s.theme)
@@ -309,16 +311,36 @@ export const SyncedLyrics = memo(({
     return parseLrc(fetchedLyrics)
   }, [fetchedLyrics])
 
-  // ── 3. Determine active line index based on current playback progress with sub-second accuracy ──
-  const activeIndex = useMemo(() => {
-    if (lyricLines.length === 0) return -1
-    for (let i = lyricLines.length - 1; i >= 0; i--) {
-      if (progress >= lyricLines[i].time) {
-        return i
+  // ── 3. High-efficiency active index subscriber (Zero React re-render churn during line playback) ──
+  const [activeIndex, setActiveIndex] = useState(-1)
+  const lyricLinesRef = useRef(lyricLines)
+  lyricLinesRef.current = lyricLines
+
+  useEffect(() => {
+    const calcIndex = (prog: number): number => {
+      const lines = lyricLinesRef.current
+      if (lines.length === 0) return -1
+      for (let i = lines.length - 1; i >= 0; i--) {
+        if (prog >= lines[i].time) {
+          return i
+        }
       }
+      return 0
     }
-    return 0
-  }, [lyricLines, progress])
+
+    setActiveIndex(calcIndex(usePlayerStore.getState().progress))
+
+    let prevIdx = -1
+    const unsub = usePlayerStore.subscribe((state) => {
+      const newIdx = calcIndex(state.progress)
+      if (newIdx !== prevIdx) {
+        prevIdx = newIdx
+        setActiveIndex(newIdx)
+      }
+    })
+
+    return unsub
+  }, [lyricLines])
 
   // ── 4. Apple Music fluid auto-scroll with zero-lag spring/ease interpolation ──
   const smoothScrollTo = useCallback((targetTop: number) => {
@@ -335,20 +357,19 @@ export const SyncedLyrics = memo(({
 
     isProgrammaticScrollRef.current = true
     const startTime = performance.now()
-    const duration = Math.min(420, Math.max(220, Math.abs(distance) * 0.55))
+    const duration = Math.min(380, Math.max(200, Math.abs(distance) * 0.48))
 
     const step = (currentTime: number): void => {
       const elapsed = currentTime - startTime
       const p = Math.min(1, elapsed / duration)
-      // Smooth cubic-bezier ease out: 1 - (1 - p)^3
-      const ease = 1 - Math.pow(1 - p, 3)
+      // Apple fluid cubic-bezier ease out: 1 - (1 - p)^3.5
+      const ease = 1 - Math.pow(1 - p, 3.5)
       container.scrollTop = startTop + distance * ease
 
       if (p < 1) {
         scrollAnimRef.current = requestAnimationFrame(step)
       } else {
         scrollAnimRef.current = null
-        // Release programmatic lock after slight delay so trailing scroll events are ignored
         setTimeout(() => {
           isProgrammaticScrollRef.current = false
         }, 50)
@@ -368,7 +389,7 @@ export const SyncedLyrics = memo(({
     const activeRect = activeEl.getBoundingClientRect()
     const currentRelativeTop = activeRect.top - containerRect.top + container.scrollTop
     const containerHeight = container.clientHeight
-    // Center the active line precisely at 42% of the container height (ideal optical focus)
+    // Center active line at 42% optical focus
     const targetTop = currentRelativeTop - containerHeight * 0.42 + activeEl.clientHeight / 2
     smoothScrollTo(Math.max(0, targetTop))
   }, [activeIndex, userIsScrolling, smoothScrollTo])

@@ -158,13 +158,14 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
         </div>
 
         {/* Album Artwork */}
-        <div className="relative mt-4 min-[800px]:mt-6 min-[1200px]:mt-8 w-full max-w-[min(220px,78%)] min-[1200px]:max-w-[260px]">
+        <div className="relative mt-4 min-[800px]:mt-6 min-[1200px]:mt-8 w-full max-w-[min(220px,78%)] min-[1200px]:max-w-[260px] transform-gpu">
           <div className="pointer-events-none absolute inset-3 translate-y-4 rounded-[1.2rem] bg-[#a8613d]/20 blur-2xl" />
-          <div className="relative aspect-square w-full overflow-hidden rounded-[1rem] border border-white/[0.1] bg-[#211a17] shadow-[0_16px_36px_rgba(16,10,8,0.46),inset_0_1px_0_rgba(255,255,255,0.1)]">
+          <div className="relative aspect-square w-full overflow-hidden rounded-[1rem] border border-white/[0.1] bg-[#211a17] shadow-[0_16px_36px_rgba(16,10,8,0.46),inset_0_1px_0_rgba(255,255,255,0.1)] transform-gpu">
             <img
+              key={artworkUrl}
               src={artworkUrl}
               alt={hasTrack ? `${title} — ${artist}` : 'Album artwork'}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover transition-opacity duration-300 ease-out"
               draggable={false}
               onError={(e) => {
                 e.currentTarget.src = albumPlaceholder

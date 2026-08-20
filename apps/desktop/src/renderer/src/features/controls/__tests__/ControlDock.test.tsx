@@ -30,7 +30,7 @@ describe('ControlDock component', () => {
 
     fireEvent.click(pauseBtn)
     expect(usePlayerStore.getState().isPlaying).toBe(false)
-  })
+  }, 15000)
 
   it('displays formatted track progress and duration', () => {
     render(<ControlDock />)

@@ -26,11 +26,6 @@ export const HiFiVisualizer = memo(
     height = 20,
     showPeaks = true
   }: HiFiVisualizerProps) => {
-    // Array of active bar states for rendering
-    const [barValues, setBarValues] = useState<Array<{ height: number; peak: number }>>(() =>
-      Array.from({ length: barsCount }, () => ({ height: 15, peak: 20 }))
-    )
-
     const barsRef = useRef<BarState[]>(
       Array.from({ length: barsCount }, () => ({
         currentHeight: 15,
@@ -40,90 +35,81 @@ export const HiFiVisualizer = memo(
       }))
     )
 
+    const barNodesRef = useRef<(HTMLSpanElement | null)[]>([])
+    const peakNodesRef = useRef<(HTMLSpanElement | null)[]>([])
     const animFrameRef = useRef<number | null>(null)
     const timeRef = useRef(0)
 
     useEffect(() => {
-      let isMounted = true
+      const bars = barsRef.current
 
       const animate = () => {
         timeRef.current += 0.05
         const t = timeRef.current
-        const bars = barsRef.current
 
-        // Dynamic frequency modulation frequencies per band
         for (let i = 0; i < bars.length; i++) {
           const bar = bars[i]
 
           if (isPlaying) {
-            // Harmonic wave equations simulating audio spectrum:
-            // Low bands (0, 1) = heavy rhythmic bass thump
-            // Mid bands (2, 3, 4) = melody & vocal rhythm
-            // High bands (5, 6) = percussion / hi-hat sparkle
             const freqFactor = (i + 1) * 1.3
             const sine1 = Math.sin(t * 2.8 * (i === 0 || i === 1 ? 1.5 : 1.0) + i * 0.8)
             const sine2 = Math.cos(t * 1.9 * freqFactor + i * 1.4)
             const sine3 = Math.sin(t * 4.2 + i * 2.1)
             const noise = (Math.sin(t * 11.3 + i * 3.7) + 1) * 0.15
 
-            // Weighted amplitude based on band
             let rawAmp = 0
             if (i <= 1) {
-              // Bass punch
               const bassKick = Math.pow(Math.max(0, Math.sin(t * 3.2)), 3) * 0.45
               rawAmp = 0.35 + 0.35 * Math.abs(sine1) + bassKick + noise
             } else if (i <= 4) {
-              // Vocal & mid energy
               rawAmp = 0.3 + 0.45 * Math.abs(sine1 * 0.6 + sine2 * 0.4) + noise
             } else {
-              // Treble sizzle
               rawAmp = 0.25 + 0.5 * Math.abs(sine2 * 0.5 + sine3 * 0.5) + noise * 1.5
             }
 
-            // Clamp between 18% and 98%
-            bar.targetHeight = Math.max(18, Math.min(98, rawAmp * 100))
+            bar.targetHeight = Math.max(15, Math.min(98, rawAmp * 100))
 
-            // Snappy attack, smooth decay physics
             if (bar.targetHeight > bar.currentHeight) {
               bar.currentHeight += (bar.targetHeight - bar.currentHeight) * 0.42
             } else {
               bar.currentHeight += (bar.targetHeight - bar.currentHeight) * 0.16
             }
 
-            // Peak hold logic
             if (bar.currentHeight >= bar.peak) {
               bar.peak = bar.currentHeight
-              bar.peakHoldTimer = 18 // Hold peak for ~18 frames
+              bar.peakHoldTimer = 18
             } else {
               if (bar.peakHoldTimer > 0) {
                 bar.peakHoldTimer--
               } else {
-                // Gravity fall for peak indicator
                 bar.peak = Math.max(bar.currentHeight, bar.peak - 1.8)
               }
             }
           } else {
-            // Idle / Paused: Smoothly decay to calm resting baseline (10%)
-            bar.currentHeight += (10 - bar.currentHeight) * 0.1
-            bar.peak += (10 - bar.peak) * 0.1
+            bar.currentHeight += (12 - bar.currentHeight) * 0.1
+            bar.peak += (12 - bar.peak) * 0.1
+          }
+
+          // Direct hardware-accelerated DOM mutation (0 React re-renders)
+          const barNode = barNodesRef.current[i]
+          if (barNode) {
+            const scaleRatio = Math.max(0.1, bar.currentHeight / 100)
+            barNode.style.transform = `scaleY(${scaleRatio})`
+          }
+
+          const peakNode = peakNodesRef.current[i]
+          if (peakNode) {
+            const peakPercent = Math.min(96, Math.max(8, bar.peak))
+            peakNode.style.bottom = `${peakPercent}%`
           }
         }
 
-        if (isMounted) {
-          setBarValues(
-            bars.map((b) => ({
-              height: Math.round(b.currentHeight),
-              peak: Math.round(b.peak)
-            }))
-          )
-          animFrameRef.current = requestAnimationFrame(animate)
-        }
+        animFrameRef.current = requestAnimationFrame(animate)
       }
 
       animFrameRef.current = requestAnimationFrame(animate)
 
       return () => {
-        isMounted = false
         if (animFrameRef.current !== null) {
           cancelAnimationFrame(animFrameRef.current)
         }
@@ -133,14 +119,14 @@ export const HiFiVisualizer = memo(
     return (
       <div
         className={cn(
-          'flex items-end justify-center gap-[2.5px] px-1 select-none',
+          'flex items-end justify-center gap-[2.5px] px-1 select-none transform-gpu',
           className
         )}
         style={{ height: `${height}px` }}
         aria-label="Audio Spectrum Visualizer"
         role="img"
       >
-        {barValues.map((bar, idx) => (
+        {Array.from({ length: barsCount }).map((_, idx) => (
           <div
             key={idx}
             className="relative flex flex-col justify-end items-center h-full w-[2.5px]"
@@ -148,29 +134,33 @@ export const HiFiVisualizer = memo(
             {/* Floating Peak Hold Dot/Cap */}
             {showPeaks && (
               <span
+                ref={(el) => {
+                  peakNodesRef.current[idx] = el
+                }}
                 className={cn(
-                  'absolute w-[2.5px] h-[2px] rounded-full transition-opacity duration-300',
+                  'absolute w-[2.5px] h-[2px] rounded-full transition-opacity duration-300 transform-gpu will-change-transform',
                   isLightTheme
                     ? 'bg-[#b45309] shadow-[0_0_4px_rgba(180,83,9,0.5)]'
                     : 'bg-[#ffeed6] shadow-[0_0_5px_rgba(255,238,214,0.8)]',
                   isPlaying ? 'opacity-100' : 'opacity-30'
                 )}
-                style={{
-                  bottom: `${Math.min(96, Math.max(8, bar.peak))}%`
-                }}
+                style={{ bottom: '15%' }}
               />
             )}
 
             {/* Live Frequency Bar */}
             <span
+              ref={(el) => {
+                barNodesRef.current[idx] = el
+              }}
               className={cn(
-                'w-full rounded-full transition-all duration-75 origin-bottom',
+                'w-full h-full rounded-full origin-bottom transform-gpu will-change-transform',
                 isLightTheme
                   ? 'bg-gradient-to-t from-[#78350f] via-[#b45309] to-[#d97706]'
                   : 'bg-gradient-to-t from-[#8c5a28] via-[#d7a76c] to-[#fed7aa]'
               )}
               style={{
-                height: `${bar.height}%`,
+                transform: 'scaleY(0.15)',
                 boxShadow: isPlaying
                   ? isLightTheme
                     ? '0 0 6px rgba(180,83,9,0.3)'

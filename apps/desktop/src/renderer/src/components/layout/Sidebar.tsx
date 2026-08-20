@@ -28,7 +28,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
       <aside
         ref={ref}
         className={cn(
-          'z-40 m-3 flex h-[calc(100%-1.5rem)] w-[60px] shrink-0 flex-col items-center rounded-[1.25rem] py-5 select-none backdrop-blur-xl transition-colors',
+          'z-40 m-3 flex h-[calc(100%-1.5rem)] w-[60px] shrink-0 flex-col items-center rounded-[1.25rem] py-5 select-none backdrop-blur-xl transition-colors transform-gpu will-change-transform',
           isLightTheme
             ? 'border border-black/[0.08] bg-[#f0e7d6]/70 shadow-[0_18px_46px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.6)]'
             : 'border border-white/[0.08] bg-[#2a211d]/55 shadow-[0_18px_46px_rgba(14,9,7,0.22),inset_0_1px_0_rgba(255,255,255,0.09)]',

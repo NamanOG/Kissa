@@ -25,19 +25,45 @@ export function useAudioPlayback(): void {
     audio.preload = 'auto'
     audioRef.current = audio
 
-    // Push the audio's current time into the store (~4×/s via timeupdate)
-    const onTimeUpdate = (): void => {
-      if (isSeekingRef.current) return
-      const currentSec = Math.floor(audio.currentTime)
-      const storeProg = usePlayerStore.getState().progress
-      if (currentSec !== storeProg) {
-        isSyncingTimeRef.current = true
-        usePlayerStore.getState().setProgress(currentSec)
-        isSyncingTimeRef.current = false
+    let animId: number | null = null
+
+    // High-resolution smooth progress loop during local audio playback
+    const syncTimeLoop = (): void => {
+      if (!audio || isSeekingRef.current) return
+      if (!audio.paused && !audio.ended) {
+        const curTime = audio.currentTime
+        const rounded = Math.round(curTime * 10) / 10
+        const storeProg = usePlayerStore.getState().progress
+        if (Math.abs(rounded - storeProg) >= 0.1) {
+          isSyncingTimeRef.current = true
+          usePlayerStore.getState().setProgress(rounded)
+          isSyncingTimeRef.current = false
+        }
+      }
+      animId = requestAnimationFrame(syncTimeLoop)
+    }
+
+    const onPlay = (): void => {
+      if (animId === null) {
+        animId = requestAnimationFrame(syncTimeLoop)
+      }
+    }
+
+    const onPause = (): void => {
+      if (animId !== null) {
+        cancelAnimationFrame(animId)
+        animId = null
+      }
+      if (audio) {
+        usePlayerStore.getState().setProgress(Math.round(audio.currentTime * 10) / 10)
       }
     }
 
     const onEnded = (): void => {
+      if (animId !== null) {
+        cancelAnimationFrame(animId)
+        animId = null
+      }
       usePlayerStore.getState().pause()
       usePlayerStore.getState().setProgress(0)
       audio.currentTime = 0
@@ -47,12 +73,17 @@ export function useAudioPlayback(): void {
       console.warn('[useAudioPlayback] Audio element error — source may be unavailable')
     }
 
-    audio.addEventListener('timeupdate', onTimeUpdate)
+    audio.addEventListener('play', onPlay)
+    audio.addEventListener('pause', onPause)
     audio.addEventListener('ended', onEnded)
     audio.addEventListener('error', onError)
 
     return () => {
-      audio.removeEventListener('timeupdate', onTimeUpdate)
+      if (animId !== null) {
+        cancelAnimationFrame(animId)
+      }
+      audio.removeEventListener('play', onPlay)
+      audio.removeEventListener('pause', onPause)
       audio.removeEventListener('ended', onEnded)
       audio.removeEventListener('error', onError)
       audio.pause()
