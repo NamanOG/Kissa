@@ -8,8 +8,7 @@ export const EdgeLayer = memo(({ className, style, size = '100%', ...props }: Vi
     <div
       className={cn(
         vinylLayerStyle,
-        'shadow-[inset_0_1.5px_2.5px_rgba(255,255,255,0.4),_inset_0_-2px_4px_rgba(0,0,0,0.95),_0_2px_8px_rgba(0,0,0,0.85)]',
-        'border border-white/10',
+        'shadow-[inset_0_1px_2px_rgba(255,255,255,0.15),_inset_0_-2px_4px_rgba(0,0,0,0.95),_0_2px_8px_rgba(0,0,0,0.85)]',
         className
       )}
       style={{

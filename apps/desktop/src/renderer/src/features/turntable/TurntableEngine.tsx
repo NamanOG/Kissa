@@ -26,15 +26,6 @@ export const TurntableEngine = memo(
         style={{ perspective: '1400px' }}
         {...props}
       >
-        {/* Ambient Chassis Elevation Pool — Separates the 3D turntable chassis from dark backgrounds */}
-        <div
-          className="absolute inset-[-5%] pointer-events-none -z-10"
-          style={{
-            background:
-              'radial-gradient(ellipse 75% 65% at 50% 45%, rgba(215,167,108,0.12) 0%, rgba(215,167,108,0.03) 50%, transparent 75%)'
-          }}
-        />
-
         {/* Floor and contact shadow */}
         <TurntableShadow />
 
@@ -62,12 +53,12 @@ export const TurntableEngine = memo(
                   {/* Heavy Machined Metal Platter Cylinder */}
                   <Platter size="100%" />
                   {/* Anti-static Felt Slipmat */}
-                  <Slipmat size="96%" />
+                  <Slipmat size="98%" />
                   {/* Audiophile Vinyl Record */}
                   <VinylEngine
                     albumArt={albumArt}
                     isActive={isActive}
-                    className="w-[97%] h-[97%] max-w-none"
+                    className="w-[99%] h-[99%] max-w-none"
                   />
                 </div>
               </div>

@@ -21,31 +21,31 @@ export const GrooveLayer = memo(
             background:
               'repeating-radial-gradient(circle at center, transparent 0, rgba(255,255,255,0.03) 0.5px, transparent 1px, rgba(255,255,255,0.02) 1.5px, transparent 2px)',
             maskImage:
-              'radial-gradient(circle at center, transparent 27%, black 28%, black 94%, transparent 95%)',
+              'radial-gradient(circle at center, transparent 14%, black 14.5%, black 94%, transparent 95%)',
             WebkitMaskImage:
-              'radial-gradient(circle at center, transparent 27%, black 28%, black 94%, transparent 95%)'
+              'radial-gradient(circle at center, transparent 14%, black 14.5%, black 94%, transparent 95%)'
           }}
         />
 
         {/* Run-out groove — sparser, inner zone */}
         <div
-          className="absolute inset-0 rounded-full opacity-80"
+          className="absolute inset-0 rounded-full opacity-60"
           style={{
             background:
-              'repeating-radial-gradient(circle at center, transparent 0, transparent 3px, rgba(255,255,255,0.04) 4px, transparent 5px)',
+              'repeating-radial-gradient(circle at center, transparent 0, transparent 3px, rgba(255,255,255,0.03) 4px, transparent 5px)',
             maskImage:
-              'radial-gradient(circle at center, transparent 24%, black 25%, black 28%, transparent 29%)',
+              'radial-gradient(circle at center, transparent 14%, black 14.5%, black 20%, transparent 21%)',
             WebkitMaskImage:
-              'radial-gradient(circle at center, transparent 24%, black 25%, black 28%, transparent 29%)'
+              'radial-gradient(circle at center, transparent 14%, black 14.5%, black 20%, transparent 21%)'
           }}
         />
 
         {/* Lead-in groove — sparse, outer edge */}
         <div
-          className="absolute inset-0 rounded-full opacity-70"
+          className="absolute inset-0 rounded-full opacity-60"
           style={{
             background:
-              'repeating-radial-gradient(circle at center, transparent 0, transparent 2px, rgba(255,255,255,0.05) 3px, transparent 4px)',
+              'repeating-radial-gradient(circle at center, transparent 0, transparent 2px, rgba(255,255,255,0.04) 3px, transparent 4px)',
             maskImage:
               'radial-gradient(circle at center, transparent 94%, black 95%, black 98%, transparent 99%)',
             WebkitMaskImage:
@@ -55,12 +55,11 @@ export const GrooveLayer = memo(
 
         {/* Physical SVG groove rings catching light */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="28" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="0.2" />
-          <circle cx="50" cy="50" r="33" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="0.15" />
-          <circle cx="50" cy="50" r="37.5" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="0.18" />
-          <circle cx="50" cy="50" r="41.5" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="0.2" />
-          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="0.22" />
-          <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="0.18" />
+          <circle cx="50" cy="50" r="22" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.15" />
+          <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.15" />
+          <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="0.18" />
+          <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="0.2" />
+          <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.15" />
         </svg>
       </div>
     )
