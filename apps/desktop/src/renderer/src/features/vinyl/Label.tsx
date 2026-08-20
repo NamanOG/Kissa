@@ -46,6 +46,9 @@ export const Label = memo(({ className, style, size = '28%', albumArt, ...props 
           alt="Album Art"
           className="w-full h-full object-cover object-center brightness-[0.9] contrast-[1.05]"
           draggable={false}
+          onError={(e) => {
+            e.currentTarget.style.display = 'none'
+          }}
         />
       ) : (
         <div className="w-full h-full bg-[#1c1c1e]" />

@@ -57,20 +57,40 @@ function normalizeTime(raw: number | undefined | null): number {
   return Math.round(raw)
 }
 
-function formatSession(session: MediaInfo | null): SystemMediaPayload | null {
+import { ArtworkService } from './ArtworkService'
+
+function formatSession(session: any): SystemMediaPayload | null {
   if (!session || !session.media) return null
 
   let artworkDataUrl: string | undefined = undefined
-  if (session.media.thumbnail && session.media.thumbnail.length > 0) {
+
+  const thumbBase64 = session.media.thumbnailBase64
+  if (typeof thumbBase64 === 'string' && thumbBase64.length > 20 && thumbBase64 !== 'null') {
+    const isPng = thumbBase64.startsWith('iVBORw0KGgo')
+    const mime = isPng ? 'image/png' : 'image/jpeg'
+    artworkDataUrl = `data:${mime};base64,${thumbBase64}`
+  } else if (session.media.thumbnail) {
     try {
-      const base64 = session.media.thumbnail.toString('base64')
-      // Detect format or use standard JPEG/PNG
-      const isPng = session.media.thumbnail[0] === 0x89 && session.media.thumbnail[1] === 0x50
-      const mime = isPng ? 'image/png' : 'image/jpeg'
-      artworkDataUrl = `data:${mime};base64,${base64}`
+      const buf = Buffer.isBuffer(session.media.thumbnail)
+        ? session.media.thumbnail
+        : Buffer.from(session.media.thumbnail)
+      if (buf.length > 0) {
+        const isPng = buf[0] === 0x89 && buf[1] === 0x50
+        const mime = isPng ? 'image/png' : 'image/jpeg'
+        artworkDataUrl = `data:${mime};base64,${buf.toString('base64')}`
+      }
     } catch {
       artworkDataUrl = undefined
     }
+  }
+
+  const title = session.media.title || 'Unknown Title'
+  const artist = session.media.artist || 'Unknown Artist'
+
+  if (artworkDataUrl) {
+    ArtworkService.getInstance().setCachedArtwork(title, artist, artworkDataUrl)
+  } else {
+    artworkDataUrl = ArtworkService.getInstance().getCachedArtwork(title, artist)
   }
 
   const isPlaying = session.playback?.playbackStatus === PlaybackStatus.PLAYING // 4
@@ -78,8 +98,8 @@ function formatSession(session: MediaInfo | null): SystemMediaPayload | null {
   return {
     sourceAppId: session.sourceAppId,
     sourceAppName: getCleanAppName(session.sourceAppId),
-    title: session.media.title || 'Unknown Title',
-    artist: session.media.artist || 'Unknown Artist',
+    title,
+    artist,
     album: session.media.albumTitle || '',
     artworkDataUrl,
     isPlaying,
@@ -187,6 +207,33 @@ export class MediaDetectionService {
       this.lastPayloadJson = json
       this.latestPayload = payload
       this.broadcast(payload)
+    }
+
+    // If artwork was not provided in this payload, fetch in background via iTunes Search API
+    if (payload && !payload.artworkDataUrl && payload.title && payload.artist) {
+      const currentTitle = payload.title
+      const currentArtist = payload.artist
+      ArtworkService.getInstance()
+        .fetchArtwork(payload.title, payload.artist, payload.album)
+        .then((fetchedUrl) => {
+          if (fetchedUrl && this.latestPayload) {
+            if (
+              this.latestPayload.title === currentTitle &&
+              this.latestPayload.artist === currentArtist &&
+              !this.latestPayload.artworkDataUrl
+            ) {
+              this.latestPayload = {
+                ...this.latestPayload,
+                artworkDataUrl: fetchedUrl
+              }
+              this.lastPayloadJson = JSON.stringify(this.latestPayload)
+              this.broadcast(this.latestPayload)
+            }
+          }
+        })
+        .catch(() => {
+          // Ignore network errors
+        })
     }
   }
 

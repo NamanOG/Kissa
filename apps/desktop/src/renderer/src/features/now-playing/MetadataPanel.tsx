@@ -153,6 +153,9 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
               alt={hasTrack ? `${title} — ${artist}` : 'Album artwork'}
               className="h-full w-full object-cover"
               draggable={false}
+              onError={(e) => {
+                e.currentTarget.src = albumPlaceholder
+              }}
             />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-[#150e0b]/35 via-transparent to-[#f5d5b4]/[0.07]" />
           </div>

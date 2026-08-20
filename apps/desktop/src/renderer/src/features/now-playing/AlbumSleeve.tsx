@@ -34,6 +34,9 @@ export const AlbumSleeve = memo(({ artworkUrl, title, className }: AlbumSleevePr
           src={artwork}
           alt={title || 'Album cover'}
           className="h-full w-full object-cover rounded-[3px]"
+          onError={(e) => {
+            e.currentTarget.src = albumPlaceholder
+          }}
         />
 
         {/* Paper Sheen Overlay (Top-Left Studio Keylight) */}

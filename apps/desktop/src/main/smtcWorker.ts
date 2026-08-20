@@ -28,11 +28,6 @@ function startHelper(): void {
           try {
             const msg = JSON.parse(line)
             if (msg.type === 'update') {
-              // Convert base64 thumbnail to Buffer so MediaDetectionService can handle it
-              if (msg.session && msg.session.media && msg.session.media.thumbnailBase64 && msg.session.media.thumbnailBase64 !== 'null') {
-                msg.session.media.thumbnail = Buffer.from(msg.session.media.thumbnailBase64, 'base64')
-                delete msg.session.media.thumbnailBase64
-              }
               if (parentPort) {
                 parentPort.postMessage(msg)
               }

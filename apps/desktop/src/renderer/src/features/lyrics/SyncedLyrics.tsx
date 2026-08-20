@@ -1,5 +1,4 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { Music2, Play } from 'lucide-react'
@@ -81,6 +80,89 @@ export function parseLrc(source: string): LyricLine[] {
   return lines.sort((a, b) => a.time - b.time)
 }
 
+interface LyricRowItemProps {
+  line: LyricLine
+  index: number
+  isActive: boolean
+  distance: number
+  isHovered: boolean
+  isLargeView: boolean
+  onLineClick: (time: number) => void
+  onHover: (index: number | null) => void
+}
+
+const LyricRowItem = memo(({
+  line,
+  index,
+  isActive,
+  distance,
+  isHovered,
+  isLargeView,
+  onLineClick,
+  onHover
+}: LyricRowItemProps): React.JSX.Element => {
+  // Apple Music optical depth via GPU-accelerated opacity & subtle scale
+  let opacityClass = 'opacity-20'
+  let scaleVal = 0.95
+
+  if (isActive) {
+    opacityClass = 'opacity-100'
+    scaleVal = isLargeView ? 1.03 : 1.02
+  } else if (distance === 1) {
+    opacityClass = isHovered ? 'opacity-75' : 'opacity-45'
+    scaleVal = 0.98
+  } else if (distance === 2) {
+    opacityClass = isHovered ? 'opacity-60' : 'opacity-30'
+    scaleVal = 0.96
+  } else {
+    opacityClass = isHovered ? 'opacity-40' : 'opacity-15'
+    scaleVal = 0.94
+  }
+
+  return (
+    <div
+      data-lyric-idx={index}
+      onClick={() => onLineClick(line.time)}
+      onMouseEnter={() => onHover(index)}
+      onMouseLeave={() => onHover(null)}
+      className={cn(
+        'group relative cursor-pointer rounded-xl px-3 py-1.5 transition-all duration-300 ease-out transform-gpu will-change-transform',
+        isActive && 'cursor-default'
+      )}
+      style={{
+        transform: `scale(${scaleVal})`,
+        transformOrigin: 'left center'
+      }}
+    >
+      <p
+        className={cn(
+          'font-serif tracking-[-0.015em] transition-colors duration-300 ease-out',
+          isLargeView
+            ? 'text-[clamp(1.9rem,3.2vw,3.1rem)] leading-[1.08]'
+            : 'text-[clamp(1.35rem,2.1vw,1.95rem)] leading-[1.12]',
+          isActive
+            ? 'font-medium text-[#f5efe6]'
+            : isHovered
+              ? 'text-[#d6c9bb]'
+              : 'text-[#9d9187]',
+          opacityClass
+        )}
+      >
+        {line.text}
+      </p>
+
+      {/* Subtle click cue on hover */}
+      {!isActive && isHovered && (
+        <div className="absolute -left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[#d7a76c] opacity-80 pointer-events-none">
+          <Play className="w-3 h-3 fill-current" />
+        </div>
+      )}
+    </div>
+  )
+})
+
+LyricRowItem.displayName = 'LyricRowItem'
+
 export interface SyncedLyricsProps {
   className?: string
   lyricsSource?: string | null
@@ -111,8 +193,8 @@ export const SyncedLyrics = memo(({
   const [hoveredLineIndex, setHoveredLineIndex] = useState<number | null>(null)
 
   const containerRef = useRef<HTMLDivElement>(null)
-  const activeLineRef = useRef<HTMLDivElement>(null)
   const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scrollAnimRef = useRef<number | null>(null)
 
   // ── 1. Fetch live LRC lyrics via Electron IPC or fall back to default track lyrics ──
   useEffect(() => {
@@ -204,7 +286,7 @@ export const SyncedLyrics = memo(({
     return parseLrc(fetchedLyrics)
   }, [fetchedLyrics])
 
-  // ── 3. Determine active line index based on current playback progress ──
+  // ── 3. Determine active line index based on current playback progress with sub-second accuracy ──
   const activeIndex = useMemo(() => {
     if (lyricLines.length === 0) return -1
     for (let i = lyricLines.length - 1; i >= 0; i--) {
@@ -215,53 +297,78 @@ export const SyncedLyrics = memo(({
     return 0
   }, [lyricLines, progress])
 
-  // ── 4. Apple Music fluid auto-scroll centering ──
-  const scrollToActive = useCallback((behavior: ScrollBehavior = 'smooth') => {
-    if (userIsScrolling || !containerRef.current || !activeLineRef.current) return
+  // ── 4. Apple Music fluid auto-scroll with zero-lag spring/ease interpolation ──
+  const smoothScrollTo = useCallback((targetTop: number) => {
+    if (!containerRef.current) return
     const container = containerRef.current
-    const activeEl = activeLineRef.current
+    const startTop = container.scrollTop
+    const distance = targetTop - startTop
+    if (Math.abs(distance) < 2) return
 
-    const containerHeight = container.clientHeight
-    const targetTop = activeEl.offsetTop - containerHeight * 0.42 + activeEl.clientHeight / 2
-
-    if (typeof container.scrollTo === 'function') {
-      container.scrollTo({
-        top: Math.max(0, targetTop),
-        behavior
-      })
-    } else {
-      container.scrollTop = Math.max(0, targetTop)
+    if (scrollAnimRef.current !== null) {
+      cancelAnimationFrame(scrollAnimRef.current)
     }
-  }, [userIsScrolling])
+
+    const startTime = performance.now()
+    const duration = Math.min(380, Math.max(180, Math.abs(distance) * 0.5))
+
+    const step = (currentTime: number): void => {
+      const elapsed = currentTime - startTime
+      const p = Math.min(1, elapsed / duration)
+      // Smooth cubic-bezier ease out: 1 - (1 - p)^3
+      const ease = 1 - Math.pow(1 - p, 3)
+      container.scrollTop = startTop + distance * ease
+
+      if (p < 1) {
+        scrollAnimRef.current = requestAnimationFrame(step)
+      } else {
+        scrollAnimRef.current = null
+      }
+    }
+
+    scrollAnimRef.current = requestAnimationFrame(step)
+  }, [])
 
   useEffect(() => {
-    if (!userIsScrolling) {
-      scrollToActive('smooth')
-    }
-  }, [activeIndex, scrollToActive, userIsScrolling])
+    if (userIsScrolling || activeIndex < 0 || !containerRef.current) return
+    const container = containerRef.current
+    const activeEl = container.querySelector(`[data-lyric-idx="${activeIndex}"]`) as HTMLElement | null
+    if (!activeEl) return
+
+    const containerHeight = container.clientHeight
+    const targetTop = activeEl.offsetTop - containerHeight * 0.40 + activeEl.clientHeight / 2
+    smoothScrollTo(Math.max(0, targetTop))
+  }, [activeIndex, userIsScrolling, smoothScrollTo])
 
   // Detect manual user scrolling to temporarily suspend auto-scroll
   const handleScroll = (): void => {
+    if (scrollAnimRef.current !== null) {
+      cancelAnimationFrame(scrollAnimRef.current)
+      scrollAnimRef.current = null
+    }
     setUserIsScrolling(true)
     if (userScrollTimeoutRef.current) {
       clearTimeout(userScrollTimeoutRef.current)
     }
-    // Resume auto-scroll after 3.5s of no interaction
+    // Resume auto-scroll after 3s of no interaction
     userScrollTimeoutRef.current = setTimeout(() => {
       setUserIsScrolling(false)
-      scrollToActive('smooth')
-    }, 3500)
+    }, 3000)
   }
 
   // ── 5. Click-to-seek handler ──
-  const handleLineClick = (time: number): void => {
+  const handleLineClick = useCallback((time: number): void => {
     setProgress(time)
     play()
     if (typeof window !== 'undefined' && currentTrack?.sourceAppId && window.electron) {
       void window.electron.mediaPlayPause()
     }
     setUserIsScrolling(false)
-  }
+  }, [currentTrack?.sourceAppId, play, setProgress])
+
+  const handleHover = useCallback((index: number | null): void => {
+    setHoveredLineIndex(index)
+  }, [])
 
   return (
     <div
@@ -276,7 +383,6 @@ export const SyncedLyrics = memo(({
           type="button"
           onClick={() => {
             setUserIsScrolling(false)
-            scrollToActive('smooth')
           }}
           className={cn(
             'absolute bottom-7 right-7 z-30 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full',
@@ -308,64 +414,18 @@ export const SyncedLyrics = memo(({
               const distance = Math.abs(index - activeIndex)
               const isHovered = hoveredLineIndex === index
 
-              // Apple Music optical depth via GPU-accelerated opacity & subtle scale
-              let opacityClass = 'opacity-20'
-              let scaleVal = 0.95
-
-              if (isActive) {
-                opacityClass = 'opacity-100'
-                scaleVal = isLargeView ? 1.03 : 1.02
-              } else if (distance === 1) {
-                opacityClass = isHovered ? 'opacity-75' : 'opacity-45'
-                scaleVal = 0.98
-              } else if (distance === 2) {
-                opacityClass = isHovered ? 'opacity-60' : 'opacity-30'
-                scaleVal = 0.96
-              } else {
-                opacityClass = isHovered ? 'opacity-40' : 'opacity-15'
-                scaleVal = 0.94
-              }
-
               return (
-                <div
+                <LyricRowItem
                   key={line.id}
-                  ref={isActive ? activeLineRef : null}
-                  onClick={() => handleLineClick(line.time)}
-                  onMouseEnter={() => setHoveredLineIndex(index)}
-                  onMouseLeave={() => setHoveredLineIndex(null)}
-                  className={cn(
-                    'group relative cursor-pointer rounded-xl px-3 py-1.5 transition-all duration-200 transform-gpu',
-                    isActive && 'cursor-default'
-                  )}
-                  style={{
-                    transform: `scale(${scaleVal})`,
-                    transformOrigin: 'left center'
-                  }}
-                >
-                  <p
-                    className={cn(
-                      'font-serif tracking-[-0.015em] transition-colors duration-200',
-                      isLargeView
-                        ? 'text-[clamp(1.9rem,3.2vw,3.1rem)] leading-[1.08]'
-                        : 'text-[clamp(1.35rem,2.1vw,1.95rem)] leading-[1.12]',
-                      isActive
-                        ? 'font-medium text-[#f5efe6]'
-                        : isHovered
-                          ? 'text-[#d6c9bb]'
-                          : 'text-[#9d9187]',
-                      opacityClass
-                    )}
-                  >
-                    {line.text}
-                  </p>
-
-                  {/* Subtle click cue on hover */}
-                  {!isActive && isHovered && (
-                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[#d7a76c] opacity-80">
-                      <Play className="w-3 h-3 fill-current" />
-                    </div>
-                  )}
-                </div>
+                  line={line}
+                  index={index}
+                  isActive={isActive}
+                  distance={distance}
+                  isHovered={isHovered}
+                  isLargeView={isLargeView}
+                  onLineClick={handleLineClick}
+                  onHover={handleHover}
+                />
               )
             })}
           </div>

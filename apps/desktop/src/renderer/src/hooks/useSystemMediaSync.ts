@@ -130,7 +130,7 @@ export function useSystemMediaSync(): void {
     // Listen for SMTC updates
     const cleanup = window.electron.onSystemMediaUpdate(handleMediaPayload)
 
-    // Dedicated high-resolution monotonic timer for smooth external playback
+    // Dedicated high-resolution monotonic timer for smooth external playback & zero-lag lyrics
     const ticker = setInterval(() => {
       const state = usePlayerStore.getState()
       if (!state.isPlaying || !state.currentTrack || state.currentTrack.audioUrl) return
@@ -139,12 +139,12 @@ export function useSystemMediaSync(): void {
       const currentEstimated = anchorProgressRef.current + elapsed
       const dur = state.currentTrack.duration || 0
       const clamped = dur > 0 ? Math.min(dur, currentEstimated) : currentEstimated
-      const curFloor = Math.floor(clamped)
+      const rounded = Math.round(clamped * 10) / 10
 
-      if (curFloor > state.progress) {
-        setProgress(curFloor)
+      if (Math.abs(rounded - state.progress) >= 0.1) {
+        setProgress(rounded)
       }
-    }, 400)
+    }, 100)
 
     // Listen for manual seeks (e.g. user dragged scrubber / tonearm)
     const unsubscribe = usePlayerStore.subscribe((state, prevState) => {
