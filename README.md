@@ -33,8 +33,8 @@ Whether playing local high-resolution audio or synchronizing in real time with W
 
 Get the latest release for **Windows 10 / 11** from the [**Releases Page**](https://github.com/NamanOG/Kissa/releases/latest):
 
-- **`Kissa-Setup-3.0.0.exe`**: Standard installer with desktop shortcut and start menu integration.
-- **`Kissa-Portable-3.0.0.exe`**: Standalone executable requiring no installation.
+- **`Kissa-Setup-x.x.x.exe`**: Standard installer with desktop shortcut and start menu integration.
+- **`Kissa-Portable-x.x.x.exe`**: Standalone executable requiring no installation.
 
 > **Note on Windows SmartScreen**: As an indie open-source release, Kissa's installer is currently unsigned. If you see a "Windows protected your PC" prompt, click **More info** &rarr; **Run anyway**.
 
