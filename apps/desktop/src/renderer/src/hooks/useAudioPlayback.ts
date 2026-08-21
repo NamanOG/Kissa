@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
+import { PlaybackClock } from '@renderer/utils/PlaybackClock'
 
 /**
  * Custom hook to manage real audio playback via HTML5 Audio API.
@@ -24,17 +25,19 @@ export function useAudioPlayback(): void {
     const audio = new Audio()
     audio.preload = 'auto'
     audioRef.current = audio
+    PlaybackClock.setAudioElement(audio)
 
     let animId: number | null = null
 
-    // High-resolution smooth progress loop during local audio playback
+    // Coarse update loop for the text timer (1Hz)
+    // The Scrubber will read directly from PlaybackClock at 60Hz.
     const syncTimeLoop = (): void => {
       if (!audio || isSeekingRef.current) return
       if (!audio.paused && !audio.ended) {
         const curTime = audio.currentTime
-        const rounded = Math.round(curTime * 10) / 10
+        const rounded = Math.round(curTime)
         const storeProg = usePlayerStore.getState().progress
-        if (Math.abs(rounded - storeProg) >= 0.1) {
+        if (Math.abs(rounded - storeProg) >= 1) {
           isSyncingTimeRef.current = true
           usePlayerStore.getState().setProgress(rounded)
           isSyncingTimeRef.current = false
@@ -44,6 +47,7 @@ export function useAudioPlayback(): void {
     }
 
     const onPlay = (): void => {
+      PlaybackClock.setMode(false) // Use internal audio
       if (animId === null) {
         animId = requestAnimationFrame(syncTimeLoop)
       }
@@ -55,7 +59,7 @@ export function useAudioPlayback(): void {
         animId = null
       }
       if (audio) {
-        usePlayerStore.getState().setProgress(Math.round(audio.currentTime * 10) / 10)
+        usePlayerStore.getState().setProgress(Math.round(audio.currentTime))
       }
     }
 
@@ -64,9 +68,7 @@ export function useAudioPlayback(): void {
         cancelAnimationFrame(animId)
         animId = null
       }
-      usePlayerStore.getState().pause()
-      usePlayerStore.getState().setProgress(0)
-      audio.currentTime = 0
+      usePlayerStore.getState().playNext()
     }
 
     const onError = (): void => {
@@ -89,6 +91,7 @@ export function useAudioPlayback(): void {
       audio.pause()
       audio.src = ''
       audioRef.current = null
+      PlaybackClock.setAudioElement(null)
     }
     // Intentionally empty — this effect must run exactly once
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,6 +108,7 @@ export function useAudioPlayback(): void {
       lastTrackUrlRef.current = audioUrl
       audio.src = audioUrl
       audio.load()
+      PlaybackClock.setMode(false)
 
       // Seek to wherever the store's progress currently is
       const storeProg = usePlayerStore.getState().progress
@@ -158,7 +162,7 @@ export function useAudioPlayback(): void {
       // Only seek if the audio position actually differs meaningfully
       if (Math.abs(audio.currentTime - progress) > 1.5) {
         isSeekingRef.current = true
-        audio.currentTime = progress
+        PlaybackClock.setSeekPosition(progress) // Use unified PlaybackClock method
         // Small delay so the next timeupdate doesn't fight the seek
         setTimeout(() => {
           isSeekingRef.current = false

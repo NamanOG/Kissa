@@ -22,7 +22,7 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-md p-6"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-sm p-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -30,19 +30,20 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
           onClick={toggle}
         >
           <motion.div
-            className="relative w-full max-w-[420px] bg-[#151210]/95 rounded-[16px] shadow-[0_30px_80px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] p-8 overflow-hidden select-none"
+            className="relative w-full max-w-[420px] bg-[var(--deck-bg)] border border-[var(--deck-border)] rounded-[24px] p-8 overflow-hidden select-none"
+            style={{ boxShadow: 'var(--deck-shadow)' }}
             initial={{ scale: 0.97, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.97, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-10">
-              <h2 className="text-[14px] text-[#f5efe6] font-medium tracking-wide">Quick Reference</h2>
+            <div className="flex items-center justify-between mb-10 pb-4 border-b border-[var(--panel-border)]">
+              <h2 className="text-[14px] text-[var(--muted)] uppercase tracking-[0.2em] font-medium">Quick Reference</h2>
               <button
                 type="button"
                 onClick={toggle}
-                className="text-[#887b70] hover:text-[#f5efe6] transition-colors"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/5 transition-all cursor-pointer shadow-sm active:scale-95"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
@@ -51,9 +52,9 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
 
             <div className="space-y-4">
               {shortcuts.map((sc, i) => (
-                <div key={i} className="flex items-center justify-between group">
-                  <span className="text-[#a99b90] text-[13px]">{sc.action}</span>
-                  <kbd className="min-w-[32px] px-2.5 py-1 text-center bg-white/[0.04] border border-white/[0.08] rounded-md text-[11px] font-mono text-[#d6c9bb] shadow-sm group-hover:bg-white/[0.08] transition-colors">
+                <div key={i} className="flex items-center justify-between group py-1">
+                  <span className="text-[var(--muted)] text-[13px]">{sc.action}</span>
+                  <kbd className="min-w-[32px] px-2.5 py-1.5 text-center bg-black/40 border border-black/50 rounded-md text-[11px] font-mono font-bold tracking-widest text-[var(--on-surface)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] group-hover:text-[var(--accent)] transition-colors">
                     {sc.key}
                   </kbd>
                 </div>

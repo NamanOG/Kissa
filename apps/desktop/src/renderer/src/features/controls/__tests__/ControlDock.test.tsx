@@ -32,12 +32,6 @@ describe('ControlDock component', () => {
     expect(usePlayerStore.getState().isPlaying).toBe(false)
   }, 15000)
 
-  it('displays formatted track progress and duration', () => {
-    render(<ControlDock />)
-    expect(screen.getByText('0:42')).toBeInTheDocument()
-    expect(screen.getByText('5:37')).toBeInTheDocument()
-  })
-
   it('disables control dock actions when currentTrack is null', () => {
     usePlayerStore.setState({ currentTrack: null })
     const { container } = render(<ControlDock />)

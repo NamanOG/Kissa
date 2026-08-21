@@ -3,10 +3,10 @@ import { BackgroundLayer } from './BackgroundLayer'
 export const NoiseLayer = memo(() => {
   return (
     <BackgroundLayer
-      className="opacity-[0.02] pointer-events-none transform-gpu will-change-transform"
+      className="opacity-[0.02] pointer-events-none transform-gpu"
       style={{
         backgroundImage:
-          'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")',
+          'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLlVAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAFXSURBVGje7ZqxcYMwEEXf5c8U5B/K1ClSJU2UKZIm4w7sIjW88iXbCIn96HQ69950Ot096Ojo6Ojo6Ojo6PjXxBi/3nU5xhhj/PrV5Vhj9L53X4Y1Ru9752XwPnjfOy6F98H73nEpfB68712WwefB+95lGVofvO8dl6L1wfvecSlaH7zvHZei9cH73nEpWh+87x2XovXB+95xKVofvO8dl6L1wfvecSlaH7zvHZei9cH73nEpWh+87x2XovXB+95xKVofvO8dl6L1wfvecSlaH7zvHZei9cH73nEpWh+87x2XovXB+95xKVofvO8dl6L1wfvecSlaH7zvHZei9cH73nEpWh+87x2XovXB+95xKVofvO8dl6L1wfvecSlaH7zvHZei9cH73nEpWh+87x2XovXB+95xKVofvO8dl6L1wfvecSlaH7zvHZei9cH73nEpWh+87x2XovXB+95xKX4Ac+318QAAAEsAAAAASUVORK5CYII=")',
         backgroundRepeat: 'repeat'
       }}
     />

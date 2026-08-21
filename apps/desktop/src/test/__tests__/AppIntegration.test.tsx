@@ -24,10 +24,7 @@ describe('App Integration', () => {
     expect(screen.getByRole('heading', { name: 'Starboy' })).toBeInTheDocument()
     expect(screen.getAllByText('The Weeknd').length).toBeGreaterThan(0)
 
-    // Check Control Dock elements
-    expect(screen.getAllByText('0:10').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('3:50').length).toBeGreaterThan(0)
-
+    // Time is now handled via DOM refs and moved from ControlDock
     // Check Turntable & Tonearm
     expect(screen.getByTitle('Drag tonearm to drop needle & seek')).toBeInTheDocument()
   })

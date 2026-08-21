@@ -31,8 +31,9 @@ export interface PlayerState {
   volume: number
   rpm: '33' | '45'
   isPowered: boolean
-  activeView: 'deck' | 'lyrics'
+  activeView: 'deck' | 'lyrics' | 'queue'
   showSideLyrics: boolean
+  isMiniPlayer: boolean
   theme: AppTheme
   isSettingsOpen: boolean
   isOnboardingOpen: boolean
@@ -52,11 +53,12 @@ export interface PlayerState {
   toggleRpm: () => void
   setIsPowered: (isPowered: boolean) => void
   togglePower: () => void
-  setActiveView: (view: 'deck' | 'lyrics') => void
+  setActiveView: (view: 'deck' | 'lyrics' | 'queue') => void
   toggleActiveView: () => void
   setShowSideLyrics: (show: boolean) => void
   toggleSideLyrics: () => void
   setTheme: (theme: AppTheme) => void
+  toggleMiniPlayer: () => void
   setIsSettingsOpen: (open: boolean) => void
   toggleSettings: () => void
   setIsOnboardingOpen: (open: boolean) => void
@@ -65,6 +67,15 @@ export interface PlayerState {
   setAutoScrollLyrics: (enabled: boolean) => void
   toggleKeyboardHelp: () => void
   setUpdateAvailable: (updateInfo: { version: string; url: string } | null) => void
+  queue: TrackInfo[]
+  queueIndex: number
+  playNext: () => void
+  playPrev: () => void
+  playTrackAtIndex: (index: number) => void
+  reorderQueue: (newQueue: TrackInfo[]) => void
+  removeFromQueue: (index: number) => void
+  addToQueue: (track: TrackInfo) => void
+  clearQueue: () => void
 }
 
 function getInitialTheme(): AppTheme {
@@ -118,6 +129,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   activeView: 'deck',
   showSideLyrics: false,
   theme: savedTheme,
+  isMiniPlayer: false,
   isSettingsOpen: false,
   isOnboardingOpen: initialOnboarding,
   needleSound: true,
@@ -153,6 +165,15 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   toggleActiveView: () => set((state) => ({ activeView: state.activeView === 'deck' ? 'lyrics' : 'deck' })),
   setShowSideLyrics: (showSideLyrics) => set({ showSideLyrics }),
   toggleSideLyrics: () => set((state) => ({ showSideLyrics: !state.showSideLyrics })),
+  toggleMiniPlayer: () => {
+    set((state) => {
+      const isMini = !state.isMiniPlayer
+      if (typeof window !== 'undefined' && window.electron?.toggleMiniPlayer) {
+        window.electron.toggleMiniPlayer(isMini)
+      }
+      return { isMiniPlayer: isMini }
+    })
+  },
   setTheme: (theme) => {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('kissa_theme', theme)
@@ -178,5 +199,76 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   setNeedleSound: (needleSound) => set({ needleSound }),
   setAutoScrollLyrics: (autoScrollLyrics) => set({ autoScrollLyrics }),
   toggleKeyboardHelp: () => set((state) => ({ isKeyboardHelpOpen: !state.isKeyboardHelpOpen })),
-  setUpdateAvailable: (updateAvailable) => set({ updateAvailable })
+  setUpdateAvailable: (updateAvailable) => set({ updateAvailable }),
+
+  queue: [
+    {
+      title: 'Self Control',
+      artist: 'Frank Ocean',
+      album: 'Blonde',
+      artworkUrl: blondeAlbumCover,
+      audioUrl: selfControlAudio,
+      duration: 249,
+      source: 'Internal'
+    },
+    {
+      title: 'Pink + White',
+      artist: 'Frank Ocean',
+      album: 'Blonde',
+      artworkUrl: blondeAlbumCover,
+      duration: 184,
+      source: 'Internal'
+    },
+    {
+      title: 'Nights',
+      artist: 'Frank Ocean',
+      album: 'Blonde',
+      artworkUrl: blondeAlbumCover,
+      duration: 307,
+      source: 'Internal'
+    }
+  ],
+  queueIndex: 0,
+  
+  playNext: () => set((state) => {
+    if (state.queue.length === 0) return {}
+    const nextIdx = (state.queueIndex + 1) % state.queue.length
+    return { queueIndex: nextIdx, currentTrack: state.queue[nextIdx], progress: 0, isPlaying: true }
+  }),
+  
+  playPrev: () => set((state) => {
+    if (state.queue.length === 0) return {}
+    const prevIdx = state.queueIndex === 0 ? state.queue.length - 1 : state.queueIndex - 1
+    return { queueIndex: prevIdx, currentTrack: state.queue[prevIdx], progress: 0, isPlaying: true }
+  }),
+
+  playTrackAtIndex: (index) => set((state) => {
+    if (index >= 0 && index < state.queue.length) {
+      return { queueIndex: index, currentTrack: state.queue[index], progress: 0, isPlaying: true }
+    }
+    return {}
+  }),
+
+  reorderQueue: (newQueue) => set({ queue: newQueue }),
+  
+  removeFromQueue: (index) => set((state) => {
+    const newQueue = [...state.queue]
+    newQueue.splice(index, 1)
+    
+    let nextIdx = state.queueIndex
+    if (index < state.queueIndex) {
+      nextIdx--
+    } else if (index === state.queueIndex) {
+      if (newQueue.length === 0) {
+        return { queue: [], currentTrack: null, isPlaying: false, progress: 0, queueIndex: 0 }
+      }
+      if (nextIdx >= newQueue.length) nextIdx = 0
+      return { queue: newQueue, queueIndex: nextIdx, currentTrack: newQueue[nextIdx], progress: 0 }
+    }
+    return { queue: newQueue, queueIndex: nextIdx }
+  }),
+  
+  addToQueue: (track) => set((state) => ({ queue: [...state.queue, track] })),
+  
+  clearQueue: () => set({ queue: [], queueIndex: 0, currentTrack: null, isPlaying: false, progress: 0 })
 }))

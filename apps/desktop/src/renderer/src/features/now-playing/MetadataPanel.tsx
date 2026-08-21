@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
@@ -17,10 +18,9 @@ export interface MetadataPanelProps {
 
 interface MiniTrackScrubberProps {
   duration: number
-  isLightTheme: boolean
 }
 
-const MiniTrackScrubber = memo(({ duration, isLightTheme }: MiniTrackScrubberProps) => {
+const MiniTrackScrubber = memo(({ duration }: MiniTrackScrubberProps) => {
   const progress = usePlayerStore((s) => s.progress)
   const setProgress = usePlayerStore((s) => s.setProgress)
   const elapsed = duration > 0 ? Math.min(progress, duration) : progress
@@ -28,12 +28,7 @@ const MiniTrackScrubber = memo(({ duration, isLightTheme }: MiniTrackScrubberPro
 
   return (
     <div className="mt-2.5 flex items-center justify-between w-full select-none">
-      <span
-        className={cn(
-          'font-mono text-[9.5px] tabular-nums font-medium transition-colors',
-          isLightTheme ? 'text-[#6e6155]' : 'text-[#b7a99b]'
-        )}
-      >
+      <span className="font-mono text-[9.5px] tabular-nums font-medium transition-colors text-[var(--muted)]">
         {formatTime(elapsed)}
       </span>
 
@@ -47,25 +42,15 @@ const MiniTrackScrubber = memo(({ duration, isLightTheme }: MiniTrackScrubberPro
           setProgress(Math.round(ratio * duration))
         }}
       >
-        <div
-          className={cn(
-            'w-full h-[2.5px] rounded-full relative transition-colors',
-            isLightTheme ? 'bg-black/15' : 'bg-white/10'
-          )}
-        >
+        <div className="w-full h-[2.5px] rounded-full relative transition-colors bg-[var(--on-surface)]/20">
           <div
-            className="h-full bg-[#d7a76c] rounded-full"
+            className="h-full rounded-full bg-[var(--accent)]"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
       </div>
 
-      <span
-        className={cn(
-          'font-mono text-[9.5px] tabular-nums font-medium transition-colors',
-          isLightTheme ? 'text-[#8a7c6f]' : 'text-[#887b70]'
-        )}
-      >
+      <span className="font-mono text-[9.5px] tabular-nums font-medium transition-colors text-[var(--muted)] opacity-60">
         {formatTime(duration)}
       </span>
     </div>
@@ -85,7 +70,6 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
   const duration = currentTrack?.duration ?? 0
 
   const theme = usePlayerStore((s) => s.theme)
-  const isLightTheme = theme === 'sunday-morning' || theme === 'concrete-vinyl'
 
   return (
     <section
@@ -100,8 +84,7 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
         <div className="flex items-center gap-2">
           <span
             className={cn(
-              'font-mono text-[9.5px] min-[800px]:text-[10px] uppercase tracking-[0.22em] transition-colors',
-              isLightTheme ? 'text-[#6e6155]' : 'text-[#b7a99b]'
+              'font-mono text-[9.5px] min-[800px]:text-[10px] uppercase tracking-[0.22em] transition-colors text-[var(--accent)]',
             )}
           >
             {hasTrack ? 'NOW PLAYING' : 'WAITING FOR MUSIC'}
@@ -109,7 +92,6 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
           {hasTrack && (
             <HiFiVisualizer
               isPlaying={isPlaying}
-              isLightTheme={isLightTheme}
               barsCount={5}
               height={10}
               showPeaks={false}
@@ -117,72 +99,94 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
           )}
         </div>
 
-        <div className="w-full">
-          <h1
-            className={cn(
-              'mt-1 min-[800px]:mt-2 font-serif text-[clamp(1.5rem,2.4vw,2.8rem)] font-medium leading-[0.95] tracking-[-0.025em] line-clamp-2 transition-colors',
-              isLightTheme ? 'text-[#1c1814]' : 'text-[#f5efe6]'
-            )}
-            title={title}
-          >
-            {title}
-          </h1>
-          <p
-            className={cn(
-              'mt-1.5 min-[800px]:mt-2.5 text-[0.88rem] min-[800px]:text-[0.96rem] font-normal line-clamp-1 transition-colors',
-              hasTrack
-                ? isLightTheme
-                  ? 'text-[#38312a]'
-                  : 'text-[#d6c9bb]'
-                : isLightTheme
-                  ? 'text-[#8a7e72]'
-                  : 'text-[#7d7168]'
-            )}
-          >
-            {artist}
-          </p>
-          <p
-            className={cn(
-              'mt-0.5 text-[0.78rem] min-[800px]:text-[0.82rem] font-normal line-clamp-1 transition-colors',
-              hasTrack
-                ? isLightTheme
-                  ? 'text-[#5e5348]'
-                  : 'text-[#9d9187]'
-                : isLightTheme
-                  ? 'text-[#a3978b]'
-                  : 'text-[#625952]'
-            )}
-          >
-            {album}
-          </p>
+        <div className="w-full relative min-h-[5rem]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={hasTrack ? currentTrack?.audioUrl || title : 'empty'}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-0"
+            >
+              {hasTrack ? (
+                <>
+                  <h1
+                    className={cn(
+                      'mt-1 min-[800px]:mt-2 font-serif text-[clamp(1.5rem,2.4vw,2.8rem)] font-medium leading-[0.95] tracking-[-0.025em] line-clamp-2 transition-colors text-[var(--on-surface)]',
+                    )}
+                    style={{ textShadow: 'var(--typography-glow)' }}
+                    title={title}
+                  >
+                    {title}
+                  </h1>
+                  <p
+                    className={cn(
+                      'mt-1.5 min-[800px]:mt-2.5 text-[0.88rem] min-[800px]:text-[0.96rem] font-normal line-clamp-1 transition-colors text-[var(--muted)]',
+                    )}
+                  >
+                    {artist}
+                  </p>
+                  <p
+                    className={cn(
+                      'mt-0.5 text-[0.78rem] min-[800px]:text-[0.82rem] font-normal line-clamp-1 transition-colors text-[var(--muted)] opacity-80',
+                    )}
+                  >
+                    {album}
+                  </p>
+                </>
+              ) : (
+                <div className="mt-1 min-[800px]:mt-2">
+                  <h1
+                    className={cn(
+                      'font-serif tracking-tight text-3xl min-[900px]:text-4xl min-[1200px]:text-[3.25rem] font-medium leading-[1.05] line-clamp-1 mb-1 transition-colors text-[var(--on-surface)]'
+                    )}
+                  >
+                    Kissa
+                  </h1>
+                  <p
+                    className={cn(
+                      'text-[15px] min-[900px]:text-[17px] min-[1200px]:text-lg line-clamp-1 transition-colors text-[var(--muted)]'
+                    )}
+                  >
+                    Drop a track, open your library, or start playing external media to begin listening.
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
-        {/* Album Artwork */}
-        <div className="relative mt-4 min-[800px]:mt-6 min-[1200px]:mt-8 w-full max-w-[min(220px,78%)] min-[1200px]:max-w-[260px] transform-gpu">
-          <div className="pointer-events-none absolute inset-3 translate-y-4 rounded-[1.2rem] bg-[#a8613d]/20 blur-2xl" />
-          <div className="relative aspect-square w-full overflow-hidden rounded-[1rem] border border-white/[0.1] bg-[#211a17] shadow-[0_16px_36px_rgba(16,10,8,0.46),inset_0_1px_0_rgba(255,255,255,0.1)] transform-gpu">
-            <img
-              key={artworkUrl}
-              src={artworkUrl}
-              alt={hasTrack ? `${title} — ${artist}` : 'Album artwork'}
-              className="h-full w-full object-cover transition-opacity duration-300 ease-out"
-              draggable={false}
-              onError={(e) => {
-                e.currentTarget.src = albumPlaceholder
-              }}
-            />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-[#150e0b]/35 via-transparent to-[#f5d5b4]/[0.07]" />
+        <div className="relative mt-24 min-[800px]:mt-28 min-[1200px]:mt-32 w-full max-w-[min(220px,78%)] min-[1200px]:max-w-[260px] transform-gpu">
+          <div className="pointer-events-none absolute inset-3 translate-y-4 rounded-[1.2rem] bg-[var(--accent)]/20 blur-2xl" />
+          <div className="relative aspect-square w-full overflow-hidden rounded-[1rem] border border-white/[0.1] bg-[var(--panel-bg)] shadow-[0_16px_36px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] transform-gpu">
+            <AnimatePresence mode="wait">
+              <motion.img
+                key={artworkUrl}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.05 }}
+                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                src={artworkUrl}
+                alt={hasTrack ? `${title} — ${artist}` : 'Album artwork'}
+                className="absolute inset-0 h-full w-full object-cover"
+                draggable={false}
+                onError={(e) => {
+                  e.currentTarget.src = albumPlaceholder
+                }}
+              />
+            </AnimatePresence>
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/10" />
           </div>
 
           {/* Mini Track Progress Bar */}
-          <MiniTrackScrubber duration={duration} isLightTheme={isLightTheme} />
+          <MiniTrackScrubber duration={duration} />
 
           {/* Editorial Developer Mark */}
           <div className="mt-3.5 flex items-center gap-2 select-none">
             <span
               className={cn(
-                'text-[12px] font-normal tracking-wide transition-colors',
-                isLightTheme ? 'text-[#5e5348]' : 'text-[#b7a99b]'
+                'font-mono uppercase text-[9px] min-[900px]:text-[10px] tracking-[0.2em] font-semibold text-[var(--on-surface)] opacity-40 mix-blend-overlay'
               )}
             >
               Crafted by{' '}
@@ -196,19 +200,13 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
                     window.open('https://github.com/NamanOG', '_blank', 'noopener,noreferrer')
                   }
                 }}
-                className={cn(
-                  'font-medium transition-all hover:underline underline-offset-2 cursor-pointer',
-                  isLightTheme ? 'text-[#1c1814] hover:text-[#b45309]' : 'text-[#f5efe6] hover:text-[#d7a76c]'
-                )}
+                className="font-medium transition-all hover:underline underline-offset-2 cursor-pointer text-[var(--on-surface)] hover:text-[var(--accent)]"
               >
                 Naman
               </a>
             </span>
             <span
-              className={cn(
-                'font-mono text-[11px] font-medium tracking-tighter select-none',
-                isLightTheme ? 'text-[#8a7c6f]' : 'text-[#d7a76c]/80'
-              )}
+              className="font-mono text-[11px] font-medium tracking-tighter select-none text-[var(--accent)] opacity-80"
             >
               &lt; &gt;
             </span>
@@ -222,13 +220,7 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
                   window.open('https://github.com/NamanOG', '_blank', 'noopener,noreferrer')
                 }
               }}
-              className={cn(
-                'group/gh flex items-center justify-center w-5 h-5 rounded-full border transition-all cursor-pointer shadow-sm',
-                'hover:scale-110 active:scale-95',
-                isLightTheme
-                  ? 'border-black/15 bg-black/[0.04] text-[#1c1814] hover:bg-black/10 hover:border-black/25'
-                  : 'border-white/[0.14] bg-white/[0.08] text-[#f5efe6] hover:bg-[#d7a76c]/20 hover:border-[#d7a76c]/60 hover:text-[#dfb47e]'
-              )}
+              className="group/gh flex items-center justify-center w-5 h-5 rounded-full border transition-all cursor-pointer shadow-sm hover:scale-110 active:scale-95 border-[var(--panel-border)] bg-[var(--panel-bg)] text-[var(--on-surface)] hover:bg-[var(--accent)]/20 hover:border-[var(--accent)] hover:text-[var(--accent)]"
               title="View Naman on GitHub (@NamanOG)"
               aria-label="GitHub Profile"
             >

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
 import type { SystemMediaPayload } from '../../../types/media'
+import { PlaybackClock } from '@renderer/utils/PlaybackClock'
 
 export function useSystemMediaSync(): void {
   const setTrack = usePlayerStore((s) => s.setTrack)
@@ -9,9 +10,6 @@ export function useSystemMediaSync(): void {
   const setProgress = usePlayerStore((s) => s.setProgress)
 
   const commandCooldownRef = useRef(false)
-  const anchorProgressRef = useRef(0)
-  const anchorTimestampRef = useRef(Date.now())
-  const hasSeenNonZeroSmtcRef = useRef(false)
   const lastTrackKeyRef = useRef('')
 
   useEffect(() => {
@@ -34,13 +32,14 @@ export function useSystemMediaSync(): void {
 
       if (isInternalAudio && !payload.isPlaying) return
 
+      PlaybackClock.setMode(true) // External media mode
+
       const trackKey = `${payload.title}|${payload.artist || ''}|${payload.sourceAppId || ''}`
       const isSameTrack = lastTrackKeyRef.current === trackKey
 
       if (!isSameTrack) {
         lastTrackKeyRef.current = trackKey
-        anchorProgressRef.current = payload.progress || 0
-        anchorTimestampRef.current = Date.now()
+        PlaybackClock.setSmtcState(payload.progress || 0, payload.isPlaying)
 
         setTrack({
           title: payload.title,
@@ -84,41 +83,32 @@ export function useSystemMediaSync(): void {
         // Sync playback state (Playing vs Paused)
         const currentIsPlaying = usePlayerStore.getState().isPlaying
         if (!commandCooldownRef.current && currentIsPlaying !== payload.isPlaying) {
-          const elapsed = (Date.now() - anchorTimestampRef.current) / 1000
-          anchorProgressRef.current = currentIsPlaying
-            ? anchorProgressRef.current + elapsed
-            : anchorProgressRef.current
-          anchorTimestampRef.current = Date.now()
           setIsPlaying(payload.isPlaying)
         }
 
-        // Sync timeline progress with monotonic filter
-        const curProgress = usePlayerStore.getState().progress
-        const elapsedSinceAnchor = usePlayerStore.getState().isPlaying
-          ? (Date.now() - anchorTimestampRef.current) / 1000
-          : 0
-        const localEstimate = anchorProgressRef.current + elapsedSinceAnchor
+        // Sync timeline progress with monotonic filter via PlaybackClock
+        const localEstimate = PlaybackClock.getCurrentTime()
         const diff = payload.progress - localEstimate
 
         // If difference is large (> 1.5s) or a distinct seek/loop restart, accept SMTC position immediately
         if (Math.abs(diff) > 1.5 || payload.progress === 0) {
-          anchorProgressRef.current = payload.progress
-          anchorTimestampRef.current = Date.now()
-          setProgress(Math.round(payload.progress * 10) / 10)
-        } else if (payload.progress > curProgress) {
-          anchorProgressRef.current = payload.progress
-          anchorTimestampRef.current = Date.now()
-          setProgress(Math.round(payload.progress * 10) / 10)
+          PlaybackClock.setSmtcState(payload.progress, payload.isPlaying)
+          setProgress(payload.progress)
+        } else if (payload.progress > localEstimate + 0.1) { // Slight buffer
+          PlaybackClock.setSmtcState(payload.progress, payload.isPlaying)
         } else {
-          anchorProgressRef.current = Math.max(anchorProgressRef.current, payload.progress)
+          // If local estimate is ahead, let SMTC just catch up or update playing state only
+          PlaybackClock.setSmtcState(Math.max(localEstimate, payload.progress), payload.isPlaying)
         }
       }
 
       // Sync master volume from Windows if present
       if (payload.volume !== undefined && typeof payload.volume === 'number') {
-        const curVol = usePlayerStore.getState().volume
-        if (Math.abs(curVol - payload.volume) > 1 && !window.__kissaIsDraggingVolume) {
-          usePlayerStore.getState().setVolume(payload.volume)
+        const state = usePlayerStore.getState()
+        const isExternal = !!state.currentTrack?.sourceAppId
+        
+        if (isExternal && Math.abs(state.volume - payload.volume) > 1 && !window.__kissaIsDraggingVolume) {
+          state.setVolume(payload.volume)
         }
       }
     }
@@ -139,28 +129,26 @@ export function useSystemMediaSync(): void {
     // Listen for SMTC updates
     const cleanup = window.electron.onSystemMediaUpdate(handleMediaPayload)
 
-    // Dedicated high-resolution monotonic timer for fluid sub-second playback & zero-lag lyrics
+    // Coarse timer for text UI updates (e.g. 1Hz)
     const ticker = setInterval(() => {
       const state = usePlayerStore.getState()
       if (!state.isPlaying || !state.currentTrack || state.currentTrack.audioUrl) return
 
-      const elapsed = (Date.now() - anchorTimestampRef.current) / 1000
-      const currentEstimated = anchorProgressRef.current + elapsed
+      const currentTime = PlaybackClock.getCurrentTime()
       const dur = state.currentTrack.duration || 0
-      const clamped = dur > 0 ? Math.min(dur, currentEstimated) : currentEstimated
-      const rounded = Math.round(clamped * 10) / 10
+      const clamped = dur > 0 ? Math.min(dur, currentTime) : currentTime
+      const rounded = Math.round(clamped)
 
-      if (Math.abs(rounded - state.progress) >= 0.1) {
+      if (Math.abs(rounded - state.progress) >= 1) {
         setProgress(rounded)
       }
-    }, 50)
+    }, 1000)
 
-    // Listen for manual seeks (e.g. user dragged scrubber / tonearm)
+    // Listen for manual seeks from React UI
     const unsubscribe = usePlayerStore.subscribe((state, prevState) => {
       if (state.currentTrack?.audioUrl) return
       if (Math.abs(state.progress - prevState.progress) > 1.5) {
-        anchorProgressRef.current = state.progress
-        anchorTimestampRef.current = Date.now()
+        PlaybackClock.setSeekPosition(state.progress)
       }
     })
 

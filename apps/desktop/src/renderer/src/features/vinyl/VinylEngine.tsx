@@ -1,5 +1,4 @@
-import React, { memo, useRef } from 'react'
-import { motion, useAnimationFrame, useMotionValue } from 'framer-motion'
+import React, { memo, useEffect, useRef } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { VinylEngineProps } from './types'
 import { VinylBase } from './VinylBase'
@@ -15,7 +14,7 @@ import albumPlaceholder from '@renderer/media/placeholder-album.png'
 /**
  * Vinyl record engine — handles spin animation with real physics
  * (acceleration on play, friction deceleration on pause).
- * Stacks layers: base → grooves → edge → label, with reflection on top.
+ * Steady-state rotation is offloaded to the compositor via WAAPI.
  */
 export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: VinylEngineProps): React.JSX.Element => {
   const storeIsPlaying = usePlayerStore((state) => state.isPlaying)
@@ -26,32 +25,88 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
   const playing = (isActive ?? storeIsPlaying) && storeIsPowered
   const artwork = albumArt ?? storeTrack?.artworkUrl ?? albumPlaceholder
 
-  const rotation = useMotionValue(0)
-  const speedRef = useRef(0) // Current deg/s
+  const vinylRef = useRef<HTMLDivElement>(null)
+  const animationRef = useRef<Animation | null>(null)
+  const rafRef = useRef<number | null>(null)
+  const currentPlaybackRateRef = useRef(0)
 
-  // Target speed: 33⅓ RPM = 200 deg/s, 45 RPM = 270 deg/s
-  const TARGET_SPEED = rpm === '45' ? 270 : 200
+// Module level variable to preserve rotational phase across view changes and React Strict Mode remounts
+let savedVinylPhase = 0
 
-  useAnimationFrame((_, delta) => {
-    const deltaSeconds = delta / 1000
+  // Initialize Web Animations API rotation
+  useEffect(() => {
+    if (!vinylRef.current) return
+    
+    if (!animationRef.current) {
+      animationRef.current = vinylRef.current.animate(
+        [
+          { transform: 'rotate(0deg)' },
+          { transform: 'rotate(360deg)' }
+        ],
+        {
+          duration: 1800, // 33 1/3 RPM default (1.8s per rev)
+          iterations: Infinity,
+          easing: 'linear'
+        }
+      )
+      animationRef.current.currentTime = savedVinylPhase
+      animationRef.current.playbackRate = 0
+    }
 
-    if (playing) {
-      // Immediate tactile spin up/down to target RPM
-      if (speedRef.current < TARGET_SPEED) {
-        speedRef.current = Math.min(TARGET_SPEED, speedRef.current + 650 * deltaSeconds)
-      } else if (speedRef.current > TARGET_SPEED) {
-        speedRef.current = Math.max(TARGET_SPEED, speedRef.current - 350 * deltaSeconds)
+    return () => {
+      if (animationRef.current) {
+        // Save the exact rotational phase before cancelling
+        savedVinylPhase = (animationRef.current.currentTime as number) || 0
+        animationRef.current.cancel()
+        animationRef.current = null
       }
-    } else {
-      // Crisp smooth spin down with friction
-      speedRef.current = Math.max(0, speedRef.current - 450 * deltaSeconds)
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
     }
+  }, [])
 
-    if (speedRef.current > 0) {
-      const nextRotation = (rotation.get() + speedRef.current * deltaSeconds) % 360
-      rotation.set(nextRotation)
+  // Handle RPM changes by updating animation duration smoothly
+  useEffect(() => {
+    if (!animationRef.current) return
+    const targetDuration = rpm === '45' ? 1333.33 : 1800
+    const effect = animationRef.current.effect as KeyframeEffect
+    if (effect) {
+      effect.updateTiming({ duration: targetDuration })
     }
-  })
+  }, [rpm])
+
+  // Handle play/pause physics via playbackRate interpolation
+  useEffect(() => {
+    if (!animationRef.current) return
+    
+    const targetRate = playing ? 1 : 0
+    let lastTime = performance.now()
+    
+    const updateRate = (time: number) => {
+      const deltaSeconds = (time - lastTime) / 1000
+      lastTime = time
+      
+      let rate = currentPlaybackRateRef.current
+      if (playing && rate < targetRate) {
+        rate = Math.min(targetRate, rate + 3.25 * deltaSeconds) // Spin up
+      } else if (!playing && rate > targetRate) {
+        rate = Math.max(targetRate, rate - 2.25 * deltaSeconds) // Spin down
+      }
+      
+      currentPlaybackRateRef.current = rate
+      
+      if (animationRef.current) {
+        animationRef.current.playbackRate = rate
+      }
+      
+      if (rate !== targetRate) {
+        rafRef.current = requestAnimationFrame(updateRate)
+      }
+    }
+    
+    if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    rafRef.current = requestAnimationFrame(updateRate)
+    
+  }, [playing])
 
   return (
     <div
@@ -70,15 +125,15 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
         }}
       />
 
-      <motion.div
+      <div
+        ref={vinylRef}
         className="absolute inset-0 w-full h-full rounded-full transform-gpu"
-        style={{ rotate: rotation }}
       >
         <VinylBase />
         <GrooveLayer />
         <EdgeLayer />
         <Label albumArt={artwork} />
-      </motion.div>
+      </div>
 
       {/* Reflection stays static (doesn't rotate with vinyl) */}
       <ReflectionLayer />

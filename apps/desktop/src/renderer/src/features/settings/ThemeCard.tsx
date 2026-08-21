@@ -25,8 +25,8 @@ export const ThemeCard = memo(({ theme, isSelected, onSelect }: ThemeCardProps):
         className={cn(
           "relative w-full aspect-[4/3] overflow-hidden rounded-xl transition-all duration-300 ease-out",
           isSelected 
-            ? "ring-[1.5px] ring-white/70 ring-offset-4 ring-offset-[#1a1715] scale-[1.02] shadow-[0_8px_20px_rgba(0,0,0,0.4)]" 
-            : "opacity-50 group-hover:opacity-100 group-hover:scale-[1.02] shadow-md border border-white/[0.05]"
+            ? "ring-[1.5px] ring-[var(--accent)] ring-offset-4 ring-offset-[var(--panel-bg)] scale-[1.02] shadow-[0_8px_20px_rgba(0,0,0,0.4)]" 
+            : "opacity-50 group-hover:opacity-100 group-hover:scale-[1.02] shadow-md border border-[var(--panel-border)]"
         )}
       >
         <img
@@ -42,7 +42,7 @@ export const ThemeCard = memo(({ theme, isSelected, onSelect }: ThemeCardProps):
         <h4 
           className={cn(
             "text-[11.5px] tracking-wide transition-colors duration-300",
-            isSelected ? "text-[#f5efe6] font-medium" : "text-[#887b70] font-normal"
+            isSelected ? "text-[var(--on-surface)] font-medium" : "text-[var(--muted)] font-normal"
           )}
         >
           {theme.name}

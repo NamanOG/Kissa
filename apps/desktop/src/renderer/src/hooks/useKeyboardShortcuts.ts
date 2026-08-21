@@ -81,12 +81,20 @@ export function useKeyboardShortcuts(): void {
         }
         case 'ArrowUp': {
           e.preventDefault() // prevent scroll
-          store.setVolume(Math.min(100, store.volume + 5))
+          const newVol = Math.min(100, store.volume + 5)
+          store.setVolume(newVol)
+          if (store.currentTrack?.sourceAppId && window.electron?.setVolume) {
+            window.electron.setVolume(newVol)
+          }
           break
         }
         case 'ArrowDown': {
           e.preventDefault() // prevent scroll
-          store.setVolume(Math.max(0, store.volume - 5))
+          const newVol = Math.max(0, store.volume - 5)
+          store.setVolume(newVol)
+          if (store.currentTrack?.sourceAppId && window.electron?.setVolume) {
+            window.electron.setVolume(newVol)
+          }
           break
         }
         case 't':

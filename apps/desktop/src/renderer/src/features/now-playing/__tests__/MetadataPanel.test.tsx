@@ -15,7 +15,7 @@ describe('MetadataPanel component', () => {
   it('renders waiting state when no track is active', () => {
     render(<MetadataPanel />)
     expect(screen.getByText('WAITING FOR MUSIC')).toBeInTheDocument()
-    expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+    expect(screen.getByText('Kissa')).toBeInTheDocument()
   })
 
   it('renders track title, artist, album, and formatted elapsed/duration time when track is loaded', () => {

@@ -1,7 +1,7 @@
 import React from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
-import { Quote, Settings, HelpCircle, Keyboard } from 'lucide-react'
+import { Quote, Settings, HelpCircle, Keyboard, ListMusic, Minimize2, Maximize2 } from 'lucide-react'
 import phonoLogo from '@renderer/media/phono_logo.png'
 
 export interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -20,20 +20,21 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const setIsOnboardingOpen = usePlayerStore((s) => s.setIsOnboardingOpen)
     const isKeyboardHelpOpen = usePlayerStore((s) => s.isKeyboardHelpOpen)
     const toggleKeyboardHelp = usePlayerStore((s) => s.toggleKeyboardHelp)
+    const isMiniPlayer = usePlayerStore((s) => s.isMiniPlayer)
     const theme = usePlayerStore((s) => s.theme)
-
-    const isLightTheme = theme === 'sunday-morning' || theme === 'concrete-vinyl'
 
     return (
       <aside
         ref={ref}
         className={cn(
-          'z-40 m-3 flex h-[calc(100%-1.5rem)] w-[60px] shrink-0 flex-col items-center rounded-[1.25rem] py-5 select-none backdrop-blur-xl transition-colors transform-gpu will-change-transform',
-          isLightTheme
-            ? 'border border-black/[0.08] bg-[#f0e7d6]/70 shadow-[0_18px_46px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.6)]'
-            : 'border border-white/[0.08] bg-[#2a211d]/55 shadow-[0_18px_46px_rgba(14,9,7,0.22),inset_0_1px_0_rgba(255,255,255,0.09)]',
+          'z-40 m-3 flex h-[calc(100%-1.5rem)] w-[60px] shrink-0 flex-col items-center rounded-[1.25rem] py-5 select-none transition-colors transform-gpu will-change-transform border',
           className
         )}
+        style={{
+          backgroundColor: 'var(--panel-bg)',
+          borderColor: 'var(--panel-border)',
+          boxShadow: 'var(--panel-shadow)'
+        }}
         {...props}
       >
         {/* Navigation Items */}
@@ -49,12 +50,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             {/* Active Glow Ring */}
             {activeView === 'deck' && (
               <div
-                className={cn(
-                  'absolute -inset-1 rounded-full animate-pulse transition-all',
-                  isLightTheme
-                    ? 'border border-[#b45309]/80 bg-[#b45309]/[0.1] shadow-[0_0_14px_rgba(180,83,9,0.3)]'
-                    : 'border border-[#d7a76c]/80 bg-[#d7a76c]/[0.1] shadow-[0_0_14px_rgba(215,167,108,0.35)]'
-                )}
+                className="absolute -inset-1 rounded-full animate-pulse transition-all border border-[var(--accent)]/80 bg-[var(--accent)]/[0.1]"
+                style={{ boxShadow: '0 0 14px var(--accent)' }}
               />
             )}
             <div className="relative w-9 h-9 rounded-full overflow-hidden border border-white/[0.14] shadow-md group-hover:scale-105 transition-transform">
@@ -77,36 +74,74 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
           >
             {activeView === 'lyrics' && (
               <div
-                className={cn(
-                  'absolute inset-0 rounded-full transition-all',
-                  isLightTheme
-                    ? 'border border-[#b45309]/80 bg-[#b45309]/[0.08] shadow-[0_0_12px_rgba(180,83,9,0.25)]'
-                    : 'border border-[#d7a76c]/80 bg-[#d7a76c]/[0.08] shadow-[0_0_12px_rgba(215,167,108,0.3)]'
-                )}
+                className="absolute inset-0 rounded-full transition-all border border-[var(--accent)]/80 bg-[var(--accent)]/[0.08]"
+                style={{ boxShadow: '0 0 12px var(--accent)' }}
               />
             )}
             <Quote
               className={cn(
                 'w-5 h-5 transition-colors',
-                activeView === 'lyrics'
-                  ? isLightTheme ? 'text-[#b45309]' : 'text-[#dfb47e]'
-                  : isLightTheme ? 'text-[#7a6c5f] group-hover:text-[#181411]' : 'text-[#a99b90] group-hover:text-[#f5efe6]'
+                activeView === 'lyrics' ? 'text-[var(--accent)]' : 'text-[var(--muted)] group-hover:text-[var(--on-surface)]'
               )}
               strokeWidth={1.75}
             />
             {activeView === 'lyrics' && (
               <div
-                className={cn(
-                  'absolute w-1.5 h-1.5 rounded-full',
-                  isLightTheme ? 'bg-[#b45309]' : 'bg-[#dfb47e]'
-                )}
+                className="absolute w-1.5 h-1.5 rounded-full bg-[var(--accent)]"
               />
+            )}
+          </button>
+
+          {/* Up Next / Queue Button */}
+          <button
+            aria-label="Up Next Queue"
+            type="button"
+            onClick={() => setActiveView('queue')}
+            className="relative w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all group mt-2"
+            title="Up Next"
+          >
+            {activeView === 'queue' && (
+              <div
+                className="absolute inset-0 rounded-full transition-all border border-[var(--accent)]/80 bg-[var(--accent)]/[0.08]"
+                style={{ boxShadow: '0 0 12px var(--accent)' }}
+              />
+            )}
+            <ListMusic
+              className={cn(
+                'w-5 h-5 transition-colors',
+                activeView === 'queue' ? 'text-[var(--accent)]' : 'text-[var(--muted)] group-hover:text-[var(--on-surface)]'
+              )}
+              strokeWidth={1.75}
+            />
+            {activeView === 'queue' && (
+              <div className="absolute w-1.5 h-1.5 rounded-full mt-7 bg-[var(--accent)]" />
             )}
           </button>
         </nav>
 
         {/* Bottom: Guide / Help & Settings */}
         <div className="mt-auto w-full px-2 flex flex-col items-center gap-2">
+          {/* Mini Player Mode Button */}
+          <button
+            aria-label="Toggle Mini Player"
+            type="button"
+            onClick={() => usePlayerStore.getState().toggleMiniPlayer()}
+            className={cn(
+              'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.96] mb-2',
+              isMiniPlayer
+                ? 'bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/40'
+                : 'text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--accent)]/[0.05]'
+            )}
+            style={isMiniPlayer ? { boxShadow: '0 0 12px var(--accent)' } : {}}
+            title="Toggle Mini Player"
+          >
+            {isMiniPlayer ? (
+              <Maximize2 className="w-5 h-5" strokeWidth={1.75} />
+            ) : (
+              <Minimize2 className="w-5 h-5" strokeWidth={1.75} />
+            )}
+          </button>
+
           {/* Welcome Guide / Introduction Button */}
           <button
             aria-label="Welcome Guide & Overview"
@@ -115,13 +150,10 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             className={cn(
               'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.96]',
               isOnboardingOpen
-                ? isLightTheme
-                  ? 'bg-[#b45309]/15 text-[#b45309] border border-[#b45309]/40 shadow-[0_0_12px_rgba(180,83,9,0.2)]'
-                  : 'bg-[#d7a76c]/20 text-[#d7a76c] border border-[#d7a76c]/40 shadow-[0_0_12px_rgba(215,167,108,0.25)]'
-                : isLightTheme
-                  ? 'text-[#7a6c5f] hover:text-[#181411] hover:bg-black/[0.05]'
-                  : 'text-[#a99b90] hover:text-[#f5efe6] hover:bg-white/[0.06]'
+                ? 'bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/40'
+                : 'text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--accent)]/[0.05]'
             )}
+            style={isOnboardingOpen ? { boxShadow: '0 0 12px var(--accent)' } : {}}
             title="Open Welcome Guide & Instructions"
           >
             <HelpCircle className="w-5 h-5" strokeWidth={1.75} />
@@ -135,13 +167,10 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             className={cn(
               'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.96]',
               isKeyboardHelpOpen
-                ? isLightTheme
-                  ? 'bg-[#b45309]/15 text-[#b45309] border border-[#b45309]/40 shadow-[0_0_12px_rgba(180,83,9,0.2)]'
-                  : 'bg-[#d7a76c]/20 text-[#d7a76c] border border-[#d7a76c]/40 shadow-[0_0_12px_rgba(215,167,108,0.25)]'
-                : isLightTheme
-                  ? 'text-[#7a6c5f] hover:text-[#181411] hover:bg-black/[0.05]'
-                  : 'text-[#a99b90] hover:text-[#f5efe6] hover:bg-white/[0.06]'
+                ? 'bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/40'
+                : 'text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--accent)]/[0.05]'
             )}
+            style={isKeyboardHelpOpen ? { boxShadow: '0 0 12px var(--accent)' } : {}}
             title="Keyboard Shortcuts"
           >
             <Keyboard className="w-5 h-5" strokeWidth={1.75} />
@@ -155,13 +184,10 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             className={cn(
               'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.96]',
               isSettingsOpen
-                ? isLightTheme
-                  ? 'bg-[#b45309]/15 text-[#b45309] border border-[#b45309]/40 shadow-[0_0_12px_rgba(180,83,9,0.2)]'
-                  : 'bg-[#d7a76c]/20 text-[#d7a76c] border border-[#d7a76c]/40 shadow-[0_0_12px_rgba(215,167,108,0.25)]'
-                : isLightTheme
-                  ? 'text-[#7a6c5f] hover:text-[#181411] hover:bg-black/[0.05]'
-                  : 'text-[#a99b90] hover:text-[#f5efe6] hover:bg-white/[0.06]'
+                ? 'bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/40'
+                : 'text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--accent)]/[0.05]'
             )}
+            style={isSettingsOpen ? { boxShadow: '0 0 12px var(--accent)' } : {}}
             title="Open Preferences & Environments"
           >
             <Settings className="w-5 h-5" strokeWidth={1.75} />

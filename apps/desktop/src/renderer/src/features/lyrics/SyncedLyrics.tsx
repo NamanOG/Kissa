@@ -1,7 +1,8 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
-import { Music2, Play } from 'lucide-react'
+import { PlaybackClock } from '@renderer/utils/PlaybackClock'
+import { Music2, Play, Quote } from 'lucide-react'
 
 export interface LyricLine {
   id: string
@@ -87,7 +88,7 @@ interface LyricRowItemProps {
   distance: number
   isHovered: boolean
   isLargeView: boolean
-  isLightTheme: boolean
+
   onLineClick: (time: number) => void
   onHover: (index: number | null) => void
 }
@@ -99,7 +100,7 @@ const LyricRowItem = memo(({
   distance,
   isHovered,
   isLargeView,
-  isLightTheme,
+
   onLineClick,
   onHover
 }: LyricRowItemProps): React.JSX.Element => {
@@ -111,27 +112,21 @@ const LyricRowItem = memo(({
     opacityClass = 'opacity-100'
     scaleVal = isLargeView ? 1.04 : 1.03
   } else if (distance === 1) {
-    opacityClass = isHovered ? 'opacity-95' : isLightTheme ? 'opacity-65' : 'opacity-55'
+    opacityClass = isHovered ? 'opacity-95' : 'opacity-[0.6]'
     scaleVal = 0.98
   } else if (distance === 2) {
-    opacityClass = isHovered ? 'opacity-80' : isLightTheme ? 'opacity-45' : 'opacity-35'
+    opacityClass = isHovered ? 'opacity-80' : 'opacity-40'
     scaleVal = 0.96
   } else {
-    opacityClass = isHovered ? 'opacity-60' : isLightTheme ? 'opacity-30' : 'opacity-20'
+    opacityClass = isHovered ? 'opacity-60' : 'opacity-25'
     scaleVal = 0.94
   }
 
-  const textColorClass = isLightTheme
-    ? isActive
-      ? 'font-bold text-[#14100d] drop-shadow-[0_1px_2px_rgba(0,0,0,0.12)]'
-      : isHovered
-        ? 'text-[#2a221b]'
-        : 'text-[#524438]'
-    : isActive
-      ? 'font-bold text-[#ffffff] drop-shadow-[0_2px_14px_rgba(255,255,255,0.3)]'
-      : isHovered
-        ? 'text-[#e6dbcf]'
-        : 'text-[#a8998b]'
+  const textColorClass = isActive
+    ? 'font-bold text-[var(--on-surface)] drop-shadow-[0_2px_14px_rgba(255,255,255,0.15)]'
+    : isHovered
+      ? 'text-[var(--on-surface)]'
+      : 'text-[var(--muted)]'
 
   return (
     <div
@@ -155,11 +150,9 @@ const LyricRowItem = memo(({
       {isActive && (
         <div
           className={cn(
-            'absolute -left-1.5 top-1/2 -translate-y-1/2 w-[3.5px] h-[70%] rounded-full transition-all duration-300',
-            isLightTheme
-              ? 'bg-[#b45309] shadow-[0_0_8px_rgba(180,83,9,0.55)]'
-              : 'bg-[#d7a76c] shadow-[0_0_10px_rgba(215,167,108,0.8)]'
+            'absolute -left-1.5 top-1/2 -translate-y-1/2 w-[3.5px] h-[70%] rounded-full transition-all duration-300 bg-[var(--accent)]',
           )}
+          style={{ boxShadow: '0 0 10px var(--accent)' }}
         />
       )}
 
@@ -179,10 +172,7 @@ const LyricRowItem = memo(({
       {/* Subtle click cue on hover */}
       {!isActive && isHovered && (
         <div
-          className={cn(
-            'absolute -left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-80 pointer-events-none',
-            isLightTheme ? 'text-[#b45309]' : 'text-[#d7a76c]'
-          )}
+          className="absolute -left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-80 pointer-events-none text-[var(--accent)]"
         >
           <Play className="w-3 h-3 fill-current" />
         </div>
@@ -207,12 +197,12 @@ export const SyncedLyrics = memo(({
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const setProgress = usePlayerStore((s) => s.setProgress)
   const play = usePlayerStore((s) => s.play)
+  const isPlaying = usePlayerStore((s) => s.isPlaying)
   const theme = usePlayerStore((s) => s.theme)
 
-  const isLightTheme = theme === 'sunday-morning' || theme === 'concrete-vinyl'
 
   const [fetchedLyrics, setFetchedLyrics] = useState<string | null>(null)
-  const [status, setStatus] = useState<'loading' | 'ready' | 'instrumental' | 'unavailable'>('loading')
+  const [status, setStatus] = useState<'loading' | 'ready' | 'instrumental' | 'unavailable' | 'waiting'>('loading')
   const [userIsScrolling, setUserIsScrolling] = useState(false)
   const [hoveredLineIndex, setHoveredLineIndex] = useState<number | null>(null)
 
@@ -227,7 +217,7 @@ export const SyncedLyrics = memo(({
 
     if (!currentTrack) {
       setFetchedLyrics(null)
-      setStatus('unavailable')
+      setStatus('waiting')
       return
     }
 
@@ -328,19 +318,27 @@ export const SyncedLyrics = memo(({
       return 0
     }
 
-    setActiveIndex(calcIndex(usePlayerStore.getState().progress))
-
+    let rafId: number
     let prevIdx = -1
-    const unsub = usePlayerStore.subscribe((state) => {
-      const newIdx = calcIndex(state.progress)
+
+    const checkTime = () => {
+      const time = PlaybackClock.getCurrentTime()
+      const newIdx = calcIndex(time)
       if (newIdx !== prevIdx) {
         prevIdx = newIdx
         setActiveIndex(newIdx)
       }
-    })
+      
+      if (isPlaying) {
+        rafId = requestAnimationFrame(checkTime)
+      }
+    }
 
-    return unsub
-  }, [lyricLines])
+    // Always check time at least once (e.g. after a seek while paused, or on mount)
+    rafId = requestAnimationFrame(checkTime)
+    
+    return () => cancelAnimationFrame(rafId)
+  }, [lyricLines, isPlaying])
 
   // ── 4. Apple Music fluid auto-scroll with zero-lag spring/ease interpolation ──
   const smoothScrollTo = useCallback((targetTop: number) => {
@@ -449,9 +447,7 @@ export const SyncedLyrics = memo(({
           }}
           className={cn(
             'absolute bottom-7 right-7 z-30 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full backdrop-blur-xl transition-all',
-            isLightTheme
-              ? 'border border-black/[0.12] bg-[#f2e8d2]/95 shadow-[0_8px_24px_rgba(0,0,0,0.15)] text-[#b45309] hover:text-[#181411]'
-              : 'border border-white/[0.12] bg-[#2a211d]/90 shadow-[0_8px_24px_rgba(0,0,0,0.5)] text-[#d7a76c] hover:text-[#f5efe6]',
+              'border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-[var(--panel-shadow)] text-[var(--accent)] hover:text-[var(--on-surface)]',
             'font-mono text-[10px] font-bold uppercase tracking-[0.16em]'
           )}
         >
@@ -494,7 +490,7 @@ export const SyncedLyrics = memo(({
                   distance={distance}
                   isHovered={isHovered}
                   isLargeView={isLargeView}
-                  isLightTheme={isLightTheme}
+
                   onLineClick={handleLineClick}
                   onHover={handleHover}
                 />
@@ -506,20 +502,8 @@ export const SyncedLyrics = memo(({
         {/* Loading State */}
         {status === 'loading' && (
           <div className="flex h-full flex-col items-center justify-center gap-3 py-24 text-center">
-            <div
-              className={cn(
-                'w-5 h-5 rounded-full border-2 animate-spin',
-                isLightTheme
-                  ? 'border-[#b45309]/30 border-t-[#b45309]'
-                  : 'border-[#d7a76c]/30 border-t-[#d7a76c]'
-              )}
-            />
-            <p
-              className={cn(
-                'font-mono text-xs uppercase tracking-[0.18em]',
-                isLightTheme ? 'text-[#7a6c5f]' : 'text-[#9d9187]'
-              )}
-            >
+            <div className="w-5 h-5 rounded-full border-2 animate-spin border-[var(--accent)]/30 border-t-[var(--accent)]" />
+            <p className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
               Syncing timed lyrics…
             </p>
           </div>
@@ -528,26 +512,11 @@ export const SyncedLyrics = memo(({
         {/* Instrumental State */}
         {status === 'instrumental' && (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-24 text-center">
-            <Music2
-              className={cn(
-                'w-8 h-8',
-                isLightTheme ? 'text-[#b45309]/80' : 'text-[#d7a76c]/60'
-              )}
-            />
-            <p
-              className={cn(
-                'font-serif text-2xl',
-                isLightTheme ? 'text-[#181411]/90 font-medium' : 'text-[#f5efe6]/80'
-              )}
-            >
+            <Music2 className="w-8 h-8 text-[var(--accent)] opacity-80" />
+            <p className="font-serif text-2xl text-[var(--on-surface)] opacity-90">
               Instrumental
             </p>
-            <p
-              className={cn(
-                'text-xs',
-                isLightTheme ? 'text-[#7a6c5f]' : 'text-[#887b70]'
-              )}
-            >
+            <p className="text-xs text-[var(--muted)]">
               No lyrics for this track
             </p>
           </div>
@@ -556,21 +525,26 @@ export const SyncedLyrics = memo(({
         {/* Unavailable State */}
         {status === 'unavailable' && (
           <div className="flex h-full flex-col items-center justify-center gap-2 py-24 text-center">
-            <p
-              className={cn(
-                'font-serif text-2xl',
-                isLightTheme ? 'text-[#181411]/80 font-medium' : 'text-[#f5efe6]/60'
-              )}
-            >
+            <p className="font-serif text-2xl text-[var(--on-surface)] opacity-80">
               No Synced Lyrics
             </p>
-            <p
-              className={cn(
-                'max-w-xs text-xs',
-                isLightTheme ? 'text-[#7a6c5f]' : 'text-[#887b70]'
-              )}
-            >
+            <p className="max-w-xs text-xs text-[var(--muted)]">
               Timed lyrics could not be found for {currentTrack?.title || 'this track'}.
+            </p>
+          </div>
+        )}
+
+        {/* Waiting for Music State */}
+        {status === 'waiting' && (
+          <div className="flex h-full flex-col items-center justify-center gap-3 py-24 text-center">
+            <div className="w-16 h-16 min-[900px]:w-20 min-[900px]:h-20 rounded-full mb-4 flex items-center justify-center opacity-40 bg-[var(--accent)]/10">
+              <Quote className="w-8 h-8 min-[900px]:w-10 min-[900px]:h-10 opacity-60 text-[var(--accent)]" />
+            </div>
+            <p className="font-serif text-2xl min-[900px]:text-3xl text-[var(--on-surface)] opacity-90">
+              Waiting for Music
+            </p>
+            <p className="max-w-sm text-sm text-[var(--muted)]">
+              Lyrics will appear here when a track starts playing.
             </p>
           </div>
         )}

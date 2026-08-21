@@ -16,67 +16,124 @@ export interface ControlDockProps {
   className?: string
 }
 
-const Scrubber = memo(() => {
-  const progress = usePlayerStore((s) => s.progress)
-  const setProgress = usePlayerStore((s) => s.setProgress)
-  const currentTrack = usePlayerStore((s) => s.currentTrack)
-  const theme = usePlayerStore((s) => s.theme)
+import { PlaybackClock } from '@renderer/utils/PlaybackClock'
+import { useEffect, useState } from 'react'
 
-  const isLightTheme = theme === 'sunday-morning' || theme === 'concrete-vinyl'
+const Scrubber = memo(() => {
+  const currentTrack = usePlayerStore((s) => s.currentTrack)
+  const isPlaying = usePlayerStore((s) => s.isPlaying)
+  const theme = usePlayerStore((s) => s.theme)
   const duration = currentTrack?.duration ?? 0
-  const elapsed = duration > 0 ? Math.min(progress, duration) : progress
-  const progressPercent = duration > 0 ? (elapsed / duration) * 100 : 0
+  
+  const [displayTime, setDisplayTime] = useState(0)
+
+  const railRef = useRef<HTMLDivElement>(null)
+  const fillRef = useRef<HTMLDivElement>(null)
+  const thumbRef = useRef<HTMLDivElement>(null)
+  const railWidthRef = useRef(0)
+
+  // Track rail width for precise thumb translation without layout thrashing
+  useEffect(() => {
+    if (!railRef.current) return
+    const ro = new ResizeObserver((entries) => {
+      railWidthRef.current = entries[0].contentRect.width
+    })
+    ro.observe(railRef.current)
+    return () => ro.disconnect()
+  }, [])
+
+  // Visual sync loop
+  useEffect(() => {
+    let rafId: number
+    let lastSecond = -1
+    
+    const updateScrubber = () => {
+      if (duration > 0 && railWidthRef.current > 0) {
+        const time = PlaybackClock.getCurrentTime()
+        const elapsed = Math.max(0, Math.min(time, duration))
+        const percent = elapsed / duration
+        
+        if (fillRef.current) {
+          fillRef.current.style.transform = `scaleX(${percent})`
+        }
+        if (thumbRef.current) {
+          // Move thumb exactly, centering its 10px width (-5px)
+          const px = percent * railWidthRef.current - 5
+          thumbRef.current.style.transform = `translate3d(${px}px, -50%, 0)`
+        }
+        
+        const currentSecond = Math.floor(elapsed)
+        if (currentSecond !== lastSecond) {
+          lastSecond = currentSecond
+          setDisplayTime(currentSecond)
+        }
+      }
+      
+      if (isPlaying) {
+        rafId = requestAnimationFrame(updateScrubber)
+      }
+    }
+    
+    // Always run at least once to render the current state
+    rafId = requestAnimationFrame(updateScrubber)
+    return () => cancelAnimationFrame(rafId)
+  }, [duration, isPlaying])
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (duration <= 0 || !railRef.current) return
+    const rect = railRef.current.getBoundingClientRect()
+    const clickX = e.clientX - rect.left
+    const ratio = Math.max(0, Math.min(1, clickX / rect.width))
+    const seekTime = ratio * duration
+    
+    // Update authoritative clock
+    PlaybackClock.setSeekPosition(seekTime)
+    
+    // The visual RAF will naturally pick this up if playing.
+    // If paused, we must manually update the visual position immediately.
+    if (!isPlaying) {
+      if (fillRef.current) {
+        fillRef.current.style.transform = `scaleX(${ratio})`
+      }
+      if (thumbRef.current) {
+        const px = ratio * railWidthRef.current - 5
+        thumbRef.current.style.transform = `translate3d(${px}px, -50%, 0)`
+      }
+      setDisplayTime(Math.floor(seekTime))
+    }
+    
+    // Optional: push coarse update to Zustand if anything else needs it instantly
+    usePlayerStore.getState().setProgress(seekTime)
+  }
 
   return (
     <div className="flex items-center gap-2 min-[900px]:gap-3 flex-1 min-w-[50px] min-[800px]:min-w-[100px] min-[1100px]:min-w-[160px]">
-      <span
-        className={cn(
-          'font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0',
-          isLightTheme ? 'text-[#524438]' : 'text-neutral-400'
-        )}
-      >
-        {formatTime(elapsed)}
+      <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0 text-[var(--muted)]">
+        {formatTime(displayTime)}
       </span>
 
       <div
+        ref={railRef}
         className="relative flex-1 h-5 flex items-center cursor-pointer group"
-        onClick={(e) => {
-          if (duration <= 0) return
-          const rect = e.currentTarget.getBoundingClientRect()
-          const clickX = e.clientX - rect.left
-          const ratio = Math.max(0, Math.min(1, clickX / rect.width))
-          setProgress(Math.round(ratio * duration))
-        }}
+        onClick={handleSeek}
       >
-        <div
-          className={cn(
-            'w-full h-[3px] rounded-full relative',
-            isLightTheme ? 'bg-black/15' : 'bg-[#5a4940]/70'
-          )}
-        >
+        <div className="w-full h-[3px] rounded-full relative overflow-hidden bg-[var(--on-surface)]/20">
           <div
-            className={cn(
-              'h-full rounded-full',
-              isLightTheme ? 'bg-[#b45309]' : 'bg-[#d7a76c]'
-            )}
-            style={{ width: `${progressPercent}%` }}
-          />
-          <div
-            className={cn(
-              'absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full shadow-[0_1px_4px_rgba(20,12,8,0.35)] -translate-x-1/2 transition-transform group-hover:scale-125',
-              isLightTheme ? 'bg-[#b45309]' : 'bg-[#e0bd8c]'
-            )}
-            style={{ left: `${progressPercent}%` }}
+            ref={fillRef}
+            className="h-full w-full rounded-full origin-left bg-[var(--accent)]"
+            style={{ transform: 'scaleX(0)' }}
           />
         </div>
+        
+        {/* Thumb outside overflow-hidden rail to show shadow */}
+        <div
+          ref={thumbRef}
+          className="absolute top-1/2 left-0 w-2.5 h-2.5 rounded-full shadow-[0_1px_4px_rgba(20,12,8,0.35)] transition-transform group-hover:scale-125 bg-[var(--accent)]"
+          style={{ transform: 'translate3d(-5px, -50%, 0)' }}
+        />
       </div>
 
-      <span
-        className={cn(
-          'font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0',
-          isLightTheme ? 'text-[#7a6c5f]' : 'text-neutral-500'
-        )}
-      >
+      <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0 text-[var(--muted)]">
         {formatTime(duration)}
       </span>
     </div>
@@ -97,11 +154,10 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
   const showSideLyrics = usePlayerStore((s) => s.showSideLyrics)
   const toggleSideLyrics = usePlayerStore((s) => s.toggleSideLyrics)
   const setActiveView = usePlayerStore((s) => s.setActiveView)
-
-  const isLightTheme = theme === 'sunday-morning' || theme === 'concrete-vinyl'
   const hasTrack = currentTrack !== null
   const isLyricsActive = activeView === 'lyrics' || showSideLyrics
 
+  const isExternalMedia = !!currentTrack?.sourceAppId
   const isMuted = volume === 0
   const lastNonZeroVolumeRef = useRef(volume > 0 ? volume : 75)
   const isDraggingVolumeRef = useRef(false)
@@ -112,7 +168,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
       lastNonZeroVolumeRef.current = clamped
     }
     setVolume(clamped)
-    if (window.electron?.setVolume) {
+    if (isExternalMedia && window.electron?.setVolume) {
       window.electron.setVolume(clamped)
     }
   }
@@ -129,38 +185,35 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
   return (
     <div
       className={cn(
-        'relative z-30 mx-2 mb-2 min-[900px]:mx-3 min-[900px]:mb-3 flex h-[62px] min-[900px]:h-[70px] w-[calc(100%-1rem)] min-[900px]:w-[calc(100%-1.5rem)] shrink-0 items-center justify-between rounded-[1.2rem] backdrop-blur-xl transition-colors transform-gpu will-change-transform',
-        isLightTheme
-          ? 'border border-black/[0.08] bg-[#f0e7d6]/75 shadow-[0_18px_46px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.6)]'
-          : 'border border-white/[0.09] bg-[#2a211d]/60 shadow-[0_18px_46px_rgba(14,9,7,0.26),inset_0_1px_0_rgba(255,255,255,0.1)]',
-        'px-3 min-[900px]:px-6 min-[1200px]:px-8 select-none',
+        'relative z-30 mx-2 mb-2 min-[900px]:mx-3 min-[900px]:mb-3 flex h-[62px] min-[900px]:h-[70px] w-[calc(100%-1rem)] min-[900px]:w-[calc(100%-1.5rem)] shrink-0 items-center justify-between rounded-[1.2rem] transition-colors transform-gpu',
+        'border px-3 min-[900px]:px-6 min-[1200px]:px-8 select-none',
         !hasTrack && 'opacity-50 pointer-events-none',
         className
       )}
+      style={{
+        backgroundColor: 'var(--dock-bg)',
+        borderColor: 'var(--dock-border)',
+        boxShadow: 'var(--dock-shadow)'
+      }}
     >
       {/* ── Left: Volume Slider ─────────────────────────── */}
-      <div className="flex items-center gap-2 min-[900px]:gap-3 w-[80px] min-[900px]:w-[120px] min-[1200px]:w-[150px] shrink-0">
+      <div className="flex items-center gap-2 min-[900px]:gap-3 w-[80px] min-[900px]:w-[120px] min-[1200px]:w-[150px] shrink-0 transition-opacity"
+      title={isExternalMedia ? "System Master Volume" : "App Volume"}>
         <button
           type="button"
           onClick={toggleMute}
           className="focus:outline-none cursor-pointer active:scale-90 transition-transform"
-          title={isMuted ? 'Unmute' : 'Mute'}
+          title={isExternalMedia ? 'System Master Volume' : (isMuted ? 'Unmute' : 'Mute')}
           aria-label={isMuted ? 'Unmute' : 'Mute'}
         >
           {isMuted ? (
             <VolumeX
-              className={cn(
-                'h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 shrink-0',
-                isLightTheme ? 'text-[#b45309]' : 'text-[#d7a76c]'
-              )}
+              className="h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 shrink-0 text-[var(--accent)]"
               strokeWidth={1.75}
             />
           ) : (
             <Volume2
-              className={cn(
-                'h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 shrink-0',
-                isLightTheme ? 'text-[#7a6c5f] hover:text-[#181411]' : 'text-[#b7a99b] hover:text-[#f5efe6]'
-              )}
+              className="h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 shrink-0 text-[var(--muted)] hover:text-[var(--on-surface)]"
               strokeWidth={1.75}
             />
           )}
@@ -202,26 +255,15 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           title={`Volume: ${volume}%`}
         >
           {/* Base rail */}
-          <div
-            className={cn(
-              'w-full h-[3px] rounded-full relative',
-              isLightTheme ? 'bg-black/15' : 'bg-[#5a4940]/70'
-            )}
-          >
+          <div className="w-full h-[3px] rounded-full relative bg-[var(--on-surface)]/20">
             {/* Fill */}
             <div
-              className={cn(
-                'h-full rounded-full transition-all duration-75',
-                isLightTheme ? 'bg-[#b45309]' : 'bg-[#d7a76c]'
-              )}
+              className="h-full rounded-full transition-all duration-75 bg-[var(--accent)]"
               style={{ width: `${volume}%` }}
             />
             {/* Round thumb */}
             <div
-              className={cn(
-                'absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full -translate-x-1/2 transition-transform group-hover:scale-125',
-                isLightTheme ? 'bg-[#181411]' : 'bg-[#f5efe6]'
-              )}
+              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full -translate-x-1/2 transition-transform group-hover:scale-125 bg-[var(--on-surface)]"
               style={{ left: `${volume}%` }}
             />
           </div>
@@ -237,14 +279,11 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             if (currentTrack?.sourceAppId && window.electron?.mediaPrev) {
               window.electron.mediaPrev()
             } else {
-              setProgress(0)
+              usePlayerStore.getState().playPrev()
             }
           }}
           aria-label="Previous track"
-          className={cn(
-            'transition-colors cursor-pointer active:scale-95 shrink-0',
-            isLightTheme ? 'text-[#7a6c5f] hover:text-[#181411]' : 'text-[#b7a99b] hover:text-[#f5efe6]'
-          )}
+          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-[var(--muted)] hover:text-[var(--on-surface)]"
         >
           <SkipBack className="h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 fill-current" />
         </button>
@@ -261,25 +300,21 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           }}
           aria-label={isPlaying ? 'Pause' : 'Play'}
           className={cn(
-            'relative h-8 w-8 min-[900px]:h-9 min-[900px]:w-9 rounded-full flex items-center justify-center cursor-pointer transition-all active:scale-95 shrink-0',
-            isLightTheme
-              ? 'border border-[#b45309]/60 bg-[#e4d7c0] shadow-[0_4px_12px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.4)] hover:border-[#b45309] active:translate-y-px'
-              : 'border border-[#e0bd8c]/65 bg-[#3a2e27]/80 shadow-[0_4px_12px_rgba(14,9,7,0.34),inset_0_1px_0_rgba(255,255,255,0.13)] hover:border-[#f0d0a2] active:translate-y-px'
+            'relative h-8 w-8 min-[900px]:h-9 min-[900px]:w-9 rounded-full flex items-center justify-center cursor-pointer transition-all active:scale-95 shrink-0 border hover:border-[var(--accent)] active:translate-y-px',
           )}
+          style={{
+            backgroundColor: 'var(--panel-bg)',
+            borderColor: 'var(--accent)',
+            boxShadow: 'var(--panel-shadow)'
+          }}
         >
           {isPlaying ? (
             <Pause
-              className={cn(
-                'h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4',
-                isLightTheme ? 'text-[#181411] fill-[#181411]' : 'text-[#f5efe6] fill-[#f5efe6]'
-              )}
+              className="h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 text-[var(--on-surface)] fill-current"
             />
           ) : (
             <Play
-              className={cn(
-                'h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 ml-0.5',
-                isLightTheme ? 'text-[#181411] fill-[#181411]' : 'text-[#f5efe6] fill-[#f5efe6]'
-              )}
+              className="h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 ml-0.5 text-[var(--on-surface)] fill-current"
             />
           )}
         </button>
@@ -290,13 +325,12 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           onClick={() => {
             if (currentTrack?.sourceAppId && window.electron?.mediaNext) {
               window.electron.mediaNext()
+            } else {
+              usePlayerStore.getState().playNext()
             }
           }}
           aria-label="Next track"
-          className={cn(
-            'transition-colors cursor-pointer active:scale-95 shrink-0',
-            isLightTheme ? 'text-[#7a6c5f] hover:text-[#181411]' : 'text-[#b7a99b] hover:text-[#f5efe6]'
-          )}
+          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-[var(--muted)] hover:text-[var(--on-surface)]"
         >
           <SkipForward className="h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 fill-current" />
         </button>
@@ -323,12 +357,8 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           className={cn(
             'flex items-center gap-1 px-2 min-[900px]:px-3 py-1 rounded-full border transition-all cursor-pointer select-none active:scale-95',
             isLyricsActive
-              ? isLightTheme
-                ? 'border-[#b45309] bg-[#b45309]/15 text-[#b45309] shadow-[0_0_12px_rgba(180,83,9,0.25)]'
-                : 'border-[#d7a76c] bg-[#d7a76c]/15 text-[#f5efe6] shadow-[0_0_12px_rgba(215,167,108,0.3)]'
-              : isLightTheme
-                ? 'border-black/[0.08] bg-[#e4d7c0]/60 text-[#7a6c5f] hover:text-[#181411] hover:border-black/[0.15]'
-                : 'border-white/[0.08] bg-[#342923]/55 text-[#a99b90] hover:text-[#f5efe6] hover:border-white/[0.15]'
+              ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)] shadow-[0_0_12px_var(--accent)]'
+              : 'border-[var(--panel-border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--on-surface)] hover:border-[var(--accent)]/50'
           )}
           title={isLyricsActive ? 'Hide Lyrics' : 'Show Synced Lyrics'}
           aria-label="Toggle Live Lyrics"
@@ -336,7 +366,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           <Quote
             className={cn(
               'w-3 h-3 min-[900px]:w-3.5 min-[900px]:h-3.5',
-              isLyricsActive ? (isLightTheme ? 'text-[#b45309]' : 'text-[#d7a76c]') : 'currentColor'
+              isLyricsActive ? 'text-[var(--accent)]' : 'currentColor'
             )}
           />
           <span className="hidden min-[760px]:inline font-mono text-[8.5px] min-[900px]:text-[9px] font-bold tracking-[0.14em] uppercase">
@@ -348,9 +378,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
         <div
           className={cn(
             'flex items-center gap-1.5 px-2 min-[900px]:px-2.5 py-1 rounded-full border transition-all',
-            isLightTheme
-              ? 'border-black/[0.08] bg-[#e4d7c0]/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]'
-              : 'border-white/[0.08] bg-[#342923]/55 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]'
+            'border-[var(--panel-border)] bg-[var(--surface)] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]'
           )}
         >
           {currentTrack?.source?.toLowerCase().includes('apple') ? (
@@ -368,8 +396,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           )}
           <span
             className={cn(
-              'font-mono text-[8.5px] min-[900px]:text-[9px] font-bold tracking-[0.14em] uppercase',
-              isLightTheme ? 'text-[#524438]' : 'text-[#f5efe6]'
+              'font-mono text-[8.5px] min-[900px]:text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--on-surface)] opacity-80',
             )}
           >
             {currentTrack?.source || 'System Audio'}
@@ -384,7 +411,6 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
         >
           <HiFiVisualizer
             isPlaying={isPlaying}
-            isLightTheme={isLightTheme}
             barsCount={7}
             height={18}
             showPeaks={true}

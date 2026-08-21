@@ -33,6 +33,7 @@ export interface PhonoSystemMediaAPI {
   mediaPrev: () => Promise<void>
   openExternal?: (url: string) => Promise<void>
   getAppVersion?: () => Promise<string>
+  toggleMiniPlayer?: (isMini: boolean) => Promise<void>
 }
 
 declare global {

@@ -96,7 +96,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.98 }}
         transition={{ duration: 0.18, ease: 'easeOut' }}
-        className="relative z-50 w-full max-w-[720px] max-h-[85vh] flex flex-col rounded-[24px] bg-[#1a1715] border border-white/[0.08] shadow-[0_30px_80px_rgba(0,0,0,0.7)] overflow-hidden"
+        className="relative z-50 w-full max-w-[720px] max-h-[85vh] flex flex-col rounded-[24px] bg-[var(--deck-bg)] border border-[var(--deck-border)] overflow-hidden"
+        style={{ boxShadow: 'var(--deck-shadow)' }}
       >
         {/* ── Hero photograph ─────────────────────────────── */}
         <div className="relative h-44 w-full overflow-hidden shrink-0 bg-[#0d0b09]">
@@ -106,9 +107,9 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
             className="w-full h-full object-cover object-center"
             style={{ filter: 'brightness(0.8) contrast(1.05) saturate(0.9)' }}
           />
-          {/* Gradient into modal body (#1a1715) */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#1a1715] via-[#1a1715]/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#1a1715]/60 via-transparent to-[#1a1715]/40" />
+          {/* Gradient into modal body */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--deck-bg)] via-[var(--deck-bg)]/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[var(--deck-bg)]/60 via-transparent to-[var(--deck-bg)]/40" />
 
           {/* Close */}
           <button
@@ -122,17 +123,17 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
 
           {/* Wordmark */}
           <div className="absolute bottom-5 left-8 z-10">
-            <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#d7a76c] mb-1.5 opacity-90">
+            <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-[var(--accent)] mb-1.5 opacity-90">
               喫茶 · Jazz Kissa
             </p>
-            <h1 className="font-serif text-[2.2rem] text-[#f5efe6] font-normal tracking-wide leading-none">
+            <h1 className="font-serif text-[2.2rem] text-[var(--on-surface)] font-normal tracking-wide leading-none">
               Welcome to Kissa
             </h1>
           </div>
         </div>
 
         {/* ── Step bar ─────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-8 py-3.5 shrink-0 border-b border-white/[0.04] bg-white/[0.01]">
+        <div className="flex items-center justify-between px-8 py-3.5 shrink-0 border-b border-[var(--panel-border)] bg-[var(--panel-bg)]">
           <div className="flex items-center gap-6">
             {STEPS.map((s, i) => (
               <button
@@ -146,14 +147,15 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
                   animate={{
                     width: step === i ? 16 : 4,
                     height: 4,
-                    backgroundColor: step === i ? '#d7a76c' : step > i ? '#6b5040' : '#3a322d'
+                    backgroundColor: step === i ? 'var(--accent)' : 'var(--on-surface)'
                   }}
+                  style={{ opacity: step === i ? 1 : 0.3 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
                 <span
                   className={cn(
                     'font-mono text-[9.5px] uppercase tracking-[0.15em] transition-colors',
-                    step === i ? 'text-[#d7a76c]' : 'text-[#5a4940] group-hover:text-[#887b70]'
+                    step === i ? 'text-[var(--accent)]' : 'text-[var(--muted)] group-hover:text-[var(--on-surface)]'
                   )}
                 >
                   {s.label}
