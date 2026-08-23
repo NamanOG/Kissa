@@ -26,6 +26,10 @@ export const AppLayout = React.forwardRef<HTMLDivElement, AppLayoutProps>(
       root.style.setProperty('--dock-border', activeThemeObj.ui.dockBorder)
       root.style.setProperty('--dock-shadow', activeThemeObj.ui.dockShadow)
       
+      root.style.setProperty('--deck-bg', activeThemeObj.ui.deckBg)
+      root.style.setProperty('--deck-border', activeThemeObj.ui.deckBorder)
+      root.style.setProperty('--deck-shadow', activeThemeObj.ui.deckShadow)
+      
       root.style.setProperty('--typography-glow', activeThemeObj.ui.typographyGlow)
       
       root.setAttribute('data-vinyl-mood', activeThemeObj.ui.vinylMood)

@@ -22,7 +22,7 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-sm p-6"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -30,31 +30,35 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
           onClick={toggle}
         >
           <motion.div
-            className="relative w-full max-w-[420px] bg-[var(--deck-bg)] border border-[var(--deck-border)] rounded-[24px] p-8 overflow-hidden select-none"
+            className="relative w-full max-w-[440px] bg-[var(--deck-bg)] border border-[var(--deck-border)] rounded-[24px] p-8 overflow-hidden select-none backdrop-blur-2xl shadow-2xl"
             style={{ boxShadow: 'var(--deck-shadow)' }}
-            initial={{ scale: 0.97, opacity: 0 }}
+            initial={{ scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.97, opacity: 0 }}
+            exit={{ scale: 0.96, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-10 pb-4 border-b border-[var(--panel-border)]">
-              <h2 className="text-[14px] text-[var(--muted)] uppercase tracking-[0.2em] font-medium">Quick Reference</h2>
+            <div className="flex items-center justify-between mb-8 pb-4 border-b border-[var(--panel-border)]">
+              <h2 className="text-[13px] text-[var(--on-surface)] uppercase tracking-[0.2em] font-semibold">
+                Quick Reference
+              </h2>
               <button
                 type="button"
                 onClick={toggle}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/5 transition-all cursor-pointer shadow-sm active:scale-95"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/10 transition-all cursor-pointer shadow-sm active:scale-95 border border-[var(--panel-border)]"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {shortcuts.map((sc, i) => (
-                <div key={i} className="flex items-center justify-between group py-1">
-                  <span className="text-[var(--muted)] text-[13px]">{sc.action}</span>
-                  <kbd className="min-w-[32px] px-2.5 py-1.5 text-center bg-black/40 border border-black/50 rounded-md text-[11px] font-mono font-bold tracking-widest text-[var(--on-surface)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] group-hover:text-[var(--accent)] transition-colors">
+                <div key={i} className="flex items-center justify-between group py-1.5 px-2 rounded-xl hover:bg-[var(--on-surface)]/[0.04] transition-colors">
+                  <span className="text-[var(--on-surface)]/90 text-[13.5px] font-medium tracking-wide">
+                    {sc.action}
+                  </span>
+                  <kbd className="min-w-[36px] px-2.5 py-1 text-center bg-black/40 border border-white/10 rounded-lg text-[11px] font-mono font-bold tracking-widest text-[var(--on-surface)] shadow-[inset_0_1px_3px_rgba(0,0,0,0.3)] group-hover:text-[var(--accent)] group-hover:border-[var(--accent)]/40 transition-all">
                     {sc.key}
                   </kbd>
                 </div>
