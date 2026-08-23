@@ -92,7 +92,7 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
       >
         <Timer className="w-4 h-4 min-[900px]:w-[18px] min-[900px]:h-[18px]" strokeWidth={1.75} />
         {timeLeft !== null && (
-          <span className="absolute -bottom-1 -right-1 bg-[var(--deck-bg)] text-[var(--accent)] text-[8.5px] font-mono font-bold px-1 rounded border border-[var(--accent)]/30 shadow-md">
+          <span className="absolute -bottom-1 -right-1 bg-black/90 text-[var(--accent)] text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded border border-[var(--accent)]/40 shadow-md leading-none">
             {Math.ceil(timeLeft / 60)}m
           </span>
         )}
@@ -106,24 +106,19 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-            className="absolute bottom-[120%] right-0 w-64 rounded-2xl p-5 z-50 overflow-hidden backdrop-blur-2xl border"
-            style={{
-              backgroundColor: 'var(--deck-bg)',
-              borderColor: 'var(--deck-border)',
-              boxShadow: 'var(--deck-shadow)'
-            }}
+            className="absolute bottom-[120%] right-0 w-64 rounded-2xl p-5 z-50 overflow-hidden bg-[#141216]/96 border border-white/[0.12] backdrop-blur-3xl shadow-[0_32px_80px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.12)]"
           >
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-60" />
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-70" />
             
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-[var(--on-surface)]">
+              <div className="flex items-center gap-2 text-white">
                 <Clock className="w-4 h-4 text-[var(--accent)]" strokeWidth={1.5} />
                 <h3 className="font-serif text-sm font-medium">Sleep Timer</h3>
               </div>
               <button 
                 type="button" 
                 onClick={() => setIsOpen(false)} 
-                className="w-6 h-6 rounded-full flex items-center justify-center text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.08] transition-colors"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -131,21 +126,21 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
 
             {timeLeft === null ? (
               <div className="space-y-4">
-                <div className="flex items-center justify-between bg-black/30 border border-[var(--panel-border)] rounded-xl p-2 shadow-inner">
+                <div className="flex items-center justify-between bg-black/60 border border-white/10 rounded-xl p-2 shadow-inner">
                   <button
                     type="button"
                     onClick={() => setTargetMinutes(Math.max(5, targetMinutes - 5))}
-                    className="w-8 h-8 flex items-center justify-center bg-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.12] text-[var(--on-surface)] font-bold rounded-lg transition-colors active:scale-95 cursor-pointer"
+                    className="w-8 h-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.15] text-white font-bold rounded-lg transition-colors active:scale-95 cursor-pointer"
                   >
                     -
                   </button>
-                  <div className="font-mono text-xl font-medium text-[var(--on-surface)]">
-                    {targetMinutes} <span className="text-xs text-[var(--muted)]">min</span>
+                  <div className="font-mono text-xl font-medium text-white">
+                    {targetMinutes} <span className="text-xs text-zinc-400">min</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setTargetMinutes(Math.min(120, targetMinutes + 5))}
-                    className="w-8 h-8 flex items-center justify-center bg-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.12] text-[var(--on-surface)] font-bold rounded-lg transition-colors active:scale-95 cursor-pointer"
+                    className="w-8 h-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.15] text-white font-bold rounded-lg transition-colors active:scale-95 cursor-pointer"
                   >
                     +
                   </button>
@@ -161,7 +156,7 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
                         'py-1.5 text-xs font-mono rounded-lg transition-all active:scale-95 cursor-pointer border',
                         targetMinutes === m 
                           ? 'bg-[var(--accent)]/20 text-[var(--accent)] border-[var(--accent)]/50 font-bold shadow-[0_0_8px_var(--accent)]/20' 
-                          : 'bg-black/20 text-[var(--muted)] border-[var(--panel-border)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.06]'
+                          : 'bg-black/30 text-zinc-400 border-white/10 hover:text-white hover:bg-white/[0.08]'
                       )}
                     >
                       {m}
@@ -182,11 +177,11 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
                 <div className="font-mono text-3xl text-[var(--accent)] font-light tracking-wider drop-shadow-md">
                   {formatTime(timeLeft)}
                 </div>
-                <p className="text-xs text-[var(--muted)] uppercase tracking-widest font-mono">Remaining</p>
+                <p className="text-xs text-zinc-400 uppercase tracking-widest font-mono">Remaining</p>
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="w-full py-2 bg-[var(--on-surface)]/[0.08] hover:bg-[var(--on-surface)]/[0.14] text-[var(--on-surface)] text-sm font-semibold rounded-xl transition-colors border border-[var(--panel-border)] active:scale-95 cursor-pointer"
+                  className="w-full py-2 bg-white/[0.08] hover:bg-white/[0.14] text-white text-sm font-semibold rounded-xl transition-colors border border-white/10 active:scale-95 cursor-pointer"
                 >
                   Cancel Timer
                 </button>
