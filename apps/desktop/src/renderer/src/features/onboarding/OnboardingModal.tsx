@@ -96,8 +96,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.98 }}
         transition={{ duration: 0.18, ease: 'easeOut' }}
-        className="relative z-50 w-full max-w-[720px] max-h-[85vh] flex flex-col rounded-[24px] bg-[var(--deck-bg)] border border-[var(--deck-border)] overflow-hidden backdrop-blur-2xl shadow-2xl"
-        style={{ boxShadow: 'var(--deck-shadow)' }}
+        className="relative z-50 w-full max-w-[720px] max-h-[85vh] flex flex-col rounded-[24px] bg-[#141216]/96 border border-white/[0.12] overflow-hidden backdrop-blur-3xl shadow-[0_32px_80px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.12)]"
       >
         {/* ── Hero photograph ─────────────────────────────── */}
         <div className="relative h-44 w-full overflow-hidden shrink-0 bg-[#0d0b09]">
@@ -108,14 +107,14 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
             style={{ filter: 'brightness(0.8) contrast(1.05) saturate(0.9)' }}
           />
           {/* Gradient into modal body */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--deck-bg)] via-[var(--deck-bg)]/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[var(--deck-bg)]/80 via-transparent to-[var(--deck-bg)]/60" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#141216] via-[#141216]/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#141216]/80 via-transparent to-[#141216]/60" />
 
           {/* Close */}
           <button
             type="button"
             onClick={close}
-            className="absolute top-5 right-5 z-20 w-8 h-8 rounded-full flex items-center justify-center border border-white/[0.12] bg-black/50 text-[var(--on-surface)] hover:bg-black/80 backdrop-blur-md transition-all cursor-pointer"
+            className="absolute top-5 right-5 z-20 w-8 h-8 rounded-full flex items-center justify-center border border-white/[0.12] bg-black/60 text-zinc-300 hover:text-white hover:bg-black/80 backdrop-blur-md transition-all cursor-pointer"
             aria-label="Close guide"
           >
             <X className="w-4 h-4" />
@@ -126,14 +125,14 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
             <p className="font-mono text-[9.5px] uppercase tracking-[0.3em] text-[var(--accent)] mb-1.5 font-bold">
               喫茶 · Jazz Kissa
             </p>
-            <h1 className="font-serif text-[2.2rem] text-[var(--on-surface)] font-normal tracking-wide leading-none">
+            <h1 className="font-serif text-[2.2rem] text-white font-normal tracking-wide leading-none">
               Welcome to Kissa
             </h1>
           </div>
         </div>
 
         {/* ── Step bar ─────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-8 py-3.5 shrink-0 border-b border-[var(--panel-border)] bg-[var(--panel-bg)]">
+        <div className="flex items-center justify-between px-8 py-3.5 shrink-0 border-b border-white/[0.08] bg-black/40">
           <div className="flex items-center gap-6">
             {STEPS.map((s, i) => (
               <button
@@ -147,15 +146,15 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
                   animate={{
                     width: step === i ? 16 : 4,
                     height: 4,
-                    backgroundColor: step === i ? 'var(--accent)' : 'var(--on-surface)'
+                    backgroundColor: step === i ? 'var(--accent)' : '#71717a'
                   }}
-                  style={{ opacity: step === i ? 1 : 0.3 }}
+                  style={{ opacity: step === i ? 1 : 0.4 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                 />
                 <span
                   className={cn(
                     'font-mono text-[9.5px] uppercase tracking-[0.15em] transition-colors font-bold',
-                    step === i ? 'text-[var(--accent)]' : 'text-[var(--muted)] group-hover:text-[var(--on-surface)]'
+                    step === i ? 'text-[var(--accent)]' : 'text-zinc-400 group-hover:text-white'
                   )}
                 >
                   {s.label}
@@ -178,10 +177,10 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
                 className="px-8 py-10 flex flex-col h-full justify-center"
               >
                 <div className="max-w-lg mb-8">
-                  <h2 className="font-serif text-[1.7rem] text-[var(--on-surface)] font-normal leading-tight mb-2">
+                  <h2 className="font-serif text-[1.7rem] text-white font-normal leading-tight mb-2">
                     How sound enters the room
                   </h2>
-                  <p className="text-[13.5px] text-[var(--muted)] leading-relaxed font-light mb-10">
+                  <p className="text-[13.5px] text-zinc-400 leading-relaxed font-light mb-10">
                     Kissa translates your desktop media into a living vinyl sanctuary.
                     No setup required — just play music.
                   </p>
@@ -189,19 +188,19 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
                   <div className="space-y-6">
                     {FEATURES.map(({ icon: Icon, title, body }) => (
                       <div key={title} className="flex gap-5">
-                        <div className="mt-0.5 shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-[var(--on-surface)]/[0.04] border border-[var(--panel-border)]">
-                          <Icon className="w-4 h-4 text-[var(--muted)]" />
+                        <div className="mt-0.5 shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white/[0.04] border border-white/[0.08]">
+                          <Icon className="w-4 h-4 text-zinc-400" />
                         </div>
                         <div>
-                          <h4 className="text-[13.5px] font-medium text-[var(--on-surface)]">{title}</h4>
-                          <p className="mt-1 text-[12.5px] text-[var(--muted)] leading-relaxed font-light">{body}</p>
+                          <h4 className="text-[13.5px] font-medium text-white">{title}</h4>
+                          <p className="mt-1 text-[12.5px] text-zinc-400 leading-relaxed font-light">{body}</p>
                         </div>
                       </div>
                     ))}
                   </div>
 
                   {/* Subtle Callout */}
-                  <div className="mt-10 flex items-center gap-3 text-[12px] text-[var(--muted)]">
+                  <div className="mt-10 flex items-center gap-3 text-[12px] text-zinc-400">
                     <Play className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
                     <p>
                       <span className="text-[var(--accent)] font-semibold">Offline Demo:</span> If no music is playing, Kissa queues an offline track so you can explore.
@@ -221,29 +220,29 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
                 className="px-8 py-10 flex flex-col h-full justify-center"
               >
                 <div className="max-w-lg mb-8">
-                  <h2 className="font-serif text-[1.7rem] text-[var(--on-surface)] font-normal leading-tight mb-2">
+                  <h2 className="font-serif text-[1.7rem] text-white font-normal leading-tight mb-2">
                     Tactile Deck Mechanics
                   </h2>
-                  <p className="text-[13.5px] text-[var(--muted)] leading-relaxed font-light mb-10">
+                  <p className="text-[13.5px] text-zinc-400 leading-relaxed font-light mb-10">
                     Every interaction carries physical weight, needle acoustics, and analog inertia.
                   </p>
 
                   <div className="space-y-6">
                     {DECK_FEATURES.map(({ title, body }) => (
                       <div key={title} className="flex gap-5">
-                        <div className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)]/60" />
+                        <div className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
                         <div>
-                          <h4 className="text-[13.5px] font-medium text-[var(--on-surface)]">{title}</h4>
-                          <p className="mt-1.5 text-[12.5px] text-[var(--muted)] leading-relaxed font-light">{body}</p>
+                          <h4 className="text-[13.5px] font-medium text-white">{title}</h4>
+                          <p className="mt-1.5 text-[12.5px] text-zinc-400 leading-relaxed font-light">{body}</p>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="mt-10 flex items-center gap-3 text-[12px] text-[var(--muted)]">
+                  <div className="mt-10 flex items-center gap-3 text-[12px] text-zinc-400">
                     <Settings2 className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
                     <p>
-                      <span className="text-[var(--accent)] font-semibold">Pro tip:</span> Press <kbd className="font-mono text-[var(--on-surface)] bg-[var(--on-surface)]/[0.08] px-1.5 py-0.5 rounded border border-[var(--panel-border)]">?</kbd> at any time to view keyboard shortcuts.
+                      <span className="text-[var(--accent)] font-semibold">Pro tip:</span> Press <kbd className="font-mono text-zinc-200 bg-white/[0.08] px-1.5 py-0.5 rounded border border-white/10">?</kbd> at any time to view keyboard shortcuts.
                     </p>
                   </div>
                 </div>
@@ -259,10 +258,10 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
                 transition={{ duration: 0.2 }}
                 className="px-8 py-10"
               >
-                <h2 className="font-serif text-[1.7rem] text-[var(--on-surface)] font-normal leading-tight mb-2">
+                <h2 className="font-serif text-[1.7rem] text-white font-normal leading-tight mb-2">
                   Choose your atmosphere
                 </h2>
-                <p className="text-[13.5px] text-[var(--muted)] font-light mb-8">
+                <p className="text-[13.5px] text-zinc-400 font-light mb-8">
                   Eight distinct listening environments — each with its own lighting, palette, and mood.
                 </p>
 
@@ -282,13 +281,13 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
         </div>
 
         {/* ── Footer ────────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-8 py-6 shrink-0 border-t border-[var(--panel-border)] bg-[var(--panel-bg)]/40">
+        <div className="flex items-center justify-between px-8 py-6 shrink-0 border-t border-white/[0.08] bg-black/40">
           <div>
             {step > 0 && (
               <button
                 type="button"
                 onClick={() => setStep((s) => s - 1)}
-                className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--on-surface)] transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 text-[13px] text-zinc-400 hover:text-white transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 Back
@@ -301,7 +300,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
               <button
                 type="button"
                 onClick={() => setStep((s) => s + 1)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold text-[var(--on-surface)] bg-[var(--on-surface)]/[0.08] border border-[var(--panel-border)] hover:bg-[var(--on-surface)]/[0.14] transition-all cursor-pointer"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white bg-white/[0.08] border border-white/10 hover:bg-white/[0.14] transition-all cursor-pointer active:scale-95"
               >
                 Next
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -310,7 +309,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
               <button
                 type="button"
                 onClick={close}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-black bg-[var(--accent)] hover:opacity-90 transition-all cursor-pointer shadow-[0_4px_16px_var(--accent)] shadow-black/20"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-black bg-[var(--accent)] hover:opacity-90 transition-all cursor-pointer shadow-[0_4px_16px_var(--accent)] shadow-black/30 active:scale-95"
               >
                 Start Listening
                 <ArrowRight className="w-3.5 h-3.5" />

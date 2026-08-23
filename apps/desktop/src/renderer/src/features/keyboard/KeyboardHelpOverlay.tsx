@@ -22,7 +22,7 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-6"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-md p-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -30,35 +30,39 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
           onClick={toggle}
         >
           <motion.div
-            className="relative w-full max-w-[440px] bg-[var(--deck-bg)] border border-[var(--deck-border)] rounded-[24px] p-8 overflow-hidden select-none backdrop-blur-2xl shadow-2xl"
-            style={{ boxShadow: 'var(--deck-shadow)' }}
+            className="relative w-full max-w-[420px] bg-[#141216]/95 border border-white/[0.12] rounded-[24px] p-8 overflow-hidden select-none backdrop-blur-3xl shadow-[0_32px_80px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.12)]"
             initial={{ scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.96, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-8 pb-4 border-b border-[var(--panel-border)]">
-              <h2 className="text-[13px] text-[var(--on-surface)] uppercase tracking-[0.2em] font-semibold">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/[0.08]">
+              <h2 className="text-[12px] text-zinc-300 uppercase tracking-[0.2em] font-mono font-bold">
                 Quick Reference
               </h2>
               <button
                 type="button"
                 onClick={toggle}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/10 transition-all cursor-pointer shadow-sm active:scale-95 border border-[var(--panel-border)]"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer shadow-sm active:scale-95 border border-white/[0.08]"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-3">
+            {/* Shortcuts List */}
+            <div className="space-y-2.5">
               {shortcuts.map((sc, i) => (
-                <div key={i} className="flex items-center justify-between group py-1.5 px-2 rounded-xl hover:bg-[var(--on-surface)]/[0.04] transition-colors">
-                  <span className="text-[var(--on-surface)]/90 text-[13.5px] font-medium tracking-wide">
+                <div 
+                  key={i} 
+                  className="flex items-center justify-between group py-2 px-3 rounded-xl hover:bg-white/[0.05] transition-colors"
+                >
+                  <span className="text-white text-[13.5px] font-medium tracking-wide">
                     {sc.action}
                   </span>
-                  <kbd className="min-w-[36px] px-2.5 py-1 text-center bg-black/40 border border-white/10 rounded-lg text-[11px] font-mono font-bold tracking-widest text-[var(--on-surface)] shadow-[inset_0_1px_3px_rgba(0,0,0,0.3)] group-hover:text-[var(--accent)] group-hover:border-[var(--accent)]/40 transition-all">
+                  <kbd className="min-w-[36px] px-2.5 py-1 text-center bg-black/60 border border-white/15 rounded-lg text-[11px] font-mono font-bold tracking-widest text-zinc-200 shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] group-hover:text-[var(--accent)] group-hover:border-[var(--accent)]/50 transition-all">
                     {sc.key}
                   </kbd>
                 </div>
