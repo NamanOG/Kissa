@@ -12,6 +12,7 @@ export type AppTheme =
   | 'hifi-library'
   | 'concrete-vinyl'
   | 'sunday-morning'
+  | 'adaptive'
 
 export interface TrackInfo {
   title: string
@@ -31,13 +32,16 @@ export interface PlayerState {
   volume: number
   rpm: '33' | '45'
   isPowered: boolean
-  activeView: 'deck' | 'lyrics' | 'queue'
+  activeView: 'deck' | 'lyrics' | 'shelf'
   showSideLyrics: boolean
   isMiniPlayer: boolean
+  miniPlayerAlwaysOnTop: boolean
   theme: AppTheme
+  previousManualTheme: AppTheme | null
   isSettingsOpen: boolean
   isOnboardingOpen: boolean
   needleSound: boolean
+  physicalFeedback: boolean
   autoScrollLyrics: boolean
   isKeyboardHelpOpen: boolean
   updateAvailable: { version: string; url: string } | null
@@ -53,22 +57,24 @@ export interface PlayerState {
   toggleRpm: () => void
   setIsPowered: (isPowered: boolean) => void
   togglePower: () => void
-  setActiveView: (view: 'deck' | 'lyrics' | 'queue') => void
+
+  setActiveView: (view: 'deck' | 'lyrics' | 'shelf') => void
   toggleActiveView: () => void
   setShowSideLyrics: (show: boolean) => void
   toggleSideLyrics: () => void
   setTheme: (theme: AppTheme) => void
   toggleMiniPlayer: () => void
+  setMiniPlayerAlwaysOnTop: (alwaysOnTop: boolean) => void
   setIsSettingsOpen: (open: boolean) => void
   toggleSettings: () => void
   setIsOnboardingOpen: (open: boolean) => void
   toggleOnboarding: () => void
   setNeedleSound: (enabled: boolean) => void
+  setPhysicalFeedback: (enabled: boolean) => void
   setAutoScrollLyrics: (enabled: boolean) => void
   toggleKeyboardHelp: () => void
   setUpdateAvailable: (updateInfo: { version: string; url: string } | null) => void
   queue: TrackInfo[]
-  queueIndex: number
   playNext: () => void
   playPrev: () => void
   playTrackAtIndex: (index: number) => void
@@ -97,9 +103,11 @@ function getInitialTheme(): AppTheme {
     'rainy-window',
     'hifi-library',
     'concrete-vinyl',
-    'sunday-morning'
+    'sunday-morning',
+    'adaptive'
   ]
-  return validThemes.includes(saved as AppTheme) ? (saved as AppTheme) : 'quiet-room'
+  if (validThemes.includes(saved as AppTheme)) return saved as AppTheme
+  return 'quiet-room'
 }
 
 function getInitialOnboarding(): boolean {
@@ -107,9 +115,6 @@ function getInitialOnboarding(): boolean {
   const seen = localStorage.getItem('kissa_intro_seen') || localStorage.getItem('kissa_onboarding_completed')
   return !seen
 }
-
-const savedTheme = getInitialTheme()
-const initialOnboarding = getInitialOnboarding()
 
 export const usePlayerStore = create<PlayerState>((set) => ({
   isPlaying: false,
@@ -120,7 +125,7 @@ export const usePlayerStore = create<PlayerState>((set) => ({
     artworkUrl: blondeAlbumCover,
     audioUrl: selfControlAudio,
     duration: 249,
-    source: 'Spotify'
+    source: 'Local Audio'
   },
   progress: 84,
   volume: 78,
@@ -128,11 +133,14 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   isPowered: true,
   activeView: 'deck',
   showSideLyrics: false,
-  theme: savedTheme,
   isMiniPlayer: false,
+  miniPlayerAlwaysOnTop: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_always_on_top') !== 'false' : true,
+  theme: getInitialTheme(),
+  previousManualTheme: getInitialTheme() === 'adaptive' ? 'quiet-room' : getInitialTheme(),
   isSettingsOpen: false,
-  isOnboardingOpen: initialOnboarding,
+  isOnboardingOpen: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_intro_seen') !== 'true' : false,
   needleSound: true,
+  physicalFeedback: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_physical_feedback') !== 'false' : true,
   autoScrollLyrics: true,
   isKeyboardHelpOpen: false,
   updateAvailable: null,
@@ -169,10 +177,20 @@ export const usePlayerStore = create<PlayerState>((set) => ({
     set((state) => {
       const isMini = !state.isMiniPlayer
       if (typeof window !== 'undefined' && window.electron?.toggleMiniPlayer) {
-        window.electron.toggleMiniPlayer(isMini)
+        window.electron.toggleMiniPlayer(isMini, state.miniPlayerAlwaysOnTop)
       }
       return { isMiniPlayer: isMini }
     })
+  },
+  setMiniPlayerAlwaysOnTop: (alwaysOnTop) => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('kissa_always_on_top', alwaysOnTop.toString())
+    }
+    set({ miniPlayerAlwaysOnTop: alwaysOnTop })
+    const state = usePlayerStore.getState()
+    if (state.isMiniPlayer && typeof window !== 'undefined' && window.electron?.toggleMiniPlayer) {
+      window.electron.toggleMiniPlayer(true, alwaysOnTop)
+    }
   },
   setTheme: (theme) => {
     if (typeof localStorage !== 'undefined') {
@@ -197,54 +215,36 @@ export const usePlayerStore = create<PlayerState>((set) => ({
       return { isOnboardingOpen: next }
     }),
   setNeedleSound: (needleSound) => set({ needleSound }),
+  setPhysicalFeedback: (physicalFeedback) => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('kissa_physical_feedback', physicalFeedback.toString())
+    }
+    set({ physicalFeedback })
+  },
   setAutoScrollLyrics: (autoScrollLyrics) => set({ autoScrollLyrics }),
   toggleKeyboardHelp: () => set((state) => ({ isKeyboardHelpOpen: !state.isKeyboardHelpOpen })),
   setUpdateAvailable: (updateAvailable) => set({ updateAvailable }),
 
-  queue: [
-    {
-      title: 'Self Control',
-      artist: 'Frank Ocean',
-      album: 'Blonde',
-      artworkUrl: blondeAlbumCover,
-      audioUrl: selfControlAudio,
-      duration: 249,
-      source: 'Internal'
-    },
-    {
-      title: 'Pink + White',
-      artist: 'Frank Ocean',
-      album: 'Blonde',
-      artworkUrl: blondeAlbumCover,
-      duration: 184,
-      source: 'Internal'
-    },
-    {
-      title: 'Nights',
-      artist: 'Frank Ocean',
-      album: 'Blonde',
-      artworkUrl: blondeAlbumCover,
-      duration: 307,
-      source: 'Internal'
-    }
-  ],
-  queueIndex: 0,
+  queue: [],
   
   playNext: () => set((state) => {
-    if (state.queue.length === 0) return {}
-    const nextIdx = (state.queueIndex + 1) % state.queue.length
-    return { queueIndex: nextIdx, currentTrack: state.queue[nextIdx], progress: 0, isPlaying: true }
+    if (state.queue.length === 0) {
+      return { isPlaying: false, progress: 0 }
+    }
+    const nextTrack = state.queue[0]
+    const newQueue = state.queue.slice(1)
+    return { queue: newQueue, currentTrack: nextTrack, progress: 0, isPlaying: true }
   }),
   
-  playPrev: () => set((state) => {
-    if (state.queue.length === 0) return {}
-    const prevIdx = state.queueIndex === 0 ? state.queue.length - 1 : state.queueIndex - 1
-    return { queueIndex: prevIdx, currentTrack: state.queue[prevIdx], progress: 0, isPlaying: true }
+  playPrev: () => set(() => {
+    return { progress: 0, isPlaying: true }
   }),
 
   playTrackAtIndex: (index) => set((state) => {
     if (index >= 0 && index < state.queue.length) {
-      return { queueIndex: index, currentTrack: state.queue[index], progress: 0, isPlaying: true }
+      const trackToPlay = state.queue[index]
+      const newQueue = state.queue.slice(index + 1)
+      return { queue: newQueue, currentTrack: trackToPlay, progress: 0, isPlaying: true }
     }
     return {}
   }),
@@ -254,21 +254,10 @@ export const usePlayerStore = create<PlayerState>((set) => ({
   removeFromQueue: (index) => set((state) => {
     const newQueue = [...state.queue]
     newQueue.splice(index, 1)
-    
-    let nextIdx = state.queueIndex
-    if (index < state.queueIndex) {
-      nextIdx--
-    } else if (index === state.queueIndex) {
-      if (newQueue.length === 0) {
-        return { queue: [], currentTrack: null, isPlaying: false, progress: 0, queueIndex: 0 }
-      }
-      if (nextIdx >= newQueue.length) nextIdx = 0
-      return { queue: newQueue, queueIndex: nextIdx, currentTrack: newQueue[nextIdx], progress: 0 }
-    }
-    return { queue: newQueue, queueIndex: nextIdx }
+    return { queue: newQueue }
   }),
   
   addToQueue: (track) => set((state) => ({ queue: [...state.queue, track] })),
   
-  clearQueue: () => set({ queue: [], queueIndex: 0, currentTrack: null, isPlaying: false, progress: 0 })
+  clearQueue: () => set({ queue: [] })
 }))

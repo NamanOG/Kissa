@@ -1,324 +1,197 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ArrowRight, ArrowLeft, Volume2, Disc3, FileText, Settings2, Play } from 'lucide-react'
-import { usePlayerStore, AppTheme } from '@renderer/stores/playerStore'
-import { LISTENING_ENVIRONMENTS } from '../settings/themes'
-import { ThemeCard } from '../settings/ThemeCard'
+import { ArrowRight, ArrowLeft, X } from 'lucide-react'
+import { usePlayerStore } from '@renderer/stores/playerStore'
 import { cn } from '@renderer/utils/cn'
-import kissaHeroImg from '@renderer/media/kissa_welcome_hero.jpg'
 
 export interface OnboardingModalProps {
   className?: string
 }
 
 const STEPS = [
-  { id: 'ritual', label: 'The Ritual' },
-  { id: 'deck', label: 'The Deck' },
-  { id: 'atmosphere', label: 'Atmosphere' }
-]
-
-const FEATURES = [
   {
-    icon: Volume2,
-    title: 'Play Any Music',
-    body: 'Start a song in Spotify, Apple Music, Tidal, or any Windows browser. Kissa detects it automatically.'
+    id: 'deck',
+    label: 'THE DECK',
+    body: 'Kissa visually follows the currently detected or playing music through the turntable.',
+    targetSelector: '.onboarding-deck'
   },
   {
-    icon: Disc3,
-    title: 'Platter Spins Live',
-    body: 'Cover art maps onto the vinyl. The platter accelerates and decelerates with real motor physics.'
+    id: 'tonearm',
+    label: 'THE TONEARM',
+    body: 'Drag the tonearm across the record to seek.',
+    targetSelector: '.onboarding-tonearm'
   },
   {
-    icon: FileText,
-    title: 'Synced Lyrics',
-    body: 'Sit back with timed lyrics that scroll line by line as the song plays.'
-  }
-]
-
-const DECK_FEATURES = [
-  {
-    title: 'Interactive Needle Drop',
-    body: 'Drag the tonearm or click anywhere on the platter to seek through the track — vinyl clicks included.'
+    id: 'match-album',
+    label: 'MATCH ALBUM',
+    body: 'Let the listening environment adapt to the artwork.',
+    targetSelector: '.onboarding-match-album'
   },
   {
-    title: '33⅓ & 45 RPM Speeds',
-    body: 'Switch between LP 33⅓ and single 45 RPM on the plinth dial with real motor spin-up inertia.'
-  },
-  {
-    title: 'Karaoke Depth View',
-    body: 'Hit the Quote icon for a full-screen lyrics stream with optical depth-of-field blur on inactive lines.'
+    id: 'lyrics',
+    label: 'LYRICS',
+    body: 'Open synced lyrics and click any line to seek.',
+    targetSelector: '.onboarding-lyrics'
   }
 ]
 
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) => {
   const isOnboardingOpen = usePlayerStore((s) => s.isOnboardingOpen)
   const setIsOnboardingOpen = usePlayerStore((s) => s.setIsOnboardingOpen)
-  const currentTheme = usePlayerStore((s) => s.theme)
-  const setTheme = usePlayerStore((s) => s.setTheme)
-
   const [step, setStep] = useState<number>(0)
 
-  // Keyboard navigation
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (!isOnboardingOpen) return
-      if (e.key === 'ArrowRight' && step < 2) setStep((s) => s + 1)
+      if (e.key === 'ArrowRight' && step < STEPS.length - 1) setStep((s) => s + 1)
       if (e.key === 'ArrowLeft' && step > 0) setStep((s) => s - 1)
+      if (e.key === 'Escape') setIsOnboardingOpen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
+  }, [isOnboardingOpen, step, setIsOnboardingOpen])
+
+  useEffect(() => {
+    if (!isOnboardingOpen) return
+    
+    // Clean up previous highlights
+    document.querySelectorAll('.onboarding-highlight').forEach(el => {
+      el.classList.remove('onboarding-highlight')
+    })
+
+    // Add highlight to current target
+    const currentStep = STEPS[step]
+    if (currentStep && currentStep.targetSelector) {
+      const el = document.querySelector(currentStep.targetSelector)
+      if (el) {
+        el.classList.add('onboarding-highlight')
+      }
+    }
+
+    return () => {
+      document.querySelectorAll('.onboarding-highlight').forEach(el => {
+        el.classList.remove('onboarding-highlight')
+      })
+    }
   }, [isOnboardingOpen, step])
 
   if (!isOnboardingOpen) return null
 
   const close = (): void => setIsOnboardingOpen(false)
+  const currentStep = STEPS[step]
 
   return (
     <div
       className={cn(
-        'fixed inset-0 z-50 flex items-center justify-center p-4 min-[640px]:p-8 select-none',
+        'fixed inset-0 z-[100] pointer-events-none flex items-end justify-center pb-24 select-none',
         className
       )}
     >
-      {/* Backdrop */}
+      {/* Dim backdrop to make highlights pop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.15 }}
-        className="fixed inset-0 bg-black/70 backdrop-blur-md"
+        transition={{ duration: 0.2 }}
+        className="fixed inset-0 bg-[#0a0806]/80 backdrop-blur-sm pointer-events-auto"
         onClick={close}
       />
 
-      {/* Modal surface */}
+      {/* Manual Card */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.98 }}
-        transition={{ duration: 0.18, ease: 'easeOut' }}
-        className="relative z-50 w-full max-w-[720px] max-h-[85vh] flex flex-col rounded-[24px] bg-[#141216]/96 border border-white/[0.12] overflow-hidden backdrop-blur-3xl shadow-[0_32px_80px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.12)]"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-50 w-[380px] rounded-lg bg-[#191512] border border-[#2a241e] shadow-[0_16px_32px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.06)] overflow-hidden pointer-events-auto flex flex-col"
       >
-        {/* ── Hero photograph ─────────────────────────────── */}
-        <div className="relative h-44 w-full overflow-hidden shrink-0 bg-[#0d0b09]">
-          <img
-            src={kissaHeroImg}
-            alt="Kissa listening bar"
-            className="w-full h-full object-cover object-center"
-            style={{ filter: 'brightness(0.8) contrast(1.05) saturate(0.9)' }}
-          />
-          {/* Gradient into modal body */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#141216] via-[#141216]/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#141216]/80 via-transparent to-[#141216]/60" />
-
-          {/* Close */}
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#2a241e]/50 bg-[#14110e]">
+          <span className="font-mono text-[9px] font-bold tracking-[0.2em] uppercase text-[#8e8175]">
+            Hardware Manual — {step + 1} / {STEPS.length}
+          </span>
           <button
             type="button"
             onClick={close}
-            className="absolute top-5 right-5 z-20 w-8 h-8 rounded-full flex items-center justify-center border border-white/[0.12] bg-black/60 text-zinc-300 hover:text-white hover:bg-black/80 backdrop-blur-md transition-all cursor-pointer"
-            aria-label="Close guide"
+            className="w-5 h-5 rounded-sm flex items-center justify-center text-[#8e8175] hover:text-[#d7a76c] transition-colors"
+            title="Skip Intro"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
-
-          {/* Wordmark */}
-          <div className="absolute bottom-5 left-8 z-10">
-            <p className="font-mono text-[9.5px] uppercase tracking-[0.3em] text-[var(--accent)] mb-1.5 font-bold">
-              喫茶 · Jazz Kissa
-            </p>
-            <h1 className="font-serif text-[2.2rem] text-white font-normal tracking-wide leading-none">
-              Welcome to Kissa
-            </h1>
-          </div>
         </div>
 
-        {/* ── Step bar ─────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-8 py-3.5 shrink-0 border-b border-white/[0.08] bg-black/40">
-          <div className="flex items-center gap-6">
-            {STEPS.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setStep(i)}
-                className="flex items-center gap-2 cursor-pointer group"
-              >
-                <motion.div
-                  className="rounded-full"
-                  animate={{
-                    width: step === i ? 16 : 4,
-                    height: 4,
-                    backgroundColor: step === i ? 'var(--accent)' : '#71717a'
-                  }}
-                  style={{ opacity: step === i ? 1 : 0.4 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                />
-                <span
-                  className={cn(
-                    'font-mono text-[9.5px] uppercase tracking-[0.15em] transition-colors font-bold',
-                    step === i ? 'text-[var(--accent)]' : 'text-zinc-400 group-hover:text-white'
-                  )}
-                >
-                  {s.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Step content ─────────────────────────────────── */}
-        <div className="flex-1 overflow-x-hidden overflow-y-auto no-scrollbar relative">
-          <AnimatePresence mode="wait" initial={false}>
-            {step === 0 && (
-              <motion.div
-                key="step-0"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                className="px-8 py-10 flex flex-col h-full justify-center"
-              >
-                <div className="max-w-lg mb-8">
-                  <h2 className="font-serif text-[1.7rem] text-white font-normal leading-tight mb-2">
-                    How sound enters the room
-                  </h2>
-                  <p className="text-[13.5px] text-zinc-400 leading-relaxed font-light mb-10">
-                    Kissa translates your desktop media into a living vinyl sanctuary.
-                    No setup required — just play music.
-                  </p>
-
-                  <div className="space-y-6">
-                    {FEATURES.map(({ icon: Icon, title, body }) => (
-                      <div key={title} className="flex gap-5">
-                        <div className="mt-0.5 shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-white/[0.04] border border-white/[0.08]">
-                          <Icon className="w-4 h-4 text-zinc-400" />
-                        </div>
-                        <div>
-                          <h4 className="text-[13.5px] font-medium text-white">{title}</h4>
-                          <p className="mt-1 text-[12.5px] text-zinc-400 leading-relaxed font-light">{body}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Subtle Callout */}
-                  <div className="mt-10 flex items-center gap-3 text-[12px] text-zinc-400">
-                    <Play className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
-                    <p>
-                      <span className="text-[var(--accent)] font-semibold">Offline Demo:</span> If no music is playing, Kissa queues an offline track so you can explore.
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 1 && (
-              <motion.div
-                key="step-1"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                className="px-8 py-10 flex flex-col h-full justify-center"
-              >
-                <div className="max-w-lg mb-8">
-                  <h2 className="font-serif text-[1.7rem] text-white font-normal leading-tight mb-2">
-                    Tactile Deck Mechanics
-                  </h2>
-                  <p className="text-[13.5px] text-zinc-400 leading-relaxed font-light mb-10">
-                    Every interaction carries physical weight, needle acoustics, and analog inertia.
-                  </p>
-
-                  <div className="space-y-6">
-                    {DECK_FEATURES.map(({ title, body }) => (
-                      <div key={title} className="flex gap-5">
-                        <div className="mt-1.5 shrink-0 w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
-                        <div>
-                          <h4 className="text-[13.5px] font-medium text-white">{title}</h4>
-                          <p className="mt-1.5 text-[12.5px] text-zinc-400 leading-relaxed font-light">{body}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-10 flex items-center gap-3 text-[12px] text-zinc-400">
-                    <Settings2 className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
-                    <p>
-                      <span className="text-[var(--accent)] font-semibold">Pro tip:</span> Press <kbd className="font-mono text-zinc-200 bg-white/[0.08] px-1.5 py-0.5 rounded border border-white/10">?</kbd> at any time to view keyboard shortcuts.
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 2 && (
-              <motion.div
-                key="step-2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                className="px-8 py-10"
-              >
-                <h2 className="font-serif text-[1.7rem] text-white font-normal leading-tight mb-2">
-                  Choose your atmosphere
-                </h2>
-                <p className="text-[13.5px] text-zinc-400 font-light mb-8">
-                  Eight distinct listening environments — each with its own lighting, palette, and mood.
-                </p>
-
-                <div className="grid grid-cols-2 min-[500px]:grid-cols-4 gap-4">
-                  {LISTENING_ENVIRONMENTS.map((env) => (
-                    <ThemeCard
-                      key={env.id}
-                      theme={env}
-                      isSelected={currentTheme === env.id}
-                      onSelect={() => setTheme(env.id as AppTheme)}
-                    />
-                  ))}
-                </div>
-              </motion.div>
-            )}
+        {/* Content */}
+        <div className="px-6 py-6 h-[120px] flex flex-col justify-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.15 }}
+            >
+              <h3 className="font-serif text-lg text-[#e6dbcf] leading-none mb-2">
+                {currentStep.label}
+              </h3>
+              <p className="text-[12.5px] font-light text-[#a89b8d] leading-relaxed">
+                {currentStep.body}
+              </p>
+            </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* ── Footer ────────────────────────────────────────── */}
-        <div className="flex items-center justify-between px-8 py-6 shrink-0 border-t border-white/[0.08] bg-black/40">
-          <div>
+        {/* Footer */}
+        <div className="flex items-center justify-between px-5 py-3 border-t border-[#2a241e]/50 bg-[#14110e]">
+          <button
+            type="button"
+            onClick={close}
+            className="text-[11px] font-medium text-[#8e8175] hover:text-white transition-colors"
+          >
+            SKIP INTRO
+          </button>
+
+          <div className="flex gap-2">
             {step > 0 && (
               <button
                 type="button"
-                onClick={() => setStep((s) => s - 1)}
-                className="flex items-center gap-1.5 text-[13px] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                onClick={() => setStep(s => s - 1)}
+                className="w-7 h-7 rounded border border-[#2a241e] flex items-center justify-center text-[#8e8175] hover:text-[#d7a76c] hover:border-[#d7a76c]/30 transition-colors"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                Back
               </button>
             )}
-          </div>
-
-          <div>
-            {step < 2 ? (
+            
+            {step < STEPS.length - 1 ? (
               <button
                 type="button"
-                onClick={() => setStep((s) => s + 1)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white bg-white/[0.08] border border-white/10 hover:bg-white/[0.14] transition-all cursor-pointer active:scale-95"
+                onClick={() => setStep(s => s + 1)}
+                className="w-7 h-7 rounded border border-[#2a241e] flex items-center justify-center text-[#8e8175] hover:text-[#d7a76c] hover:border-[#d7a76c]/30 transition-colors"
               >
-                Next
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             ) : (
               <button
                 type="button"
                 onClick={close}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-black bg-[var(--accent)] hover:opacity-90 transition-all cursor-pointer shadow-[0_4px_16px_var(--accent)] shadow-black/30 active:scale-95"
+                className="px-3 h-7 rounded bg-[#2a241e] text-[11px] font-bold text-[#e6dbcf] hover:bg-[#3a3229] transition-colors uppercase tracking-wider"
               >
-                Start Listening
-                <ArrowRight className="w-3.5 h-3.5" />
+                Done
               </button>
             )}
           </div>
         </div>
       </motion.div>
+
+      {/* Global styles for highlights */}
+      <style>{`
+        .onboarding-highlight {
+          position: relative !important;
+          z-index: 150 !important;
+          pointer-events: auto !important;
+          filter: drop-shadow(0 0 16px rgba(215, 167, 108, 0.4));
+          border-radius: 4px;
+        }
+      `}</style>
     </div>
   )
 }
-

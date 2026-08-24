@@ -1,7 +1,7 @@
 import React from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
-import { Quote, Settings, HelpCircle, Keyboard, ListMusic, Minimize2, Maximize2 } from 'lucide-react'
+import { Quote, Settings, HelpCircle, Keyboard, ListMusic, Minimize2, Maximize2, Disc3 } from 'lucide-react'
 import phonoLogo from '@renderer/media/phono_logo.png'
 
 export interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -22,6 +22,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const toggleKeyboardHelp = usePlayerStore((s) => s.toggleKeyboardHelp)
     const isMiniPlayer = usePlayerStore((s) => s.isMiniPlayer)
     const theme = usePlayerStore((s) => s.theme)
+    const updateAvailable = usePlayerStore((s) => s.updateAvailable)
 
     return (
       <aside
@@ -47,11 +48,10 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             className="group relative w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all active:scale-95"
             title="Kissa (Home Deck)"
           >
-            {/* Active Glow Ring */}
+            {/* Subtle Active Indicator */}
             {activeView === 'deck' && (
               <div
-                className="absolute -inset-1 rounded-full animate-pulse transition-all border border-[var(--accent)]/80 bg-[var(--accent)]/[0.1]"
-                style={{ boxShadow: '0 0 14px var(--accent)' }}
+                className="absolute inset-0 rounded-full transition-all border border-white/[0.08] bg-white/[0.03]"
               />
             )}
             <div className="relative w-9 h-9 rounded-full overflow-hidden border border-white/[0.14] shadow-md group-hover:scale-105 transition-transform">
@@ -74,8 +74,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
           >
             {activeView === 'lyrics' && (
               <div
-                className="absolute inset-0 rounded-full transition-all border border-[var(--accent)]/80 bg-[var(--accent)]/[0.08]"
-                style={{ boxShadow: '0 0 12px var(--accent)' }}
+                className="absolute inset-0 rounded-full transition-all border border-[var(--on-surface)]/[0.08] bg-[var(--on-surface)]/[0.03]"
               />
             )}
             <Quote
@@ -92,28 +91,28 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             )}
           </button>
 
-          {/* Up Next / Queue Button */}
+
+          {/* Record Shelf Button */}
           <button
-            aria-label="Up Next Queue"
+            aria-label="My Records Shelf"
             type="button"
-            onClick={() => setActiveView('queue')}
+            onClick={() => setActiveView('shelf')}
             className="relative w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all group mt-2"
-            title="Up Next"
+            title="My Records"
           >
-            {activeView === 'queue' && (
+            {activeView === 'shelf' && (
               <div
-                className="absolute inset-0 rounded-full transition-all border border-[var(--accent)]/80 bg-[var(--accent)]/[0.08]"
-                style={{ boxShadow: '0 0 12px var(--accent)' }}
+                className="absolute inset-0 rounded-full transition-all border border-[var(--on-surface)]/[0.08] bg-[var(--on-surface)]/[0.03]"
               />
             )}
-            <ListMusic
+            <Disc3
               className={cn(
                 'w-5 h-5 transition-colors',
-                activeView === 'queue' ? 'text-[var(--accent)]' : 'text-[var(--muted)] group-hover:text-[var(--on-surface)]'
+                activeView === 'shelf' ? 'text-[var(--accent)]' : 'text-[var(--muted)] group-hover:text-[var(--on-surface)]'
               )}
               strokeWidth={1.75}
             />
-            {activeView === 'queue' && (
+            {activeView === 'shelf' && (
               <div className="absolute w-1.5 h-1.5 rounded-full mt-7 bg-[var(--accent)]" />
             )}
           </button>
@@ -190,10 +189,16 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             style={isSettingsOpen ? { boxShadow: '0 0 12px var(--accent)' } : {}}
             title="Open Preferences & Environments"
           >
-            <Settings className="w-5 h-5" strokeWidth={1.75} />
+            <div className="relative">
+              <Settings className="w-5 h-5" strokeWidth={1.75} />
+              {updateAvailable && !isSettingsOpen && (
+                <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border-2" style={{ borderColor: 'var(--panel-bg)' }} />
+              )}
+            </div>
           </button>
         </div>
       </aside>
+
     )
   }
 )

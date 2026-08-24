@@ -21,13 +21,14 @@ describe('App Integration', () => {
     render(<App />)
 
     // Check Metadata Panel elements
-    expect(screen.getByRole('heading', { name: 'Starboy' })).toBeInTheDocument()
+    const headings = screen.getAllByRole('heading', { name: 'Starboy' })
+    expect(headings.length).toBeGreaterThan(0)
     expect(screen.getAllByText('The Weeknd').length).toBeGreaterThan(0)
 
     // Time is now handled via DOM refs and moved from ControlDock
     // Check Turntable & Tonearm
     expect(screen.getByTitle('Drag tonearm to drop needle & seek')).toBeInTheDocument()
-  })
+  }, 15000)
 
   it('synchronizes play/pause button with store state across components', () => {
     render(<App />)

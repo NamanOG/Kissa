@@ -327,5 +327,35 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
         'linear-gradient(168deg, #f2e8d2 0%, #e9dfc9 50%, #e1d5ba 100%)'
       ].join(', ')
     }
+  },
+  
+  // ── 09 ADAPTIVE (Artwork matched)
+  {
+    id: 'adaptive',
+    number: '09',
+    name: 'Adaptive Atmosphere',
+    description: 'Dynamic room lighting that color-matches the current album artwork',
+    image: env01, // We will use a placeholder or one of the existing ones
+    accentColor: 'var(--adaptive-accent, #737373)',
+    surfaceColor: '#121212',
+    onSurfaceColor: '#ffffff',
+    mutedColor: '#888888',
+    ui: {
+      panelBg: 'rgba(18, 18, 18, 0.7)',
+      panelBorder: 'rgba(255, 255, 255, 0.1)',
+      panelShadow: '0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+      dockBg: 'rgba(24, 24, 24, 0.75)',
+      dockBorder: 'rgba(255, 255, 255, 0.12)',
+      dockShadow: '0 20px 48px rgba(0, 0, 0, 0.6)',
+      deckBg: 'rgba(12, 12, 12, 0.8)',
+      deckBorder: 'rgba(255, 255, 255, 0.1)',
+      deckShadow: '0 24px 64px rgba(0, 0, 0, 0.8)',
+      vinylMood: 'dark',
+      typographyGlow: 'none',
+    },
+    ambient: {
+      bgColor: '#000000',
+      gradient: 'var(--adaptive-bg-gradient, linear-gradient(to bottom, #111, #000))'
+    }
   }
 ]

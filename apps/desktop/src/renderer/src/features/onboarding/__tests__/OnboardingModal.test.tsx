@@ -21,36 +21,35 @@ describe('OnboardingModal component', () => {
     })
   })
 
-  it('renders welcome guide when isOnboardingOpen is true', () => {
+  it('renders hardware manual when isOnboardingOpen is true', () => {
     render(<OnboardingModal />)
-    expect(screen.getByText('Welcome to Kissa')).toBeInTheDocument()
-    expect(screen.getByText('The Ritual')).toBeInTheDocument()
-    expect(screen.getByText('Play Any Music')).toBeInTheDocument()
+    expect(screen.getByText('THE DECK')).toBeInTheDocument()
+    expect(screen.getByText('Hardware Manual — 1 / 4')).toBeInTheDocument()
   })
 
-  it('navigates across steps and updates atmosphere', () => {
-    render(<OnboardingModal />)
+  it('navigates across steps', () => {
+    const { container } = render(<OnboardingModal />)
 
-    // Click Next to go to Step 2
-    const nextBtn = screen.getByRole('button', { name: /next/i })
-    fireEvent.click(nextBtn)
-    expect(screen.getByText('Interactive Needle Drop')).toBeInTheDocument()
+    // Click Next (ArrowRight icon button) to go to Step 2
+    // The next button is the one with ArrowRight
+    const nextBtn = container.querySelector('button .lucide-arrow-right')?.parentElement
+    expect(nextBtn).toBeDefined()
+    fireEvent.click(nextBtn!)
+    expect(screen.getByText('THE TONEARM')).toBeInTheDocument()
 
     // Click Next to go to Step 3
-    fireEvent.click(nextBtn)
-    expect(screen.getByText('Choose your atmosphere')).toBeInTheDocument()
+    fireEvent.click(nextBtn!)
+    expect(screen.getByText('MATCH ALBUM')).toBeInTheDocument()
+    
+    // Click Next to go to Step 4
+    fireEvent.click(nextBtn!)
+    expect(screen.getByText('LYRICS')).toBeInTheDocument()
 
-    // Select Indigo Jazz Club
-    const jazzBarBtn = screen.getByRole('button', { name: /indigo jazz club/i })
-    fireEvent.click(jazzBarBtn)
-    expect(usePlayerStore.getState().theme).toBe('jazz-bar')
-
-    // Click Start Listening
-    const enterBtn = screen.getByRole('button', { name: /start listening/i })
-    fireEvent.click(enterBtn)
+    // Click Done
+    const doneBtn = screen.getByRole('button', { name: /done/i })
+    fireEvent.click(doneBtn)
 
     expect(usePlayerStore.getState().isOnboardingOpen).toBe(false)
-    expect(localStorage.getItem('kissa_intro_seen')).toBe('true')
   }, 15000)
 
   it('does not render when isOnboardingOpen is false', () => {

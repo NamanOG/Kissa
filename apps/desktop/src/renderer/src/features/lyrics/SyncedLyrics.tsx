@@ -322,23 +322,38 @@ export const SyncedLyrics = memo(({
     let prevIdx = -1
 
     const checkTime = () => {
+      // 1. Authoritative time source
       const time = PlaybackClock.getCurrentTime()
       const newIdx = calcIndex(time)
+      
       if (newIdx !== prevIdx) {
         prevIdx = newIdx
         setActiveIndex(newIdx)
       }
       
-      if (isPlaying) {
+      // 2. Only advance automatically while playing
+      const isCurrentlyPlaying = usePlayerStore.getState().isPlaying
+      if (isCurrentlyPlaying) {
         rafId = requestAnimationFrame(checkTime)
       }
     }
 
     // Always check time at least once (e.g. after a seek while paused, or on mount)
     rafId = requestAnimationFrame(checkTime)
+
+    // 3. Catch manual seeks or play/pause state changes
+    const unsubscribe = usePlayerStore.subscribe((state, prevState) => {
+      if (state.isPlaying !== prevState.isPlaying || Math.abs(state.progress - prevState.progress) > 0.5) {
+        cancelAnimationFrame(rafId)
+        rafId = requestAnimationFrame(checkTime)
+      }
+    })
     
-    return () => cancelAnimationFrame(rafId)
-  }, [lyricLines, isPlaying])
+    return () => {
+      cancelAnimationFrame(rafId)
+      unsubscribe()
+    }
+  }, [lyricLines])
 
   // ── 4. Apple Music fluid auto-scroll with zero-lag spring/ease interpolation ──
   const smoothScrollTo = useCallback((targetTop: number) => {
@@ -354,6 +369,17 @@ export const SyncedLyrics = memo(({
     }
 
     isProgrammaticScrollRef.current = true
+
+    // If it's a huge distance (like seeking across the song), snap instantly
+    // instead of animating through every intermediate line.
+    if (Math.abs(distance) > container.clientHeight * 1.5) {
+      container.scrollTop = targetTop
+      setTimeout(() => {
+        isProgrammaticScrollRef.current = false
+      }, 50)
+      return
+    }
+
     const startTime = performance.now()
     const duration = Math.min(380, Math.max(200, Math.abs(distance) * 0.48))
 

@@ -28,12 +28,12 @@ export class WindowManager {
 
   public setupIpcHandlers(): void {
     import('electron').then(({ ipcMain }) => {
-      ipcMain.handle('phono:toggle-mini-player', (_event, isMini: boolean) => {
+      ipcMain.handle('phono:toggle-mini-player', (_event, isMini: boolean, alwaysOnTop: boolean = true) => {
         if (!this.mainWindow) return
         if (isMini) {
           this.mainWindow.setMinimumSize(320, 320)
           this.mainWindow.setSize(360, 420, true)
-          this.mainWindow.setAlwaysOnTop(true)
+          this.mainWindow.setAlwaysOnTop(alwaysOnTop)
         } else {
           this.mainWindow.setMinimumSize(800, 600)
           this.mainWindow.setSize(900, 670, true)

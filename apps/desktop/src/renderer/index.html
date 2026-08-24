@@ -19,10 +19,50 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:"
     />
+    <style>
+      body {
+        margin: 0;
+        background-color: #0f0b07;
+        color: #a6866b;
+      }
+      .kissa-splash-container {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #0f0b07;
+      }
+      .kissa-splash-icon {
+        width: 32px;
+        height: 32px;
+        opacity: 0.3;
+        border-radius: 50%;
+        border: 1px solid rgba(255,255,255,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+      }
+      .kissa-splash-svg {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="kissa-splash-container">
+        <div class="kissa-splash-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="kissa-splash-svg">
+            <circle cx="32" cy="32" r="30" fill="#110f0e"/>
+            <circle cx="32" cy="32" r="16" fill="currentColor"/>
+            <circle cx="32" cy="32" r="4" fill="#110f0e"/>
+          </svg>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

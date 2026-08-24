@@ -125,6 +125,7 @@ namespace SmtcHelper
                 }
 
                 _sessionManager.CurrentSessionChanged += OnCurrentSessionChanged;
+                _sessionManager.SessionsChanged += OnSessionsChanged;
                 
                 await UpdateCurrentSessionAsync();
 
@@ -182,7 +183,63 @@ namespace SmtcHelper
             }
         }
 
+        private static GlobalSystemMediaTransportControlsSession? GetBestSession()
+        {
+            if (_sessionManager == null) return null;
+
+            try
+            {
+                var sessions = _sessionManager.GetSessions();
+                if (sessions != null && sessions.Count > 0)
+                {
+                    GlobalSystemMediaTransportControlsSession? bestSession = null;
+                    int bestScore = -1;
+
+                    foreach (var s in sessions)
+                    {
+                        try
+                        {
+                            var pInfo = s.GetPlaybackInfo();
+                            bool isPlaying = pInfo != null && pInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+                            
+                            string appId = s.SourceAppUserModelId?.ToLowerInvariant() ?? "";
+
+                            // Base score by app type
+                            int score = 0;
+                            if (appId.Contains("spotify")) score = 40;
+                            else if (appId.Contains("apple") && appId.Contains("music")) score = 30;
+                            else if (!appId.Contains("chrome") && !appId.Contains("edge") && !appId.Contains("firefox") && !appId.Contains("brave") && !appId.Contains("opera")) score = 20; // Dedicated apps
+                            else score = 10; // Browsers
+
+                            // Huge boost if actively playing
+                            if (isPlaying) score += 100;
+
+                            if (score > bestScore)
+                            {
+                                bestScore = score;
+                                bestSession = s;
+                            }
+                        }
+                        catch { }
+                    }
+
+                    if (bestSession != null) return bestSession;
+                }
+
+                return _sessionManager.GetCurrentSession();
+            }
+            catch
+            {
+                return _sessionManager?.GetCurrentSession();
+            }
+        }
+
         private static async void OnCurrentSessionChanged(GlobalSystemMediaTransportControlsSessionManager sender, CurrentSessionChangedEventArgs args)
+        {
+            await UpdateCurrentSessionAsync();
+        }
+
+        private static async void OnSessionsChanged(GlobalSystemMediaTransportControlsSessionManager sender, SessionsChangedEventArgs args)
         {
             await UpdateCurrentSessionAsync();
         }
@@ -195,18 +252,18 @@ namespace SmtcHelper
             lock (_lock)
             {
                 oldSession = _currentSession;
-                newSession = _sessionManager?.GetCurrentSession();
+                newSession = GetBestSession();
                 _currentSession = newSession;
             }
 
-            if (oldSession != null)
+            if (oldSession != null && oldSession != newSession)
             {
                 oldSession.MediaPropertiesChanged -= OnMediaPropertiesChanged;
                 oldSession.PlaybackInfoChanged -= OnPlaybackInfoChanged;
                 oldSession.TimelinePropertiesChanged -= OnTimelinePropertiesChanged;
             }
 
-            if (newSession != null)
+            if (newSession != null && oldSession != newSession)
             {
                 newSession.MediaPropertiesChanged += OnMediaPropertiesChanged;
                 newSession.PlaybackInfoChanged += OnPlaybackInfoChanged;
@@ -238,11 +295,22 @@ namespace SmtcHelper
                 GlobalSystemMediaTransportControlsSession? session;
                 lock (_lock)
                 {
-                    session = _currentSession;
-                    if (session == null && _sessionManager != null)
+                    session = GetBestSession();
+                    if (session != _currentSession)
                     {
-                        session = _sessionManager.GetCurrentSession();
+                        if (_currentSession != null)
+                        {
+                            _currentSession.MediaPropertiesChanged -= OnMediaPropertiesChanged;
+                            _currentSession.PlaybackInfoChanged -= OnPlaybackInfoChanged;
+                            _currentSession.TimelinePropertiesChanged -= OnTimelinePropertiesChanged;
+                        }
                         _currentSession = session;
+                        if (_currentSession != null)
+                        {
+                            _currentSession.MediaPropertiesChanged += OnMediaPropertiesChanged;
+                            _currentSession.PlaybackInfoChanged += OnPlaybackInfoChanged;
+                            _currentSession.TimelinePropertiesChanged += OnTimelinePropertiesChanged;
+                        }
                     }
                 }
 

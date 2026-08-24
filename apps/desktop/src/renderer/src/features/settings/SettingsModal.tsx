@@ -25,6 +25,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
   const setNeedleSound = usePlayerStore((s) => s.setNeedleSound)
   const autoScrollLyrics = usePlayerStore((s) => s.autoScrollLyrics)
   const setAutoScrollLyrics = usePlayerStore((s) => s.setAutoScrollLyrics)
+  const physicalFeedback = usePlayerStore((s) => s.physicalFeedback)
+  const setPhysicalFeedback = usePlayerStore((s) => s.setPhysicalFeedback)
+  const miniPlayerAlwaysOnTop = usePlayerStore((s) => s.miniPlayerAlwaysOnTop)
+  const setMiniPlayerAlwaysOnTop = usePlayerStore((s) => s.setMiniPlayerAlwaysOnTop)
   const updateAvailable = usePlayerStore((s) => s.updateAvailable)
 
   return (
@@ -145,23 +149,23 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     </div>
                   </div>
 
-                  {/* Needle Sound */}
+                  {/* Physical Feedback */}
                   <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-white/[0.06] hover:bg-white/[0.02] transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-[13.5px] font-medium text-white">Tonearm Physics Sound</span>
-                      <span className="text-[11.5px] text-zinc-400 mt-0.5">Physical needle thud and vinyl groove friction</span>
+                      <span className="text-[13.5px] font-medium text-white">Physical Feedback</span>
+                      <span className="text-[11.5px] text-zinc-400 mt-0.5">Physical needle thud and visual tonearm weight</span>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setNeedleSound(!needleSound)}
+                      onClick={() => setPhysicalFeedback(!physicalFeedback)}
                       className="w-11 h-7 flex items-center justify-center rounded-lg bg-black/60 border border-white/15 shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] cursor-pointer active:scale-95 transition-transform"
                     >
                       <Power 
                         className={cn(
                           "w-4 h-4 transition-all duration-300", 
-                          needleSound ? "text-[var(--accent)] drop-shadow-[0_0_8px_var(--accent)]" : "text-white/20"
+                          physicalFeedback ? "text-[var(--accent)] drop-shadow-[0_0_8px_var(--accent)]" : "text-white/20"
                         )} 
-                        strokeWidth={needleSound ? 3 : 2}
+                        strokeWidth={physicalFeedback ? 3 : 2}
                       />
                     </button>
                   </div>
@@ -192,6 +196,27 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                 <h4 className="text-[11px] font-mono font-bold text-zinc-400 mb-2.5 tracking-[0.2em] uppercase">System Integrations</h4>
                 <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(0,0,0,0.3)]">
                   
+                  {/* Mini Player Always on Top */}
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-white/[0.06] hover:bg-white/[0.02] transition-colors">
+                    <div className="flex flex-col">
+                      <span className="text-[13.5px] font-medium text-white">Always on Top (Mini Player)</span>
+                      <span className="text-[11.5px] text-zinc-400 mt-0.5">Keep the Mini Player visible above other windows</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setMiniPlayerAlwaysOnTop(!miniPlayerAlwaysOnTop)}
+                      className="w-11 h-7 flex items-center justify-center rounded-lg bg-black/60 border border-white/15 shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] cursor-pointer active:scale-95 transition-transform"
+                    >
+                      <Power 
+                        className={cn(
+                          "w-4 h-4 transition-all duration-300", 
+                          miniPlayerAlwaysOnTop ? "text-[var(--accent)] drop-shadow-[0_0_8px_var(--accent)]" : "text-white/20"
+                        )} 
+                        strokeWidth={miniPlayerAlwaysOnTop ? 3 : 2}
+                      />
+                    </button>
+                  </div>
+
                   {/* Telemetry */}
                   <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-white/[0.06] hover:bg-white/[0.02] transition-colors">
                     <div className="flex flex-col">

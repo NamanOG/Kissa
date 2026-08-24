@@ -31,51 +31,129 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
   const activePlayback = isPlaying && isPowered
 
   const dragAngleRef = useRef<number>(REST_ANGLE)
+  const armStateRef = useRef<'RESTING' | 'MOVING_TO_RECORD' | 'LOWERING' | 'PLAYING' | 'LIFTING' | 'RETURNING' | 'SWEEPING'>('RESTING')
+  const armAngleRef = useRef<number>(REST_ANGLE)
+  const armScaleRef = useRef<number>(1.015)
+  const transitionStartRef = useRef<number>(0)
+  const startAngleRef = useRef<number>(REST_ANGLE)
+  const startScaleRef = useRef<number>(1.015)
 
-  // High-precision RAF loop for perfectly smooth groove tracking
+  const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+
+  // High-precision RAF loop for perfectly smooth groove tracking & physical state machine
   useEffect(() => {
     let rafId: number
 
-    const updateRotation = () => {
-      if (isDragging || !tonearmRef.current) return
-      
-      if (activePlayback) {
-        const rawDur = usePlayerStore.getState().currentTrack?.duration
-        const dur = rawDur && rawDur > 0 ? rawDur : 210
-        const time = PlaybackClock.getCurrentTime()
-        const ratio = Math.min(1, Math.max(0, time / dur))
-        const targetAngle = OUTER_GROOVE_ANGLE + ratio * (INNER_GROOVE_ANGLE - OUTER_GROOVE_ANGLE)
-        
-        // Zero-latency micro-updates
-        tonearmRef.current.style.transition = 'none'
-        tonearmRef.current.style.transform = `rotate(${targetAngle}deg)`
-        
+    const updateRotation = (timestamp: DOMHighResTimeStamp) => {
+      if (!tonearmRef.current) return
+
+      if (isDragging) {
+        // Drag logic handles the visual update directly, but we sync our refs
+        armAngleRef.current = dragAngleRef.current
+        armScaleRef.current = 1.015 // lifted while dragging
+        armStateRef.current = 'LIFTING'
         rafId = requestAnimationFrame(updateRotation)
-      } else {
-        // Return to rest smoothly when paused or unpowered
-        tonearmRef.current.style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
-        tonearmRef.current.style.transform = `rotate(${REST_ANGLE}deg)`
+        return
       }
+
+      const state = usePlayerStore.getState()
+      const physicalFeedback = state.physicalFeedback
+      const isPaused = !state.isPlaying && state.isPowered
+      const isStopped = !state.isPowered || (!state.isPlaying && state.progress === 0)
+      const isPlayingActive = state.isPlaying && state.isPowered
+
+      const rawDur = state.currentTrack?.duration
+      const dur = rawDur && rawDur > 0 ? rawDur : 210
+      const time = PlaybackClock.getCurrentTime()
+      const ratio = Math.min(1, Math.max(0, time / dur))
+      const targetGrooveAngle = OUTER_GROOVE_ANGLE + ratio * (INNER_GROOVE_ANGLE - OUTER_GROOVE_ANGLE)
+
+      // ─── STATE MACHINE TRANSITIONS ───
+      if (isPlayingActive && (armStateRef.current === 'RESTING' || armStateRef.current === 'RETURNING')) {
+        armStateRef.current = 'MOVING_TO_RECORD'
+        transitionStartRef.current = timestamp
+        startAngleRef.current = armAngleRef.current
+        startScaleRef.current = armScaleRef.current
+      } else if (isPlayingActive && armStateRef.current === 'LIFTING') { 
+        armStateRef.current = 'LOWERING'
+        transitionStartRef.current = timestamp
+        startScaleRef.current = armScaleRef.current
+      } else if ((isPaused || isStopped) && ['PLAYING', 'LOWERING', 'MOVING_TO_RECORD', 'LIFTING', 'SWEEPING'].includes(armStateRef.current)) {
+        armStateRef.current = 'RETURNING'
+        transitionStartRef.current = timestamp
+        startAngleRef.current = armAngleRef.current
+        startScaleRef.current = armScaleRef.current
+      }
+
+      // ─── STATE LOGIC ───
+      let nextAngle = armAngleRef.current
+      let nextScale = armScaleRef.current
+
+      if (armStateRef.current === 'MOVING_TO_RECORD') {
+        const progress = Math.min(1, (timestamp - transitionStartRef.current) / 600)
+        nextAngle = startAngleRef.current + (targetGrooveAngle - startAngleRef.current) * easeInOutCubic(progress)
+        nextScale = 1.015 // stay lifted while moving
+        if (progress >= 1) {
+          armStateRef.current = 'LOWERING'
+          transitionStartRef.current = timestamp
+          startScaleRef.current = nextScale
+        }
+      } else if (armStateRef.current === 'LOWERING') {
+        const progress = Math.min(1, (timestamp - transitionStartRef.current) / 250)
+        nextAngle = targetGrooveAngle
+        nextScale = startScaleRef.current + (1.0 - startScaleRef.current) * progress
+        if (progress >= 1) {
+          armStateRef.current = 'PLAYING'
+        }
+      } else if (armStateRef.current === 'PLAYING') {
+        nextAngle = targetGrooveAngle
+        nextScale = 1.0
+      } else if (armStateRef.current === 'LIFTING') {
+        const progress = Math.min(1, (timestamp - transitionStartRef.current) / 250)
+        nextScale = startScaleRef.current + (1.015 - startScaleRef.current) * progress
+        // Stay over the groove
+      } else if (armStateRef.current === 'RETURNING') {
+        const progress = Math.min(1, (timestamp - transitionStartRef.current) / 600)
+        nextAngle = startAngleRef.current + (REST_ANGLE - startAngleRef.current) * easeInOutCubic(progress)
+        
+        // Lift quickly if returning from playing
+        const scaleProgress = Math.min(1, (timestamp - transitionStartRef.current) / 200)
+        nextScale = startScaleRef.current + (1.015 - startScaleRef.current) * scaleProgress
+
+        if (progress >= 1) {
+          armStateRef.current = 'RESTING'
+        }
+      } else if (armStateRef.current === 'RESTING') {
+        nextAngle = REST_ANGLE
+        nextScale = 1.015
+      } else if (armStateRef.current === 'SWEEPING') {
+        const progress = Math.min(1, (timestamp - transitionStartRef.current) / 300)
+        nextAngle = startAngleRef.current + (targetGrooveAngle - startAngleRef.current) * easeInOutCubic(progress)
+        nextScale = 1.0 // remain lowered
+        if (progress >= 1) {
+          armStateRef.current = 'PLAYING'
+        }
+      }
+
+      armAngleRef.current = nextAngle
+      armScaleRef.current = nextScale
+
+      const scaleStr = physicalFeedback ? nextScale : 1.0
+      tonearmRef.current.style.transition = 'none'
+      tonearmRef.current.style.transform = `rotate(${nextAngle}deg) scale(${scaleStr})`
+      
+      rafId = requestAnimationFrame(updateRotation)
     }
 
-    // Start loop if active, or run once to return to rest
-    if (activePlayback && !isDragging) {
-      rafId = requestAnimationFrame(updateRotation)
-    } else if (!isDragging) {
-      updateRotation()
-    }
+    rafId = requestAnimationFrame(updateRotation)
 
     // Listen for manual seeks (from external sources) to snap tonearm smoothly
     const unsubscribe = usePlayerStore.subscribe((state, prevState) => {
       if (!isDragging && Math.abs(state.progress - prevState.progress) > 1.5) {
-        if (tonearmRef.current && state.isPlaying && state.isPowered) {
-          const rawDur = state.currentTrack?.duration
-          const dur = rawDur && rawDur > 0 ? rawDur : 210
-          const ratio = Math.min(1, Math.max(0, state.progress / dur))
-          const targetAngle = OUTER_GROOVE_ANGLE + ratio * (INNER_GROOVE_ANGLE - OUTER_GROOVE_ANGLE)
-          
-          tonearmRef.current.style.transition = 'transform 0.3s ease-out'
-          tonearmRef.current.style.transform = `rotate(${targetAngle}deg)`
+        if (state.isPlaying && state.isPowered && armStateRef.current === 'PLAYING') {
+          armStateRef.current = 'SWEEPING'
+          transitionStartRef.current = performance.now()
+          startAngleRef.current = armAngleRef.current
         }
       }
     })
@@ -84,7 +162,7 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       cancelAnimationFrame(rafId)
       unsubscribe()
     }
-  }, [activePlayback, isDragging])
+  }, [isDragging])
 
   const dragContextRef = useRef<{ startMouseAngle: number; startArmAngle: number } | null>(null)
 
@@ -162,7 +240,7 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
 
   return (
     <div
-      className={cn('absolute z-30 pointer-events-none select-none', className)}
+      className={cn('absolute z-30 pointer-events-none select-none onboarding-tonearm', className)}
       style={style}
     >
       {/* ── Fixed Plinth Arm-Rest & Cue Base ── */}
@@ -209,7 +287,7 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
             className="h-full w-full transform-gpu"
             style={{
               transformOrigin: '72% 8.5%',
-              transform: `scale(${isDragging ? 1.025 : activePlayback ? 1.0 : 1.015})`,
+              transform: `scale(${isDragging ? 1.025 : (usePlayerStore.getState().physicalFeedback ? (activePlayback ? 1.0 : 1.015) : 1)})`,
               transition: 'transform 0.2s ease-out'
             }}
           >
@@ -266,9 +344,18 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
               <rect x="132" y="18" width="4" height="7" rx="1.5" fill="url(#counterweight-metal)" stroke="rgba(0,0,0,0.5)" strokeWidth="0.5" />
 
               {/* ── 2. Gimbal Bearing Pivot Center (cx: 115, cy: 36) ── */}
-              <circle cx="115" cy="36" r="19" fill="url(#gimbal-ring)" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-              <circle cx="115" cy="36" r="12" fill="#1b1512" stroke="url(#tonearm-tube-metal)" strokeWidth="2.5" />
-              <circle cx="115" cy="36" r="4.5" fill="#f5efe6" stroke="#251d18" strokeWidth="1" />
+              {/* Base Contact Shadow */}
+              <circle cx="115" cy="36.5" r="23" fill="rgba(0,0,0,0.6)" filter="blur(2px)" />
+              {/* Outer Mounting Surface */}
+              <circle cx="115" cy="36" r="22" fill="#140f0c" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" />
+              <circle cx="115" cy="36" r="21" fill="none" stroke="rgba(0,0,0,0.8)" strokeWidth="1" />
+              
+              {/* Main Gimbal Housing */}
+              <circle cx="115" cy="36" r="18" fill="url(#gimbal-ring)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.8" />
+              {/* Pivot Ring */}
+              <circle cx="115" cy="36" r="11" fill="#1b1512" stroke="url(#tonearm-tube-metal)" strokeWidth="2.5" />
+              {/* Top Bearing Cap */}
+              <circle cx="115" cy="36" r="4.5" fill="#e8dfd5" stroke="#120e0b" strokeWidth="1.2" />
 
               {/* ── 3. Precision Tapered Satin Arm Tube ── */}
               {/* Outer shadow core */}
