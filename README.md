@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-3.0.0-blue?style=flat-square" alt="Version 3.0.0" />
+  <img src="https://img.shields.io/badge/Version-3.0.1-blue?style=flat-square" alt="Version 3.0.1" />
   <img src="https://img.shields.io/badge/Electron-39-blue?style=flat-square&logo=electron" alt="Electron 39" />
   <img src="https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-Strict-blue?style=flat-square&logo=typescript" alt="TypeScript" />
@@ -57,9 +57,7 @@ Get the latest release for **Windows 10 / 11** from the [**Releases Page**](http
 - **Click-to-Seek Navigation**: Click any lyric line to jump the needle and playback directly to that timestamp.
 - **Dynamic Optical Depth**: Smooth blur falloff on inactive lines with ambient lighting reflections.
 
-### 📻 Queue & Continuous Listening
-- **Interactive Queue**: Drag-and-drop reordering, quick track removal, and instant track jumping.
-- **Seamless Auto-Advance**: Continuous playback with smooth vinyl lead-in/lead-out transitions between tracks.
+
 
 ### 🖥️ Dedicated Mini Player Mode
 - **Compact Floating Widget**: Native Electron window resize down to a minimal, always-on-top desk companion.
@@ -173,6 +171,7 @@ npm run lint
 
 ## 📜 Version History
 
+- **`v3.0.1`**: Match Album adaptive atmosphere improvements (artwork-driven spatial ambient lighting, salience-weighted palette handling, material turntable reflections), playback duration & SMTC synchronization fixes, settings update indicator, and stability polish.
 - **`v3.0.0`**: Major performance, architecture, product, and visual refinement. Unified `PlaybackClock`, WAAPI vinyl rotation, dedicated Mini Player, queue management, distinct dynamic themes, and hardware-inspired settings.
 - **`v1.0.0`**: Initial release featuring 3D turntable, basic SMTC tracking, synchronized lyrics, and room atmospheres.
 
@@ -181,3 +180,4 @@ npm run lint
 ## 📄 License
 
 MIT © [NamanOG](https://github.com/NamanOG)
+

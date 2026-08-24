@@ -36,6 +36,24 @@ function getCleanAppName(sourceAppId: string): string {
   if (lower.includes('firefox')) {
     return 'Firefox'
   }
+  if (lower.includes('brave')) {
+    return 'Brave'
+  }
+  if (lower.includes('opera')) {
+    return 'Opera'
+  }
+  if (lower.includes('vivaldi')) {
+    return 'Vivaldi'
+  }
+  if (lower.includes('arc')) {
+    return 'Arc'
+  }
+  if (lower.includes('comet')) {
+    return 'Browser'
+  }
+  if (lower.includes('youtube')) {
+    return 'YouTube'
+  }
   if (lower.includes('foobar')) {
     return 'foobar2000'
   }

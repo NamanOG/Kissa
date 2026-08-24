@@ -46,7 +46,65 @@
     --ring: 34 58% 61%;
   }
 }
+@property --panel-bg { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --panel-border { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --deck-bg { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --deck-border { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --dock-bg { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --dock-border { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --accent { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --surface { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --on-surface { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --muted { syntax: '<color>'; inherits: true; initial-value: transparent; }
+
+@property --adaptive-panel-bg { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --adaptive-deck-bg { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --adaptive-accent { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --adaptive-on-surface { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --adaptive-muted { syntax: '<color>'; inherits: true; initial-value: transparent; }
+
+@property --adaptive-base-temp { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --adaptive-ambient-primary { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --adaptive-ambient-secondary { syntax: '<color>'; inherits: true; initial-value: transparent; }
+@property --adaptive-ambient-highlight { syntax: '<color>'; inherits: true; initial-value: transparent; }
+
+@property --adaptive-primary-x { syntax: '<percentage>'; inherits: true; initial-value: 50%; }
+@property --adaptive-primary-y { syntax: '<percentage>'; inherits: true; initial-value: 50%; }
+@property --adaptive-secondary-x { syntax: '<percentage>'; inherits: true; initial-value: 50%; }
+@property --adaptive-secondary-y { syntax: '<percentage>'; inherits: true; initial-value: 50%; }
+@property --adaptive-highlight-x { syntax: '<percentage>'; inherits: true; initial-value: 50%; }
+@property --adaptive-highlight-y { syntax: '<percentage>'; inherits: true; initial-value: 50%; }
+
 @layer base {
+  :root {
+    transition: 
+      --panel-bg 1.5s ease-in-out,
+      --panel-border 1.5s ease-in-out,
+      --deck-bg 1.5s ease-in-out,
+      --deck-border 1.5s ease-in-out,
+      --dock-bg 1.5s ease-in-out,
+      --dock-border 1.5s ease-in-out,
+      --accent 1.5s ease-in-out,
+      --surface 1.5s ease-in-out,
+      --on-surface 1.5s ease-in-out,
+      --muted 1.5s ease-in-out,
+      --adaptive-panel-bg 1.5s ease-in-out,
+      --adaptive-deck-bg 1.5s ease-in-out,
+      --adaptive-accent 1.5s ease-in-out,
+      --adaptive-on-surface 1.5s ease-in-out,
+      --adaptive-muted 1.5s ease-in-out,
+      --adaptive-base-temp 1.5s ease-in-out,
+      --adaptive-ambient-primary 1.5s ease-in-out,
+      --adaptive-ambient-secondary 1.5s ease-in-out,
+      --adaptive-ambient-highlight 1.5s ease-in-out,
+      --adaptive-primary-x 1.5s ease-in-out,
+      --adaptive-primary-y 1.5s ease-in-out,
+      --adaptive-secondary-x 1.5s ease-in-out,
+      --adaptive-secondary-y 1.5s ease-in-out,
+      --adaptive-highlight-x 1.5s ease-in-out,
+      --adaptive-highlight-y 1.5s ease-in-out;
+  }
+
   html,
   body,
   #root {

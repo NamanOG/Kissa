@@ -6,7 +6,6 @@ import { Play, Pause, SkipBack, SkipForward, Maximize2, ListMusic, X } from 'luc
 import { cn } from '@renderer/utils/cn'
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
-import { QueueView } from '@renderer/features/queue'
 
 export const MiniPlayerView = (): React.JSX.Element => {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
@@ -16,6 +15,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
   const playNext = usePlayerStore((s) => s.playNext)
   const playPrev = usePlayerStore((s) => s.playPrev)
   const toggleMiniPlayer = usePlayerStore((s) => s.toggleMiniPlayer)
+  const isMiniPlayer = usePlayerStore((s) => s.isMiniPlayer)
 
   const duration = currentTrack?.duration ?? 0
 
@@ -44,7 +44,10 @@ export const MiniPlayerView = (): React.JSX.Element => {
   }, [duration])
 
   return (
-    <div className="relative flex flex-col w-full h-full p-4 overflow-hidden app-region-drag select-none transition-colors duration-500 bg-[var(--panel-bg)] text-[var(--on-surface)]">
+    <div className={cn(
+      "relative flex flex-col w-full h-full p-4 overflow-hidden select-none transition-colors duration-500 bg-[var(--panel-bg)] text-[var(--on-surface)]",
+      isMiniPlayer && "app-region-drag"
+    )}>
       {/* ── Top Bar ── */}
       <div className="relative z-10 flex items-center justify-between mt-2 shrink-0 px-2 pointer-events-auto">
         <div className="flex-1 min-w-0 app-region-no-drag">
@@ -167,7 +170,6 @@ export const MiniPlayerView = (): React.JSX.Element => {
               </button>
             </div>
             <div className="flex-1 min-h-0 relative -mx-4">
-              <QueueView />
             </div>
           </motion.div>
         )}

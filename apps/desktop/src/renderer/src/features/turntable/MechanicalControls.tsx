@@ -378,6 +378,72 @@ export const StartStopControl = memo(({ isPlaying, onClick }: { isPlaying: boole
 })
 StartStopControl.displayName = 'StartStopControl'
 
+// ─── 4. Match Album / Adaptive Lighting Control (Hardware Toggle) ─────────────
+export const MatchAlbumControl = memo(() => {
+  const isAdaptive = usePlayerStore((s) => s.theme === 'adaptive')
+  const setTheme = usePlayerStore((s) => s.setTheme)
+  const previousManualTheme = usePlayerStore((s) => s.previousManualTheme || 'quiet-room')
+  
+  const [isPressed, setIsPressed] = useState(false)
+
+  const handleToggle = useCallback(() => {
+    playMechanicalSound('button')
+    if (isAdaptive) {
+      setTheme(previousManualTheme)
+    } else {
+      usePlayerStore.setState({ previousManualTheme: usePlayerStore.getState().theme })
+      setTheme('adaptive')
+    }
+  }, [isAdaptive, previousManualTheme, setTheme])
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return
+    e.stopPropagation()
+    setIsPressed(true)
+    handleToggle()
+  }
+
+  const handlePointerUp = () => setIsPressed(false)
+  const handlePointerLeave = () => setIsPressed(false)
+
+  return (
+    <div className="flex flex-col items-center select-none pointer-events-auto onboarding-match-album">
+      {/* Refined recessed chassis well */}
+      <div className="p-[2px] rounded-[3px] bg-[#110d0a] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.95),0_0.5px_0.5px_rgba(255,255,255,0.08)]">
+        <button
+          type="button"
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onPointerLeave={handlePointerLeave}
+          aria-label={isAdaptive ? 'Disable Match Album' : 'Enable Match Album'}
+          className="relative w-[90px] h-8 rounded-[2px] border border-black/90 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d7a76c] cursor-pointer flex items-center justify-center transition-all duration-100 bg-[#1e1916]"
+          style={{
+            transform: (isPressed || isAdaptive) ? 'translateY(1.5px)' : 'translateY(0)',
+            boxShadow: (isPressed || isAdaptive)
+              ? 'inset 0 1.5px 3px rgba(0,0,0,0.95), inset 0 0 1px rgba(0,0,0,0.8)'
+              : '0 1.5px 3px rgba(0,0,0,0.85), inset 0 0.5px 0.5px rgba(255,255,255,0.06)'
+          }}
+        >
+          {/* Hardware LED Pinhole Indicator */}
+          <div
+            className="absolute left-2.5 w-1.5 h-1.5 rounded-full border border-black/70 transition-colors duration-200"
+            style={{
+              backgroundColor: isAdaptive ? '#e8a95d' : '#221a14',
+              boxShadow: isAdaptive ? 'inset 0 0.5px 1px rgba(255,255,255,0.6)' : 'inset 0 1px 2px rgba(0,0,0,0.9)'
+            }}
+          />
+          {/* Silkscreened Label */}
+          <span className="font-mono text-[8px] font-bold tracking-[0.18em] text-[#9a8c7f] uppercase pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)] ml-3">
+            MATCH ALBUM
+          </span>
+        </button>
+      </div>
+    </div>
+  )
+})
+MatchAlbumControl.displayName = 'MatchAlbumControl'
+
 // ─── Main Control Cluster (Classic Turntable Hardware Architecture) ───────────
 export interface MechanicalControlsProps {
   className?: string
@@ -390,6 +456,7 @@ export interface MechanicalControlsProps {
  * - Upper-Left Anchor: Power Switch (top: 7%, left: 4.5%)
  * - Lower-Left Upper: 33 / 45 Speed Selector (bottom: 16%, left: 4.5%)
  * - Lower-Left Bottom: Start / Stop Motor Switch (bottom: 9.5%, left: 4.5%)
+ * - Lower-Right: Match Album Toggle (bottom: 9.5%, right: 4.5%)
  */
 export const MechanicalControls = memo(({ className, style }: MechanicalControlsProps): React.JSX.Element => {
   const isPlaying = usePlayerStore((state) => state.isPlaying)
@@ -435,8 +502,14 @@ export const MechanicalControls = memo(({ className, style }: MechanicalControls
       <div className="absolute" style={{ left: '4.5%', bottom: '9.5%' }}>
         <StartStopControl isPlaying={isPlaying} onClick={handlePlayPause} />
       </div>
+
+      {/* ── Lower-Right: Ambient Adapt Toggle ── */}
+      <div className="absolute" style={{ right: '4.5%', bottom: '9.5%' }}>
+        <MatchAlbumControl />
+      </div>
     </div>
   )
 })
 
 MechanicalControls.displayName = 'MechanicalControls'
+

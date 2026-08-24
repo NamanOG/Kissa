@@ -197,16 +197,16 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
       }}
     >
       {/* ── Left: Volume Slider ─────────────────────────── */}
-      <div className="flex items-center gap-2 min-[900px]:gap-3 w-[80px] min-[900px]:w-[120px] min-[1200px]:w-[150px] shrink-0 transition-opacity"
-      title={isExternalMedia ? "System Master Volume" : "App Volume"}>
+      <div className={cn("flex items-center gap-2 min-[900px]:gap-3 w-[80px] min-[900px]:w-[120px] min-[1200px]:w-[150px] shrink-0 transition-opacity", isExternalMedia && "opacity-40")}
+      title={isExternalMedia ? "Volume controlled by external application" : "App Volume"}>
         <button
           type="button"
-          onClick={toggleMute}
-          className="focus:outline-none cursor-pointer active:scale-90 transition-transform"
-          title={isExternalMedia ? 'System Master Volume' : (isMuted ? 'Unmute' : 'Mute')}
-          aria-label={isMuted ? 'Unmute' : 'Mute'}
+          onClick={isExternalMedia ? undefined : toggleMute}
+          className={cn("focus:outline-none transition-transform", !isExternalMedia && "cursor-pointer active:scale-90")}
+          disabled={isExternalMedia}
+          aria-label={isExternalMedia ? 'Volume controlled by external application' : (isMuted ? 'Unmute' : 'Mute')}
         >
-          {isMuted ? (
+          {isMuted && !isExternalMedia ? (
             <VolumeX
               className="h-3.5 w-3.5 min-[900px]:h-4 min-[900px]:w-4 shrink-0 text-[var(--accent)]"
               strokeWidth={1.75}
@@ -220,8 +220,9 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
         </button>
 
         <div
-          className="relative flex-1 h-6 flex items-center cursor-pointer group touch-none"
+          className={cn("relative flex-1 h-6 flex items-center group touch-none", !isExternalMedia && "cursor-pointer")}
           onPointerDown={(e) => {
+            if (isExternalMedia) return
             e.currentTarget.setPointerCapture(e.pointerId)
             isDraggingVolumeRef.current = true
               ; (window as any).__kissaIsDraggingVolume = true
@@ -231,13 +232,14 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             handleVolumeChange(ratio * 100)
           }}
           onPointerMove={(e) => {
-            if (!isDraggingVolumeRef.current) return
+            if (!isDraggingVolumeRef.current || isExternalMedia) return
             const rect = e.currentTarget.getBoundingClientRect()
             const clickX = e.clientX - rect.left
             const ratio = Math.max(0, Math.min(1, clickX / rect.width))
             handleVolumeChange(ratio * 100)
           }}
           onPointerUp={(e) => {
+            if (isExternalMedia) return
             try {
               e.currentTarget.releasePointerCapture(e.pointerId)
             } catch {
@@ -249,22 +251,22 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             }, 300)
           }}
           onPointerCancel={() => {
+            if (isExternalMedia) return
             isDraggingVolumeRef.current = false
               ; (window as any).__kissaIsDraggingVolume = false
           }}
-          title={`Volume: ${volume}%`}
         >
           {/* Base rail */}
           <div className="w-full h-[3px] rounded-full relative bg-[var(--on-surface)]/20">
             {/* Fill */}
             <div
               className="h-full rounded-full transition-all duration-75 bg-[var(--accent)]"
-              style={{ width: `${volume}%` }}
+              style={{ width: isExternalMedia ? '100%' : `${volume}%` }}
             />
             {/* Round thumb */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full -translate-x-1/2 transition-transform group-hover:scale-125 bg-[var(--on-surface)]"
-              style={{ left: `${volume}%` }}
+              className={cn("absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full -translate-x-1/2 transition-transform bg-[var(--on-surface)]", !isExternalMedia && "group-hover:scale-125")}
+              style={{ left: isExternalMedia ? '100%' : `${volume}%` }}
             />
           </div>
         </div>
@@ -355,7 +357,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             }
           }}
           className={cn(
-            'flex items-center gap-1 px-2 min-[900px]:px-3 py-1 rounded-full border transition-all cursor-pointer select-none active:scale-95',
+            'onboarding-lyrics flex items-center gap-1 px-2 min-[900px]:px-3 py-1 rounded-full border transition-all cursor-pointer select-none active:scale-95',
             isLyricsActive
               ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)] shadow-[0_0_12px_var(--accent)]'
               : 'border-[var(--panel-border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--on-surface)] hover:border-[var(--accent)]/50'

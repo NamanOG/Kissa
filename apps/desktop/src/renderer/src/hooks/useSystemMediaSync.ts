@@ -11,6 +11,7 @@ export function useSystemMediaSync(): void {
 
   const commandCooldownRef = useRef(false)
   const lastTrackKeyRef = useRef('')
+  const prevTrackDurationRef = useRef(-1)
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.electron?.onSystemMediaUpdate) {
@@ -28,9 +29,11 @@ export function useSystemMediaSync(): void {
       if (!payload || !payload.title) return
 
       const currentStoreTrack = usePlayerStore.getState().currentTrack
+      const currentStoreIsPlaying = usePlayerStore.getState().isPlaying
       const isInternalAudio = Boolean(currentStoreTrack?.audioUrl)
 
-      if (isInternalAudio && !payload.isPlaying) return
+      // Only ignore a paused external payload if Kissa is currently actively playing internal audio
+      if (isInternalAudio && currentStoreIsPlaying && !payload.isPlaying) return
 
       PlaybackClock.setMode(true) // External media mode
 
@@ -38,6 +41,7 @@ export function useSystemMediaSync(): void {
       const isSameTrack = lastTrackKeyRef.current === trackKey
 
       if (!isSameTrack) {
+        prevTrackDurationRef.current = currentStoreTrack?.duration || -1
         lastTrackKeyRef.current = trackKey
         PlaybackClock.setSmtcState(payload.progress || 0, payload.isPlaying)
 
@@ -71,13 +75,22 @@ export function useSystemMediaSync(): void {
           }))
         }
 
-        // Update duration if SMTC just learned it
-        if (payload.duration > 0 && (!currentStoreTrack?.duration || currentStoreTrack.duration === 0)) {
-          usePlayerStore.setState((state) => ({
-            currentTrack: state.currentTrack
-              ? { ...state.currentTrack, duration: payload.duration }
-              : null
-          }))
+        // Defensively update duration if it changes for the current track
+        if (payload.duration > 0 && payload.duration !== currentStoreTrack?.duration) {
+          // If the new duration exactly matches the PREVIOUS track's duration, 
+          // and we already have a valid (>0) duration for the CURRENT track,
+          // it is highly likely a delayed stale metadata broadcast. Ignore it.
+          const isLateStaleUpdate = 
+            payload.duration === prevTrackDurationRef.current && 
+            (currentStoreTrack?.duration || 0) > 0
+
+          if (!isLateStaleUpdate) {
+            usePlayerStore.setState((state) => ({
+              currentTrack: state.currentTrack
+                ? { ...state.currentTrack, duration: payload.duration }
+                : null
+            }))
+          }
         }
 
         // Sync playback state (Playing vs Paused)
@@ -102,27 +115,12 @@ export function useSystemMediaSync(): void {
         }
       }
 
-      // Sync master volume from Windows if present
-      if (payload.volume !== undefined && typeof payload.volume === 'number') {
-        const state = usePlayerStore.getState()
-        const isExternal = !!state.currentTrack?.sourceAppId
-        
-        if (isExternal && Math.abs(state.volume - payload.volume) > 1 && !window.__kissaIsDraggingVolume) {
-          state.setVolume(payload.volume)
-        }
-      }
     }
 
     // Initial check for media & system volume
     window.electron.getSystemMedia().then((initial) => {
       if (initial) {
         handleMediaPayload(initial)
-      }
-    })
-
-    window.electron.getVolume().then((vol: { master: number; isMuted: boolean } | null) => {
-      if (vol && typeof vol.master === 'number') {
-        usePlayerStore.getState().setVolume(vol.master)
       }
     })
 
@@ -159,3 +157,4 @@ export function useSystemMediaSync(): void {
     }
   }, [setTrack, setIsPlaying, setProgress])
 }
+

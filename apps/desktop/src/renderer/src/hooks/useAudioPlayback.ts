@@ -136,14 +136,93 @@ export function useAudioPlayback(): void {
 
   useEffect(() => {
     const audio = audioRef.current
-    if (!audio || !audio.src) return
+    if (!audio) return
+    
+    const physicalFeedback = usePlayerStore.getState().physicalFeedback
+    
+    // Play synthetic physical feedback thud
+    const playNeedleSound = (isDrop: boolean) => {
+      if (!physicalFeedback || typeof window === 'undefined') return
+      try {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+        if (!AudioContextClass) return
+        const ctx = new AudioContextClass()
+        const now = ctx.currentTime
+
+        // Base mechanical transient (wide-band noise burst)
+        const bufferSize = Math.floor(ctx.sampleRate * 0.05) // 50ms buffer
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+        const data = buffer.getChannelData(0)
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.2)) // rapid decay
+        }
+        
+        const noise = ctx.createBufferSource()
+        noise.buffer = buffer
+        
+        const noiseFilter = ctx.createBiquadFilter()
+        const noiseGain = ctx.createGain()
+        
+        noise.connect(noiseFilter)
+        noiseFilter.connect(noiseGain)
+        noiseGain.connect(ctx.destination)
+
+        if (isDrop) {
+          // Drop: dull, heavy transient
+          noiseFilter.type = 'lowpass'
+          noiseFilter.frequency.setValueAtTime(800, now)
+          
+          noiseGain.gain.setValueAtTime(0.04, now)
+          noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03)
+
+          // Sub-bass resonance (plinth vibration)
+          const sub = ctx.createOscillator()
+          const subGain = ctx.createGain()
+          sub.type = 'sine'
+          sub.frequency.setValueAtTime(45, now)
+          sub.frequency.exponentialRampToValueAtTime(30, now + 0.15)
+          
+          sub.connect(subGain)
+          subGain.connect(ctx.destination)
+          
+          subGain.gain.setValueAtTime(0.08, now)
+          subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15)
+          
+          sub.start(now)
+          sub.stop(now + 0.2)
+        } else {
+          // Lift: sharp, light mechanical click
+          noiseFilter.type = 'highpass'
+          noiseFilter.frequency.setValueAtTime(3000, now)
+          
+          noiseGain.gain.setValueAtTime(0.02, now)
+          noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.015)
+        }
+        
+        noise.start(now)
+        noise.stop(now + 0.05)
+        
+        // Ensure context is closed after sound finishes to prevent memory leak
+        setTimeout(() => {
+          ctx.close().catch(() => {})
+        }, 300)
+      } catch (e) {
+        // Ignore audio context errors
+      }
+    }
 
     if (isPlaying) {
-      audio.play().catch(() => {
-        // Autoplay policy may block — user will click again
-      })
+      if (audio.src) {
+        audio.play().catch(() => {
+          // Autoplay policy may block
+        })
+      }
+      playNeedleSound(true)
     } else {
-      audio.pause()
+      if (audio.src) {
+        audio.pause()
+      }
+      playNeedleSound(false)
     }
   }, [isPlaying])
 

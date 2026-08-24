@@ -19,7 +19,7 @@ export const TurntableEngine = memo(
     return (
       <div
         className={cn(
-          'relative flex items-center justify-center',
+          'relative flex items-center justify-center onboarding-deck',
           'w-full max-w-[840px]',
           className
         )}
