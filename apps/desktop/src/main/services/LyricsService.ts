@@ -134,6 +134,11 @@ export class LyricsService {
 
   public getLyrics(request: LyricsRequest): Promise<LyricsResponse | null> {
     if (!request.title || !request.artist) return Promise.resolve(null)
+    
+    // Failsafe: Do not fetch lyrics for unknown/uninitialized metadata
+    if (request.title === 'Unknown Title' || request.artist === 'Unknown Artist') {
+      return Promise.resolve(null)
+    }
 
     const dur = request.duration > 10 ? Math.round(request.duration / 10) * 10 : 0
     const key = [request.title.toLowerCase(), request.artist.toLowerCase(), request.album?.toLowerCase() || '', dur].join('\0')

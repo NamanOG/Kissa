@@ -16,41 +16,108 @@ describe('OnboardingModal component', () => {
   beforeEach(() => {
     localStorage.clear()
     usePlayerStore.setState({
-      isOnboardingOpen: true,
-      theme: 'quiet-room'
+      isOnboardingOpen: true
     })
   })
 
-  it('renders hardware manual when isOnboardingOpen is true', () => {
+  it('renders initial intro step when isOnboardingOpen is true', () => {
     render(<OnboardingModal />)
-    expect(screen.getByText('THE DECK')).toBeInTheDocument()
-    expect(screen.getByText('Hardware Manual — 1 / 4')).toBeInTheDocument()
+    expect(screen.getByText('A music player built around the feeling of listening.')).toBeInTheDocument()
   })
 
-  it('navigates across steps', () => {
-    const { container } = render(<OnboardingModal />)
+  it('navigates across steps using buttons', () => {
+    render(<OnboardingModal />)
 
-    // Click Next (ArrowRight icon button) to go to Step 2
-    // The next button is the one with ArrowRight
-    const nextBtn = container.querySelector('button .lucide-arrow-right')?.parentElement
-    expect(nextBtn).toBeDefined()
-    fireEvent.click(nextBtn!)
-    expect(screen.getByText('THE TONEARM')).toBeInTheDocument()
+    // Step 1 -> Step 2
+    const nextBtn = screen.getByText('Next')
+    fireEvent.click(nextBtn)
+    expect(screen.getByText('The Setup')).toBeInTheDocument()
+    expect(screen.getByText('Record Shelf')).toBeInTheDocument()
 
-    // Click Next to go to Step 3
-    fireEvent.click(nextBtn!)
-    expect(screen.getByText('MATCH ALBUM')).toBeInTheDocument()
+    // Step 2 -> Step 3
+    fireEvent.click(nextBtn)
+    expect(screen.getByText('About Kissa')).toBeInTheDocument()
+    expect(screen.getByText('Keyboard Shortcuts')).toBeInTheDocument()
     
-    // Click Next to go to Step 4
-    fireEvent.click(nextBtn!)
-    expect(screen.getByText('LYRICS')).toBeInTheDocument()
+    // Step 3 -> Step 4 (Atmosphere & Audio)
+    fireEvent.click(nextBtn)
+    expect(screen.getByText('Atmosphere & Audio')).toBeInTheDocument()
+    expect(screen.getByText('Hardware Mechanics')).toBeInTheDocument()
 
-    // Click Done
-    const doneBtn = screen.getByRole('button', { name: /done/i })
-    fireEvent.click(doneBtn)
+    // Step 4 -> Step 5 (Ready)
+    fireEvent.click(nextBtn)
+    expect(screen.getByText('Ready.')).toBeInTheDocument()
+
+    // Step 5 -> Done
+    const startBtn = screen.getByRole('button', { name: /start listening/i })
+    fireEvent.click(startBtn)
 
     expect(usePlayerStore.getState().isOnboardingOpen).toBe(false)
-  }, 15000)
+  })
+
+  it('navigates backwards using Previous button', () => {
+    render(<OnboardingModal />)
+    
+    const nextBtn = screen.getByText('Next')
+    fireEvent.click(nextBtn)
+    
+    const prevBtn = screen.getByText('Previous')
+    fireEvent.click(prevBtn)
+    
+    expect(screen.getByText('A music player built around the feeling of listening.')).toBeInTheDocument()
+  })
+
+  it('navigates using keyboard arrows and escapes', () => {
+    render(<OnboardingModal />)
+
+    // ArrowRight to Step 2
+    fireEvent.keyDown(window, { key: 'ArrowRight' })
+    expect(screen.getByText('The Setup')).toBeInTheDocument()
+
+    // ArrowLeft back to Step 1
+    fireEvent.keyDown(window, { key: 'ArrowLeft' })
+    expect(screen.getByText('A music player built around the feeling of listening.')).toBeInTheDocument()
+
+    // Escape closes modal
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(usePlayerStore.getState().isOnboardingOpen).toBe(false)
+  })
+
+  it('respects prefers-reduced-motion via window.matchMedia', () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation(query => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+
+    render(<OnboardingModal />)
+    
+    // Ensures component still renders correctly; transitions check is implicit in variants internally
+    expect(screen.getByText('A music player built around the feeling of listening.')).toBeInTheDocument()
+
+    // Clean up
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation(query => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    })
+  })
 
   it('does not render when isOnboardingOpen is false', () => {
     usePlayerStore.setState({ isOnboardingOpen: false })

@@ -14,8 +14,8 @@ interface LabelProps extends VinylLayerProps {
  */
 export const Label = memo(({ className, style, size = '28%', albumArt, ...props }: LabelProps): React.JSX.Element => {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
-  const title = currentTrack?.title ?? 'Self Control'
-  const artist = currentTrack?.artist ?? 'Frank Ocean'
+  const title = currentTrack?.title ?? 'Kissa'
+  const artist = currentTrack?.artist ?? 'Listening Machine'
 
   return (
     <div

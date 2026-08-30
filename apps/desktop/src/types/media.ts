@@ -6,6 +6,7 @@ export interface SystemMediaPayload {
   album: string
   artworkDataUrl?: string
   isPlaying: boolean
+  playbackType?: number
   progress: number
   duration: number
   lastUpdatedTime?: number

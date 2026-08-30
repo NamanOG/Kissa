@@ -41,6 +41,11 @@ export function useAudioPlayback(): void {
           isSyncingTimeRef.current = true
           usePlayerStore.getState().setProgress(rounded)
           isSyncingTimeRef.current = false
+          
+          if (typeof window !== 'undefined' && (window as any).electron) {
+            const duration = audio.duration && audio.duration > 0 ? audio.duration : 1
+            ;(window as any).electron.setProgress(curTime / duration, 'normal')
+          }
         }
       }
       animId = requestAnimationFrame(syncTimeLoop)
@@ -60,6 +65,10 @@ export function useAudioPlayback(): void {
       }
       if (audio) {
         usePlayerStore.getState().setProgress(Math.round(audio.currentTime))
+        if (typeof window !== 'undefined' && (window as any).electron) {
+          const duration = audio.duration && audio.duration > 0 ? audio.duration : 1
+          ;(window as any).electron.setProgress(audio.currentTime / duration, 'paused')
+        }
       }
     }
 
@@ -67,6 +76,9 @@ export function useAudioPlayback(): void {
       if (animId !== null) {
         cancelAnimationFrame(animId)
         animId = null
+      }
+      if (typeof window !== 'undefined' && (window as any).electron) {
+        ;(window as any).electron.setProgress(-1, 'none')
       }
       usePlayerStore.getState().playNext()
     }
@@ -98,17 +110,45 @@ export function useAudioPlayback(): void {
   }, [])
 
   // ── 2. Load a new source when the track URL changes ───────────────
-  const audioUrl = usePlayerStore((s) => s.currentTrack?.audioUrl)
+  const currentTrack = usePlayerStore((s) => s.currentTrack)
+  const audioUrl = currentTrack?.audioUrl
+  const isPlayingStore = usePlayerStore((s) => s.isPlaying)
 
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
 
-    if (audioUrl && audioUrl !== lastTrackUrlRef.current) {
-      lastTrackUrlRef.current = audioUrl
+    if (audioUrl) {
+      if (!isPlayingStore && !lastTrackUrlRef.current) {
+        // Prevent Chromium from hijacking Windows SMTC on boot by deferring audio.src assignment
+        // until the user actually requests playback for the first time.
+        return
+      }
+      
+      if (audioUrl !== lastTrackUrlRef.current) {
+        lastTrackUrlRef.current = audioUrl
       audio.src = audioUrl
       audio.load()
       PlaybackClock.setMode(false)
+
+      if ('mediaSession' in navigator && currentTrack) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: currentTrack.title,
+          artist: currentTrack.artist,
+          album: currentTrack.album,
+          artwork: currentTrack.artworkUrl ? [{ src: currentTrack.artworkUrl, sizes: '512x512', type: 'image/png' }] : []
+        })
+        
+        navigator.mediaSession.setActionHandler('play', () => usePlayerStore.getState().play())
+        navigator.mediaSession.setActionHandler('pause', () => usePlayerStore.getState().pause())
+        navigator.mediaSession.setActionHandler('previoustrack', () => usePlayerStore.getState().playPrev())
+        navigator.mediaSession.setActionHandler('nexttrack', () => usePlayerStore.getState().playNext())
+        navigator.mediaSession.setActionHandler('seekto', (details) => {
+          if (details.seekTime !== undefined) {
+            PlaybackClock.setSeekPosition(details.seekTime)
+          }
+        })
+      }
 
       // Seek to wherever the store's progress currently is
       const storeProg = usePlayerStore.getState().progress
@@ -124,12 +164,27 @@ export function useAudioPlayback(): void {
           // Autoplay may be blocked until a user gesture
         })
       }
+      }
     } else if (!audioUrl && lastTrackUrlRef.current) {
       lastTrackUrlRef.current = null
       audio.pause()
       audio.src = ''
+      
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = null
+        navigator.mediaSession.playbackState = 'none'
+        navigator.mediaSession.setActionHandler('play', null)
+        navigator.mediaSession.setActionHandler('pause', null)
+        navigator.mediaSession.setActionHandler('previoustrack', null)
+        navigator.mediaSession.setActionHandler('nexttrack', null)
+        navigator.mediaSession.setActionHandler('seekto', null)
+      }
+      
+      if (typeof window !== 'undefined' && (window as any).electron) {
+        ;(window as any).electron.setProgress(-1, 'none')
+      }
     }
-  }, [audioUrl])
+  }, [audioUrl, currentTrack])
 
   // ── 3. React to play / pause state changes ────────────────────────
   const isPlaying = usePlayerStore((s) => s.isPlaying)
@@ -212,6 +267,8 @@ export function useAudioPlayback(): void {
     }
 
     if (isPlaying) {
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'
+      if (typeof window !== 'undefined' && (window as any).electron) (window as any).electron.setThumbarButtons(true)
       if (audio.src) {
         audio.play().catch(() => {
           // Autoplay policy may block
@@ -219,6 +276,8 @@ export function useAudioPlayback(): void {
       }
       playNeedleSound(true)
     } else {
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'
+      if (typeof window !== 'undefined' && (window as any).electron) (window as any).electron.setThumbarButtons(false)
       if (audio.src) {
         audio.pause()
       }
@@ -227,6 +286,8 @@ export function useAudioPlayback(): void {
   }, [isPlaying])
 
   // ── 4. React to external seek (scrubber click, tonearm drag) ──────
+  const seekTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   useEffect(() => {
     const unsubscribe = usePlayerStore.subscribe((state, prevState) => {
       const progress = state.progress
@@ -238,18 +299,27 @@ export function useAudioPlayback(): void {
       const audio = audioRef.current
       if (!audio || !audio.src) return
 
-      // Only seek if the audio position actually differs meaningfully
-      if (Math.abs(audio.currentTime - progress) > 1.5) {
+      // Only seek if the new progress differs from our rounded native time to prevent duplicate identical seeks
+      if (Math.round(audio.currentTime) !== progress) {
         isSeekingRef.current = true
         PlaybackClock.setSeekPosition(progress) // Use unified PlaybackClock method
-        // Small delay so the next timeupdate doesn't fight the seek
-        setTimeout(() => {
+        
+        if (seekTimeoutRef.current) {
+          clearTimeout(seekTimeoutRef.current)
+        }
+        
+        seekTimeoutRef.current = setTimeout(() => {
           isSeekingRef.current = false
         }, 150)
       }
     })
 
-    return () => unsubscribe()
+    return () => {
+      unsubscribe()
+      if (seekTimeoutRef.current) {
+        clearTimeout(seekTimeoutRef.current)
+      }
+    }
   }, [])
 
   // ── 5. React to volume changes ────────────────────────────────────
@@ -260,4 +330,47 @@ export function useAudioPlayback(): void {
     if (!audio) return
     audio.volume = Math.max(0, Math.min(1, volume / 100))
   }, [volume])
+
+  // ── 6. Listen to Tray IPC ─────────────────────────────────────────
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).electron && (window as any).electron.onTrayAction) {
+      const cleanup = (window as any).electron.onTrayAction((action: string) => {
+        const store = usePlayerStore.getState()
+        const isExternal = !!store.currentTrack?.sourceAppId
+
+        switch (action) {
+          case 'togglePlayPause':
+            store.isPlaying ? store.pause() : store.play()
+            if (isExternal && (window as any).electron.mediaPlayPause) {
+              ;(window as any).__kissaMediaCommandCooldown?.()
+              ;(window as any).electron.mediaPlayPause()
+            }
+            break
+          case 'playPrev':
+            if (isExternal && (window as any).electron.mediaPrev) {
+              ;(window as any).electron.mediaPrev()
+            } else {
+              store.playPrev()
+            }
+            break
+          case 'playNext':
+            if (isExternal && (window as any).electron.mediaNext) {
+              ;(window as any).electron.mediaNext()
+            } else {
+              store.playNext()
+            }
+            break
+          case 'toggleMiniPlayer':
+            store.toggleMiniPlayer()
+            break
+          case 'checkForUpdates':
+            // Open settings modal so user can see/click the update check
+            store.setIsSettingsOpen(true)
+            break
+        }
+      })
+      return cleanup
+    }
+    return undefined
+  }, [])
 }

@@ -1,8 +1,31 @@
 import { useEffect, useRef } from 'react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
+import kissaIdleCover from '@renderer/media/kissa_idle_cover.jpg'
 import type { SystemMediaPayload } from '../../../types/media'
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
+const isKissaSMTCSession = (payload: SystemMediaPayload, currentStoreTrack: any): boolean => {
+  if (!payload.sourceAppId) {
+    // Fallback if OS provides no identity: conservatively assume it's Kissa's echo
+    // if the title and artist perfectly match our internal track.
+    return payload.title === currentStoreTrack?.title && payload.artist === currentStoreTrack?.artist
+  }
+  
+  const lowerId = payload.sourceAppId.toLowerCase()
+  
+  // Production AUMID or executable
+  if (lowerId.includes('com.namanog.kissa') || lowerId.includes('kissa')) {
+    return true
+  }
+  
+  // Development Electron executable
+  if (lowerId.includes('electron')) {
+    // In dev, multiple Electron apps might run. We use title as an additional sanity check.
+    return payload.title === currentStoreTrack?.title
+  }
+  
+  return false
+}
 
 export function useSystemMediaSync(): void {
   const setTrack = usePlayerStore((s) => s.setTrack)
@@ -26,19 +49,54 @@ export function useSystemMediaSync(): void {
     }
 
     const handleMediaPayload = (payload: SystemMediaPayload | null): void => {
-      if (!payload || !payload.title) return
-
       const currentStoreTrack = usePlayerStore.getState().currentTrack
       const currentStoreIsPlaying = usePlayerStore.getState().isPlaying
       const isInternalAudio = Boolean(currentStoreTrack?.audioUrl)
 
-      // Only ignore a paused external payload if Kissa is currently actively playing internal audio
-      if (isInternalAudio && currentStoreIsPlaying && !payload.isPlaying) return
+      if (!payload || !payload.title) {
+        if (isInternalAudio) return // Leave internal audio alone
+
+        // If no internal audio and SMTC cleared, set idle state
+        setTrack({
+          title: 'Kissa',
+          artist: 'Listening Room',
+          album: 'Kissa',
+          artworkUrl: kissaIdleCover,
+          duration: 0,
+          source: 'Kissa',
+          sourceAppId: 'kissa-idle'
+        })
+        setIsPlaying(false)
+        setProgress(0)
+        PlaybackClock.setMode(true)
+        lastTrackKeyRef.current = 'Kissa|Listening Room|kissa-idle'
+        return
+      }
+
+      // Identify if the incoming payload is just an echo of Kissa's own internal playback.
+      const isOurEcho = isInternalAudio && isKissaSMTCSession(payload, currentStoreTrack)
+
+      if (isOurEcho) {
+        // Kissa is the active session. Ignore the echo to prevent hijacking.
+        return
+      }
+
+      // If we reach here, the payload is from a genuine external media source (e.g. Spotify),
+      // OR Kissa is completely idle (no internal track loaded).
+      // We must accept it and yield the clock.
+      if (isInternalAudio) {
+        // We had an internal track loaded, but an external app just took over.
+        // We must pause our internal audio so the external app can play cleanly.
+        usePlayerStore.getState().pause()
+      }
 
       PlaybackClock.setMode(true) // External media mode
 
       const trackKey = `${payload.title}|${payload.artist || ''}|${payload.sourceAppId || ''}`
-      const isSameTrack = lastTrackKeyRef.current === trackKey
+      
+      // Defensively verify the store wasn't externally reset (e.g., via Vite HMR or state hydration)
+      const storeMatchesPayload = currentStoreTrack?.title === payload.title && currentStoreTrack?.sourceAppId === payload.sourceAppId
+      const isSameTrack = lastTrackKeyRef.current === trackKey && storeMatchesPayload
 
       if (!isSameTrack) {
         prevTrackDurationRef.current = currentStoreTrack?.duration || -1
@@ -119,9 +177,7 @@ export function useSystemMediaSync(): void {
 
     // Initial check for media & system volume
     window.electron.getSystemMedia().then((initial) => {
-      if (initial) {
-        handleMediaPayload(initial)
-      }
+      handleMediaPayload(initial || null)
     })
 
     // Listen for SMTC updates
@@ -145,7 +201,8 @@ export function useSystemMediaSync(): void {
     // Listen for manual seeks from React UI
     const unsubscribe = usePlayerStore.subscribe((state, prevState) => {
       if (state.currentTrack?.audioUrl) return
-      if (Math.abs(state.progress - prevState.progress) > 1.5) {
+      // Use monotonic timestamp delta to ensure we don't duplicate seeks
+      if (state.progress !== prevState.progress) {
         PlaybackClock.setSeekPosition(state.progress)
       }
     })

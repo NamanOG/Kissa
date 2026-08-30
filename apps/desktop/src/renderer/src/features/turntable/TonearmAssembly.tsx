@@ -45,7 +45,10 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
     let rafId: number
 
     const updateRotation = (timestamp: DOMHighResTimeStamp) => {
-      if (!tonearmRef.current) return
+      if (!tonearmRef.current) {
+        rafId = 0
+        return
+      }
 
       if (isDragging) {
         // Drag logic handles the visual update directly, but we sync our refs
@@ -113,11 +116,13 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
         nextScale = startScaleRef.current + (1.015 - startScaleRef.current) * progress
         // Stay over the groove
       } else if (armStateRef.current === 'RETURNING') {
-        const progress = Math.min(1, (timestamp - transitionStartRef.current) / 600)
-        nextAngle = startAngleRef.current + (REST_ANGLE - startAngleRef.current) * easeInOutCubic(progress)
+        const progress = Math.min(1, (timestamp - transitionStartRef.current) / 1100)
+        // Authentic physical mechanical deceleration: smooth start, graceful traversal, and gentle rest settle
+        const easeDecel = 1 - Math.pow(1 - progress, 3)
+        nextAngle = startAngleRef.current + (REST_ANGLE - startAngleRef.current) * easeDecel
         
-        // Lift quickly if returning from playing
-        const scaleProgress = Math.min(1, (timestamp - transitionStartRef.current) / 200)
+        // Lift gracefully during initial return motion
+        const scaleProgress = Math.min(1, (timestamp - transitionStartRef.current) / 320)
         nextScale = startScaleRef.current + (1.015 - startScaleRef.current) * scaleProgress
 
         if (progress >= 1) {
@@ -142,6 +147,13 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       tonearmRef.current.style.transition = 'none'
       tonearmRef.current.style.transform = `rotate(${nextAngle}deg) scale(${scaleStr})`
       
+      const isResting = armStateRef.current === 'RESTING'
+      const isRestPosition = nextAngle === REST_ANGLE && nextScale === 1.015
+      if (isResting && isRestPosition && !isDragging && !isPlayingActive) {
+        rafId = 0
+        return
+      }
+
       rafId = requestAnimationFrame(updateRotation)
     }
 
@@ -156,10 +168,20 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
           startAngleRef.current = armAngleRef.current
         }
       }
+
+      if (!rafId && !isDragging) {
+        if (
+          state.isPlaying !== prevState.isPlaying ||
+          state.isPowered !== prevState.isPowered ||
+          state.progress !== prevState.progress
+        ) {
+          rafId = requestAnimationFrame(updateRotation)
+        }
+      }
     })
 
     return () => {
-      cancelAnimationFrame(rafId)
+      if (rafId) cancelAnimationFrame(rafId)
       unsubscribe()
     }
   }, [isDragging])
@@ -212,12 +234,12 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
 
     const angle = dragAngleRef.current
     const state = usePlayerStore.getState()
+    const isExternal = !!state.currentTrack?.sourceAppId
     
     if (angle < 9) {
+      if (!isExternal) state.setProgress(0)
       state.pause()
-      state.setProgress(0)
-      PlaybackClock.setSeekPosition(0)
-      if (state.currentTrack?.sourceAppId && window.electron?.mediaPlayPause && isPlaying) {
+      if (isExternal && window.electron?.mediaPlayPause && isPlaying) {
         void window.electron.mediaPlayPause()
       }
     } else {
@@ -226,12 +248,13 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       const activeDur = state.currentTrack?.duration && state.currentTrack.duration > 0 ? state.currentTrack.duration : 210
       const seekTime = Math.round(ratio * activeDur)
       
-      state.setProgress(seekTime)
-      PlaybackClock.setSeekPosition(seekTime)
+      if (!isExternal) {
+        state.setProgress(seekTime)
+      }
       
       if (!state.isPlaying) {
         state.play()
-        if (state.currentTrack?.sourceAppId && window.electron?.mediaPlayPause) {
+        if (isExternal && window.electron?.mediaPlayPause) {
           void window.electron.mediaPlayPause()
         }
       }
@@ -288,7 +311,7 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
             style={{
               transformOrigin: '72% 8.5%',
               transform: `scale(${isDragging ? 1.025 : (usePlayerStore.getState().physicalFeedback ? (activePlayback ? 1.0 : 1.015) : 1)})`,
-              transition: 'transform 0.2s ease-out'
+              transition: 'transform var(--duration-ui) var(--ease-out)'
             }}
           >
             <svg
@@ -444,7 +467,7 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
               onPointerCancel={handlePointerUp}
               className={cn(
                 'absolute cursor-grab active:cursor-grabbing pointer-events-auto rounded-full',
-                'transition-transform hover:scale-105 active:scale-95'
+                'transition-transform active:scale-95'
               )}
               style={{
                 left: '12%',

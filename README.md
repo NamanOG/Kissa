@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./apps/desktop/resources/phono_logo.png" width="140" height="140" alt="Kissa Logo" style="border-radius: 50%;" />
+  <img src="./apps/desktop/resources/kissa_logo.png" width="140" height="140" alt="Kissa Logo" style="border-radius: 50%;" />
 </p>
 
 <h1 align="center">Kissa</h1>
@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-3.0.1-blue?style=flat-square" alt="Version 3.0.1" />
+  <img src="https://img.shields.io/badge/Version-4.0.0-blue?style=flat-square" alt="Version 4.0.0" />
   <img src="https://img.shields.io/badge/Electron-39-blue?style=flat-square&logo=electron" alt="Electron 39" />
   <img src="https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-Strict-blue?style=flat-square&logo=typescript" alt="TypeScript" />
@@ -23,61 +23,177 @@
   </a>
 </p>
 
-Named after Japan’s iconic *Jazz Kissa* (ジャズ喫茶) listening bars, **Kissa** brings the intimate, tactile ritual of analog vinyl and contemplative room atmospheres to modern desktop audio. 
+---
 
-Whether playing local high-resolution audio or synchronizing in real time with Windows System Media Transport Controls (Spotify, Apple Music, Tidal, web browsers), Kissa renders an animated turntable, precision tonearm tracking, and synchronized lyrics overlay in a calm, hardware-inspired listening space.
+Kissa is a desktop music player inspired by Japan's iconic *Jazz Kissa* (ジャズ喫茶) listening rooms — intimate spaces built around careful listening, good sound, and atmosphere.
+
+Instead of treating music as another application window, Kissa turns your desktop into a quiet listening space built around a physical turntable, record shelf, ambient environments, synchronized lyrics, and tactile hardware-inspired controls. 
+
+Play local music, follow what's playing across Windows, or simply leave Kissa open as a visual companion to your listening. 
+
+> **The music plays. The room responds.**
 
 ---
 
-## 💾 Download & Installation
+## 💾 Download
 
-Get the latest release for **Windows 10 / 11** from the [**Releases Page**](https://github.com/NamanOG/Kissa/releases/latest):
+Get the latest version for **Windows 10 / 11** from the [**Releases Page**](https://github.com/NamanOG/Kissa/releases/latest).
 
-- **`Kissa-Setup-x.x.x.exe`**: Standard installer with desktop shortcut and start menu integration.
-- **`Kissa-Portable-x.x.x.exe`**: Standalone executable requiring no installation.
+### Windows
+- **`Kissa-Setup-x.x.x.exe`** — Standard installer with Start Menu and desktop integration.
+- **`Kissa-Portable-x.x.x.exe`** — Standalone version requiring no installation.
 
-> **Note on Windows SmartScreen**: As an indie open-source release, Kissa's installer is currently unsigned. If you see a "Windows protected your PC" prompt, click **More info** &rarr; **Run anyway**.
+> **Windows SmartScreen:** Kissa is currently distributed independently and is not code-signed. Windows may display a SmartScreen warning when installing. If you trust the source, select **More info → Run anyway**.
 
 ---
 
 ## ✨ Features
 
-### 🎧 High-Performance Playback Architecture
-- **Unified `PlaybackClock`**: A single authoritative time source across audio engines, UI scrubbers, tonearm tracking, and lyrics.
-- **Zero-Stutter Playback**: Playback timing is isolated from React rerenders, eliminating main-thread stalls and audio stutter.
-- **High-Framerate Rendering**: Compositor-driven animations deliver smooth 60 FPS (and 120 FPS capable) visual feedback.
+### 💿 The Turntable
+Kissa's main player is built around a physical turntable-inspired interface.
+- Machined hardware-inspired turntable design
+- Animated vinyl rotation at 33⅓ and 45 RPM
+- Physical tonearm interaction
+- Needle-drop playback
+- Tonearm seeking
+- Smooth start and stop behavior
+- Continuous rotational phase preservation
+- Tactile hardware controls
+- Physical lighting and material details
 
-### 💿 Physical Vinyl & Tonearm Simulation
-- **Machined Aluminum Turntable**: Plinth chassis with realistic slipmat texture, rotational inertia, and speed selection (33⅓ & 45 RPM).
-- **Tactile Tonearm Interaction**: Drag and drop the precision tonearm to drop the needle and seek directly across record grooves.
-- **Continuous Rotational Phase**: Turntable rotation angle persists across view changes without resetting or jumping.
+The interface is designed to make playback feel like operating a piece of equipment rather than controlling a web player.
 
-### 🎶 Apple Music-Grade Synced Lyrics
-- **Accurate Timing & Auto-Scroll**: Real-time synchronized lyrics via LRCLIB with spring-centered active line auto-scrolling.
-- **Click-to-Seek Navigation**: Click any lyric line to jump the needle and playback directly to that timestamp.
-- **Dynamic Optical Depth**: Smooth blur falloff on inactive lines with ambient lighting reflections.
+---
 
+### 📚 Record Shelf
+Keep your music collection in an archival-style record shelf.
+- Physical record presentation
+- Stable, shelf-like album layouts
+- Album inspection panel
+- Track browsing
+- Recent, Added, Played and Alpha sorting
+- Multi-record selection
+- Record removal and sharing
+- Archival-inspired catalog typography
+- Restrained physical interactions and animations
 
+Your collection feels less like a database and more like a cabinet of records.
 
-### 🖥️ Dedicated Mini Player Mode
-- **Compact Floating Widget**: Native Electron window resize down to a minimal, always-on-top desk companion.
-- **Full Playback Control**: Transport controls, scrubber, track info, and mini turntable interface in a compact footprint.
+---
 
-### 🎨 8 Distinct Listening Environments
-Atmospheric material themes that dynamically transform background depth, surface textures, typography contrast, and accent glows:
-1. `01 — Quiet Listening Room` (*Walnut, warm paper, late-night lamp glow*)
-2. `02 — Dusty Record Store` (*Faded sleeves, cardboard, muted olive*)
-3. `03 — Japanese Jazz Bar` (*Charcoal, indigo, warm wood, dim light*)
-4. `04 — Midnight Apartment` (*Smoky blue, graphite, midnight quiet*)
-5. `05 — Rainy Window` (*Grey skies, soft reflections, warm indoor light*)
-6. `06 — Hi-Fi Library` (*Dark wood, parchment, aged brass*)
-7. `07 — Concrete & Vinyl` (*Soft concrete, terracotta, matte black*)
-8. `08 — Sunday Morning` (*Warm linen, pale wood, faded sage*)
+### 🎤 Synchronized Lyrics
+Kissa provides real-time synchronized lyrics designed for immersive listening.
+- Accurate timestamp synchronization
+- Word-level karaoke progression
+- Automatic lyric scrolling
+- Click-to-seek lyric lines
+- Cinematic active-line hierarchy
+- Optical depth between active and inactive lyrics
+- Improved readability for long lyrics
+- Smooth fullscreen lyric presentation
+- LRCLIB integration
 
-### 🎛️ Hardware-Inspired Controls & Visualizer
-- **Mechanical Deck Switchgear**: Tactile toggles for Power, Speed, and Start/Stop with glowing indicator LEDs.
-- **Subtle Hi-Fi Visualizer**: Low-overhead Canvas-based organic audio visualizer tuned for ambient listening.
-- **Keyboard Shortcuts**: Full keyboard control for transport, volume, seeking, queue, and lyrics navigation.
+The lyrics are designed to become part of the listening environment rather than dominate it.
+
+---
+
+### 🌌 Listening Environments
+Choose from curated environments that change the atmosphere surrounding the turntable.
+1. **01 — Quiet Listening Room**
+   Walnut, warm paper and late-night lamp glow.
+2. **02 — Dusty Record Store**
+   Faded sleeves, cardboard and muted olive.
+3. **03 — Japanese Jazz Bar**
+   Charcoal, indigo, warm wood and dim light.
+4. **04 — Midnight Apartment**
+   Smoky blue, graphite and midnight quiet.
+5. **05 — Rainy Window**
+   Grey skies, soft reflections and warm indoor light.
+6. **06 — Hi-Fi Library**
+   Dark wood, parchment and aged brass.
+7. **07 — Concrete & Vinyl**
+   Soft concrete, terracotta and matte black.
+8. **08 — Sunday Morning**
+   Warm linen, pale wood and faded sage.
+
+---
+
+### 🎨 Match Album
+Let the music influence the room.
+- Album artwork drives the surrounding atmosphere
+- Multiple colors can contribute to the environment
+- Dark artwork remains restrained
+- Vibrant artwork produces richer ambient lighting
+- Smooth transitions between album atmospheres
+- Turntable hardware remains visually grounded
+- Artwork colors subtly influence the surrounding environment
+
+**The album becomes the light source for the room.**
+
+---
+
+### 🖥️ Mini Player
+A compact version of Kissa designed to stay alongside your desktop.
+- Dedicated Mini Player window
+- Always-on-top listening companion
+- Playback controls
+- Track information
+- Scrubbing
+- Compact turntable presentation
+- Native window behavior
+
+---
+
+### 🪟 Windows Media Integration
+Kissa integrates with Windows System Media Transport Controls.
+- Windows media session synchronization
+- Spotify integration
+- Apple Music integration
+- Tidal and browser media support
+- System tray controls
+- External playback detection
+- Automatic switching between Kissa and external media
+- Synchronized playback metadata and progress
+
+Kissa does not replace streaming applications. It acts as a visual listening interface alongside them.
+
+---
+
+### 🎛️ Hardware-Inspired Controls
+Kissa's controls are designed around physical audio equipment rather than conventional web UI.
+- Mechanical power controls
+- 33⅓ / 45 RPM speed selection
+- Start / Stop controls
+- Tonearm interaction
+- Hardware-style transport controls
+- Mechanical room-control feedback
+- Tactile visual states
+- Keyboard shortcuts for playback and navigation
+
+---
+
+### 🔄 Check for Updates
+Kissa includes a built-in manual update checker. From Settings you can:
+- Check whether a newer version is available
+- See your currently installed version
+- View the latest release directly
+- Access the official Kissa release page without manually searching GitHub
+
+Updates remain intentionally unobtrusive and user-controlled.
+
+---
+
+## ⚡ Performance
+Kissa is designed to keep high-frequency visual updates away from the React render lifecycle wherever possible.
+- GPU-friendly compositor animations
+- Web Animations API for vinyl rotation
+- CSS-variable driven lyric synchronization
+- Lightweight Canvas-based visualizer
+- Native Windows media synchronization
+- Optimized playback clock architecture
+- Minimal React updates during active playback
+
+The goal is simple: **The interface should feel as smooth as the music.**
 
 ---
 
@@ -85,24 +201,26 @@ Atmospheric material themes that dynamically transform background depth, surface
 
 | Layer | Technology | Purpose |
 | --- | --- | --- |
-| **Runtime** | Electron 39 | Frameless Windows desktop shell with native IPC and window management |
-| **Build System** | `electron-vite` / Vite 7 | Fast module bundling and optimized multi-target compilation |
-| **Frontend Core** | React 19 + TypeScript | Component architecture in strict TypeScript mode |
-| **Animation & Graphics** | Web Animations API + Canvas API | Zero-React-overhead vinyl rotation and audio visualizer rendering |
-| **Transitions** | Framer Motion 12 | Smooth UI view transitions and layout reordering |
-| **State Management** | Zustand 5 | Minimalist store for application state and preferences |
-| **Styling** | TailwindCSS v3 + CSS Variables | Dynamic theme-variable design system with tactile physical materials |
-| **Windows Media** | `@coooookies/windows-smtc-monitor` | Real-time native Windows System Media Transport Controls synchronization |
-| **Lyrics Service** | LRCLIB Integration | Real-time synchronized lyrics fetching and timing parsing |
+| **Runtime** | Electron 39 | Windows desktop shell, native IPC and window management |
+| **Build System** | `electron-vite` / Vite 7 | Application bundling and optimized builds |
+| **Frontend** | React 19 + TypeScript | Component architecture |
+| **Animation** | Web Animations API + Framer Motion 12 | High-performance playback and UI motion |
+| **Graphics** | Canvas API + CSS | Visualizer, materials and ambient effects |
+| **State** | Zustand 5 | Application state and preferences |
+| **Styling** | TailwindCSS v3 + CSS Variables | Kissa visual system |
+| **Windows Media** | `@coooookies/windows-smtc-monitor` | Windows System Media Transport Controls |
+| **Lyrics** | LRCLIB | Synchronized lyric retrieval |
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- **Node.js**: `>= 20.0.0`
-- **npm**: `>= 10.0.0`
-- **OS**: Windows 10 or 11 (for native SMTC media detection and Windows integration)
+- **Node.js:** `>= 20.0.0`
+- **npm:** `>= 10.0.0`
+- **OS:** Windows 10 or Windows 11
+
+*Windows is required for development of the native System Media Transport Controls integration.*
 
 ### Development Setup
 
@@ -114,70 +232,107 @@ cd Kissa
 # Install dependencies
 npm install
 
-# Start in development mode with HMR
+# Start development mode
 npm run dev
 ```
 
-### Building & Packaging
+### Building for Windows
 
 ```bash
-# Build desktop binaries for Windows (Installer & Portable)
+# Build Windows installer and portable executable
 npm run build:win --workspace apps-desktop
 
-# Create unpacked directory build for fast local testing
+# Create an unpacked build for local testing
 npm run build:unpack --workspace apps-desktop
 ```
 
-### Quality & Testing
+### Quality Checks
 
 ```bash
-# Run unit & integration tests (Vitest)
+# Run the test suite
 npm run test
 
-# Run TypeScript typecheck
+# Run TypeScript type checking
 npm run typecheck
 
-# Run linter (ESLint)
+# Run ESLint
 npm run lint
 ```
 
----
-
 ## 🗺️ Roadmap
 
+Kissa is intentionally focused on the listening experience. Future development may explore:
+
 ### 🪟 Deeper Windows Integration
-- Richer Windows media controls and lock-screen media surface support
-- Global media-key binding refinement and background playback polish
-- System tray minimization and Windows toast notifications
+- Richer Windows media surfaces
+- Lock-screen media integration
+- Improved global media-key handling
+- Background playback refinements
+- Additional Windows notification integration
 
-### 🌌 Ambient Desktop *(Experimental / Future)*
-- Exploration of an ambient desktop / live wallpaper mode matching the current room atmosphere and vinyl rotation.
+### 🌌 Ambient Desktop
+- Optional ambient desktop mode
+- Live wallpaper-style listening environments
+- Expanded connection between the desktop and current listening atmosphere
 
-### 🎨 Additional Listening Environments
-- New curated environments with custom acoustic textures and distinctive physical finishes.
+### 🎨 More Listening Environments
+- Additional curated rooms
+- New physical materials
+- Seasonal and time-based environments
+- More album-reactive atmospheres
 
-### 🎛️ Further Hardware Interactions
-- Enhanced tonearm inertia physics, needle surface noise simulation, and tactile physical feedback.
+### 🎛️ Deeper Hardware Interaction
+- More detailed tonearm physics
+- Additional physical controls
+- Subtle needle and record surface sounds
+- More tactile interaction feedback
 
 ### 📊 Listening Insights
-- Local, private listening statistics, session tracking, and listening pattern insights.
+- Private local listening statistics
+- Listening sessions
+- Personal listening history
+- Optional listening patterns and insights
 
-### 🔧 Quality & Accessibility
-- Comprehensive keyboard navigation, screen-reader support, and reduced-motion display preferences.
-
-> **Note on Streaming Services**: Kissa does not plan native closed-API streaming client integrations (such as Spotify or Apple Music OAuth/DRM playback) due to platform and licensing limitations. Kissa remains focused on local playback and seamless Windows System Media (SMTC) synchronization.
-
----
+*Streaming Services: Kissa does not plan to become a native Spotify, Apple Music or other closed-platform streaming client. Kissa remains focused on local playback and seamless Windows System Media synchronization.*
 
 ## 📜 Version History
 
-- **`v3.0.1`**: Match Album adaptive atmosphere improvements (artwork-driven spatial ambient lighting, salience-weighted palette handling, material turntable reflections), playback duration & SMTC synchronization fixes, settings update indicator, and stability polish.
-- **`v3.0.0`**: Major performance, architecture, product, and visual refinement. Unified `PlaybackClock`, WAAPI vinyl rotation, dedicated Mini Player, queue management, distinct dynamic themes, and hardware-inspired settings.
-- **`v1.0.0`**: Initial release featuring 3D turntable, basic SMTC tracking, synchronized lyrics, and room atmospheres.
+### v4.0.0 — The Listening Machine
+A major evolution of Kissa focused on the physical listening experience.
+- Redesigned Listening Room
+- New archival Record Shelf
+- Refined turntable and tonearm interactions
+- Cinematic synchronized lyrics
+- Refined Match Album environments
+- Hardware-inspired controls
+- Improved Windows media integration
+- Mini Player refinements
+- Manual update checking
+- Major visual, interaction and responsive-layout refinement
+- Extensive playback, synchronization and stability improvements
 
----
+### v3.0.1 — The Room Responds
+- Match Album adaptive atmosphere
+- Artwork-driven ambient lighting
+- Improved artwork color extraction
+- Playback duration and Windows media synchronization improvements
+- Tonearm and lyrics refinements
+- Mini Player improvements
+- UI interaction fixes
+- Production polish
+
+### v3.0.0
+Major performance, architecture and visual refinement.
+- Unified playback architecture
+- High-performance vinyl animation
+- Dedicated Mini Player
+- Listening environments
+- Hardware-inspired controls
+- Improved lyrics
+- Queue and playback improvements
+
+### v1.0.0
+Initial Kissa release featuring the turntable interface, Windows media synchronization, synchronized lyrics and listening environments.
 
 ## 📄 License
-
 MIT © [NamanOG](https://github.com/NamanOG)
-

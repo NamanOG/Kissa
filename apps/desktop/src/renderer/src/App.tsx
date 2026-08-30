@@ -16,19 +16,22 @@ import { usePlayerStore } from './stores/playerStore'
 import { useAudioPlayback } from './hooks/useAudioPlayback'
 import { useSystemMediaSync } from './hooks/useSystemMediaSync'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
-import { useUpdateChecker } from './hooks/useUpdateChecker'
 import { RecordShelfView } from './features/shelf/RecordShelfView'
 import { MiniPlayerView } from './features/mini-player'
 import { cn } from './utils/cn'
 import { useAdaptiveColor } from './hooks/useAdaptiveColor'
 import { useShelfStore } from './stores/shelfStore'
+import { ShareExportMount } from './features/share/ShareExportMount'
+import { ListeningRoom } from './features/listening-room'
+import { checkForUpdates } from './utils/updater'
 
-function App(): React.JSX.Element {
+function KissaApp(): React.JSX.Element {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const activeView = usePlayerStore((s) => s.activeView)
   const showSideLyrics = usePlayerStore((s) => s.showSideLyrics)
   const toggleSideLyrics = usePlayerStore((s) => s.toggleSideLyrics)
   const isMiniPlayer = usePlayerStore((s) => s.isMiniPlayer)
+  const isFullscreen = usePlayerStore((s) => s.isFullscreen)
   const theme = usePlayerStore((s) => s.theme)
 
   // Real audio playback engine (handles audio elements, time sync, seeking & volume)
@@ -43,9 +46,6 @@ function App(): React.JSX.Element {
   // Dynamic Theme Lighting
   useAdaptiveColor()
 
-  // Check for app updates
-  useUpdateChecker()
-
   // Update Record Shelf listening history
   const addOrUpdateRecord = useShelfStore((s) => s.addOrUpdateRecord)
   
@@ -55,40 +55,76 @@ function App(): React.JSX.Element {
     }
   }, [currentTrack, addOrUpdateRecord])
 
+  // Sync settings with main process on boot
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).electron) {
+      const state = usePlayerStore.getState()
+      ;(window as any).electron.syncSettings({ runInBackground: state.runInBackground })
+      ;(window as any).electron.setStartup(state.startWithWindows)
+    }
+  }, [])
+
+  // Silent background check for updates on boot
+  useEffect(() => {
+    checkForUpdates('4.0.0').then((res) => {
+      if (res.hasUpdate) {
+        usePlayerStore.getState().setHasUpdateAvailable(true)
+      }
+    }).catch(() => {
+      // Ignore background check errors silently
+    })
+  }, [])
+
+  // BrowserWindow fullscreen events are authoritative. Update state directly so
+  // an OS-driven transition never re-enters the renderer-to-main IPC path.
+  useEffect(() => {
+    if (!window.electron?.onFullscreenChanged) return
+
+    return window.electron.onFullscreenChanged((isFullscreen) => {
+      usePlayerStore.setState((state) =>
+        state.isFullscreen === isFullscreen ? state : { isFullscreen }
+      )
+    })
+  }, [])
+
   return (
     <AppLayout>
       {/* Fixed atmospheric background */}
       <Background />
 
-      {/* Invisible drag region for frameless window movement */}
-      <div className="absolute top-0 left-0 w-full h-8 app-region-drag z-50 pointer-events-auto" />
+      <AnimatePresence mode="wait">
+        {isMiniPlayer ? (
+          <motion.div
+            key="mini-player"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 z-50 bg-[var(--panel-bg)]"
+          >
+            <MiniPlayerView />
+          </motion.div>
+        ) : isFullscreen ? (
+          <ListeningRoom key="listening-room" />
+        ) : (
+          <motion.div
+            key="normal-app"
+            initial={false}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute inset-0 z-0 flex flex-col min-w-0 overflow-hidden"
+          >
+            {/* Invisible drag region for frameless window movement */}
+            <div className="absolute top-0 left-0 w-full h-8 app-region-drag z-50 pointer-events-auto" />
 
-      {/* Mini Player Layer (Z-50) */}
-      <div 
-        {...(!isMiniPlayer ? { inert: true } : {})}
-        className={cn(
-          "absolute inset-0 z-50 transition-opacity duration-300", 
-          isMiniPlayer ? "opacity-100 block" : "opacity-0 pointer-events-none"
-        )}
-      >
-        <MiniPlayerView />
-      </div>
+            <div className="flex flex-1 min-h-0 relative w-full overflow-hidden transform-gpu">
+              {/* Navigation rail */}
+              <Sidebar />
 
-      {/* Main App Layer */}
-      <div 
-        {...(isMiniPlayer ? { inert: true } : {})}
-        className={cn(
-          "relative h-full w-full min-w-0 overflow-hidden flex transition-opacity duration-300", 
-          isMiniPlayer ? "opacity-0 pointer-events-none" : "opacity-100"
-        )}
-      >
-        {/* Navigation rail — 60px width */}
-        <Sidebar />
-
-        {/* Main content area */}
-        <ContentArea>
-          {/* Dynamic Main View Switcher */}
-          <div className="relative flex-1 min-h-0 w-full overflow-hidden">
+              {/* Main content area */}
+              <ContentArea>
+              {/* Dynamic Main View Switcher */}
+              <div className="relative flex-1 min-h-0 w-full overflow-hidden">
         <AnimatePresence mode="wait">
           {activeView === 'deck' && (
             /* ═════════ VIEW 1: Vinyl Deck & Listening Room ═════════ */
@@ -131,7 +167,7 @@ function App(): React.JSX.Element {
                     <button
                       type="button"
                       onClick={toggleSideLyrics}
-                      className="w-6 h-6 rounded-full flex items-center justify-center transition-all cursor-pointer text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.08]"
+                      className="w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-ui ease-primary cursor-pointer text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.08]"
                       title="Close Side Lyrics"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -216,12 +252,15 @@ function App(): React.JSX.Element {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+              </div>
+            </ContentArea>
+          </div>
 
-      {/* ── Bottom Dock ── */}
-      <ControlDock />
-    </ContentArea>
-    </div>
+          {/* ── Bottom Dock (Integrated into Chassis) ── */}
+          <ControlDock />
+        </motion.div>
+      )}
+      </AnimatePresence>
       {/* ── Settings & Preferences Modal ── */}
       <SettingsModal />
 
@@ -234,4 +273,10 @@ function App(): React.JSX.Element {
   )
 }
 
-export default App
+export default function App(): React.JSX.Element {
+  const isShareExport = window.location.hash.startsWith('#/share-export')
+  if (isShareExport) {
+    return <ShareExportMount />
+  }
+  return <KissaApp />
+}

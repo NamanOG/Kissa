@@ -45,10 +45,20 @@ export class ArtworkService {
     if (!title || !url) return
     const key = this.getKey(title, artist)
     this.cache.set(key, url)
+    this.enforceCacheLimit()
+  }
+
+  private enforceCacheLimit(): void {
+    if (this.cache.size > 100) {
+      const oldestKey = this.cache.keys().next().value
+      if (oldestKey) {
+        this.cache.delete(oldestKey)
+      }
+    }
   }
 
   public async fetchArtwork(title: string, artist: string, album?: string): Promise<string | null> {
-    if (!title) return null
+    if (!title || title === 'Unknown Title') return null
     const key = this.getKey(title, artist)
     if (this.cache.has(key)) {
       return this.cache.get(key)!
@@ -75,9 +85,10 @@ export class ArtworkService {
         if (data.results && data.results.length > 0) {
           const item = data.results.find((r) => r.artworkUrl100) || data.results[0]
           if (item?.artworkUrl100) {
-            // Replace 100x100 with 600x600 for crystal-clear high-res album cover
-            const highRes = item.artworkUrl100.replace(/100x100bb\.(jpg|png|webp)/i, '600x600bb.$1')
+            // Replace 100x100 with 1200x1200 for crystal-clear high-res album cover
+            const highRes = item.artworkUrl100.replace(/100x100bb\.(jpg|png|webp)/i, '1200x1200bb.$1')
             this.cache.set(key, highRes)
+            this.enforceCacheLimit()
             return highRes
           }
         }

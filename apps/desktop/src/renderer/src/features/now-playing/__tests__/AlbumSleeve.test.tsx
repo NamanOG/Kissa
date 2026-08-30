@@ -15,4 +15,10 @@ describe('AlbumSleeve component', () => {
     const img = screen.getByAltText('Album cover')
     expect(img).toBeInTheDocument()
   })
+
+  it('uses a still presentation when flat mode is requested', () => {
+    const { container } = render(<AlbumSleeve artworkUrl="https://example.com/sleeve.jpg" flat />)
+
+    expect(container.firstChild).not.toHaveClass('-rotate-1')
+  })
 })
