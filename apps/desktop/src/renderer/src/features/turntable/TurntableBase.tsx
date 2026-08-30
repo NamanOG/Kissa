@@ -63,20 +63,6 @@ export const TurntableBase = memo(
               <stop offset="80%" stopColor="#050506" />
               <stop offset="100%" stopColor="#151210" />
             </radialGradient>
-
-            {/* Primary key studio softbox highlight */}
-            <radialGradient id="plinth-specular-key" cx="28%" cy="20%" r="55%">
-              <stop offset="0%" stopColor="rgba(255,248,235,0.12)" />
-              <stop offset="40%" stopColor="rgba(255,238,210,0.04)" />
-              <stop offset="100%" stopColor="transparent" />
-            </radialGradient>
-
-            {/* Secondary right-side fill catchlight */}
-            <radialGradient id="plinth-specular-soft" cx="80%" cy="30%" r="45%">
-              <stop offset="0%" stopColor="rgba(255,250,240,0.08)" />
-              <stop offset="45%" stopColor="rgba(215,167,108,0.02)" />
-              <stop offset="100%" stopColor="transparent" />
-            </radialGradient>
           </defs>
 
           {/* ── Isolation Feet (beneath plinth) ─────────────── */}
@@ -116,12 +102,6 @@ export const TurntableBase = memo(
             stroke="rgba(255,255,255,0.08)"
             strokeWidth="1"
           />
-
-          {/* Primary Key Studio Lamp Specular Reflection */}
-          <ellipse cx="220" cy="90" rx="180" ry="85" fill="url(#plinth-specular-key)" />
-
-          {/* Secondary Soft Fill Specular Reflection */}
-          <ellipse cx="780" cy="180" rx="150" ry="75" fill="url(#plinth-specular-soft)" />
 
           {/* ── Front Face (3D vertical thickness) ──────────── */}
           <path

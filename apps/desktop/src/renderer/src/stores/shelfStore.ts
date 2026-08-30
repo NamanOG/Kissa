@@ -16,6 +16,7 @@ export interface RecordEntry {
 export interface ShelfState {
   records: RecordEntry[]
   addOrUpdateRecord: (track: TrackInfo) => void
+  removeRecord: (albumKey: string) => void
   clearShelf: () => void
 }
 
@@ -67,6 +68,9 @@ export const useShelfStore = create<ShelfState>()(
           return { records: [...state.records, newRecord] }
         }
       }),
+      removeRecord: (albumKey) => set((state) => ({
+        records: state.records.filter(r => r.albumKey !== albumKey)
+      })),
       clearShelf: () => set({ records: [] })
     }),
     {

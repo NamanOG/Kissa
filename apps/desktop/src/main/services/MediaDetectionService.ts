@@ -86,6 +86,12 @@ function formatSession(
 
   if (!session || !session.media) return null
 
+  // If the session is explicitly Closed (0) or Stopped (3), treat it as cleared.
+  // This prevents zombie sessions from closed browsers persisting in the UI.
+  if (session.playback && (session.playback.playbackStatus === 0 || session.playback.playbackStatus === 3)) {
+    return null
+  }
+
   let artworkDataUrl: string | undefined = undefined
 
   const thumbBase64 = session.media.thumbnailBase64
@@ -108,7 +114,12 @@ function formatSession(
     }
   }
 
-  let title = (session.media.title || '').trim() || 'Unknown Title'
+  let title = (session.media.title || '').trim()
+  
+  // If the session has no title, consider it an empty/uninitialized session.
+  // Apple Music and Spotify often create these when launched but not playing.
+  if (!title) return null
+
   let artist = (session.media.artist || '').trim() || 'Unknown Artist'
   let album = (session.media.albumTitle || '').trim()
 
@@ -185,43 +196,55 @@ export class MediaDetectionService {
     if (this.worker) return
 
     // Register IPC handler for one-time fetch
-    ipcMain.handle('phono:get-system-media', () => {
+    ipcMain.handle('kissa:get-system-media', () => {
       return this.latestPayload
     })
 
-    ipcMain.handle('phono:get-lyrics', (_event, request: LyricsRequest) => {
+    ipcMain.handle('kissa:get-lyrics', (_event, request: LyricsRequest) => {
       return LyricsService.getInstance().getLyrics(request)
     })
 
     // Register volume control IPC handlers
-    ipcMain.handle('phono:set-volume', (_event, vol: number) => {
+    ipcMain.handle('kissa:set-volume', (_event, vol: number) => {
       this.setVolume(vol)
     })
 
-    ipcMain.handle('phono:get-volume', () => {
+    ipcMain.handle('kissa:get-volume', () => {
       return this.latestVolume
     })
 
     // Register transport control IPC handlers
-    ipcMain.handle('phono:media-play-pause', () => {
-      sendMediaKey(179)
+    ipcMain.handle('kissa:media-play-pause', () => {
+      if (this.worker && this.latestPayload) {
+        this.worker.postMessage({ action: 'playPause' })
+      } else {
+        sendMediaKey(179)
+      }
     })
 
-    ipcMain.handle('phono:media-next', () => {
-      sendMediaKey(176)
+    ipcMain.handle('kissa:media-next', () => {
+      if (this.worker && this.latestPayload) {
+        this.worker.postMessage({ action: 'next' })
+      } else {
+        sendMediaKey(176)
+      }
     })
 
-    ipcMain.handle('phono:media-prev', () => {
-      sendMediaKey(177)
+    ipcMain.handle('kissa:media-prev', () => {
+      if (this.worker && this.latestPayload) {
+        this.worker.postMessage({ action: 'prev' })
+      } else {
+        sendMediaKey(177)
+      }
     })
 
-    ipcMain.handle('phono:open-external', (_event, url: string) => {
+    ipcMain.handle('kissa:open-external', (_event, url: string) => {
       if (url && (url.startsWith('https://') || url.startsWith('http://'))) {
         shell.openExternal(url)
       }
     })
 
-    ipcMain.handle('phono:get-app-version', () => {
+    ipcMain.handle('kissa:get-app-version', () => {
       return electronApp.getVersion()
     })
 
@@ -310,7 +333,7 @@ export class MediaDetectionService {
     const windows = BrowserWindow.getAllWindows()
     for (const win of windows) {
       if (!win.isDestroyed() && win.webContents) {
-        win.webContents.send('phono:system-media-update', payload)
+        win.webContents.send('kissa:system-media-update', payload)
       }
     }
   }
@@ -324,14 +347,14 @@ export class MediaDetectionService {
       }
       this.worker = null
     }
-    ipcMain.removeHandler('phono:get-system-media')
-    ipcMain.removeHandler('phono:get-lyrics')
-    ipcMain.removeHandler('phono:set-volume')
-    ipcMain.removeHandler('phono:get-volume')
-    ipcMain.removeHandler('phono:media-play-pause')
-    ipcMain.removeHandler('phono:media-next')
-    ipcMain.removeHandler('phono:media-prev')
-    ipcMain.removeHandler('phono:open-external')
-    ipcMain.removeHandler('phono:get-app-version')
+    ipcMain.removeHandler('kissa:get-system-media')
+    ipcMain.removeHandler('kissa:get-lyrics')
+    ipcMain.removeHandler('kissa:set-volume')
+    ipcMain.removeHandler('kissa:get-volume')
+    ipcMain.removeHandler('kissa:media-play-pause')
+    ipcMain.removeHandler('kissa:media-next')
+    ipcMain.removeHandler('kissa:media-prev')
+    ipcMain.removeHandler('kissa:open-external')
+    ipcMain.removeHandler('kissa:get-app-version')
   }
 }

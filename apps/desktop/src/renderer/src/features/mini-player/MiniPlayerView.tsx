@@ -24,6 +24,8 @@ export const MiniPlayerView = (): React.JSX.Element => {
   const fillRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (!isMiniPlayer) return
+    
     let rafId: number
     
     const updateScrubber = () => {
@@ -41,11 +43,11 @@ export const MiniPlayerView = (): React.JSX.Element => {
 
     rafId = requestAnimationFrame(updateScrubber)
     return () => cancelAnimationFrame(rafId)
-  }, [duration])
+  }, [duration, isMiniPlayer])
 
   return (
     <div className={cn(
-      "relative flex flex-col w-full h-full p-4 overflow-hidden select-none transition-colors duration-500 bg-[var(--panel-bg)] text-[var(--on-surface)]",
+      "relative flex flex-col w-full h-full p-4 overflow-hidden select-none transition-colors duration-ambient ease-ambient bg-[var(--panel-bg)] text-[var(--on-surface)]",
       isMiniPlayer && "app-region-drag"
     )}>
       {/* ── Top Bar ── */}
@@ -73,7 +75,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
         <button
           type="button"
           onClick={() => toggleMiniPlayer()}
-          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer app-region-no-drag text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.05]"
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors duration-ui ease-primary cursor-pointer app-region-no-drag text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.05]"
           title="Restore Window"
         >
           <Maximize2 className="w-4 h-4" />
@@ -110,7 +112,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
             type="button"
             onClick={() => setShowQueue(!showQueue)}
             className={cn(
-              'w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer',
+              'w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-ui ease-primary cursor-pointer',
               showQueue
                 ? 'text-[var(--accent)] bg-[var(--accent)]/15'
                 : 'text-[var(--muted)] hover:bg-[var(--on-surface)]/5'
@@ -122,14 +124,14 @@ export const MiniPlayerView = (): React.JSX.Element => {
           <div className="flex items-center justify-center gap-4">
             <button
               onClick={() => playPrev()}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-[0.92] text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.06]"
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-[color,background-color,transform] duration-ui ease-primary cursor-pointer active:scale-95 text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.06]"
             >
               <SkipBack className="w-4 h-4 fill-current" />
             </button>
 
             <button
               onClick={() => togglePlayPause()}
-              className="w-12 h-12 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-[0.95] bg-[var(--on-surface)] text-[var(--surface)] shadow-md"
+              className="w-12 h-12 rounded-full flex items-center justify-center transition-transform duration-ui ease-primary cursor-pointer active:scale-95 bg-[var(--on-surface)] text-[var(--surface)] shadow-md"
             >
               {isPlaying ? (
                 <Pause className="w-5 h-5 fill-current" />
@@ -140,7 +142,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
 
             <button
               onClick={() => playNext()}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer active:scale-[0.92] text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.06]"
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-[color,background-color,transform] duration-ui ease-primary cursor-pointer active:scale-95 text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.06]"
             >
               <SkipForward className="w-4 h-4 fill-current" />
             </button>
@@ -158,10 +160,10 @@ export const MiniPlayerView = (): React.JSX.Element => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 z-20 flex flex-col p-4 app-region-no-drag backdrop-blur-3xl bg-[var(--panel-bg)]/95"
+            className="absolute inset-0 z-20 flex flex-col p-4 app-region-no-drag bg-[var(--panel-bg)]"
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-serif text-lg">Up Next</h3>
+              <h3 className="font-kissa-editorial text-lg text-[var(--on-surface)]">Up Next</h3>
               <button
                 onClick={() => setShowQueue(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/10 dark:hover:bg-white/10"

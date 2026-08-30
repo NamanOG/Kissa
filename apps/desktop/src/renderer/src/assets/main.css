@@ -1,6 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+  font-family: 'Inter';
+  src: url('./fonts/InterVariable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -23,6 +31,15 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+    --ease-linear: linear;
+    --duration-instant: 75ms;
+    --duration-micro: 150ms;
+    --duration-ui: 280ms;
+    --duration-content: 400ms;
+    --duration-artwork: 600ms;
+    --duration-ambient: 1500ms;
   }
   .dark {
     --background: 20 22% 7%;
@@ -128,22 +145,6 @@
     -webkit-app-region: no-drag;
   }
 
-  .animate-eq-1 {
-    animation: equalizer-bar-1 0.75s ease-in-out infinite;
-  }
-  .animate-eq-2 {
-    animation: equalizer-bar-2 0.55s ease-in-out infinite;
-  }
-  .animate-eq-3 {
-    animation: equalizer-bar-3 0.85s ease-in-out infinite;
-  }
-  .animate-eq-4 {
-    animation: equalizer-bar-4 0.65s ease-in-out infinite;
-  }
-  .animate-eq-5 {
-    animation: equalizer-bar-5 0.9s ease-in-out infinite;
-  }
-
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
@@ -151,51 +152,14 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-
-  .ambient-room {
-    background:
-      radial-gradient(ellipse 48% 44% at 22% 28%, rgba(169, 107, 69, 0.22) 0%, transparent 68%),
-      radial-gradient(ellipse 46% 42% at 79% 33%, rgba(112, 77, 58, 0.23) 0%, transparent 70%),
-      radial-gradient(ellipse 44% 48% at 59% 78%, rgba(178, 126, 81, 0.12) 0%, transparent 74%),
-      linear-gradient(135deg, #1a1412 0%, #211916 48%, #151110 100%);
-    animation: ambient-drift 32s ease-in-out infinite alternate;
-    will-change: transform;
-  }
-}
-
-@keyframes equalizer-bar-1 {
-  0%, 100% { height: 4px; opacity: 0.6; }
-  50% { height: 14px; opacity: 1; }
-}
-@keyframes equalizer-bar-2 {
-  0%, 100% { height: 12px; opacity: 0.9; }
-  50% { height: 5px; opacity: 0.6; }
-}
-@keyframes equalizer-bar-3 {
-  0%, 100% { height: 6px; opacity: 0.7; }
-  50% { height: 16px; opacity: 1; }
-}
-@keyframes equalizer-bar-4 {
-  0%, 100% { height: 14px; opacity: 1; }
-  50% { height: 6px; opacity: 0.6; }
-}
-@keyframes equalizer-bar-5 {
-  0%, 100% { height: 5px; opacity: 0.6; }
-  50% { height: 11px; opacity: 0.85; }
-}
-
-@keyframes ambient-drift {
-  from { transform: translate3d(-1.5%, -1%, 0) scale(1.02); }
-  to { transform: translate3d(1.5%, 1%, 0) scale(1.06); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ambient-room,
-  .animate-eq-1,
-  .animate-eq-2,
-  .animate-eq-3,
-  .animate-eq-4,
-  .animate-eq-5 {
-    animation: none;
+  :root {
+    --duration-micro: 0ms;
+    --duration-ui: 0ms;
+    --duration-content: 0ms;
+    --duration-artwork: 150ms;
+    --duration-ambient: 300ms;
   }
 }

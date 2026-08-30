@@ -18,27 +18,34 @@ declare module '*.svg' {
   export default src
 }
 
-import type { ElectronAPI } from '@electron-toolkit/preload'
+
 import type { SystemMediaPayload } from '../../types/media'
 import type { LyricsRequest, LyricsResponse } from '../../types/lyrics'
 
-export interface PhonoSystemMediaAPI {
+export interface KissaSystemMediaAPI {
   getSystemMedia: () => Promise<SystemMediaPayload | null>
   getLyrics: (request: LyricsRequest) => Promise<LyricsResponse | null>
   onSystemMediaUpdate: (callback: (data: SystemMediaPayload | null) => void) => () => void
-  setVolume: (volume: number) => Promise<void>
   getVolume: () => Promise<{ master: number; isMuted: boolean } | null>
+  setProgress: (progress: number, mode?: 'normal' | 'paused' | 'error' | 'none') => Promise<void>
+  setThumbarButtons: (isPlaying: boolean) => Promise<void>
+  onTrayAction: (callback: (action: string) => void) => () => void
+  exportShare: (options: any) => Promise<boolean>
+  getSharePayload: () => Promise<any>
+  sendShareReady: (success: boolean) => Promise<void>
   mediaPlayPause: () => Promise<void>
   mediaNext: () => Promise<void>
   mediaPrev: () => Promise<void>
   openExternal?: (url: string) => Promise<void>
   getAppVersion?: () => Promise<string>
   toggleMiniPlayer?: (isMini: boolean, alwaysOnTop?: boolean) => Promise<void>
+  setFullScreen: (value: boolean) => Promise<boolean>
+  onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void
 }
 
 declare global {
   interface Window {
-    electron: ElectronAPI & PhonoSystemMediaAPI
+    electron: KissaSystemMediaAPI
     __kissaMediaCommandCooldown?: () => void
     __kissaIsDraggingVolume?: boolean
   }

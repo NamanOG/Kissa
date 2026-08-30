@@ -1,14 +1,14 @@
 import React from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
-import { Quote, Settings, HelpCircle, Keyboard, ListMusic, Minimize2, Maximize2, Disc3 } from 'lucide-react'
-import phonoLogo from '@renderer/media/phono_logo.png'
+import { Quote, Settings, HelpCircle, Keyboard, Minimize2, Maximize2, Disc3 } from 'lucide-react'
+import kissaLogo from '@renderer/media/kissa_logo.png'
 
 export interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 /**
- * Minimalist Vertical Navigation Rail.
- * The Kissa emblem serves as the primary Home / Turntable Deck button.
+ * Integrated Hardware Navigation Panel.
+ * Functions as the left side of the physical receiver chassis.
  */
 export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
   ({ className, ...props }, ref) => {
@@ -21,180 +21,161 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const isKeyboardHelpOpen = usePlayerStore((s) => s.isKeyboardHelpOpen)
     const toggleKeyboardHelp = usePlayerStore((s) => s.toggleKeyboardHelp)
     const isMiniPlayer = usePlayerStore((s) => s.isMiniPlayer)
-    const theme = usePlayerStore((s) => s.theme)
-    const updateAvailable = usePlayerStore((s) => s.updateAvailable)
+    const hasUpdateAvailable = usePlayerStore((s) => s.hasUpdateAvailable)
 
     return (
       <aside
         ref={ref}
         className={cn(
-          'z-40 m-3 flex h-[calc(100%-1.5rem)] w-[60px] shrink-0 flex-col items-center rounded-[1.25rem] py-5 select-none transition-colors transform-gpu will-change-transform border',
+          'z-40 flex flex-col items-center py-6 select-none transition-[background-color,border-color,box-shadow,transform] duration-ui ease-primary transform-gpu will-change-transform border',
+          'my-4 ml-4 mr-2 h-[calc(100%-32px)] w-[68px] min-[900px]:w-[76px] shrink-0 rounded-[38px] backdrop-blur-2xl shadow-2xl',
           className
         )}
         style={{
-          backgroundColor: 'var(--panel-bg)',
           borderColor: 'var(--panel-border)',
+          backgroundColor: 'var(--panel-bg)',
           boxShadow: 'var(--panel-shadow)'
         }}
         {...props}
       >
         {/* Navigation Items */}
-        <nav className="flex flex-col items-center space-y-5 w-full px-2">
-          {/* Primary Home / Turntable Deck View (Brand Logo Button) */}
+        <nav className="flex flex-col items-center space-y-4 w-full">
+          {/* DECK */}
           <button
-            aria-label="Home / Turntable Deck View"
             type="button"
             onClick={() => setActiveView('deck')}
-            className="group relative w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all active:scale-95"
+            className={cn(
+              "relative w-full flex flex-col items-center justify-center py-3 gap-1.5 cursor-pointer transition-colors active:scale-95",
+              activeView === 'deck' ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
+            )}
             title="Kissa (Home Deck)"
           >
-            {/* Subtle Active Indicator */}
             {activeView === 'deck' && (
-              <div
-                className="absolute inset-0 rounded-full transition-all border border-white/[0.08] bg-white/[0.03]"
-              />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
             )}
-            <div className="relative w-9 h-9 rounded-full overflow-hidden border border-white/[0.14] shadow-md group-hover:scale-105 transition-transform">
-              <img
-                src={phonoLogo}
-                alt="Kissa"
-                className="w-full h-full object-cover"
-                draggable={false}
-              />
+            <div className={cn("relative w-7 h-7 min-[900px]:w-8 min-[900px]:h-8 rounded-full overflow-hidden shadow-sm transition-opacity", activeView === 'deck' ? "border border-white/20 opacity-100" : "border border-white/5 opacity-60")}>
+              <img src={kissaLogo} alt="Kissa" className="w-full h-full object-cover" draggable={false} />
             </div>
+            <span className="font-mono text-[9px] min-[900px]:text-[10px] tracking-widest font-medium uppercase mt-0.5">
+              Deck
+            </span>
           </button>
 
-          {/* Apple Music Synced Lyrics View Button */}
+          {/* LYRICS */}
           <button
-            aria-label="Live Synced Lyrics"
             type="button"
             onClick={() => setActiveView('lyrics')}
-            className="relative w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all group"
+            className={cn(
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95",
+              activeView === 'lyrics' ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
+            )}
             title="Live Synced Lyrics"
           >
             {activeView === 'lyrics' && (
-              <div
-                className="absolute inset-0 rounded-full transition-all border border-[var(--on-surface)]/[0.08] bg-[var(--on-surface)]/[0.03]"
-              />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
             )}
-            <Quote
-              className={cn(
-                'w-5 h-5 transition-colors',
-                activeView === 'lyrics' ? 'text-[var(--accent)]' : 'text-[var(--muted)] group-hover:text-[var(--on-surface)]'
-              )}
-              strokeWidth={1.75}
-            />
-            {activeView === 'lyrics' && (
-              <div
-                className="absolute w-1.5 h-1.5 rounded-full bg-[var(--accent)]"
-              />
-            )}
+            <Quote className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={activeView === 'lyrics' ? 2 : 1.5} />
+            <span className="font-mono text-[9px] min-[900px]:text-[10px] tracking-widest font-medium uppercase">
+              Lyrics
+            </span>
           </button>
 
-
-          {/* Record Shelf Button */}
+          {/* SHELF */}
           <button
-            aria-label="My Records Shelf"
             type="button"
             onClick={() => setActiveView('shelf')}
-            className="relative w-10 h-10 rounded-full flex items-center justify-center cursor-pointer transition-all group mt-2"
+            className={cn(
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95",
+              activeView === 'shelf' ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
+            )}
             title="My Records"
           >
             {activeView === 'shelf' && (
-              <div
-                className="absolute inset-0 rounded-full transition-all border border-[var(--on-surface)]/[0.08] bg-[var(--on-surface)]/[0.03]"
-              />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
             )}
-            <Disc3
-              className={cn(
-                'w-5 h-5 transition-colors',
-                activeView === 'shelf' ? 'text-[var(--accent)]' : 'text-[var(--muted)] group-hover:text-[var(--on-surface)]'
-              )}
-              strokeWidth={1.75}
-            />
-            {activeView === 'shelf' && (
-              <div className="absolute w-1.5 h-1.5 rounded-full mt-7 bg-[var(--accent)]" />
-            )}
+            <Disc3 className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={activeView === 'shelf' ? 2 : 1.5} />
+            <span className="font-mono text-[9px] min-[900px]:text-[10px] tracking-widest font-medium uppercase">
+              Shelf
+            </span>
           </button>
         </nav>
 
-        {/* Bottom: Guide / Help & Settings */}
-        <div className="mt-auto w-full px-2 flex flex-col items-center gap-2">
-          {/* Mini Player Mode Button */}
+        {/* Bottom Panel Controls */}
+        <div className="mt-auto w-full flex flex-col items-center gap-2">
+          {/* Mini Player */}
           <button
-            aria-label="Toggle Mini Player"
             type="button"
             onClick={() => usePlayerStore.getState().toggleMiniPlayer()}
             className={cn(
-              'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.96] mb-2',
-              isMiniPlayer
-                ? 'bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/40'
-                : 'text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--accent)]/[0.05]'
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95",
+              isMiniPlayer ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
             )}
-            style={isMiniPlayer ? { boxShadow: '0 0 12px var(--accent)' } : {}}
             title="Toggle Mini Player"
           >
+            {isMiniPlayer && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+            )}
             {isMiniPlayer ? (
-              <Maximize2 className="w-5 h-5" strokeWidth={1.75} />
+              <Maximize2 className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isMiniPlayer ? 2 : 1.5} />
             ) : (
-              <Minimize2 className="w-5 h-5" strokeWidth={1.75} />
+              <Minimize2 className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isMiniPlayer ? 2 : 1.5} />
             )}
           </button>
 
-          {/* Welcome Guide / Introduction Button */}
+          {/* Guide */}
           <button
-            aria-label="Welcome Guide & Overview"
             type="button"
             onClick={() => setIsOnboardingOpen(true)}
             className={cn(
-              'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.96]',
-              isOnboardingOpen
-                ? 'bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/40'
-                : 'text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--accent)]/[0.05]'
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95",
+              isOnboardingOpen ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
             )}
-            style={isOnboardingOpen ? { boxShadow: '0 0 12px var(--accent)' } : {}}
-            title="Open Welcome Guide & Instructions"
+            title="Guide & Introduction"
           >
-            <HelpCircle className="w-5 h-5" strokeWidth={1.75} />
+            {isOnboardingOpen && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+            )}
+            <HelpCircle className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isOnboardingOpen ? 2 : 1.5} />
           </button>
 
-          {/* Keyboard Shortcuts Button */}
+          {/* Keyboard Shortcuts */}
           <button
-            aria-label="Keyboard Shortcuts"
             type="button"
             onClick={toggleKeyboardHelp}
             className={cn(
-              'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.96]',
-              isKeyboardHelpOpen
-                ? 'bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/40'
-                : 'text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--accent)]/[0.05]'
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95",
+              isKeyboardHelpOpen ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
             )}
-            style={isKeyboardHelpOpen ? { boxShadow: '0 0 12px var(--accent)' } : {}}
             title="Keyboard Shortcuts"
           >
-            <Keyboard className="w-5 h-5" strokeWidth={1.75} />
+            {isKeyboardHelpOpen && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+            )}
+            <Keyboard className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isKeyboardHelpOpen ? 2 : 1.5} />
           </button>
 
-          {/* Settings Button */}
+          {/* Settings */}
           <button
-            aria-label="Settings"
             type="button"
             onClick={toggleSettings}
             className={cn(
-              'w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer active:scale-[0.96]',
-              isSettingsOpen
-                ? 'bg-[var(--accent)]/15 text-[var(--accent)] border border-[var(--accent)]/40'
-                : 'text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--accent)]/[0.05]'
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95",
+              isSettingsOpen ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
             )}
-            style={isSettingsOpen ? { boxShadow: '0 0 12px var(--accent)' } : {}}
-            title="Open Preferences & Environments"
+            title="Preferences"
           >
+            {isSettingsOpen && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+            )}
             <div className="relative">
-              <Settings className="w-5 h-5" strokeWidth={1.75} />
-              {updateAvailable && !isSettingsOpen && (
-                <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-500 rounded-full border-2" style={{ borderColor: 'var(--panel-bg)' }} />
+              <Settings className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isSettingsOpen ? 2 : 1.5} />
+              {hasUpdateAvailable && (
+                <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse" />
               )}
             </div>
+            <span className="font-mono text-[9px] min-[900px]:text-[10px] tracking-widest font-medium uppercase mt-0.5">
+              Config
+            </span>
           </button>
         </div>
       </aside>
@@ -204,3 +185,4 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
 )
 
 Sidebar.displayName = 'Sidebar'
+

@@ -207,7 +207,7 @@ export const PowerControl = memo(({ active, onClick }: { active: boolean; onClic
       >
         <div
           className={cn(
-            'w-full h-full rounded-full border border-black/85 flex items-center justify-center transition-all duration-75',
+            'w-full h-full rounded-full border border-black/85 flex items-center justify-center transition duration-instant ease-primary',
             'bg-gradient-to-b from-[#2b221d] via-[#1e1713] to-[#120d0a]',
             isPressed
               ? 'translate-y-[1px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.9)]'
@@ -218,7 +218,7 @@ export const PowerControl = memo(({ active, onClick }: { active: boolean; onClic
         >
           {/* Micro-Pinhole LED Status Indicator (No glow halo) */}
           <div
-            className="w-1.5 h-1.5 rounded-full border border-black/90 transition-colors duration-150"
+            className="w-1.5 h-1.5 rounded-full border border-black/90 transition-colors duration-micro ease-primary"
             style={{
               backgroundColor: active ? '#22c55e' : '#14100e'
             }}
@@ -264,7 +264,7 @@ export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick:
           onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerLeave}
           aria-label="33 RPM"
-          className="relative w-5 h-4.5 rounded-[1.5px] border border-black/85 focus:outline-none flex items-center justify-center cursor-pointer transition-all duration-75 bg-gradient-to-b from-[#281f1a] to-[#140e0b]"
+          className="relative w-5 h-4.5 rounded-[1.5px] border border-black/85 focus:outline-none flex items-center justify-center cursor-pointer transition duration-instant ease-primary bg-gradient-to-b from-[#281f1a] to-[#140e0b]"
           style={{
             transform: pressedBtn === '33' ? 'translateY(1px)' : rpm === '33' ? 'translateY(0.5px)' : 'translateY(0)',
             boxShadow: pressedBtn === '33' || rpm === '33'
@@ -274,7 +274,7 @@ export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick:
         >
           <span
             className={cn(
-              'font-mono text-[7px] font-bold tracking-wider transition-colors duration-150 pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]',
+              'font-mono text-[7px] font-bold tracking-wider transition-colors duration-micro ease-primary pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]',
               rpm === '33' ? 'text-[#d7a76c]' : 'text-[#5a4d42]'
             )}
           >
@@ -290,7 +290,7 @@ export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick:
           onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerLeave}
           aria-label="45 RPM"
-          className="relative w-5 h-4.5 rounded-[1.5px] border border-black/85 focus:outline-none flex items-center justify-center cursor-pointer transition-all duration-75 bg-gradient-to-b from-[#281f1a] to-[#140e0b]"
+          className="relative w-5 h-4.5 rounded-[1.5px] border border-black/85 focus:outline-none flex items-center justify-center cursor-pointer transition duration-instant ease-primary bg-gradient-to-b from-[#281f1a] to-[#140e0b]"
           style={{
             transform: pressedBtn === '45' ? 'translateY(1px)' : rpm === '45' ? 'translateY(0.5px)' : 'translateY(0)',
             boxShadow: pressedBtn === '45' || rpm === '45'
@@ -300,7 +300,7 @@ export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick:
         >
           <span
             className={cn(
-              'font-mono text-[7px] font-bold tracking-wider transition-colors duration-150 pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]',
+              'font-mono text-[7px] font-bold tracking-wider transition-colors duration-micro ease-primary pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]',
               rpm === '45' ? 'text-[#d7a76c]' : 'text-[#5a4d42]'
             )}
           >
@@ -359,7 +359,7 @@ export const StartStopControl = memo(({ isPlaying, onClick }: { isPlaying: boole
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
           aria-label={isPlaying ? 'Stop Motor' : 'Start Motor'}
-          className="relative w-11 h-5.5 rounded-[1.5px] border border-black/85 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d7a76c] cursor-pointer flex items-center justify-center transition-all duration-75 bg-gradient-to-b from-[#281f1a] to-[#140e0b]"
+          className="relative w-11 h-5.5 rounded-[1.5px] border border-black/85 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d7a76c] cursor-pointer flex items-center justify-center transition duration-instant ease-primary bg-gradient-to-b from-[#281f1a] to-[#140e0b]"
           style={{
             transform: isPressed ? 'translateY(1px)' : 'translateY(0)',
             boxShadow: isPressed
@@ -417,24 +417,26 @@ export const MatchAlbumControl = memo(() => {
           onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerLeave}
           aria-label={isAdaptive ? 'Disable Match Album' : 'Enable Match Album'}
-          className="relative w-[90px] h-8 rounded-[2px] border border-black/90 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d7a76c] cursor-pointer flex items-center justify-center transition-all duration-100 bg-[#1e1916]"
+          className={cn(
+            'relative w-[92px] h-8 rounded-[2px] border border-black/90 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d7a76c] cursor-pointer flex items-center justify-center transition duration-micro ease-primary',
+            isAdaptive ? 'bg-[#221c17]' : 'bg-[#1e1916]'
+          )}
           style={{
             transform: (isPressed || isAdaptive) ? 'translateY(1.5px)' : 'translateY(0)',
             boxShadow: (isPressed || isAdaptive)
-              ? 'inset 0 1.5px 3px rgba(0,0,0,0.95), inset 0 0 1px rgba(0,0,0,0.8)'
+              ? 'inset 0 1.5px 3px rgba(0,0,0,0.95), inset 0 0 8px rgba(215,167,108,0.08)'
               : '0 1.5px 3px rgba(0,0,0,0.85), inset 0 0.5px 0.5px rgba(255,255,255,0.06)'
           }}
         >
-          {/* Hardware LED Pinhole Indicator */}
-          <div
-            className="absolute left-2.5 w-1.5 h-1.5 rounded-full border border-black/70 transition-colors duration-200"
-            style={{
-              backgroundColor: isAdaptive ? '#e8a95d' : '#221a14',
-              boxShadow: isAdaptive ? 'inset 0 0.5px 1px rgba(255,255,255,0.6)' : 'inset 0 1px 2px rgba(0,0,0,0.9)'
-            }}
-          />
-          {/* Silkscreened Label */}
-          <span className="font-mono text-[8px] font-bold tracking-[0.18em] text-[#9a8c7f] uppercase pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)] ml-3">
+          {/* Silkscreened Backlit Label */}
+          <span
+            className={cn(
+              'font-mono text-[8px] font-bold tracking-[0.2em] uppercase pointer-events-none transition-colors duration-micro ease-primary',
+              isAdaptive
+                ? 'text-[#e8a95d] drop-shadow-[0_0_6px_rgba(232,169,93,0.4)]'
+                : 'text-[#8a7c6f] drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]'
+            )}
+          >
             MATCH ALBUM
           </span>
         </button>
@@ -485,8 +487,11 @@ export const MechanicalControls = memo(({ className, style }: MechanicalControls
 
   return (
     <div
-      className={cn('absolute inset-0 pointer-events-none select-none z-50', className)}
-      style={style}
+      className={cn('absolute inset-0 pointer-events-none select-none z-50 transition-opacity duration-instant ease-primary', className)}
+      style={{
+        ...style,
+        opacity: 'calc(0.35 + 0.65 * var(--room-illumination, 1))'
+      }}
     >
       {/* ── Top-Left Hardware Anchor: Power Switch ── */}
       <div className="absolute" style={{ left: '4.5%', top: '7%' }}>

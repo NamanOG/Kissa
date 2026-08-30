@@ -18,7 +18,7 @@ export const ThemeAtmospherePreview = memo(
     return (
       <div
         className={cn(
-          'relative w-full aspect-[16/10] rounded-xl overflow-hidden select-none transition-all duration-300',
+          'relative w-full aspect-[16/10] rounded-xl overflow-hidden select-none transition-[border-color,box-shadow] duration-ui ease-primary',
           'border shadow-inner bg-[#141210]',
           isSelected
             ? 'border-[#d7a76c] shadow-[0_4px_20px_rgba(215,167,108,0.25)] ring-1 ring-[#d7a76c]/40'
@@ -30,7 +30,7 @@ export const ThemeAtmospherePreview = memo(
         <img
           src={theme.image}
           alt={theme.name}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover"
           draggable={false}
           loading="lazy"
         />
@@ -39,9 +39,9 @@ export const ThemeAtmospherePreview = memo(
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent pointer-events-none" />
 
         {/* Top-Left: Number Badge */}
-        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/15 shadow-sm">
+        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-[var(--panel-bg)] border border-[var(--panel-border)] shadow-sm">
           <span className="w-1.5 h-1.5 rounded-full bg-[#d7a76c]" />
-          <span className="font-mono text-[8px] font-bold uppercase tracking-[0.16em] text-[#f5efe6]">
+          <span className="text-[9.5px] font-kissa-chassis uppercase tracking-[0.1em] text-[var(--on-surface)] font-bold">
             ENV {theme.number}
           </span>
         </div>

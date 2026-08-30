@@ -84,8 +84,8 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           'w-8 h-8 min-[900px]:w-9 min-[900px]:h-9 flex items-center justify-center rounded-full transition-colors relative cursor-pointer active:scale-95',
-          timeLeft !== null 
-            ? 'text-[var(--accent)] bg-[var(--accent)]/15' 
+          timeLeft !== null
+            ? 'text-[var(--accent)] bg-[var(--accent)]/15'
             : 'text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.08]'
         )}
         title="Sleep Timer"
@@ -106,18 +106,18 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-            className="absolute bottom-[120%] right-0 w-64 rounded-2xl p-5 z-50 overflow-hidden bg-[#141216]/96 border border-white/[0.12] backdrop-blur-3xl shadow-[0_32px_80px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.12)]"
+            className="absolute bottom-[120%] right-0 w-64 rounded-2xl p-5 z-50 overflow-hidden bg-[var(--panel-bg)] border border-[var(--panel-border)] shadow-[var(--panel-shadow)]"
           >
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-70" />
-            
+
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-white">
                 <Clock className="w-4 h-4 text-[var(--accent)]" strokeWidth={1.5} />
                 <h3 className="font-serif text-sm font-medium">Sleep Timer</h3>
               </div>
-              <button 
-                type="button" 
-                onClick={() => setIsOpen(false)} 
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
                 className="w-6 h-6 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
@@ -145,7 +145,7 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
                     +
                   </button>
                 </div>
-                
+
                 <div className="grid grid-cols-4 gap-2">
                   {[15, 30, 45, 60].map((m) => (
                     <button
@@ -153,9 +153,9 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
                       type="button"
                       onClick={() => setTargetMinutes(m)}
                       className={cn(
-                        'py-1.5 text-xs font-mono rounded-lg transition-all active:scale-95 cursor-pointer border',
-                        targetMinutes === m 
-                          ? 'bg-[var(--accent)]/20 text-[var(--accent)] border-[var(--accent)]/50 font-bold shadow-[0_0_8px_var(--accent)]/20' 
+                        'py-1.5 text-xs font-mono rounded-lg transition-[color,background-color,transform] duration-ui ease-primary active:scale-95 cursor-pointer border',
+                        targetMinutes === m
+                          ? 'bg-[var(--accent)]/20 text-[var(--accent)] border-[var(--accent)]/50 font-bold shadow-[0_0_8px_var(--accent)]/20'
                           : 'bg-black/30 text-zinc-400 border-white/10 hover:text-white hover:bg-white/[0.08]'
                       )}
                     >
@@ -167,7 +167,7 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
                 <button
                   type="button"
                   onClick={handleStart}
-                  className="w-full py-2.5 bg-[var(--accent)] hover:opacity-90 active:scale-[0.98] text-black font-bold text-sm rounded-xl transition-all cursor-pointer shadow-[0_4px_16px_var(--accent)] shadow-black/20"
+                  className="w-full py-2.5 bg-[var(--accent)] hover:opacity-90 active:scale-[0.98] text-black font-bold text-sm rounded-xl transition-[opacity,transform] duration-ui ease-primary cursor-pointer shadow-[0_4px_16px_var(--accent)] shadow-black/20"
                 >
                   Start Timer
                 </button>

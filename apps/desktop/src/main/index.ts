@@ -1,7 +1,9 @@
 import { app, BrowserWindow } from 'electron'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { WindowManager } from './window/WindowManager'
+import { TrayManager } from './window/TrayManager'
 import { MediaDetectionService } from './services/MediaDetectionService'
+import { ShareManager } from './services/ShareManager'
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -19,8 +21,13 @@ app.whenReady().then(() => {
   MediaDetectionService.getInstance().start()
 
   // Use the dedicated WindowManager module
-  WindowManager.getInstance().createMainWindow()
+  const isHidden = process.argv.includes('--hidden')
+  WindowManager.getInstance().createMainWindow(isHidden)
   WindowManager.getInstance().setupIpcHandlers()
+  
+  ShareManager.getInstance().init()
+
+  TrayManager.getInstance().init()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -39,7 +46,8 @@ app.on('before-quit', () => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+  const wm = WindowManager.getInstance()
+  if (process.platform !== 'darwin' && (!wm.isBackgroundEnabled || wm.isQuitting)) {
     app.quit()
   }
 })

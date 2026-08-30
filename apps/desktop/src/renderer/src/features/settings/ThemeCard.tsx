@@ -23,10 +23,10 @@ export const ThemeCard = memo(({ theme, isSelected, onSelect }: ThemeCardProps):
     >
       <div 
         className={cn(
-          "relative w-full aspect-[4/3] overflow-hidden rounded-xl transition-transform duration-200 ease-out will-change-transform",
+          "relative w-full aspect-[4/3] overflow-hidden rounded-xl transition-transform duration-ui ease-primary will-change-transform",
           isSelected 
             ? "ring-[2.5px] ring-[var(--accent)] ring-offset-2 ring-offset-[#141216] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.6)]" 
-            : "opacity-70 group-hover:opacity-100 group-hover:scale-[1.01] shadow-md border border-white/10"
+            : "opacity-70 group-hover:opacity-100 shadow-md border border-[var(--panel-border)]"
         )}
       >
         <img
@@ -40,7 +40,7 @@ export const ThemeCard = memo(({ theme, isSelected, onSelect }: ThemeCardProps):
       <div className="mt-2 text-center">
         <h4 
           className={cn(
-            "text-[12px] tracking-wide transition-colors duration-150",
+            "text-[12px] tracking-wide transition-colors duration-micro ease-primary",
             isSelected ? "text-white font-bold" : "text-zinc-400 group-hover:text-white font-medium"
           )}
         >

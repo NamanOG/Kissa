@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageEnhance
 build_dir = os.path.dirname(os.path.abspath(__file__))
 media_dir = os.path.join(build_dir, "..", "src", "renderer", "src", "media")
 hero_path = os.path.join(media_dir, "kissa_welcome_hero.jpg")
-logo_path = os.path.join(media_dir, "phono_logo.png")
+logo_path = os.path.join(media_dir, "kissa_logo.png")
 
 # 1. Generate installerSidebar.bmp (164 x 314)
 sidebar_w, sidebar_h = 164, 314

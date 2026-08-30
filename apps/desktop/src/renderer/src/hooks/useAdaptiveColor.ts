@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 
-interface AdaptivePalette {
+export interface AdaptivePalette {
   accent: string
   panelBg: string
   deckBg: string
@@ -11,6 +11,12 @@ interface AdaptivePalette {
   ambientPrimary: string
   ambientSecondary: string
   ambientHighlight: string
+  spatialPrimaryX: string
+  spatialPrimaryY: string
+  spatialSecondaryX: string
+  spatialSecondaryY: string
+  spatialHighlightX: string
+  spatialHighlightY: string
 }
 
 const colorCache = new Map<string, AdaptivePalette>()
@@ -50,20 +56,14 @@ function colorDist(r1: number, g1: number, b1: number, r2: number, g2: number, b
   return Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2)
 }
 
-export function useAdaptiveColor() {
-  const artworkUrl = usePlayerStore((s) => s.currentTrack?.artworkUrl)
-  const theme = usePlayerStore((s) => s.theme)
-  const [colors, setColors] = useState<AdaptivePalette | null>(null)
-
-  useEffect(() => {
-    if (theme !== 'adaptive' || !artworkUrl) {
-      setColors(null)
-      return
-    }
-
+/**
+ * Pure function to extract an AdaptivePalette from an image URL.
+ * Safe to call outside of React lifecycle. Returns cached result if available.
+ */
+export function extractColorsFromImage(artworkUrl: string): Promise<AdaptivePalette> {
+  return new Promise((resolve, reject) => {
     if (colorCache.has(artworkUrl)) {
-      setColors(colorCache.get(artworkUrl)!)
-      return
+      return resolve(colorCache.get(artworkUrl)!)
     }
 
     const img = new Image()
@@ -74,7 +74,7 @@ export function useAdaptiveColor() {
       try {
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d', { willReadFrequently: true })
-        if (!ctx) return
+        if (!ctx) return reject(new Error('Canvas context not available'))
 
         canvas.width = 64
         canvas.height = 64
@@ -84,7 +84,7 @@ export function useAdaptiveColor() {
         
         // Lightweight distance-based clustering
         const clusters: { r: number, g: number, b: number, count: number, weight: number, sumX: number, sumY: number }[] = []
-        const DIST_THRESH = 35 // RGB distance threshold
+        const DIST_THRESH = 35
         
         let totalLuminance = 0
         let validPixels = 0
@@ -95,7 +95,7 @@ export function useAdaptiveColor() {
           const b = imageData[i + 2]
           const a = imageData[i + 3]
           
-          if (a < 128) continue; // Skip transparent pixels
+          if (a < 128) continue
 
           const max = Math.max(r, g, b)
           const min = Math.min(r, g, b)
@@ -105,13 +105,11 @@ export function useAdaptiveColor() {
           totalLuminance += l
           validPixels++
           
-          // Ignore pitch black and pure white/blown-out pixels for palette generation
-          if (l < 15 || l > 240) continue;
+          if (l < 15 || l > 240) continue
           
           const x = (i / 4) % 64
           const y = Math.floor((i / 4) / 64)
 
-          // Visual Salience: Exponentially reward chroma, favor midtones over extremes
           const chromaWeight = Math.pow(s, 2) * 5.0
           const luminanceWeight = Math.sin((l / 255) * Math.PI) * 1.5
           const pixelSalience = chromaWeight + luminanceWeight
@@ -138,7 +136,7 @@ export function useAdaptiveColor() {
 
         clusters.sort((a, b) => b.weight - a.weight)
         
-        const avgLuminance = validPixels > 0 ? (totalLuminance / validPixels) / 2.55 : 0 // 0-100 scale
+        const avgLuminance = validPixels > 0 ? (totalLuminance / validPixels) / 2.55 : 0
 
         let primary = { h: 0, s: 0, l: 0, x: 50, y: 50 }
         let secondary = { h: 0, s: 0, l: 0, x: 50, y: 50 }
@@ -147,7 +145,6 @@ export function useAdaptiveColor() {
         if (clusters.length > 0) {
           const pC = clusters[0]
           const [ph, ps, pl] = rgbToHsl(pC.r, pC.g, pC.b)
-          // Map center of mass to 0-100%, and expand outward slightly to reach corners
           const mapPos = (val: number, max: number) => {
             const pct = (val / max) * 100
             return Math.max(0, Math.min(100, pct < 50 ? pct * 0.8 : 50 + (pct - 50) * 1.2))
@@ -184,53 +181,30 @@ export function useAdaptiveColor() {
           highlight = { h: 0, s: 0, l: avgLuminance, x: 50, y: 50 }
         }
 
-        // --- ART-DIRECTED CINEMATIC LIGHTING MAPPING ---
-        
-        // Palette Richness Calculation
         const getHueDist = (h1: number, h2: number) => {
           const diff = Math.abs(h1 - h2)
           return Math.min(diff, 360 - diff)
         }
         
-        // Hue variance across the triangle (max 180 = 1.0)
         const maxHueSpread = Math.max(getHueDist(primary.h, secondary.h), getHueDist(primary.h, highlight.h), getHueDist(secondary.h, highlight.h))
         const hueVariance = maxHueSpread / 180
-        
-        // Average Saturation and Luminance
         const avgSat = (primary.s + secondary.s + highlight.s) / 300
         const avgLum = (primary.l + secondary.l + highlight.l) / 300
-        
-        // High richness = colorful, diverse, bright enough to emit light.
-        // Low richness = dark, monochrome, or completely desaturated.
         const richness = Math.min(1, (hueVariance * 0.4) + (avgSat * 0.4) + (avgLum * 0.2))
 
-        // Ceiling for ambient opacities to avoid neon look (max primary ~42%)
         const baseIntensity = 0.15
         const intensityRange = 0.27
         const primaryIntensity = baseIntensity + (richness * intensityRange)
-        
         const secondaryIntensity = primaryIntensity * 0.7
         const highlightIntensity = primaryIntensity * 0.5
 
         const baseL = 3 + (avgLuminance / 100) * 5
         const baseTemp = hslToRgbString(primary.h, Math.min(primary.s, 15), baseL)
 
-        // Light Pools
         const primaryPool = hslToRgbString(primary.h, Math.min(primary.s, 70), Math.min(primary.l, 50), primaryIntensity)
         const secondaryPool = hslToRgbString(secondary.h, Math.min(secondary.s, 75), Math.min(secondary.l, 55), secondaryIntensity)
         const highlightPool = hslToRgbString(highlight.h, Math.min(highlight.s, 85), Math.min(Math.max(highlight.l, 50), 70), highlightIntensity)
 
-        // --- KISSA HARDWARE IDENTITY (DUAL REFLECTION) ---
-        // Instead of overriding the CSS variable with a gradient (which breaks transition snapping),
-        // we compute a single solid mixed color that subtly shifts the temperature of the chassis 
-        // toward a blend of primary and secondary, keeping it incredibly dark and metallic.
-        // Note: A true dual-reflection gradient would require DOM changes. Mixing the hues in a weighted average achieves the physical reflection feeling securely.
-        
-        // We blend primary and secondary hue. To blend HSL, we must convert to vectors or RGB.
-        // For simplicity, we just use a small saturation of the primary hue on the deck,
-        // and a small saturation of the secondary hue if available, mixing them based on lightness.
-        // Actually, blending RGB is safest.
-        
         const mixRgb = (h1: number, s1: number, l1: number, h2: number, s2: number, l2: number, ratio: number) => {
           const hslToRgb = (h: number, s: number, l: number) => {
              s /= 100; l /= 100;
@@ -244,17 +218,13 @@ export function useAdaptiveColor() {
           return [r1 * (1 - ratio) + r2 * ratio, g1 * (1 - ratio) + g2 * ratio, b1 * (1 - ratio) + b2 * ratio]
         }
         
-        // Very low saturation mix for the chassis
         const [deckR, deckG, deckB] = mixRgb(primary.h, 15, baseL + 1, secondary.h, 15, baseL + 1, 0.3)
         const deckBg = `rgb(${deckR.toFixed(0)}, ${deckG.toFixed(0)}, ${deckB.toFixed(0)})`
         
         const [panelR, panelG, panelB] = mixRgb(primary.h, 15, baseL + 3, secondary.h, 15, baseL + 3, 0.3)
         const panelBg = `rgb(${panelR.toFixed(0)}, ${panelG.toFixed(0)}, ${panelB.toFixed(0)})`
         
-        // UI Accents
         const accent = hslToRgbString(highlight.h, highlight.s, Math.max(highlight.l, 55))
-        
-        // Typography
         const onSurface = hslToRgbString(primary.h, 10, 92)
         const muted = hslToRgbString(primary.h, 10, Math.min(65, baseL + 40))
 
@@ -267,23 +237,48 @@ export function useAdaptiveColor() {
           baseTemp,
           ambientPrimary: primaryPool,
           ambientSecondary: secondaryPool,
-          ambientHighlight: highlightPool
+          ambientHighlight: highlightPool,
+          spatialPrimaryX: `${primary.x.toFixed(1)}%`,
+          spatialPrimaryY: `${primary.y.toFixed(1)}%`,
+          spatialSecondaryX: `${secondary.x.toFixed(1)}%`,
+          spatialSecondaryY: `${secondary.y.toFixed(1)}%`,
+          spatialHighlightX: `${highlight.x.toFixed(1)}%`,
+          spatialHighlightY: `${highlight.y.toFixed(1)}%`,
         }
         
         colorCache.set(artworkUrl, newColors)
-        setColors(newColors)
-        
-        // We will pass the spatial variables via document Element style directly, independently of the palette object.
-        document.documentElement.style.setProperty('--adaptive-primary-x', `${primary.x.toFixed(1)}%`)
-        document.documentElement.style.setProperty('--adaptive-primary-y', `${primary.y.toFixed(1)}%`)
-        document.documentElement.style.setProperty('--adaptive-secondary-x', `${secondary.x.toFixed(1)}%`)
-        document.documentElement.style.setProperty('--adaptive-secondary-y', `${secondary.y.toFixed(1)}%`)
-        document.documentElement.style.setProperty('--adaptive-highlight-x', `${highlight.x.toFixed(1)}%`)
-        document.documentElement.style.setProperty('--adaptive-highlight-y', `${highlight.y.toFixed(1)}%`)
-
+        resolve(newColors)
       } catch (e) {
-        console.warn('Could not extract color from artwork', e)
+        reject(e)
       }
+    }
+    img.onerror = reject
+  })
+}
+
+export function useAdaptiveColor() {
+  const artworkUrl = usePlayerStore((s) => s.currentTrack?.artworkUrl)
+  const theme = usePlayerStore((s) => s.theme)
+  const [colors, setColors] = useState<AdaptivePalette | null>(null)
+
+  useEffect(() => {
+    if (theme !== 'adaptive' || !artworkUrl) {
+      setColors(null)
+      return
+    }
+
+    let isMounted = true
+
+    extractColorsFromImage(artworkUrl)
+      .then((palette) => {
+        if (isMounted) setColors(palette)
+      })
+      .catch((err) => {
+        console.warn('Could not extract color from artwork', err)
+      })
+
+    return () => {
+      isMounted = false
     }
   }, [artworkUrl, theme])
 
@@ -298,6 +293,12 @@ export function useAdaptiveColor() {
       document.documentElement.style.setProperty('--adaptive-ambient-primary', colors.ambientPrimary)
       document.documentElement.style.setProperty('--adaptive-ambient-secondary', colors.ambientSecondary)
       document.documentElement.style.setProperty('--adaptive-ambient-highlight', colors.ambientHighlight)
+      document.documentElement.style.setProperty('--adaptive-primary-x', colors.spatialPrimaryX)
+      document.documentElement.style.setProperty('--adaptive-primary-y', colors.spatialPrimaryY)
+      document.documentElement.style.setProperty('--adaptive-secondary-x', colors.spatialSecondaryX)
+      document.documentElement.style.setProperty('--adaptive-secondary-y', colors.spatialSecondaryY)
+      document.documentElement.style.setProperty('--adaptive-highlight-x', colors.spatialHighlightX)
+      document.documentElement.style.setProperty('--adaptive-highlight-y', colors.spatialHighlightY)
     } else {
       document.documentElement.style.removeProperty('--adaptive-accent')
       document.documentElement.style.removeProperty('--adaptive-panel-bg')
@@ -308,8 +309,6 @@ export function useAdaptiveColor() {
       document.documentElement.style.removeProperty('--adaptive-ambient-primary')
       document.documentElement.style.removeProperty('--adaptive-ambient-secondary')
       document.documentElement.style.removeProperty('--adaptive-ambient-highlight')
-      
-      // Cleanup spatial vars
       document.documentElement.style.removeProperty('--adaptive-primary-x')
       document.documentElement.style.removeProperty('--adaptive-primary-y')
       document.documentElement.style.removeProperty('--adaptive-secondary-x')

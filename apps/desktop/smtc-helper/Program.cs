@@ -2,6 +2,7 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.Media;
 using Windows.Media.Control;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -112,6 +113,45 @@ namespace SmtcHelper
         private static string _lastBroadcastJson = "";
         private static string _lastTrackKey = "";
         private static int _lastVolume = -1;
+        private static GlobalSystemMediaTransportControlsSession? _authoritySession;
+        private static GlobalSystemMediaTransportControlsSession? _challengerSession;
+        private static DateTime _challengerSince = DateTime.MinValue;
+        private static string _authorityTrackKey = "";
+        private static string _lastResolverDiagnostic = "";
+
+        private const int TierOneMusicAppScore = 80;
+        private const int TierTwoMusicAppScore = 60;
+        private const int DedicatedAppScore = 40;
+        private const int BrowserScore = 0;
+        private const int PlayingScore = 100;
+        private const int MusicPlaybackTypeBonus = 25;
+        private const int VideoPlaybackTypePenalty = -25;
+        private const int ImagePlaybackTypePenalty = -50;
+        private const int AuthorityBonus = 50;
+        private static readonly TimeSpan ChallengerGracePeriod = TimeSpan.FromSeconds(8);
+
+        private sealed class SessionCandidate
+        {
+            public GlobalSystemMediaTransportControlsSession Session { get; }
+            public string AppId { get; }
+            public GlobalSystemMediaTransportControlsSessionPlaybackStatus PlaybackStatus { get; }
+            public MediaPlaybackType PlaybackType { get; }
+            public int RawScore { get; }
+
+            public SessionCandidate(
+                GlobalSystemMediaTransportControlsSession session,
+                string appId,
+                GlobalSystemMediaTransportControlsSessionPlaybackStatus playbackStatus,
+                MediaPlaybackType playbackType,
+                int rawScore)
+            {
+                Session = session;
+                AppId = appId;
+                PlaybackStatus = playbackStatus;
+                PlaybackType = playbackType;
+                RawScore = rawScore;
+            }
+        }
 
         static async Task Main(string[] args)
         {
@@ -150,7 +190,7 @@ namespace SmtcHelper
                 using (var reader = new StreamReader(Console.OpenStandardInput()))
                 {
                     string? line;
-                    while ((line = reader.ReadLine()) != null)
+                    while ((line = await reader.ReadLineAsync()) != null)
                     {
                         try
                         {
@@ -167,6 +207,59 @@ namespace SmtcHelper
                                     int targetVol = volProp.GetInt32();
                                     AudioManager.SetMasterVolume(targetVol);
                                     _ = BroadcastStateAsync(false);
+                                }
+                                else if (action == "playPause")
+                                {
+                                    var session = _currentSession ?? _authoritySession ?? _sessionManager?.GetCurrentSession();
+                                    if (session != null)
+                                    {
+                                        try
+                                        {
+                                            var pInfo = session.GetPlaybackInfo();
+                                            await session.TryTogglePlayPauseAsync().AsTask();
+
+                                            await Task.Delay(50);
+                                            await BroadcastStateAsync(true);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.Error.WriteLine($"[SMTC] playPause error: {ex.Message}");
+                                        }
+                                    }
+                                }
+                                else if (action == "next")
+                                {
+                                    var session = _currentSession ?? _authoritySession ?? _sessionManager?.GetCurrentSession();
+                                    if (session != null)
+                                    {
+                                        try
+                                        {
+                                            await session.TrySkipNextAsync().AsTask();
+                                            await Task.Delay(50);
+                                            await BroadcastStateAsync(true);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.Error.WriteLine($"[SMTC] next error: {ex.Message}");
+                                        }
+                                    }
+                                }
+                                else if (action == "prev")
+                                {
+                                    var session = _currentSession ?? _authoritySession ?? _sessionManager?.GetCurrentSession();
+                                    if (session != null)
+                                    {
+                                        try
+                                        {
+                                            await session.TrySkipPreviousAsync().AsTask();
+                                            await Task.Delay(50);
+                                            await BroadcastStateAsync(true);
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.Error.WriteLine($"[SMTC] prev error: {ex.Message}");
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -190,48 +283,256 @@ namespace SmtcHelper
             try
             {
                 var sessions = _sessionManager.GetSessions();
-                if (sessions != null && sessions.Count > 0)
+                var candidates = BuildCandidates(sessions);
+                if (candidates.Count == 0)
                 {
-                    GlobalSystemMediaTransportControlsSession? bestSession = null;
-                    int bestScore = -1;
-
-                    foreach (var s in sessions)
-                    {
-                        try
-                        {
-                            var pInfo = s.GetPlaybackInfo();
-                            bool isPlaying = pInfo != null && pInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
-                            
-                            string appId = s.SourceAppUserModelId?.ToLowerInvariant() ?? "";
-
-                            // Base score by app type
-                            int score = 0;
-                            if (appId.Contains("spotify")) score = 40;
-                            else if (appId.Contains("apple") && appId.Contains("music")) score = 30;
-                            else if (!appId.Contains("chrome") && !appId.Contains("edge") && !appId.Contains("firefox") && !appId.Contains("brave") && !appId.Contains("opera")) score = 20; // Dedicated apps
-                            else score = 10; // Browsers
-
-                            // Huge boost if actively playing
-                            if (isPlaying) score += 100;
-
-                            if (score > bestScore)
-                            {
-                                bestScore = score;
-                                bestSession = s;
-                            }
-                        }
-                        catch { }
-                    }
-
-                    if (bestSession != null) return bestSession;
+                    ReleaseAuthority();
+                    LogResolverDecision(candidates, null, null);
+                    return null;
                 }
 
-                return _sessionManager.GetCurrentSession();
+                var authority = FindCandidate(candidates, _authoritySession);
+                if (authority != null && IsTerminal(authority.PlaybackStatus))
+                {
+                    ReleaseAuthority();
+                    authority = null;
+                }
+
+                var bestCandidate = FindHighestRawScore(candidates);
+                if (bestCandidate == null)
+                {
+                    ReleaseAuthority();
+                    LogResolverDecision(candidates, null, null);
+                    return null;
+                }
+
+                if (authority == null)
+                {
+                    PromoteAuthority(bestCandidate);
+                    LogResolverDecision(candidates, bestCandidate, bestCandidate);
+                    return bestCandidate.Session;
+                }
+
+                if (SessionsMatch(authority.Session, bestCandidate.Session) ||
+                    bestCandidate.RawScore <= authority.RawScore ||
+                    !CanChallengeAuthority(bestCandidate))
+                {
+                    ResetChallenger();
+                    LogResolverDecision(candidates, authority, authority);
+                    return authority.Session;
+                }
+
+                if (!SessionsMatch(_challengerSession, bestCandidate.Session))
+                {
+                    _challengerSession = bestCandidate.Session;
+                    _challengerSince = DateTime.UtcNow;
+                }
+
+                bool isMusicApp = GetApplicationTierScore(bestCandidate.AppId) >= TierTwoMusicAppScore;
+
+                if (isMusicApp || DateTime.UtcNow - _challengerSince >= ChallengerGracePeriod)
+                {
+                    PromoteAuthority(bestCandidate);
+                    LogResolverDecision(candidates, bestCandidate, bestCandidate);
+                    return bestCandidate.Session;
+                }
+
+                LogResolverDecision(candidates, authority, authority);
+                return authority.Session;
             }
             catch
             {
-                return _sessionManager?.GetCurrentSession();
+                return _authoritySession ?? _sessionManager?.GetCurrentSession();
             }
+        }
+
+        private static List<SessionCandidate> BuildCandidates(IReadOnlyList<GlobalSystemMediaTransportControlsSession> sessions)
+        {
+            var candidates = new List<SessionCandidate>();
+
+            foreach (var session in sessions)
+            {
+                try
+                {
+                    var playbackInfo = session.GetPlaybackInfo();
+                    var playbackStatus = playbackInfo?.PlaybackStatus ?? GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed;
+                    var playbackType = playbackInfo?.PlaybackType ?? MediaPlaybackType.Unknown;
+                    var appId = session.SourceAppUserModelId?.ToLowerInvariant() ?? "";
+
+                    candidates.Add(new SessionCandidate(
+                        session,
+                        appId,
+                        playbackStatus,
+                        playbackType,
+                        CalculateRawScore(appId, playbackStatus, playbackType)));
+                }
+                catch
+                {
+                    // A session can disappear while Windows is enumerating it.
+                }
+            }
+
+            return candidates;
+        }
+
+        private static int CalculateRawScore(
+            string appId,
+            GlobalSystemMediaTransportControlsSessionPlaybackStatus playbackStatus,
+            MediaPlaybackType playbackType)
+        {
+            var score = GetApplicationTierScore(appId);
+
+            if (playbackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+            {
+                score += PlayingScore;
+            }
+            else if (IsTerminal(playbackStatus))
+            {
+                score -= PlayingScore;
+            }
+
+            score += playbackType switch
+            {
+                MediaPlaybackType.Music => MusicPlaybackTypeBonus,
+                MediaPlaybackType.Video => VideoPlaybackTypePenalty,
+                MediaPlaybackType.Image => ImagePlaybackTypePenalty,
+                _ => 0
+            };
+
+            return score;
+        }
+
+        private static int GetApplicationTierScore(string appId)
+        {
+            var lowerAppId = appId.ToLowerInvariant();
+            if (lowerAppId.Contains("spotify") || lowerAppId.Contains("itunes") || (lowerAppId.Contains("apple") && lowerAppId.Contains("music")))
+            {
+                return TierOneMusicAppScore;
+            }
+
+            if (lowerAppId.Contains("tidal") || lowerAppId.Contains("deezer") || lowerAppId.Contains("amazonmusic") ||
+                lowerAppId.Contains("musicbee") || lowerAppId.Contains("foobar") || lowerAppId.Contains("winamp") ||
+                lowerAppId.Contains("aimp") || lowerAppId.Contains("qobuz") || lowerAppId.Contains("mediamonkey"))
+            {
+                return TierTwoMusicAppScore;
+            }
+
+            return IsBrowser(lowerAppId) ? BrowserScore : DedicatedAppScore;
+        }
+
+        private static bool IsBrowser(string appId)
+        {
+            var lowerAppId = appId.ToLowerInvariant();
+            return lowerAppId.Contains("chrome") || lowerAppId.Contains("edge") || lowerAppId.Contains("firefox") ||
+                   lowerAppId.Contains("brave") || lowerAppId.Contains("opera") || lowerAppId.Contains("vivaldi") ||
+                   lowerAppId.Contains("arc") || lowerAppId.Contains("comet");
+        }
+
+        private static bool CanChallengeAuthority(SessionCandidate candidate)
+        {
+            // Browser sessions share an app identifier across tabs. Do not displace an
+            // established source with ambiguous browser media; a Music classification is
+            // the minimum signal required for a browser to begin the grace period.
+            return !IsBrowser(candidate.AppId) || candidate.PlaybackType == MediaPlaybackType.Music;
+        }
+
+        private static bool IsTerminal(GlobalSystemMediaTransportControlsSessionPlaybackStatus playbackStatus)
+        {
+            return playbackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Stopped ||
+                   playbackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed;
+        }
+
+        private static SessionCandidate? FindCandidate(
+            List<SessionCandidate> candidates,
+            GlobalSystemMediaTransportControlsSession? session)
+        {
+            if (session == null) return null;
+            foreach (var candidate in candidates)
+            {
+                if (SessionsMatch(candidate.Session, session)) return candidate;
+            }
+            return null;
+        }
+
+        private static SessionCandidate? FindHighestRawScore(List<SessionCandidate> candidates)
+        {
+            SessionCandidate? highest = null;
+            foreach (var candidate in candidates)
+            {
+                if (highest == null || candidate.RawScore > highest.RawScore ||
+                    (candidate.RawScore == highest.RawScore && SessionsMatch(candidate.Session, _authoritySession)))
+                {
+                    highest = candidate;
+                }
+            }
+            return highest;
+        }
+
+        private static bool SessionsMatch(
+            GlobalSystemMediaTransportControlsSession? left,
+            GlobalSystemMediaTransportControlsSession? right)
+        {
+            return left != null && right != null && left == right;
+        }
+
+        private static void PromoteAuthority(SessionCandidate candidate)
+        {
+            _authoritySession = candidate.Session;
+            _authorityTrackKey = "";
+            ResetChallenger();
+        }
+
+        private static void ReleaseAuthority()
+        {
+            _authoritySession = null;
+            _authorityTrackKey = "";
+            ResetChallenger();
+        }
+
+        private static void ResetChallenger()
+        {
+            _challengerSession = null;
+            _challengerSince = DateTime.MinValue;
+        }
+
+        private static void UpdateAuthorityTrack(GlobalSystemMediaTransportControlsSession session, string trackKey)
+        {
+            lock (_lock)
+            {
+                if (!SessionsMatch(session, _authoritySession)) return;
+                if (!string.IsNullOrEmpty(_authorityTrackKey) && _authorityTrackKey != trackKey)
+                {
+                    ResetChallenger();
+                }
+                _authorityTrackKey = trackKey;
+            }
+        }
+
+        private static void LogResolverDecision(
+            List<SessionCandidate> candidates,
+            SessionCandidate? winner,
+            SessionCandidate? authority)
+        {
+#if DEBUG
+            const bool resolverDebugEnabled = true;
+#else
+            bool resolverDebugEnabled = Environment.GetEnvironmentVariable("KISSA_SMTC_DEBUG") == "1";
+#endif
+            if (!resolverDebugEnabled) return;
+
+            var summaries = new List<string>();
+            foreach (var candidate in candidates)
+            {
+                var isAuthority = SessionsMatch(candidate.Session, authority?.Session);
+                var isChallenger = SessionsMatch(candidate.Session, _challengerSession);
+                var finalScore = candidate.RawScore + (isAuthority ? AuthorityBonus : 0);
+                summaries.Add($"{candidate.AppId}[state={candidate.PlaybackStatus},type={candidate.PlaybackType},raw={candidate.RawScore},final={finalScore},authority={isAuthority},challenger={isChallenger}]");
+            }
+
+            var diagnostic = $"[Resolver] winner={winner?.AppId ?? "none"}; {string.Join(" | ", summaries)}";
+            if (diagnostic == _lastResolverDiagnostic) return;
+            _lastResolverDiagnostic = diagnostic;
+            Console.Error.WriteLine(diagnostic);
         }
 
         private static async void OnCurrentSessionChanged(GlobalSystemMediaTransportControlsSessionManager sender, CurrentSessionChangedEventArgs args)
@@ -338,6 +639,7 @@ namespace SmtcHelper
                 string rawArtist = mediaProps?.Artist ?? "";
                 string trackKey = $"{rawTitle}|{rawArtist}";
                 bool isNewTrack = trackKey != _lastTrackKey;
+                UpdateAuthorityTrack(session, trackKey);
 
                 string? thumbnailBase64 = null;
                 if (mediaProps?.Thumbnail != null)
