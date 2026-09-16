@@ -15,6 +15,11 @@ extraResources:
     to: "."
     filter:
       - "smtc-helper.exe"
+extraFiles:
+  - from: "resources"
+    to: "."
+    filter:
+      - "Kissa.scr"
 asarUnpack:
   - resources/**
   - node_modules/@coooookies/windows-smtc-monitor/**/*
@@ -29,6 +34,7 @@ win:
       arch:
         - x64
 nsis:
+  include: build/installer.nsh
   artifactName: ${productName}-Setup-${version}.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}

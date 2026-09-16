@@ -87,7 +87,7 @@ export const RecordShelfView = memo(() => {
             My Records
           </h1>
           <p className="font-kissa-chassis uppercase tracking-[0.2em] text-[10px] mt-3 text-[var(--muted)]/80">
-            {records.length} {records.length === 1 ? 'RECORD' : 'RECORDS'} // ARCHIVAL STORAGE
+            {records.length} {records.length === 1 ? 'RECORD' : 'RECORDS'}
           </p>
         </div>
         
@@ -204,11 +204,11 @@ export const RecordShelfView = memo(() => {
             <div className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[var(--panel-border)]/50" />
             <div className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[var(--panel-border)]/50" />
             <span className="font-kissa-chassis text-[9.5px] uppercase tracking-[0.2em] font-bold text-[var(--muted)]">
-              CRATE 01 // EMPTY
+              EMPTY SHELF
             </span>
           </div>
           <p className="font-kissa-chassis text-[10px] uppercase tracking-[0.1em] text-[var(--muted)]/80 text-center max-w-xs">
-            Awaiting physical media. Audio played via Kissa will be archived here.
+            Audio played via Kissa will appear in your record shelf.
           </p>
         </div>
       ) : (

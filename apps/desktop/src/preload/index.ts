@@ -12,6 +12,7 @@ export interface KissaSystemMediaAPI {
   mediaPlayPause: () => Promise<void>
   mediaNext: () => Promise<void>
   mediaPrev: () => Promise<void>
+  mediaSeek: (positionSeconds: number) => Promise<void>
   openExternal: (url: string) => Promise<void>
   getAppVersion: () => Promise<string>
   toggleMiniPlayer: (isMini: boolean, alwaysOnTop?: boolean) => Promise<void>
@@ -25,6 +26,12 @@ export interface KissaSystemMediaAPI {
   exportShare: (options: ShareExportOptions) => Promise<boolean>
   getSharePayload: () => Promise<SharePayload | null>
   sendShareReady: (success: boolean) => Promise<void>
+  isScreensaver: () => Promise<boolean>
+  exitScreensaver: () => Promise<void>
+  isScreensaverRegistered: () => Promise<boolean>
+  registerScreensaver: () => Promise<{ success: boolean; error?: string; path?: string }>
+  unregisterScreensaver: () => Promise<{ success: boolean; removed: boolean; reason?: string; currentPath?: string; error?: string }>
+  openScreensaverSettings: () => Promise<{ success: boolean; error?: string }>
 }
 
 const kissaMediaAPI: KissaSystemMediaAPI = {
@@ -43,6 +50,7 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
   mediaPlayPause: () => ipcRenderer.invoke('kissa:media-play-pause'),
   mediaNext: () => ipcRenderer.invoke('kissa:media-next'),
   mediaPrev: () => ipcRenderer.invoke('kissa:media-prev'),
+  mediaSeek: (positionSeconds: number) => ipcRenderer.invoke('kissa:media-seek', positionSeconds),
   openExternal: (url: string) => ipcRenderer.invoke('kissa:open-external', url),
   getAppVersion: () => ipcRenderer.invoke('kissa:get-app-version'),
   toggleMiniPlayer: (isMini: boolean, alwaysOnTop?: boolean) => ipcRenderer.invoke('kissa:toggle-mini-player', isMini, alwaysOnTop),
@@ -71,7 +79,13 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
   },
   exportShare: (options) => ipcRenderer.invoke('kissa:export-share', options),
   getSharePayload: () => ipcRenderer.invoke('kissa:get-share-payload'),
-  sendShareReady: (success) => ipcRenderer.invoke('kissa:share-ready', success)
+  sendShareReady: (success) => ipcRenderer.invoke('kissa:share-ready', success),
+  isScreensaver: () => ipcRenderer.invoke('kissa:is-screensaver'),
+  exitScreensaver: () => ipcRenderer.invoke('kissa:exit-screensaver'),
+  isScreensaverRegistered: () => ipcRenderer.invoke('kissa:is-screensaver-registered'),
+  registerScreensaver: () => ipcRenderer.invoke('kissa:register-screensaver'),
+  unregisterScreensaver: () => ipcRenderer.invoke('kissa:unregister-screensaver'),
+  openScreensaverSettings: () => ipcRenderer.invoke('kissa:open-screensaver-settings')
 }
 
 contextBridge.exposeInMainWorld('electron', {

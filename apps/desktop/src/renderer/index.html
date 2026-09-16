@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap"
       rel="stylesheet"
     />
     <link
@@ -24,29 +24,104 @@
         margin: 0;
         background-color: #0f0b07;
         color: #a6866b;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        overflow: hidden;
       }
       .kissa-splash-container {
         position: absolute;
         inset: 0;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        background-color: #0f0b07;
+        background: radial-gradient(circle 500px at 50% 45%, rgba(224, 142, 69, 0.12) 0%, rgba(15, 11, 7, 0.98) 70%), #0f0b07;
+        -webkit-user-select: none;
+        user-select: none;
       }
-      .kissa-splash-icon {
-        width: 32px;
-        height: 32px;
-        opacity: 0.3;
-        border-radius: 50%;
-        border: 1px solid rgba(255,255,255,0.1);
+      .kissa-splash-vinyl-wrap {
+        position: relative;
+        width: 180px;
+        height: 180px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        margin-bottom: 28px;
       }
-      .kissa-splash-svg {
+      .kissa-splash-ambient {
+        position: absolute;
+        inset: -24px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(224, 142, 69, 0.22) 0%, rgba(180, 83, 9, 0.06) 55%, transparent 75%);
+        filter: blur(28px);
+        pointer-events: none;
+      }
+      .kissa-splash-disc {
+        position: relative;
         width: 100%;
         height: 100%;
+        border-radius: 50%;
+        background: repeating-radial-gradient(circle at 50% 50%, #171310 0px, #171310 2px, #0f0d0b 3px, #0f0d0b 5px);
+        box-shadow: 0 20px 48px rgba(0, 0, 0, 0.85), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: kissaSpin 1.8s linear infinite;
+      }
+      .kissa-splash-disc::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: conic-gradient(from 45deg, transparent 0deg, rgba(255, 255, 255, 0.06) 60deg, transparent 120deg, transparent 180deg, rgba(255, 255, 255, 0.06) 240deg, transparent 300deg);
+        pointer-events: none;
+      }
+      .kissa-splash-label {
+        position: relative;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #38251a 0%, #20140e 100%);
+        border: 1px solid rgba(224, 142, 69, 0.35);
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .kissa-splash-spindle {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #080706;
+        border: 1.5px solid rgba(255, 255, 255, 0.35);
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8);
+      }
+      .kissa-splash-title {
+        font-family: 'Cormorant Garamond', 'Instrument Serif', Georgia, serif;
+        font-size: 28px;
+        font-weight: 400;
+        font-style: italic;
+        letter-spacing: 0.12em;
+        color: #f5efe6;
+        margin: 0;
+        text-shadow: 0 0 24px rgba(224, 142, 69, 0.25);
+      }
+      .kissa-splash-sub {
+        font-family: 'Inter', system-ui, sans-serif;
+        font-size: 11px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #a6866b;
+        margin-top: 6px;
+        opacity: 0.85;
+      }
+      @keyframes kissaSpin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .kissa-splash-disc {
+          animation: none;
+        }
       }
     </style>
   </head>
@@ -54,13 +129,16 @@
   <body>
     <div id="root">
       <div class="kissa-splash-container">
-        <div class="kissa-splash-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="kissa-splash-svg">
-            <circle cx="32" cy="32" r="30" fill="#110f0e"/>
-            <circle cx="32" cy="32" r="16" fill="currentColor"/>
-            <circle cx="32" cy="32" r="4" fill="#110f0e"/>
-          </svg>
+        <div class="kissa-splash-vinyl-wrap">
+          <div class="kissa-splash-ambient"></div>
+          <div class="kissa-splash-disc">
+            <div class="kissa-splash-label">
+              <div class="kissa-splash-spindle"></div>
+            </div>
+          </div>
         </div>
+        <h1 class="kissa-splash-title">Welcome to Kissa</h1>
+        <p class="kissa-splash-sub">A music player for the deliberate listener</p>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>

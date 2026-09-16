@@ -1,9 +1,11 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Share2 } from 'lucide-react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
 import { HiFiVisualizer } from '@renderer/components/ui/HiFiVisualizer'
+import { ShareTrackModal } from '@renderer/features/share/ShareTrackModal'
 
 /** Format seconds as m:ss */
 function formatTime(seconds: number): string {
@@ -22,7 +24,7 @@ interface MiniTrackScrubberProps {
 
 const MiniTrackScrubber = memo(({ duration }: MiniTrackScrubberProps) => {
   const progress = usePlayerStore((s) => s.progress)
-  const setProgress = usePlayerStore((s) => s.setProgress)
+  const seek = usePlayerStore((s) => s.seek)
   const elapsed = duration > 0 ? Math.min(progress, duration) : progress
   const progressPercent = duration > 0 ? (elapsed / duration) * 100 : 0
 
@@ -39,7 +41,7 @@ const MiniTrackScrubber = memo(({ duration }: MiniTrackScrubberProps) => {
           const rect = e.currentTarget.getBoundingClientRect()
           const clickX = e.clientX - rect.left
           const ratio = Math.max(0, Math.min(1, clickX / rect.width))
-          setProgress(Math.round(ratio * duration))
+          seek(Math.round(ratio * duration))
         }}
       >
         <div className="w-full h-[2.5px] rounded-full relative transition-colors bg-[var(--on-surface)]/20">
@@ -68,6 +70,7 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
   const artist = currentTrack?.artist ?? '—'
   const album = currentTrack?.album ?? '—'
   const duration = currentTrack?.duration ?? 0
+  const [isShareOpen, setIsShareOpen] = useState(false)
 
   const theme = usePlayerStore((s) => s.theme)
 
@@ -130,11 +133,30 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
                   {artist}
                 </p>
 
-                {/* Technical Hardware Readout */}
-                <div className="mt-4 flex items-center gap-3">
-                  <div className="font-kissa-chassis text-[9px] uppercase tracking-[0.15em] text-[var(--muted)]/70 font-semibold tabular-nums">
+                {/* Source & Hardware Readout */}
+                <div className="mt-4 flex items-center gap-2.5 flex-wrap">
+                  <div className="font-kissa-chassis text-[9.5px] uppercase tracking-[0.15em] text-[var(--muted)]/70 font-semibold tabular-nums">
                     {formatTime(duration)}
                   </div>
+                  {currentTrack?.source && (
+                    <>
+                      <span className="text-[var(--muted)]/40 text-[9px] select-none">•</span>
+                      <div className="font-mono text-[9.5px] tracking-wide text-[var(--muted)]/80">
+                        {currentTrack.source} · Following
+                      </div>
+                    </>
+                  )}
+                  {hasTrack && (
+                    <button
+                      type="button"
+                      onClick={() => setIsShareOpen(true)}
+                      className="p-1 rounded text-[var(--muted)]/60 hover:text-[var(--on-surface)] transition-colors cursor-pointer active:scale-95 ml-1"
+                      title="Share track"
+                      aria-label="Share track"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </>
             </motion.div>
@@ -206,6 +228,13 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
           </div>
         </div>
       </div>
+
+      {/* ── Share Track Modal ── */}
+      <ShareTrackModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        track={currentTrack}
+      />
     </section>
   )
 })

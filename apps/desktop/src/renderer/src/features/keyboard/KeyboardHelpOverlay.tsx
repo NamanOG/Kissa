@@ -10,9 +10,12 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
   const shortcuts = [
     { key: 'Space', action: 'Play / Pause' },
     { key: 'L', action: 'Toggle Lyrics View' },
-    { key: '← / →', action: 'Previous / Next Track' },
+    { key: '← / →', action: 'Seek ±5 seconds' },
+    { key: 'Shift + ← / →', action: 'Previous / Next Track' },
     { key: 'T', action: 'Cycle Themes' },
+    { key: 'A', action: 'Toggle Match Album' },
     { key: 'F11', action: 'Toggle Fullscreen' },
+    { key: 'D', action: 'Start Listening Display' },
     { key: 'S', action: 'Open Settings' },
     { key: '↑ / ↓', action: 'Volume ±5%' },
     { key: '?', action: 'Toggle this overlay' },

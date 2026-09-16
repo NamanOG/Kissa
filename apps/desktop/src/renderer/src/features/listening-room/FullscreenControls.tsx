@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { SkipBack, SkipForward, Play, Pause, Minimize2, Quote, Palette } from 'lucide-react'
+import { SkipBack, SkipForward, Play, Pause, Minimize2, Quote, Aperture, Disc } from 'lucide-react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { RoomDimmer } from '../controls/RoomDimmer'
 import { cn } from '@renderer/utils/cn'
@@ -23,6 +23,7 @@ export const FullscreenControls = memo(({
   const playPrev = usePlayerStore((s) => s.playPrev)
   const playNext = usePlayerStore((s) => s.playNext)
   const setFullscreen = usePlayerStore((s) => s.setFullscreen)
+  const setIsListeningDisplay = usePlayerStore((s) => s.setIsListeningDisplay)
   const theme = usePlayerStore((s) => s.theme)
   const setTheme = usePlayerStore((s) => s.setTheme)
   const isAdaptive = theme === 'adaptive'
@@ -63,8 +64,17 @@ export const FullscreenControls = memo(({
         transitionTimingFunction: 'var(--ease-out, cubic-bezier(0.22,1,0.36,1))'
       }}
     >
-      {/* Top Right: Exit Fullscreen */}
-      <div className="flex justify-end">
+      {/* Top Right: Exit Fullscreen & Enter Display */}
+      <div className="flex justify-end gap-3">
+        <button
+          type="button"
+          aria-label="Enter Listening Display"
+          onClick={() => setIsListeningDisplay(true)}
+          className="h-10 px-4 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 active:scale-95 transition-[transform,color,background-color] duration-150 text-[13px] font-medium tracking-wide uppercase font-sans"
+        >
+          <Disc className="w-4 h-4 mr-2" />
+          Display
+        </button>
         <button
           type="button"
           aria-label="Exit Fullscreen"
@@ -78,9 +88,13 @@ export const FullscreenControls = memo(({
       {/* Bottom Controls */}
       <div 
         className={cn(
-          "absolute bottom-6 min-[900px]:bottom-10 transition-all duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] flex justify-center",
+          "absolute bottom-6 min-[900px]:bottom-10 transition-all flex justify-center",
           showLyrics ? "left-1/4 -translate-x-1/2" : "left-1/2 -translate-x-1/2"
         )}
+        style={{
+          transitionDuration: '600ms',
+          transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)'
+        }}
       >
         {/* Unified Glass Dock */}
         <div className="flex items-center gap-4 min-[900px]:gap-6 bg-black/40 backdrop-blur-3xl px-6 min-[900px]:px-8 py-3.5 min-[900px]:py-4 rounded-full border border-white/10 shadow-[0_32px_64px_rgba(0,0,0,0.6)] transform-gpu">
@@ -116,7 +130,7 @@ export const FullscreenControls = memo(({
               )}
               title="Match Album Art Color"
             >
-              <Palette className="w-[18px] h-[18px] min-[900px]:w-5 min-[900px]:h-5" />
+              <Aperture className="w-[18px] h-[18px] min-[900px]:w-5 min-[900px]:h-5" />
             </button>
           </div>
 
@@ -137,11 +151,16 @@ export const FullscreenControls = memo(({
               onClick={handlePlayPause}
               className="w-12 h-12 min-[900px]:w-14 min-[900px]:h-14 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white active:scale-[0.95] transition-[transform,background-color] duration-150 cursor-pointer"
             >
-              {isPlaying ? (
-                <Pause className="w-5 h-5 min-[900px]:w-6 min-[900px]:h-6" fill="currentColor" />
-              ) : (
-                <Play className="w-5 h-5 min-[900px]:w-6 min-[900px]:h-6 ml-1" fill="currentColor" />
-              )}
+              <div
+                key={isPlaying ? 'pause' : 'play'}
+                className="flex items-center justify-center transition-transform duration-100 ease-out"
+              >
+                {isPlaying ? (
+                  <Pause className="w-5 h-5 min-[900px]:w-6 min-[900px]:h-6" fill="currentColor" />
+                ) : (
+                  <Play className="w-5 h-5 min-[900px]:w-6 min-[900px]:h-6 ml-0.5" fill="currentColor" />
+                )}
+              </div>
             </button>
             
             <button

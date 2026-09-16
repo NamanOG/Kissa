@@ -1,5 +1,6 @@
 import { parentPort, workerData } from 'worker_threads'
 import { spawn, type ChildProcess } from 'child_process'
+import { StringDecoder } from 'string_decoder'
 
 const helperPath = workerData?.helperPath
 
@@ -16,9 +17,11 @@ function startHelper(): void {
     if (!helperProcess.stdout) return
 
     let buffer = ''
+    const stdoutDecoder = new StringDecoder('utf-8')
+    const stderrDecoder = new StringDecoder('utf-8')
 
     helperProcess.stdout.on('data', (data: Buffer) => {
-      buffer += data.toString('utf-8')
+      buffer += stdoutDecoder.write(data)
       let newlineIdx: number
       while ((newlineIdx = buffer.indexOf('\n')) >= 0) {
         const line = buffer.slice(0, newlineIdx).trim()
@@ -39,11 +42,21 @@ function startHelper(): void {
 
     helperProcess.stderr?.on('data', (data: Buffer) => {
       if (parentPort) {
-        parentPort.postMessage({ type: 'error', error: data.toString('utf-8') })
+        parentPort.postMessage({ type: 'error', error: stderrDecoder.write(data) })
       }
     })
 
     helperProcess.on('exit', () => {
+      buffer += stdoutDecoder.end()
+      if (buffer.trim()) {
+        try {
+          const msg = JSON.parse(buffer.trim())
+          if (msg.type === 'update' && parentPort) {
+            parentPort.postMessage(msg)
+          }
+        } catch (e) {
+        }
+      }
       helperProcess = null
     })
   } catch (err) {
@@ -59,7 +72,7 @@ parentPort?.on('message', (msg) => {
   if (msg === 'stop') {
     if (helperProcess && helperProcess.stdin) {
       try {
-        helperProcess.stdin.write('stop\n')
+        helperProcess.stdin.write('stop\n', 'utf-8')
         helperProcess.stdin.end()
       } catch (e) {
       }
@@ -68,7 +81,7 @@ parentPort?.on('message', (msg) => {
   } else if (msg && typeof msg === 'object' && msg.action) {
     if (helperProcess && helperProcess.stdin) {
       try {
-        helperProcess.stdin.write(JSON.stringify(msg) + '\n')
+        helperProcess.stdin.write(JSON.stringify(msg) + '\n', 'utf-8')
       } catch (e) {
       }
     }

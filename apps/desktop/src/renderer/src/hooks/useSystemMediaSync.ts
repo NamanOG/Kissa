@@ -99,6 +99,9 @@ export function useSystemMediaSync(): void {
       const isSameTrack = lastTrackKeyRef.current === trackKey && storeMatchesPayload
 
       if (!isSameTrack) {
+        if (typeof window !== 'undefined') {
+          delete (window as any).__kissaSeekCooldown
+        }
         prevTrackDurationRef.current = currentStoreTrack?.duration || -1
         lastTrackKeyRef.current = trackKey
         PlaybackClock.setSmtcState(payload.progress || 0, payload.isPlaying)
@@ -160,6 +163,20 @@ export function useSystemMediaSync(): void {
         // Sync timeline progress with monotonic filter via PlaybackClock
         const localEstimate = PlaybackClock.getCurrentTime()
         const diff = payload.progress - localEstimate
+
+        // Seek cooldown check to prevent rubberbanding during external SMTC command processing
+        const seekCooldown = typeof window !== 'undefined' ? (window as any).__kissaSeekCooldown : null
+        if (seekCooldown) {
+          const elapsedSinceSeek = performance.now() - seekCooldown.timestamp
+          const matchesTarget = Math.abs(payload.progress - seekCooldown.target) <= 2.0
+          if (elapsedSinceSeek < 1200 && !matchesTarget) {
+            // Pre-seek packet arriving: preserve optimistic PlaybackClock and local progress
+            return
+          } else {
+            // Cooldown expired safely or external SMTC has reconciled with target
+            delete (window as any).__kissaSeekCooldown
+          }
+        }
 
         // If difference is large (> 1.5s) or a distinct seek/loop restart, accept SMTC position immediately
         if (Math.abs(diff) > 1.5 || payload.progress === 0) {

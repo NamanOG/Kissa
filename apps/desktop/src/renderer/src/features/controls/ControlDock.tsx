@@ -1,7 +1,7 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
-import { Quote } from 'lucide-react'
+import { Quote, Disc } from 'lucide-react'
 import { SleepTimer } from './SleepTimer'
 import { RoomDimmer } from './RoomDimmer'
 
@@ -111,7 +111,7 @@ const Scrubber = memo(() => {
     isDraggingRef.current = false
     const finalSeekTime = updateScrubberVisuals(e.clientX)
     if (finalSeekTime !== undefined) {
-      usePlayerStore.getState().setProgress(finalSeekTime)
+      usePlayerStore.getState().seek(finalSeekTime)
     }
   }
 
@@ -173,7 +173,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
   return (
     <div
       className={cn(
-        'relative z-30 flex shrink-0 items-center justify-between border transform-gpu',
+        'relative z-30 flex shrink-0 items-center justify-between border transform-gpu overflow-hidden',
         'mx-2 mb-4 mt-2 h-[64px] min-[900px]:h-[72px] rounded-[36px] backdrop-blur-2xl shadow-2xl',
         'px-4 min-[900px]:px-8 min-[1200px]:px-10 select-none transition-all duration-ui ease-primary',
         !hasTrack && 'opacity-50 pointer-events-none',
@@ -187,7 +187,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
     >
       {/* ── Dock Ambient Illumination ── */}
       <div
-        className="absolute inset-0 pointer-events-none transition-opacity duration-ambient ease-primary"
+        className="absolute inset-0 rounded-[36px] pointer-events-none transition-opacity duration-ambient ease-primary"
         style={{
           opacity: 'calc(0.25 + 0.75 * var(--room-illumination, 1))'
         }}
@@ -217,8 +217,8 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           className="transition-colors cursor-pointer active:scale-95 shrink-0 text-[var(--muted)] hover:text-[var(--on-surface)]"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4 min-[900px]:h-[18px] min-[900px]:w-[18px] fill-current -translate-x-[1px]">
-            <polygon points="17,5 7,12 17,19" />
-            <rect x="5" y="5" width="2" height="14" />
+            <path d="M16 6.14v11.72c0 .77-.84 1.25-1.5.86l-9.8-5.86c-.64-.38-.64-1.34 0-1.72l9.8-5.86c.66-.39 1.5.09 1.5.86z" />
+            <rect x="5" y="5" width="2" height="14" rx="1" />
           </svg>
         </button>
 
@@ -242,16 +242,21 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             boxShadow: 'var(--panel-shadow)'
           }}
         >
-          {isPlaying ? (
-            <svg viewBox="0 0 24 24" className="h-[14px] w-[14px] min-[900px]:h-[16px] min-[900px]:w-[16px] text-[var(--on-surface)] fill-current">
-              <rect x="6" y="4" width="4" height="16" />
-              <rect x="14" y="4" width="4" height="16" />
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24" className="h-[14px] w-[14px] min-[900px]:h-[16px] min-[900px]:w-[16px] text-[var(--on-surface)] fill-current ml-[2px]">
-              <polygon points="7,4 21,12 7,20" />
-            </svg>
-          )}
+          <div
+            key={isPlaying ? 'pause' : 'play'}
+            className="flex items-center justify-center transition-transform duration-100 ease-out"
+          >
+            {isPlaying ? (
+              <svg viewBox="0 0 24 24" className="h-[14px] w-[14px] min-[900px]:h-[16px] min-[900px]:w-[16px] text-[var(--on-surface)] fill-current">
+                <rect x="6" y="4" width="4" height="16" rx="1.5" />
+                <rect x="14" y="4" width="4" height="16" rx="1.5" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="h-[14px] w-[14px] min-[900px]:h-[16px] min-[900px]:w-[16px] text-[var(--on-surface)] fill-current ml-[2px]">
+                <path d="M8 5.14v13.72c0 .77.84 1.25 1.5.86l11.43-6.86c.64-.38.64-1.34 0-1.72L9.5 4.28C8.84 3.89 8 4.37 8 5.14z" />
+              </svg>
+            )}
+          </div>
         </button>
 
         {/* Skip Forward Button */}
@@ -268,8 +273,8 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           className="transition-colors cursor-pointer active:scale-95 shrink-0 text-[var(--muted)] hover:text-[var(--on-surface)]"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4 min-[900px]:h-[18px] min-[900px]:w-[18px] fill-current translate-x-[1px]">
-            <polygon points="7,5 17,12 7,19" />
-            <rect x="17" y="5" width="2" height="14" />
+            <path d="M8 6.14v11.72c0 .77.84 1.25 1.5.86l9.8-5.86c.64-.38.64-1.34 0-1.72L9.5 5.28C8.84 4.89 8 5.37 8 6.14z" />
+            <rect x="17" y="5" width="2" height="14" rx="1" />
           </svg>
         </button>
 
@@ -350,6 +355,20 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             {currentTrack?.source || 'System Audio'}
           </span>
         </div>
+
+        {/* Start Listening Display */}
+        <button
+          type="button"
+          onClick={() => usePlayerStore.getState().setIsListeningDisplay(true)}
+          className={cn(
+            'flex items-center justify-center w-[26px] h-[26px] min-[900px]:w-[28px] min-[900px]:h-[28px] rounded-full border transition duration-ui ease-primary cursor-pointer select-none active:scale-95',
+            'border-transparent hover:border-[var(--panel-border)] bg-transparent hover:bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--on-surface)]'
+          )}
+          title="Start Listening Display (D)"
+          aria-label="Start Listening Display"
+        >
+          <Disc className="w-3.5 h-3.5 stroke-[1.75]" />
+        </button>
 
         {/* Fullscreen Toggle */}
         <button

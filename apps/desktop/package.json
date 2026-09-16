@@ -1,6 +1,6 @@
 {
   "name": "apps-desktop",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "A contemplative desktop vinyl player & listening environment for Windows.",
   "main": "./out/main/index.js",
   "author": "NamanOG",
@@ -17,9 +17,11 @@
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "build:screensaver": "dotnet publish screensaver/KissaScreensaver.csproj -c Release -r win-x64 -o screensaver/publish && node scripts/copy-screensaver.mjs",
+    "build:smtc": "dotnet publish smtc-helper/smtc-helper.csproj -c Release -r win-x64 --self-contained true -o smtc-helper/publish && node scripts/copy-smtc.mjs",
     "postinstall": "electron-builder install-app-deps",
-    "build:unpack": "npm run build && electron-builder --dir",
-    "build:win": "npm run build && electron-builder --win --publish never",
+    "build:unpack": "npm run build:screensaver && npm run build:smtc && npm run build && electron-builder --dir",
+    "build:win": "npm run build:screensaver && npm run build:smtc && npm run build && electron-builder --win --publish never",
     "build:mac": "npm run build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux"
   },

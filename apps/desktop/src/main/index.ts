@@ -22,7 +22,8 @@ app.whenReady().then(() => {
 
   // Use the dedicated WindowManager module
   const isHidden = process.argv.includes('--hidden')
-  WindowManager.getInstance().createMainWindow(isHidden)
+  const isScreensaver = process.argv.includes('--screensaver')
+  WindowManager.getInstance().createMainWindow(isHidden, isScreensaver)
   WindowManager.getInstance().setupIpcHandlers()
   
   ShareManager.getInstance().init()

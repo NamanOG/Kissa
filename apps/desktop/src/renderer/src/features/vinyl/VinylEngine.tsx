@@ -11,6 +11,9 @@ import { usePlayerStore } from '@renderer/stores/playerStore'
 
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
 
+// Module level variable to preserve rotational phase across view changes and React Strict Mode remounts
+let savedVinylPhase = 0
+
 /**
  * Vinyl record engine — handles spin animation with real physics
  * (acceleration on play, friction deceleration on pause).
@@ -29,9 +32,6 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
   const animationRef = useRef<Animation | null>(null)
   const rafRef = useRef<number | null>(null)
   const currentPlaybackRateRef = useRef(0)
-
-// Module level variable to preserve rotational phase across view changes and React Strict Mode remounts
-let savedVinylPhase = 0
 
   // Initialize Web Animations API rotation
   useEffect(() => {

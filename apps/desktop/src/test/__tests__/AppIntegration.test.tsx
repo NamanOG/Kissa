@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import App from '@renderer/App'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 
@@ -18,7 +18,9 @@ describe('App Integration', () => {
         fullscreenChangedCallback = callback
         return unsubscribeFullscreenChanged
       }),
-      setFullScreen: vi.fn().mockResolvedValue(false)
+      setFullScreen: vi.fn().mockResolvedValue(false),
+      isScreensaver: vi.fn().mockResolvedValue(false),
+      exitScreensaver: vi.fn().mockResolvedValue(undefined)
     } as any
     usePlayerStore.setState({
       isPlaying: false,
@@ -37,11 +39,11 @@ describe('App Integration', () => {
     delete (window as Partial<Window>).electron
   })
 
-  it('renders the complete application shell with layout and active features', () => {
+  it('renders the complete application shell with layout and active features', async () => {
     render(<App />)
 
     // Check Metadata Panel elements
-    const headings = screen.getAllByRole('heading', { name: 'Starboy' })
+    const headings = await screen.findAllByRole('heading', { name: 'Starboy' })
     expect(headings.length).toBeGreaterThan(0)
     expect(screen.getAllByText('The Weeknd').length).toBeGreaterThan(0)
 
@@ -52,7 +54,7 @@ describe('App Integration', () => {
 
   it('synchronizes play/pause button with store state across components', async () => {
     render(<App />)
-    const playButton = screen.getByRole('button', { name: 'Play' })
+    const playButton = await screen.findByRole('button', { name: 'Play' })
 
     await act(async () => fireEvent.click(playButton))
     expect(usePlayerStore.getState().isPlaying).toBe(true)

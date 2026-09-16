@@ -79,10 +79,16 @@ describe('Updater utility', () => {
       } as any)
 
       const result = await checkForUpdates('v1.0.0')
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         hasUpdate: false,
         version: 'v1.0.0',
-        url: KISSA_RELEASES_URL
+        url: KISSA_RELEASES_URL,
+        diagnostics: expect.objectContaining({
+          remoteTag: 'v1.0.0',
+          localVersion: 'v1.0.0',
+          hasUpdate: false,
+          comparison: 'current_or_older'
+        })
       })
     })
 
@@ -98,10 +104,16 @@ describe('Updater utility', () => {
       } as any)
 
       const result = await checkForUpdates('v1.0.0')
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         hasUpdate: true,
         version: 'v2.0.0',
-        url: KISSA_RELEASES_URL
+        url: KISSA_RELEASES_URL,
+        diagnostics: expect.objectContaining({
+          remoteTag: 'v2.0.0',
+          localVersion: 'v1.0.0',
+          hasUpdate: true,
+          comparison: 'newer'
+        })
       })
     })
   })

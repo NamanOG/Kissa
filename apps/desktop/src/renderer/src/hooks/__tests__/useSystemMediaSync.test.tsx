@@ -126,4 +126,27 @@ describe('useSystemMediaSync', () => {
     triggerPayload(makePayload('electron.exe', 'Test Song', 'Test Artist'))
     expect(PlaybackClock.setMode).not.toHaveBeenCalledWith(true)
   })
+
+  it('8. preserves accented characters in track title, artist, and album', () => {
+    render(<Harness />)
+    const accentedPayload: SystemMediaPayload = {
+      sourceAppId: 'Spotify.exe',
+      sourceAppName: 'Spotify',
+      title: 'Canción en París',
+      artist: 'José María',
+      album: 'Corazón y Espíritu',
+      isPlaying: true,
+      progress: 30,
+      duration: 200
+    }
+
+    triggerPayload(accentedPayload)
+
+    const currentTrack = usePlayerStore.getState().currentTrack
+    expect(currentTrack?.title).toBe('Canción en París')
+    expect(currentTrack?.artist).toBe('José María')
+    expect(currentTrack?.album).toBe('Corazón y Espíritu')
+    expect(currentTrack?.title).not.toContain('\uFFFD')
+    expect(currentTrack?.title).not.toContain('?')
+  })
 })

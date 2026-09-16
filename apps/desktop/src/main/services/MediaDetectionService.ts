@@ -238,6 +238,19 @@ export class MediaDetectionService {
       }
     })
 
+    ipcMain.handle('kissa:media-seek', (_event, positionSeconds: number) => {
+      if (typeof positionSeconds !== 'number' || isNaN(positionSeconds) || !isFinite(positionSeconds) || positionSeconds < 0) {
+        return
+      }
+      if (this.worker && this.latestPayload) {
+        let clamped = positionSeconds
+        if (this.latestPayload.duration && this.latestPayload.duration > 0) {
+          clamped = Math.min(clamped, this.latestPayload.duration)
+        }
+        this.worker.postMessage({ action: 'seek', position: clamped })
+      }
+    })
+
     ipcMain.handle('kissa:open-external', (_event, url: string) => {
       if (url && (url.startsWith('https://') || url.startsWith('http://'))) {
         shell.openExternal(url)
@@ -354,6 +367,7 @@ export class MediaDetectionService {
     ipcMain.removeHandler('kissa:media-play-pause')
     ipcMain.removeHandler('kissa:media-next')
     ipcMain.removeHandler('kissa:media-prev')
+    ipcMain.removeHandler('kissa:media-seek')
     ipcMain.removeHandler('kissa:open-external')
     ipcMain.removeHandler('kissa:get-app-version')
   }

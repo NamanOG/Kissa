@@ -23,7 +23,7 @@ describe('FullscreenControls', () => {
   it('renders transport buttons and binds them to store actions', () => {
     render(<FullscreenControls isVisible={true} />)
 
-    fireEvent.click(screen.getByRole('button', { name: /play|pause/i }))
+    fireEvent.click(screen.getByRole('button', { name: /^play$|^pause$/i }))
     expect(mockTogglePlayPause).toHaveBeenCalledTimes(1)
 
     fireEvent.click(screen.getByRole('button', { name: /skip back/i }))

@@ -1,6 +1,7 @@
 import React, { memo, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Power } from 'lucide-react'
+import { X } from 'lucide-react'
+import { HardwareSwitch } from '@renderer/components/ui/HardwareSwitch'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { LISTENING_ENVIRONMENTS } from './themes'
 import { ThemeCard } from './ThemeCard'
@@ -32,10 +33,14 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
   const setPhysicalFeedback = usePlayerStore((s) => s.setPhysicalFeedback)
   const miniPlayerAlwaysOnTop = usePlayerStore((s) => s.miniPlayerAlwaysOnTop)
   const setMiniPlayerAlwaysOnTop = usePlayerStore((s) => s.setMiniPlayerAlwaysOnTop)
+  const screensaverLyrics = usePlayerStore((s) => s.screensaverLyrics)
+  const toggleScreensaverLyrics = usePlayerStore((s) => s.toggleScreensaverLyrics)
 
   const [appVersion, setAppVersion] = useState<string>('')
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'up-to-date' | 'available' | 'error'>('idle')
   const [updateResult, setUpdateResult] = useState<UpdateCheckResult | null>(null)
+  const [isScreensaverRegistered, setIsScreensaverRegistered] = useState<boolean>(false)
+  const [isScreensaverWorking, setIsScreensaverWorking] = useState<boolean>(false)
   const hasUpdateAvailable = usePlayerStore((s) => s.hasUpdateAvailable)
 
   useEffect(() => {
@@ -45,10 +50,27 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
   }, [isSettingsOpen, appVersion])
 
   const handleCheckUpdate = async () => {
-    if (updateStatus === 'checking' || !appVersion) return
+    if (updateStatus === 'checking') return
+    let ver = appVersion
+    if (!ver && window.electron?.getAppVersion) {
+      try {
+        ver = await window.electron.getAppVersion()
+        setAppVersion(ver)
+      } catch {
+        ver = ''
+      }
+    }
+    if (!ver) {
+      setUpdateStatus('error')
+      return
+    }
+
     setUpdateStatus('checking')
     try {
-      const result = await checkForUpdates(appVersion)
+      const [result] = await Promise.all([
+        checkForUpdates(ver),
+        new Promise((resolve) => setTimeout(resolve, 500))
+      ])
       if (result.hasUpdate) {
         setUpdateResult(result)
         setUpdateStatus('available')
@@ -56,17 +78,61 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
         setUpdateStatus('up-to-date')
       }
     } catch (err) {
-      console.error(err)
+      if (import.meta.env.DEV) {
+        console.error('[Update Check Error]', err)
+      }
       setUpdateStatus('error')
     }
   }
 
-  // Auto-check if we know there is an update available
+  // Fetch screensaver registration state when settings open
   useEffect(() => {
-    if (isSettingsOpen && appVersion && hasUpdateAvailable && updateStatus === 'idle') {
-      void handleCheckUpdate()
+    if (isSettingsOpen) {
+      window.electron?.isScreensaverRegistered?.()
+        .then((registered) => setIsScreensaverRegistered(Boolean(registered)))
+        .catch(console.error)
     }
-  }, [isSettingsOpen, appVersion, hasUpdateAvailable, updateStatus])
+  }, [isSettingsOpen])
+
+  const handleRegisterScreensaver = async () => {
+    if (isScreensaverWorking) return
+    setIsScreensaverWorking(true)
+    try {
+      const res = await window.electron?.registerScreensaver?.()
+      if (res?.success) {
+        setIsScreensaverRegistered(true)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsScreensaverWorking(false)
+    }
+  }
+
+  const handleUnregisterScreensaver = async () => {
+    if (isScreensaverWorking) return
+    setIsScreensaverWorking(true)
+    try {
+      const res = await window.electron?.unregisterScreensaver?.()
+      if (res?.success) {
+        setIsScreensaverRegistered(false)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsScreensaverWorking(false)
+    }
+  }
+
+  const handleOpenScreensaverSettings = async (): Promise<void> => {
+    if (window.electron?.openScreensaverSettings) {
+      try {
+        await window.electron.openScreensaverSettings()
+      } catch (err) {
+        console.warn('Failed to open Windows screensaver settings:', err)
+      }
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -170,37 +236,21 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                       <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Physical Feedback</span>
                       <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Physical needle thud and visual tonearm weight</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setPhysicalFeedback(!physicalFeedback)}
-                      className="w-11 h-7 flex items-center justify-center rounded-lg bg-[var(--on-surface)]/[0.05] border border-[var(--on-surface)]/15 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] cursor-pointer active:scale-95 transition-transform"
-                    >
-                      <Power 
-                        className={cn(
-                          "w-4 h-4 transition-[color,filter] duration-ui ease-primary", 
-                          physicalFeedback ? "text-[var(--accent)] drop-shadow-[0_0_8px_var(--accent)]" : "text-[var(--on-surface)]/20"
-                        )} 
-                        strokeWidth={physicalFeedback ? 3 : 2}
-                      />
-                    </button>
+                    <HardwareSwitch
+                      checked={physicalFeedback}
+                      onChange={setPhysicalFeedback}
+                      aria-label="Toggle Physical Feedback"
+                    />
                   </div>
 
                   {/* Auto-scroll Lyrics */}
                   <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
                     <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Auto-scroll Lyrics</span>
-                    <button
-                      type="button"
-                      onClick={() => setAutoScrollLyrics(!autoScrollLyrics)}
-                      className="w-11 h-7 flex items-center justify-center rounded-lg bg-[var(--on-surface)]/[0.05] border border-[var(--on-surface)]/15 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] cursor-pointer active:scale-95 transition-transform"
-                    >
-                      <Power 
-                        className={cn(
-                          "w-4 h-4 transition-[color,filter] duration-ui ease-primary", 
-                          autoScrollLyrics ? "text-[var(--accent)] drop-shadow-[0_0_8px_var(--accent)]" : "text-[var(--on-surface)]/20"
-                        )} 
-                        strokeWidth={autoScrollLyrics ? 3 : 2}
-                      />
-                    </button>
+                    <HardwareSwitch
+                      checked={autoScrollLyrics}
+                      onChange={setAutoScrollLyrics}
+                      aria-label="Toggle Auto-scroll Lyrics"
+                    />
                   </div>
 
                   {/* Lyrics Timing Sync Offset */}
@@ -251,19 +301,11 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                       <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Always on Top (Mini Player)</span>
                       <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Keep the Mini Player visible above other windows</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setMiniPlayerAlwaysOnTop(!miniPlayerAlwaysOnTop)}
-                      className="w-11 h-7 flex items-center justify-center rounded-lg bg-[var(--on-surface)]/[0.05] border border-[var(--on-surface)]/15 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] cursor-pointer active:scale-95 transition-transform"
-                    >
-                      <Power 
-                        className={cn(
-                          "w-4 h-4 transition-[color,filter] duration-ui ease-primary", 
-                          miniPlayerAlwaysOnTop ? "text-[var(--accent)] drop-shadow-[0_0_8px_var(--accent)]" : "text-[var(--on-surface)]/20"
-                        )} 
-                        strokeWidth={miniPlayerAlwaysOnTop ? 3 : 2}
-                      />
-                    </button>
+                    <HardwareSwitch
+                      checked={miniPlayerAlwaysOnTop}
+                      onChange={setMiniPlayerAlwaysOnTop}
+                      aria-label="Toggle Always on Top"
+                    />
                   </div>
 
                   {/* Telemetry */}
@@ -276,6 +318,69 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                       <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)] animate-pulse" />
                       <span className="text-[10px] text-[var(--accent)] font-bold tracking-widest uppercase">Active</span>
                     </div>
+                  </div>
+
+                  {/* Windows Screensaver */}
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                    <div className="flex flex-col pr-4">
+                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Windows Screensaver</span>
+                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">
+                        {isScreensaverRegistered
+                          ? '✓ Kissa is your Windows screensaver'
+                          : 'Kissa can run as your Windows screensaver, using the Listening Display experience.'}
+                      </span>
+                    </div>
+                    {isScreensaverRegistered ? (
+                      <button
+                        type="button"
+                        onClick={handleUnregisterScreensaver}
+                        disabled={isScreensaverWorking}
+                        className="px-4 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.08] hover:bg-red-500/20 hover:text-red-300 text-[var(--muted)] text-[12px] font-bold transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95 disabled:opacity-50 shrink-0"
+                      >
+                        {isScreensaverWorking ? 'Removing...' : 'Remove Kissa Screensaver'}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleRegisterScreensaver}
+                        disabled={isScreensaverWorking}
+                        className="px-4 py-1.5 rounded-xl bg-[var(--accent)] text-[var(--panel-bg)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95 disabled:opacity-50 shrink-0"
+                      >
+                        {isScreensaverWorking ? 'Setting...' : 'Set as Windows Screensaver'}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Windows Screensaver Timeout & Native Settings */}
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                    <div className="flex flex-col pr-4">
+                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Windows Screensaver Settings</span>
+                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">
+                        Configure Windows idle timeout, wait duration, and lock screen behavior
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleOpenScreensaverSettings}
+                      className="px-3.5 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.12] text-[var(--on-surface)] text-[12px] font-bold transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95 shrink-0"
+                    >
+                      Open Windows Screensaver Settings
+                    </button>
+                  </div>
+
+                  {/* Screensaver & Display Lyrics */}
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                    <div className="flex flex-col pr-4">
+                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Screensaver & Display Lyrics</span>
+                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">
+                        Display synchronized lyrics alongside album art in Listening Display
+                      </span>
+                    </div>
+                    <HardwareSwitch
+                      checked={screensaverLyrics}
+                      onChange={toggleScreensaverLyrics}
+                      aria-label="Toggle Screensaver Lyrics"
+                    />
                   </div>
 
                   {/* Help */}
@@ -298,23 +403,23 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
 
               {/* Section 4: Application */}
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-2.5 tracking-[0.2em] uppercase">Application Software</h4>
+                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-2.5 tracking-[0.2em] uppercase">Application</h4>
                 <div className="rounded-2xl bg-[var(--on-surface)]/[0.03] border border-[var(--on-surface)]/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)]">
                   
                   {/* Version & Updates */}
                   <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-[var(--on-surface)]/[0.02] transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">System Version</span>
+                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Software Version</span>
                       <span className={cn(
                         "text-[11.5px] mt-0.5 font-mono",
                         updateStatus === 'available' ? 'text-[var(--accent)]' :
                         updateStatus === 'error' ? 'text-red-400' : 'text-[var(--muted)]'
                       )}>
-                        {updateStatus === 'checking' && 'CHECKING...'}
-                        {updateStatus === 'error' && 'UPDATE CHECK FAILED'}
-                        {updateStatus === 'up-to-date' && `KISSA IS UP TO DATE — VERSION ${appVersion}`}
-                        {updateStatus === 'available' && updateResult ? `KISSA ${updateResult.version} IS AVAILABLE` : ''}
-                        {updateStatus === 'idle' && (appVersion ? `VERSION ${appVersion}` : 'LOADING...')}
+                        {updateStatus === 'checking' && 'Checking for updates…'}
+                        {updateStatus === 'error' && "Couldn't check for updates"}
+                        {updateStatus === 'up-to-date' && "You're up to date"}
+                        {updateStatus === 'available' && updateResult ? `Kissa ${updateResult.version} is available` : ''}
+                        {updateStatus === 'idle' && (appVersion ? `Version ${appVersion}` : 'Loading…')}
                       </span>
                     </div>
                     {updateStatus === 'available' ? (
@@ -337,7 +442,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                         disabled={updateStatus === 'checking'}
                         className="px-4 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.08] hover:bg-[var(--on-surface)]/[0.14] text-[var(--on-surface)] text-[12px] font-bold transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                       >
-                        Check for Updates
+                        {updateStatus === 'checking' ? 'Checking…' : 'Check for Updates'}
                       </button>
                     )}
                   </div>

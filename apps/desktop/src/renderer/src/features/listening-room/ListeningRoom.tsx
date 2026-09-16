@@ -5,6 +5,8 @@ import { FullscreenProgress } from './FullscreenProgress'
 import { FullscreenControls } from './FullscreenControls'
 import { FullscreenLyrics } from './FullscreenLyrics'
 import { useAutoHide } from './useAutoHide'
+import { usePlayerStore } from '@renderer/stores/playerStore'
+import { ListeningDisplay } from './ListeningDisplay'
 
 export const ListeningRoom = memo((): React.JSX.Element => {
   const prefersReducedMotion = useReducedMotion()
@@ -22,11 +24,17 @@ export const ListeningRoom = memo((): React.JSX.Element => {
     return () => mql.removeEventListener('change', handler)
   }, [])
 
+  const isListeningDisplay = usePlayerStore((s) => s.isListeningDisplay)
   const lyricsActive = showLyrics && isLargeScreen
 
   return (
-    <motion.main
-      aria-label="Listening Room"
+    <AnimatePresence mode="wait">
+      {isListeningDisplay ? (
+        <ListeningDisplay key="display" mode="interactive" />
+      ) : (
+        <motion.main
+          key="interactive"
+          aria-label="Listening Room"
       onPointerMove={handlePointerMove}
       initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.995 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -64,6 +72,8 @@ export const ListeningRoom = memo((): React.JSX.Element => {
         canShowLyrics={isLargeScreen}
       />
     </motion.main>
+      )}
+    </AnimatePresence>
   )
 })
 

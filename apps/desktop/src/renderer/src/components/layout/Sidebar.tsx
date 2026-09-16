@@ -27,8 +27,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
       <aside
         ref={ref}
         className={cn(
-          'z-40 flex flex-col items-center py-6 select-none transition-[background-color,border-color,box-shadow,transform] duration-ui ease-primary transform-gpu will-change-transform border',
-          'my-4 ml-4 mr-2 h-[calc(100%-32px)] w-[68px] min-[900px]:w-[76px] shrink-0 rounded-[38px] backdrop-blur-2xl shadow-2xl',
+          'z-40 flex flex-col items-center py-6 select-none transition-[background-color,border-color,box-shadow,transform] duration-ui ease-primary transform-gpu will-change-transform border overflow-hidden',
+          'my-4 ml-4 mr-2 h-[calc(100%-32px)] w-[68px] min-[900px]:w-[76px] shrink-0 rounded-[38px] backdrop-blur-2xl',
           className
         )}
         style={{
@@ -85,7 +85,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             type="button"
             onClick={() => setActiveView('shelf')}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 group",
               activeView === 'shelf' ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
             )}
             title="My Records"
@@ -93,7 +93,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             {activeView === 'shelf' && (
               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
             )}
-            <Disc3 className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={activeView === 'shelf' ? 2 : 1.5} />
+            <Disc3 className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4 transition-transform duration-200 ease-out group-hover:rotate-[15deg]" strokeWidth={activeView === 'shelf' ? 2 : 1.5} />
             <span className="font-mono text-[9px] min-[900px]:text-[10px] tracking-widest font-medium uppercase">
               Shelf
             </span>
@@ -159,7 +159,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             type="button"
             onClick={toggleSettings}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 group",
               isSettingsOpen ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
             )}
             title="Preferences"
@@ -168,7 +168,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
             )}
             <div className="relative">
-              <Settings className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isSettingsOpen ? 2 : 1.5} />
+              <Settings className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4 transition-transform duration-200 ease-out group-hover:rotate-[20deg]" strokeWidth={isSettingsOpen ? 2 : 1.5} />
               {hasUpdateAvailable && (
                 <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse" />
               )}
