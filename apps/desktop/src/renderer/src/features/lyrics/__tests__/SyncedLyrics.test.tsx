@@ -67,9 +67,9 @@ describe('SyncedLyrics Component & Parser', () => {
     `
     const parsed = parseLrc(lrc)
     expect(parsed.length).toBe(2)
-    expect(parsed[0].time).toBeCloseTo(3.95)
+    expect(parsed[0].time).toBeCloseTo(3.50)
     expect(parsed[0].text).toBe('Pool side convo')
-    expect(parsed[1].time).toBeCloseTo(8.95)
+    expect(parsed[1].time).toBeCloseTo(8.50)
     expect(parsed[1].text).toBe('About your summer last night')
   })
 
@@ -88,7 +88,7 @@ describe('SyncedLyrics Component & Parser', () => {
     const lineEl = wordEl.closest('.group')!
     await act(async () => fireEvent.click(lineEl))
 
-    expect(usePlayerStore.getState().progress).toBeCloseTo(8.95)
+    expect(usePlayerStore.getState().progress).toBeCloseTo(8.50)
     expect(usePlayerStore.getState().isPlaying).toBe(true)
   })
 
@@ -100,21 +100,21 @@ describe('SyncedLyrics Component & Parser', () => {
     const parsed = parseLrc(lrc)
     const line = parsed[0]
     expect(line.timingType).toBe('estimated')
-    expect(line.endTime).toBeCloseTo(6.95) // inferred from next line
+    expect(line.endTime).toBeCloseTo(6.50) // inferred from next line
 
     const tokens = line.tokens!
     expect(tokens.length).toBeGreaterThan(0)
     
     // First token should start at line.time
-    expect(tokens[0].startTime).toBeCloseTo(3.95)
+    expect(tokens[0].startTime).toBeCloseTo(3.50)
     // Last token should end at line.endTime
-    expect(tokens[tokens.length - 1].endTime).toBeCloseTo(6.95)
+    expect(tokens[tokens.length - 1].endTime).toBeCloseTo(6.50)
 
     // Token times must be contiguous and bounded
     let previousEnd = tokens[0].startTime
     for (const t of tokens) {
-      expect(t.startTime).toBeGreaterThanOrEqual(3.95)
-      expect(t.endTime).toBeLessThanOrEqual(6.95)
+      expect(t.startTime).toBeGreaterThanOrEqual(3.50)
+      expect(t.endTime).toBeLessThanOrEqual(6.50)
       expect(t.startTime).toBeCloseTo(previousEnd)
       previousEnd = t.endTime
     }
@@ -126,6 +126,31 @@ describe('SyncedLyrics Component & Parser', () => {
     `
     const parsed = parseLrc(lrc)
     const line = parsed[0]
-    expect(line.endTime).toBeCloseTo(6.45) // fallback is 6 seconds + 0.45s offset, up to 8 max
+    expect(line.endTime).toBeCloseTo(6.00) // fallback is 6 seconds + 0s offset, up to 8 max
+  })
+
+  it('correctly parses and preserves accented characters and inverted punctuation', async () => {
+    const lrc = `
+      [00:01.00] ¿Dónde está mi corazón y mi canción?
+      [00:05.00] Viví días felices ahí
+    `
+    const parsed = parseLrc(lrc)
+    expect(parsed[0].text).toBe('¿Dónde está mi corazón y mi canción?')
+    expect(parsed[1].text).toBe('Viví días felices ahí')
+
+    // Ensure tokens retain exact accented strings
+    const words = parsed[0].tokens?.filter((t) => !t.isWhitespace).map((t) => t.text)
+    expect(words).toContain('¿Dónde')
+    expect(words).toContain('está')
+    expect(words).toContain('corazón')
+    expect(words).toContain('canción?')
+
+    window.electron = {
+      getLyrics: vi.fn().mockResolvedValue({ syncedLyrics: lrc })
+    } as any
+
+    render(<SyncedLyrics />)
+    await waitFor(() => expect(screen.getByText(/corazón/i)).toBeInTheDocument())
+    expect(screen.getByText(/canción/i)).toBeInTheDocument()
   })
 })

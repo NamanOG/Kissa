@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { VinylEngine } from './features/vinyl'
@@ -23,7 +23,8 @@ import { useAdaptiveColor } from './hooks/useAdaptiveColor'
 import { useShelfStore } from './stores/shelfStore'
 import { ShareExportMount } from './features/share/ShareExportMount'
 import { ListeningRoom } from './features/listening-room'
-import { checkForUpdates } from './utils/updater'
+import { ListeningDisplay } from './features/listening-room/ListeningDisplay'
+import { StartupExperience } from './features/startup/StartupExperience'
 
 function KissaApp(): React.JSX.Element {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
@@ -32,7 +33,11 @@ function KissaApp(): React.JSX.Element {
   const toggleSideLyrics = usePlayerStore((s) => s.toggleSideLyrics)
   const isMiniPlayer = usePlayerStore((s) => s.isMiniPlayer)
   const isFullscreen = usePlayerStore((s) => s.isFullscreen)
+  const isListeningDisplay = usePlayerStore((s) => s.isListeningDisplay)
   const theme = usePlayerStore((s) => s.theme)
+  
+  const [isScreensaver, setIsScreensaver] = useState<boolean | null>(null)
+  const [hasStarted, setHasStarted] = useState<boolean>(false)
 
   // Real audio playback engine (handles audio elements, time sync, seeking & volume)
   useAudioPlayback()
@@ -61,18 +66,10 @@ function KissaApp(): React.JSX.Element {
       const state = usePlayerStore.getState()
       ;(window as any).electron.syncSettings({ runInBackground: state.runInBackground })
       ;(window as any).electron.setStartup(state.startWithWindows)
+      ;(window as any).electron.isScreensaver().then(setIsScreensaver)
+    } else {
+      setIsScreensaver(false)
     }
-  }, [])
-
-  // Silent background check for updates on boot
-  useEffect(() => {
-    checkForUpdates('4.0.0').then((res) => {
-      if (res.hasUpdate) {
-        usePlayerStore.getState().setHasUpdateAvailable(true)
-      }
-    }).catch(() => {
-      // Ignore background check errors silently
-    })
   }, [])
 
   // BrowserWindow fullscreen events are authoritative. Update state directly so
@@ -86,6 +83,19 @@ function KissaApp(): React.JSX.Element {
       )
     })
   }, [])
+
+  if (isScreensaver === null) {
+    return <></>
+  }
+
+  if (isScreensaver) {
+    return (
+      <AppLayout className="fixed inset-0 w-screen h-screen overflow-hidden bg-[#0f0b07]">
+        <Background />
+        <ListeningDisplay key="screensaver" mode="screensaver" />
+      </AppLayout>
+    )
+  }
 
   return (
     <AppLayout>
@@ -104,6 +114,8 @@ function KissaApp(): React.JSX.Element {
           >
             <MiniPlayerView />
           </motion.div>
+        ) : isListeningDisplay ? (
+          <ListeningDisplay key="listening-display" mode="interactive" />
         ) : isFullscreen ? (
           <ListeningRoom key="listening-room" />
         ) : (
@@ -269,6 +281,11 @@ function KissaApp(): React.JSX.Element {
 
       {/* ── Keyboard Shortcuts Quick Reference ── */}
       <KeyboardHelpOverlay />
+
+      {/* ── Subtle Physical Startup Experience (Bypassed in screensaver mode) ── */}
+      {!hasStarted && isScreensaver === false && (
+        <StartupExperience onComplete={() => setHasStarted(true)} />
+      )}
     </AppLayout>
   )
 }

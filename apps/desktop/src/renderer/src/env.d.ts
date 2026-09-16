@@ -36,11 +36,18 @@ export interface KissaSystemMediaAPI {
   mediaPlayPause: () => Promise<void>
   mediaNext: () => Promise<void>
   mediaPrev: () => Promise<void>
+  mediaSeek?: (positionSeconds: number) => Promise<void>
   openExternal?: (url: string) => Promise<void>
   getAppVersion?: () => Promise<string>
   toggleMiniPlayer?: (isMini: boolean, alwaysOnTop?: boolean) => Promise<void>
   setFullScreen: (value: boolean) => Promise<boolean>
   onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void
+  isScreensaver: () => Promise<boolean>
+  exitScreensaver: () => Promise<void>
+  isScreensaverRegistered?: () => Promise<boolean>
+  registerScreensaver?: () => Promise<{ success: boolean; error?: string; path?: string }>
+  unregisterScreensaver?: () => Promise<{ success: boolean; removed: boolean; reason?: string; currentPath?: string; error?: string }>
+  openScreensaverSettings?: () => Promise<{ success: boolean; error?: string }>
 }
 
 declare global {

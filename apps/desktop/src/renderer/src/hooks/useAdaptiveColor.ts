@@ -246,6 +246,10 @@ export function extractColorsFromImage(artworkUrl: string): Promise<AdaptivePale
           spatialHighlightY: `${highlight.y.toFixed(1)}%`,
         }
         
+        if (colorCache.size >= 100) {
+          const oldestKey = colorCache.keys().next().value
+          if (oldestKey) colorCache.delete(oldestKey)
+        }
         colorCache.set(artworkUrl, newColors)
         resolve(newColors)
       } catch (e) {

@@ -12,7 +12,10 @@ describe('useKeyboardShortcuts fullscreen behavior', () => {
   beforeEach(() => {
     window.electron = {
       setFullScreen: vi.fn().mockResolvedValue(false),
-      toggleMiniPlayer: vi.fn().mockResolvedValue(undefined)
+      toggleMiniPlayer: vi.fn().mockResolvedValue(undefined),
+      mediaNext: vi.fn().mockResolvedValue(undefined),
+      mediaPrev: vi.fn().mockResolvedValue(undefined),
+      mediaSeek: vi.fn().mockResolvedValue(undefined)
     } as any
     usePlayerStore.setState({
       isFullscreen: false,
@@ -58,7 +61,7 @@ describe('useKeyboardShortcuts fullscreen behavior', () => {
     expect(window.electron.setFullScreen).not.toHaveBeenCalled()
   })
 
-  it('suppresses internal progress seek on Shift+ArrowRight for external media', () => {
+  it('calls mediaNext on Shift+ArrowRight for external media without seeking', () => {
     render(<ShortcutHarness />)
     usePlayerStore.setState({ 
       progress: 50,
@@ -73,26 +76,43 @@ describe('useKeyboardShortcuts fullscreen behavior', () => {
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, cancelable: true }))
 
-    // Should still be 50, not 55
+    expect(window.electron.mediaNext).toHaveBeenCalled()
     expect(usePlayerStore.getState().progress).toBe(50)
   })
 
-  it('allows internal progress seek on Shift+ArrowRight for internal media', () => {
+  it('seeks +5s and clamps to duration on ArrowRight', () => {
     render(<ShortcutHarness />)
     usePlayerStore.setState({ 
       progress: 50,
       currentTrack: {
-        title: 'Local Track',
+        title: 'Spotify Track',
         artist: 'Test Artist',
         album: 'Test Album',
         duration: 200,
-        audioUrl: 'test.mp3'
+        sourceAppId: 'spotify.exe'
       }
     })
 
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', shiftKey: true, cancelable: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true }))
 
-    // Should be 55
     expect(usePlayerStore.getState().progress).toBe(55)
+    expect(window.electron.mediaSeek).toHaveBeenCalledWith(55)
+  })
+
+  it('seeks -5s and clamps to 0 on ArrowLeft', () => {
+    render(<ShortcutHarness />)
+    usePlayerStore.setState({ 
+      progress: 3,
+      currentTrack: {
+        title: 'Local Track',
+        artist: 'Test Artist',
+        album: 'Test Album',
+        duration: 200
+      }
+    })
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', cancelable: true }))
+
+    expect(usePlayerStore.getState().progress).toBe(0)
   })
 })

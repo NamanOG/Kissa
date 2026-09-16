@@ -10,7 +10,8 @@ const THEMES: AppTheme[] = [
   'rainy-window',
   'hifi-library',
   'concrete-vinyl',
-  'sunday-morning'
+  'sunday-morning',
+  'adaptive'
 ]
 
 export function useKeyboardShortcuts(): void {
@@ -37,7 +38,7 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
-      // Escape: Close open modals first, or exit fullscreen
+      // Escape: Close open modals first, or exit Listening Display / fullscreen
       if (e.key === 'Escape' || e.code === 'Escape') {
         if (store.isSettingsOpen || store.isOnboardingOpen || store.isKeyboardHelpOpen) {
           e.preventDefault()
@@ -46,11 +47,34 @@ export function useKeyboardShortcuts(): void {
           if (store.isKeyboardHelpOpen) store.toggleKeyboardHelp()
           return
         }
+        if (store.isListeningDisplay) {
+          e.preventDefault()
+          store.setIsListeningDisplay(false)
+          return
+        }
         if (store.isFullscreen) {
           e.preventDefault()
           store.setFullscreen(false)
           return
         }
+      }
+
+      // D: Toggle Listening Display
+      if ((e.key === 'd' || e.key === 'D' || e.code === 'KeyD') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (e.repeat) return
+        e.preventDefault()
+        e.stopPropagation()
+        // Close open modals if activating
+        if (store.isSettingsOpen) store.setIsSettingsOpen(false)
+        if (store.isOnboardingOpen) store.setIsOnboardingOpen(false)
+        if (store.isKeyboardHelpOpen) store.toggleKeyboardHelp()
+
+        if (store.isListeningDisplay) {
+          store.setIsListeningDisplay(false)
+        } else {
+          store.setIsListeningDisplay(true)
+        }
+        return
       }
 
       // If a modal is open, prevent media hotkeys from conflicting
@@ -83,7 +107,9 @@ export function useKeyboardShortcuts(): void {
         case 'l':
         case 'L': {
           e.preventDefault()
-          if (store.activeView === 'lyrics') {
+          if (store.isListeningDisplay) {
+            store.toggleScreensaverLyrics()
+          } else if (store.activeView === 'lyrics') {
             store.setActiveView('deck')
           } else {
             store.toggleSideLyrics()
@@ -97,14 +123,12 @@ export function useKeyboardShortcuts(): void {
             if (isExternal && window.electron?.mediaPrev) {
               window.electron.mediaPrev()
             } else if (!isExternal) {
-              store.setProgress((p) => Math.max(0, p - 5))
-              PlaybackClock.setSeekPosition(Math.max(0, (PlaybackClock.getCurrentTime() || store.progress) - 5))
+              store.playPrev()
             }
-          } else if (isExternal && window.electron?.mediaPrev) {
-            window.electron.mediaPrev()
-          } else if (!isExternal) {
-            store.setProgress((p) => Math.max(0, p - 5))
-            PlaybackClock.setSeekPosition(Math.max(0, (PlaybackClock.getCurrentTime() || store.progress) - 5))
+          } else {
+            const current = PlaybackClock.getCurrentTime() || store.progress
+            const nextTime = Math.max(0, current - 5)
+            store.seek(nextTime)
           }
           break
         }
@@ -115,14 +139,16 @@ export function useKeyboardShortcuts(): void {
             if (isExternal && window.electron?.mediaNext) {
               window.electron.mediaNext()
             } else if (!isExternal) {
-              store.setProgress((p) => p + 5)
-              PlaybackClock.setSeekPosition((PlaybackClock.getCurrentTime() || store.progress) + 5)
+              store.playNext()
             }
-          } else if (isExternal && window.electron?.mediaNext) {
-            window.electron.mediaNext()
-          } else if (!isExternal) {
-            store.setProgress((p) => p + 5)
-            PlaybackClock.setSeekPosition((PlaybackClock.getCurrentTime() || store.progress) + 5)
+          } else {
+            const current = PlaybackClock.getCurrentTime() || store.progress
+            const duration = store.currentTrack?.duration ?? 0
+            let nextTime = current + 5
+            if (duration > 0) {
+              nextTime = Math.min(nextTime, duration)
+            }
+            store.seek(nextTime)
           }
           break
         }
@@ -154,6 +180,17 @@ export function useKeyboardShortcuts(): void {
           const currentIndex = THEMES.indexOf(store.theme)
           const nextIndex = (currentIndex + 1) % THEMES.length
           store.setTheme(THEMES[nextIndex])
+          break
+        }
+        case 'a':
+        case 'A': {
+          e.preventDefault()
+          if (store.theme === 'adaptive') {
+            store.setTheme(store.previousManualTheme || 'quiet-room')
+          } else {
+            usePlayerStore.setState({ previousManualTheme: store.theme })
+            store.setTheme('adaptive')
+          }
           break
         }
         case 's':

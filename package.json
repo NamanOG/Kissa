@@ -1,6 +1,6 @@
 {
   "name": "kissa",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "A contemplative desktop vinyl player & listening environment for Windows.",
   "private": true,
   "workspaces": [
@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "npm --workspace apps-desktop run dev",
     "build": "npm --workspace apps-desktop run build",
+    "build:screensaver": "npm --workspace apps-desktop run build:screensaver",
+    "build:smtc": "npm --workspace apps-desktop run build:smtc",
     "build:win": "npm --workspace apps-desktop run build:win",
     "build:unpack": "npm --workspace apps-desktop run build:unpack",
     "format": "npm --workspace apps-desktop run format",

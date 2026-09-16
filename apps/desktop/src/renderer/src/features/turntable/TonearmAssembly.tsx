@@ -237,7 +237,7 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
     const isExternal = !!state.currentTrack?.sourceAppId
     
     if (angle < 9) {
-      if (!isExternal) state.setProgress(0)
+      state.seek(0)
       state.pause()
       if (isExternal && window.electron?.mediaPlayPause && isPlaying) {
         void window.electron.mediaPlayPause()
@@ -248,9 +248,7 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       const activeDur = state.currentTrack?.duration && state.currentTrack.duration > 0 ? state.currentTrack.duration : 210
       const seekTime = Math.round(ratio * activeDur)
       
-      if (!isExternal) {
-        state.setProgress(seekTime)
-      }
+      state.seek(seekTime)
       
       if (!state.isPlaying) {
         state.play()

@@ -13,6 +13,7 @@ apps/desktop/dist/
 !apps/desktop/build/
 **/bin/
 **/obj/
+**/publish/
 
 # Cache and logs
 .eslintcache

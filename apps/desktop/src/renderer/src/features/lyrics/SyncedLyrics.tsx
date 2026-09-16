@@ -21,7 +21,7 @@ export interface LyricLine {
 }
 
 
-export function parseLrc(source: string, offsetSeconds: number = 0.45): LyricLine[] {
+export function parseLrc(source: string, offsetSeconds: number = 0): LyricLine[] {
   const lines: LyricLine[] = []
   const timestampRegex = /\[(\d{1,2}):(\d{1,2}(?:\.\d+)?)\]/g
 
@@ -36,7 +36,7 @@ export function parseLrc(source: string, offsetSeconds: number = 0.45): LyricLin
       const match = matches[i]
       const mins = Number(match[1])
       const secs = Number(match[2])
-      // Calibrated offset so lyrics sync tightly to audible vocals (compensating for audio output buffer & SMTC lead)
+      // Calibrated offset (neutral by default, adjusted via user preference)
       const time = Math.max(0, mins * 60 + secs + offsetSeconds)
       lines.push({
         id: `${time}-${i}-${text.slice(0, 8)}`,
@@ -184,19 +184,25 @@ const LyricRowItem = memo(
         onMouseEnter={() => onHover(index)}
         onMouseLeave={() => onHover(null)}
         className={cn(
-          'group relative cursor-pointer rounded-xl px-3.5 py-2.5 transition-[opacity,transform,filter] duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)] transform-gpu will-change-transform',
+          'group relative cursor-pointer rounded-xl px-3.5 py-2.5 transition-[opacity,transform,filter] transform-gpu will-change-transform',
           isActive && 'cursor-default'
         )}
         style={{
           transform: `scale(${scaleVal})`,
           transformOrigin: 'left center',
-          filter: blurVal
+          filter: blurVal,
+          transitionDuration: '800ms',
+          transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)'
         }}
       >
         <p
           ref={containerRef}
+          style={{
+            transitionDuration: '800ms',
+            transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)'
+          }}
           className={cn(
-            'font-[Inter] tracking-[-0.015em] transition-colors duration-[800ms] ease-[cubic-bezier(0.22,1,0.36,1)] py-1',
+            'font-kissa-lyrics tracking-[-0.015em] transition-colors py-1',
             isLargeView
               ? 'text-[clamp(1.9rem,3.2vw,3.1rem)] leading-[1.3]'
               : 'text-[clamp(1.4rem,2.2vw,2.05rem)] leading-[1.25]',
@@ -254,7 +260,7 @@ export interface SyncedLyricsProps {
 export const SyncedLyrics = memo(
   ({ className, lyricsSource, isLargeView = false }: SyncedLyricsProps): React.JSX.Element => {
     const currentTrack = usePlayerStore((s) => s.currentTrack)
-    const setProgress = usePlayerStore((s) => s.setProgress)
+    const seek = usePlayerStore((s) => s.seek)
     const play = usePlayerStore((s) => s.play)
     const isPlaying = usePlayerStore((s) => s.isPlaying)
     const theme = usePlayerStore((s) => s.theme)
@@ -350,7 +356,7 @@ export const SyncedLyrics = memo(
     // ── 2. Parse active lyrics array ──
     const lyricLines = useMemo(() => {
       if (!fetchedLyrics) return []
-      return parseLrc(fetchedLyrics, 0.45 + (lyricsOffset || 0))
+      return parseLrc(fetchedLyrics, lyricsOffset || 0)
     }, [fetchedLyrics, lyricsOffset])
 
     // ── 3. High-efficiency active index subscriber (Zero React re-render churn during line playback) ──
@@ -362,12 +368,31 @@ export const SyncedLyrics = memo(
       const calcIndex = (prog: number): number => {
         const lines = lyricLinesRef.current
         if (lines.length === 0) return -1
+
+        // 150ms perceptual lead-in: lyrics anticipate vocal onset so highlight coincides with vocal attack
+        const LEAD_IN = 0.15
+
+        // If playback is before the first line, do not highlight prematurely during the intro
+        if (prog < lines[0].time - LEAD_IN) {
+          return -1
+        }
+
         for (let i = lines.length - 1; i >= 0; i--) {
-          if (prog >= lines[i].time) {
+          const line = lines[i]
+          if (prog >= line.time - LEAD_IN) {
+            const nextLine = lines[i + 1]
+            const lineEnd = line.endTime ?? (line.time + 6)
+
+            // If the line has finished singing and there is an extended instrumental gap (>2.5s)
+            // before the next line begins, clear the active highlight during the break
+            if (nextLine && nextLine.time - lineEnd > 2.5 && prog > lineEnd + 0.4) {
+              return -1
+            }
+
             return i
           }
         }
-        return 0
+        return -1
       }
 
       let prevIdx = -1
@@ -469,14 +494,16 @@ export const SyncedLyrics = memo(
     // ── 5. Click-to-seek handler ──
     const handleLineClick = useCallback(
       (time: number): void => {
-        setProgress(time)
-        play()
-        if (typeof window !== 'undefined' && currentTrack?.sourceAppId && window.electron) {
-          void window.electron.mediaPlayPause()
+        seek(time)
+        if (!isPlaying) {
+          play()
+          if (typeof window !== 'undefined' && currentTrack?.sourceAppId && window.electron?.mediaPlayPause) {
+            void window.electron.mediaPlayPause()
+          }
         }
         setUserIsScrolling(false)
       },
-      [currentTrack?.sourceAppId, play, setProgress]
+      [currentTrack?.sourceAppId, isPlaying, play, seek]
     )
 
     const handleHover = useCallback((index: number | null): void => {

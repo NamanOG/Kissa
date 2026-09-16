@@ -157,6 +157,9 @@ namespace SmtcHelper
         {
             try
             {
+                Console.OutputEncoding = System.Text.Encoding.UTF8;
+                Console.InputEncoding = System.Text.Encoding.UTF8;
+
                 _sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
                 if (_sessionManager == null)
                 {
@@ -258,6 +261,34 @@ namespace SmtcHelper
                                         catch (Exception ex)
                                         {
                                             Console.Error.WriteLine($"[SMTC] prev error: {ex.Message}");
+                                        }
+                                    }
+                                }
+                                else if (action == "seek" && root.TryGetProperty("position", out var posProp))
+                                {
+                                    var session = _currentSession ?? _authoritySession ?? _sessionManager?.GetCurrentSession();
+                                    if (session != null)
+                                    {
+                                        try
+                                        {
+                                            double targetSeconds = posProp.GetDouble();
+                                            if (!double.IsNaN(targetSeconds) && !double.IsInfinity(targetSeconds) && targetSeconds >= 0)
+                                            {
+                                                var timelineInfo = session.GetTimelineProperties();
+                                                double dur = timelineInfo?.EndTime.TotalSeconds ?? 0;
+                                                if (dur > 0)
+                                                {
+                                                    targetSeconds = Math.Clamp(targetSeconds, 0, dur);
+                                                }
+                                                long ticks = (long)(targetSeconds * 10_000_000.0);
+                                                await session.TryChangePlaybackPositionAsync(ticks).AsTask();
+                                                await Task.Delay(50);
+                                                await BroadcastStateAsync(true);
+                                            }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            Console.Error.WriteLine($"[SMTC] seek error: {ex.Message}");
                                         }
                                     }
                                 }
@@ -700,14 +731,33 @@ namespace SmtcHelper
         private static string JsonEscape(string value)
         {
             if (value == null) return "null";
-            return "\"" + value
-                .Replace("\\", "\\\\")
-                .Replace("\"", "\\\"")
-                .Replace("\b", "\\b")
-                .Replace("\f", "\\f")
-                .Replace("\n", "\\n")
-                .Replace("\r", "\\r")
-                .Replace("\t", "\\t") + "\"";
+            var sb = new System.Text.StringBuilder(value.Length + 16);
+            sb.Append('\"');
+            foreach (char c in value)
+            {
+                switch (c)
+                {
+                    case '\\': sb.Append("\\\\"); break;
+                    case '\"': sb.Append("\\\""); break;
+                    case '\b': sb.Append("\\b"); break;
+                    case '\f': sb.Append("\\f"); break;
+                    case '\n': sb.Append("\\n"); break;
+                    case '\r': sb.Append("\\r"); break;
+                    case '\t': sb.Append("\\t"); break;
+                    default:
+                        if (c < 32 || c > 126)
+                        {
+                            sb.Append($"\\u{(int)c:x4}");
+                        }
+                        else
+                        {
+                            sb.Append(c);
+                        }
+                        break;
+                }
+            }
+            sb.Append('\"');
+            return sb.ToString();
         }
 
     }

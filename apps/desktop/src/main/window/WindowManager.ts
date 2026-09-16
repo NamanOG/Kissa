@@ -3,6 +3,7 @@ import { join } from 'path'
 import { getWindowConfig } from './windowConfig'
 import { setupWindowEvents } from './windowEvents'
 import { getPlayIcon, getPauseIcon, getPrevIcon, getNextIcon } from './icons'
+import { ScreensaverRegistryService } from '../services/ScreensaverRegistryService'
 
 export function setWindowFullscreen(
   mainWindow: Pick<BrowserWindow, 'isFullScreen' | 'setFullScreen'> | null,
@@ -21,6 +22,7 @@ export class WindowManager {
   private mainWindow: BrowserWindow | null = null
   public isBackgroundEnabled: boolean = false
   public isQuitting: boolean = false
+  public isScreensaver: boolean = false
   private constructor() {}
   public static getInstance(): WindowManager {
     if (!WindowManager.instance) {
@@ -28,8 +30,16 @@ export class WindowManager {
     }
     return WindowManager.instance
   }
-  public createMainWindow(isHidden: boolean = false): BrowserWindow {
-    this.mainWindow = new BrowserWindow(getWindowConfig())
+  public createMainWindow(isHidden: boolean = false, isScreensaver: boolean = false): BrowserWindow {
+    this.isScreensaver = isScreensaver
+    const baseConfig = getWindowConfig()
+    
+    // In screensaver mode, force the window to be fullscreen and hide the menu bar
+    const config = isScreensaver 
+      ? { ...baseConfig, fullscreen: true, autoHideMenuBar: true }
+      : baseConfig
+
+    this.mainWindow = new BrowserWindow(config)
     setupWindowEvents(this.mainWindow, isHidden)
     if (process.env['ELECTRON_RENDERER_URL']) {
       this.mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
@@ -43,7 +53,33 @@ export class WindowManager {
   }
 
   public setupIpcHandlers(): void {
-    import('electron').then(({ ipcMain }) => {
+    import('electron').then(({ ipcMain, app }) => {
+      // Screensaver specific scoped IPCs
+      ipcMain.handle('kissa:is-screensaver', () => this.isScreensaver)
+      
+      ipcMain.handle('kissa:exit-screensaver', () => {
+        if (this.isScreensaver) {
+          this.isQuitting = true
+          app.quit()
+        }
+      })
+
+      ipcMain.handle('kissa:is-screensaver-registered', () => {
+        return ScreensaverRegistryService.getInstance().isScreensaverRegistered()
+      })
+
+      ipcMain.handle('kissa:register-screensaver', () => {
+        return ScreensaverRegistryService.getInstance().registerScreensaver()
+      })
+
+      ipcMain.handle('kissa:unregister-screensaver', () => {
+        return ScreensaverRegistryService.getInstance().unregisterScreensaver()
+      })
+
+      ipcMain.handle('kissa:open-screensaver-settings', () => {
+        return ScreensaverRegistryService.getInstance().openScreensaverSettings()
+      })
+
       ipcMain.handle('kissa:toggle-mini-player', (_event, isMini: boolean, alwaysOnTop: boolean = true) => {
         if (!this.mainWindow) return
         if (isMini) {
@@ -101,11 +137,9 @@ export class WindowManager {
       })
       
       ipcMain.handle('kissa:set-startup', (_event, enabled: boolean) => {
-        import('electron').then(({ app }) => {
-          app.setLoginItemSettings({
-            openAtLogin: enabled,
-            args: ['--hidden']
-          })
+        app.setLoginItemSettings({
+          openAtLogin: enabled,
+          args: ['--hidden']
         })
       })
     })

@@ -34,16 +34,6 @@ export const TurntableShadow = memo(
             filter: 'blur(10px)'
           }}
         />
-
-        {/* Sharp foot contact shadows */}
-        <div
-          className="absolute w-20 h-5 rounded-full bg-black/80 blur-[4px]"
-          style={{ left: '9%', bottom: '-3%' }}
-        />
-        <div
-          className="absolute w-20 h-5 rounded-full bg-black/80 blur-[4px]"
-          style={{ right: '9%', bottom: '-3%' }}
-        />
       </div>
     )
   }

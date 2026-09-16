@@ -1,30 +1,138 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, ArrowLeft, X, LayoutGrid, Disc3, Maximize, Quote, Palette, Share2 } from 'lucide-react'
+import { ArrowRight, ArrowLeft, X } from 'lucide-react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { cn } from '@renderer/utils/cn'
+import { useMechanicalTick } from '@renderer/hooks/useMechanicalTick'
+import { LISTENING_ENVIRONMENTS } from '@renderer/features/settings/themes'
+
 import onboardingIntro from '@renderer/media/onboarding_intro.jpg'
 import onboardingSetup from '@renderer/media/onboarding_setup.jpg'
-import onboardingControl from '@renderer/media/onboarding_control.jpg'
+import kissaIdleCover from '@renderer/media/kissa_idle_cover.jpg'
+import quietRoomEnv from '@renderer/media/environments/01_quiet_room.jpg'
 import onboardingSettings from '@renderer/media/onboarding_settings.jpg'
 import onboardingReady from '@renderer/media/onboarding_ready.jpg'
+import onboardingControl from '@renderer/media/onboarding_control.jpg'
 
 export interface OnboardingModalProps {
   className?: string
 }
 
+interface GuideStep {
+  title: string
+  subtitle: string
+  description: string
+  image: string
+  imageAlt: string
+  imageFit?: 'cover' | 'contain'
+  details?: { label: string; text: string }[]
+}
+
+const GUIDE_STEPS: GuideStep[] = [
+  {
+    title: 'Kissa',
+    subtitle: 'A music player built around the feeling of listening.',
+    description:
+      'Digital music often feels weightless and disposable. Kissa brings back the deliberate, tactile reverence of playing a physical vinyl record—giving your music room to breathe in a quiet, dedicated space.',
+    image: onboardingIntro,
+    imageAlt: 'Kissa listening player'
+  },
+  {
+    title: 'The Turntable',
+    subtitle: 'A physical listening surface that follows music from your apps.',
+    description:
+      'Watch the platter rotate at 33⅓ or 45 RPM with authentic inertia. The tonearm tracks the needle through the groove in real time, and dragging the headshell lets you physically seek across the record surface.',
+    image: onboardingSetup,
+    imageAlt: 'Physical turntable listening surface',
+    details: [
+      { label: 'Speeds', text: 'Switch between 33⅓ and 45 RPM' },
+      { label: 'Needle Drop', text: 'Drag and drop the tonearm to seek or return to rest' }
+    ]
+  },
+  {
+    title: 'The Shelf',
+    subtitle: 'Your listening history becomes an archival record crate.',
+    description:
+      'Every album you listen to is archived in a wooden record crate. Flip through vinyl sleeves by date or title, pull out a jacket to examine the artwork, and revisit past listening sessions with ease.',
+    image: kissaIdleCover,
+    imageAlt: 'Archival record shelf crate',
+    imageFit: 'cover',
+    details: [
+      { label: 'Crate Flipping', text: 'Navigate records like an authentic collection' },
+      { label: 'Artwork Inspection', text: 'Pull records forward to view sleeve art' }
+    ]
+  },
+  {
+    title: 'The Room',
+    subtitle: 'Ambient illumination and listening room environments.',
+    description:
+      'Transform your workspace into a quiet Japanese listening cafe. Choose from eight atmospheric lighting environments or let the room adaptively sample the palette of the current album.',
+    image: quietRoomEnv,
+    imageAlt: 'Listening room environment',
+    details: [
+      { label: 'Environments', text: '8 curated physical listening rooms' },
+      { label: 'Adaptive Lighting', text: 'Ambient glow subtly matches album art' }
+    ]
+  },
+  {
+    title: 'The Words',
+    subtitle: 'Synchronized, interactive lyric tracking.',
+    description:
+      'Read time-synced lyrics that flow naturally with the vocal phrasing. Click any line to seek directly to that lyric in the song, or fine-tune timing calibration to your personal taste.',
+    image: onboardingSettings,
+    imageAlt: 'Synchronized lyric tracking',
+    details: [
+      { label: 'Interactive Seeking', text: 'Click any lyric line to jump directly' },
+      { label: 'Timing Calibration', text: 'Adjust millisecond offset in settings' }
+    ]
+  },
+  {
+    title: 'The Display',
+    subtitle: 'A quiet fullscreen presence and native Windows screensaver.',
+    description:
+      'Press D or F11 to enter a distraction-free fullscreen display with subtle clock readouts and glowing vinyl. When your PC is idle, Kissa functions as a native Windows screensaver.',
+    image: onboardingReady,
+    imageAlt: 'Quiet fullscreen display and screensaver',
+    details: [
+      { label: 'Listening Display', text: 'Press D for a calm full-screen presence' },
+      { label: 'Screensaver', text: 'Native Windows screensaver with lyric display' }
+    ]
+  },
+  {
+    title: 'Control',
+    subtitle: 'Keyboard shortcuts and external media integration.',
+    description:
+      'Kissa follows Spotify, Apple Music, TIDAL, and browser audio sessions. Manage playback effortlessly with intuitive keyboard shortcuts designed for fluid operation.',
+    image: onboardingControl,
+    imageAlt: 'Keyboard shortcuts and media controls',
+    details: [
+      { label: 'Space', text: 'Play or pause playback' },
+      { label: '← / →', text: 'Seek 5 seconds backward or forward' },
+      { label: 'Shift + ← / →', text: 'Previous or next track' },
+      { label: '?', text: 'Open quick shortcut reference' }
+    ]
+  }
+]
+
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) => {
   const isOnboardingOpen = usePlayerStore((s) => s.isOnboardingOpen)
   const setIsOnboardingOpen = usePlayerStore((s) => s.setIsOnboardingOpen)
+  const theme = usePlayerStore((s) => s.theme)
+  const setTheme = usePlayerStore((s) => s.setTheme)
+  const rpm = usePlayerStore((s) => s.rpm)
+  const setRpm = usePlayerStore((s) => s.setRpm)
+  const screensaverLyrics = usePlayerStore((s) => s.screensaverLyrics)
+  const toggleScreensaverLyrics = usePlayerStore((s) => s.toggleScreensaverLyrics)
+  const playTick = useMechanicalTick()
+
   const [step, setStep] = useState<number>(0)
 
-  // Use window.matchMedia for reduced motion just in case it's not fully synced in tests/store yet
   const [reducedMotion, setReducedMotion] = useState(false)
   useEffect(() => {
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
       const media = window.matchMedia('(prefers-reduced-motion: reduce)')
       setReducedMotion(media.matches)
-      
+
       const listener = () => setReducedMotion(media.matches)
       media.addEventListener('change', listener)
       return () => media.removeEventListener('change', listener)
@@ -34,8 +142,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (!isOnboardingOpen) return
-      
-      // Do not intercept if user is typing
+
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
@@ -44,7 +151,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
         return
       }
 
-      if (e.key === 'ArrowRight' && step < 4) setStep((s) => s + 1)
+      if (e.key === 'ArrowRight' && step < GUIDE_STEPS.length - 1) setStep((s) => s + 1)
       if (e.key === 'ArrowLeft' && step > 0) setStep((s) => s - 1)
       if (e.key === 'Escape') setIsOnboardingOpen(false)
     }
@@ -52,10 +159,9 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
     return () => window.removeEventListener('keydown', onKey)
   }, [isOnboardingOpen, step, setIsOnboardingOpen])
 
-  // Reset step if closed
   useEffect(() => {
     if (!isOnboardingOpen) {
-      const t = setTimeout(() => setStep(0), 400) // Reset after fade out
+      const t = setTimeout(() => setStep(0), 400)
       return () => clearTimeout(t)
     }
   }, [isOnboardingOpen])
@@ -65,17 +171,22 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
   const close = (): void => setIsOnboardingOpen(false)
   const isReduced = reducedMotion
 
-  // Unified transition configs
-  const fadeTransition = { duration: 0.28, ease: [0.22, 1, 0.36, 1] as const }
+  const fadeTransition = { duration: 0.24, ease: [0.22, 1, 0.36, 1] as const }
   const slideTransition = isReduced
     ? fadeTransition
-    : { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const }
+    : { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const }
 
   const slideVariants = {
-    initial: { opacity: 0, x: isReduced ? 0 : 20 },
+    initial: { opacity: 0, x: isReduced ? 0 : 16 },
     animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: isReduced ? 0 : -20 }
+    exit: { opacity: 0, x: isReduced ? 0 : -16 }
   }
+
+  const currentStep = GUIDE_STEPS[step]
+  const isLastStep = step === GUIDE_STEPS.length - 1
+
+  const activeEnvObj = LISTENING_ENVIRONMENTS.find((e) => e.id === theme)
+  const stepImage = step === 3 && activeEnvObj?.image ? activeEnvObj.image : currentStep.image
 
   return (
     <div
@@ -90,25 +201,34 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={fadeTransition}
-        className="fixed inset-0 bg-[#0a0806]/95 backdrop-blur-xl pointer-events-auto"
+        className="fixed inset-0 bg-[#0a0806]/92 backdrop-blur-xl pointer-events-auto"
         onClick={close}
       />
 
-      {/* Cinematic Modal Container */}
+      {/* Editorial Guide Container */}
       <motion.div
         initial={{ opacity: 0, scale: isReduced ? 1 : 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: isReduced ? 1 : 0.98 }}
         transition={slideTransition}
-        className="relative z-50 w-full max-w-4xl h-[80vh] min-h-[500px] max-h-[700px] rounded-2xl bg-[#14110e] border border-[#2a241e] shadow-[0_32px_64px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.06)] overflow-hidden pointer-events-auto flex flex-col"
+        className="relative z-50 w-full max-w-4xl h-[84vh] min-h-[520px] max-h-[720px] rounded-2xl bg-[#14110e] border border-[#2a241e] shadow-[0_32px_64px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)] overflow-hidden pointer-events-auto flex flex-col"
       >
-        {/* Header / Dismiss */}
-        <div className="absolute top-0 right-0 p-6 z-20">
+        {/* Header Bar */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="font-serif italic text-[15px] text-[#f5efe6]/80 tracking-wide">
+              Kissa
+            </span>
+            <span className="text-white/20 text-xs">•</span>
+            <span className="text-[12px] font-mono text-[#a89b8d]">Guide</span>
+          </div>
+
           <button
             type="button"
             onClick={close}
-            className="w-8 h-8 rounded-full flex items-center justify-center bg-black/40 border border-white/5 text-[#8e8175] hover:text-[#d7a76c] hover:bg-black/60 hover:border-[#d7a76c]/30 transition-colors focus:outline-none focus:ring-2 focus:ring-[#d7a76c]/50 cursor-pointer"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-[#8e8175] hover:text-[#f5efe6] hover:bg-white/[0.06] transition-colors cursor-pointer"
             title="Close"
+            aria-label="Close"
           >
             <X className="w-4 h-4" />
           </button>
@@ -117,337 +237,235 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
         {/* Dynamic Content Area */}
         <div className="flex-1 relative overflow-hidden flex flex-col">
           <AnimatePresence mode="wait">
-            {/* STEP 1: INTRO */}
-            {step === 0 && (
-              <motion.div
-                key="step-0"
-                variants={slideVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={slideTransition}
-                className="absolute inset-0 flex flex-col items-center justify-center p-6 min-[900px]:p-12 text-center"
-              >
-                <div className="w-full max-w-2xl h-[35vh] max-h-[280px] rounded-2xl overflow-hidden shadow-[0_16px_32px_rgba(0,0,0,0.4)] border border-white/5 mb-8 relative">
-                  <img src={onboardingIntro} className="absolute inset-0 w-full h-full object-cover" draggable={false} alt="Kissa Intro" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                </div>
-                <h1 className="font-serif text-5xl min-[640px]:text-6xl text-[#f5efe6] font-medium tracking-tight mb-4">
-                  Kissa
-                </h1>
-                <p className="font-sans text-[15px] min-[640px]:text-[17px] text-[#b7a99b] max-w-md leading-relaxed font-light">
-                  A music player built around the feeling of listening.
-                </p>
-              </motion.div>
-            )}
+            <motion.div
+              key={`step-${step}`}
+              variants={slideVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={slideTransition}
+              className="absolute inset-0 flex flex-col min-[900px]:flex-row gap-6 p-6 min-[900px]:p-10 overflow-y-auto no-scrollbar"
+            >
+              {/* Standardized Outer Frame for Feature Visuals */}
+              <div className="w-full min-[900px]:w-[48%] h-48 min-[900px]:h-full rounded-2xl bg-[#0a0807] border border-white/[0.08] shadow-[0_12px_28px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.04)] overflow-hidden relative shrink-0 flex items-center justify-center p-1">
+                <img
+                  src={stepImage}
+                  alt={currentStep.imageAlt}
+                  className={cn(
+                    'w-full h-full rounded-xl transition-opacity duration-300',
+                    currentStep.imageFit === 'contain' ? 'object-contain' : 'object-cover'
+                  )}
+                  draggable={false}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+              </div>
 
-            {/* STEP 2: GUIDE */}
-            {step === 1 && (
-              <motion.div
-                key="step-1"
-                variants={slideVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={slideTransition}
-                className="absolute inset-0 flex flex-col p-6 min-[900px]:p-10 overflow-hidden"
-              >
-                <div className="flex flex-col min-[900px]:flex-row gap-6 h-full">
-                  {/* Image */}
-                  <div className="w-full min-[900px]:w-[45%] h-40 min-[900px]:h-full rounded-2xl overflow-hidden shadow-[0_16px_32px_rgba(0,0,0,0.4)] border border-white/5 relative shrink-0">
-                    <img src={onboardingSetup} className="absolute inset-0 w-full h-full object-cover" draggable={false} alt="Kissa Setup" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+              {/* Text & Content Column */}
+              <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
+                <div className="space-y-4">
+                  <div>
+                    <span className="text-[11px] font-mono tracking-widest text-[#d7a76c] font-medium">
+                      {step + 1} of {GUIDE_STEPS.length}
+                    </span>
+                    <h2 className="font-serif text-3xl min-[900px]:text-4xl text-[#f5efe6] font-normal tracking-tight mt-1">
+                      {currentStep.title}
+                    </h2>
                   </div>
-                  
-                  {/* Content */}
-                  <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar pt-2">
-                    <div className="mb-4 shrink-0">
-                      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#d7a76c] font-bold">
-                        Chapter I • Guide
+
+                  <p className="text-[14px] min-[900px]:text-[15px] font-medium text-[#d6cec7] leading-snug">
+                    {currentStep.subtitle}
+                  </p>
+
+                  <p className="text-[13px] min-[900px]:text-[13.5px] text-[#a89b8d] font-light leading-relaxed">
+                    {currentStep.description}
+                  </p>
+
+                  {/* Feature highlights if present */}
+                  {currentStep.details && (
+                    <div className="pt-2 border-t border-white/[0.06] grid grid-cols-1 gap-2.5">
+                      {currentStep.details.map((detail, idx) => (
+                        <div key={idx} className="flex flex-col">
+                          <span className="text-[11.5px] font-mono text-[#d7a76c]/90 font-medium">
+                            {detail.label}
+                          </span>
+                          <span className="text-[12.5px] text-[#b7a99b] font-light">
+                            {detail.text}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* ── Step 2 Personalization: Turntable Platter Speed ── */}
+                  {step === 1 && (
+                    <div className="pt-3 border-t border-white/[0.06]">
+                      <span className="text-[11px] font-mono text-[#d7a76c]/90 font-medium block mb-2">
+                        Customize Default Rotation Speed
                       </span>
-                      <h2 className="font-serif text-2xl min-[900px]:text-3xl text-[#f5efe6] font-medium tracking-tight mt-1">
-                        The Setup
-                      </h2>
-                    </div>
-
-                    <div className="flex-1 border-t border-white/[0.08] grid grid-cols-1 min-[640px]:grid-cols-2 gap-x-4 gap-y-1 content-start pt-3">
-                      {/* Left Column items */}
-                      <div className="flex flex-col py-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-[8px] text-[#d7a76c] font-bold">01</span>
-                          <h3 className="font-kissa-chassis uppercase tracking-[0.15em] text-[8.5px] min-[900px]:text-[9.5px] text-[#f5efe6] font-semibold">Record Shelf</h3>
-                        </div>
-                        <p className="font-serif text-[13px] min-[900px]:text-[14px] text-[#a89b8d] leading-snug">Your collection becomes the shelf.</p>
-                      </div>
-                      
-                      <div className="flex flex-col py-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-[8px] text-[#d7a76c] font-bold">04</span>
-                          <h3 className="font-kissa-chassis uppercase tracking-[0.15em] text-[8.5px] min-[900px]:text-[9.5px] text-[#f5efe6] font-semibold">Lyrics</h3>
-                        </div>
-                        <p className="font-serif text-[13px] min-[900px]:text-[14px] text-[#a89b8d] leading-snug">Follow the song as it plays.</p>
-                      </div>
-
-                      <div className="flex flex-col py-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-[8px] text-[#d7a76c] font-bold">02</span>
-                          <h3 className="font-kissa-chassis uppercase tracking-[0.15em] text-[8.5px] min-[900px]:text-[9.5px] text-[#f5efe6] font-semibold">Turntable</h3>
-                        </div>
-                        <p className="font-serif text-[13px] min-[900px]:text-[14px] text-[#a89b8d] leading-snug">A tactile listening surface.</p>
-                      </div>
-
-                      <div className="flex flex-col py-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-[8px] text-[#d7a76c] font-bold">05</span>
-                          <h3 className="font-kissa-chassis uppercase tracking-[0.15em] text-[8.5px] min-[900px]:text-[9.5px] text-[#f5efe6] font-semibold">Match Album</h3>
-                        </div>
-                        <p className="font-serif text-[13px] min-[900px]:text-[14px] text-[#a89b8d] leading-snug">The room inherits the character.</p>
-                      </div>
-
-                      <div className="flex flex-col py-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-[8px] text-[#d7a76c] font-bold">03</span>
-                          <h3 className="font-kissa-chassis uppercase tracking-[0.15em] text-[8.5px] min-[900px]:text-[9.5px] text-[#f5efe6] font-semibold">Listening Room</h3>
-                        </div>
-                        <p className="font-serif text-[13px] min-[900px]:text-[14px] text-[#a89b8d] leading-snug">Enter fullscreen listening.</p>
-                      </div>
-
-                      <div className="flex flex-col py-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-[8px] text-[#d7a76c] font-bold">06</span>
-                          <h3 className="font-kissa-chassis uppercase tracking-[0.15em] text-[8.5px] min-[900px]:text-[9.5px] text-[#f5efe6] font-semibold">Listening Cards</h3>
-                        </div>
-                        <p className="font-serif text-[13px] min-[900px]:text-[14px] text-[#a89b8d] leading-snug">Keep a visual artifact.</p>
+                      <div className="flex items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playTick()
+                            setRpm('33')
+                          }}
+                          className={cn(
+                            'px-3 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-wider transition-all cursor-pointer border',
+                            rpm === '33'
+                              ? 'bg-[#d7a76c] text-[#14110e] border-[#d7a76c] font-bold shadow-[0_2px_8px_rgba(215,167,108,0.25)]'
+                              : 'bg-white/[0.04] text-[#a89b8d] border-white/[0.08] hover:bg-white/[0.08] hover:text-[#f5efe6]'
+                          )}
+                        >
+                          33 ⅓ RPM · LP Album
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playTick()
+                            setRpm('45')
+                          }}
+                          className={cn(
+                            'px-3 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-wider transition-all cursor-pointer border',
+                            rpm === '45'
+                              ? 'bg-[#d7a76c] text-[#14110e] border-[#d7a76c] font-bold shadow-[0_2px_8px_rgba(215,167,108,0.25)]'
+                              : 'bg-white/[0.04] text-[#a89b8d] border-white/[0.08] hover:bg-white/[0.08] hover:text-[#f5efe6]'
+                          )}
+                        >
+                          45 RPM · 7" / 12" Single
+                        </button>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
+                  )}
 
-            {/* STEP 3: SHORTCUTS & ABOUT */}
-            {step === 2 && (
-              <motion.div
-                key="step-2"
-                variants={slideVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={slideTransition}
-                className="absolute inset-0 flex flex-col p-6 min-[900px]:p-10 overflow-hidden"
-              >
-                <div className="flex flex-col min-[900px]:flex-row gap-6 h-full">
-                  {/* Image */}
-                  <div className="w-full min-[900px]:w-[45%] h-40 min-[900px]:h-full rounded-2xl overflow-hidden shadow-[0_16px_32px_rgba(0,0,0,0.4)] border border-white/5 relative shrink-0">
-                    <img src={onboardingControl} className="absolute inset-0 w-full h-full object-cover" draggable={false} alt="Kissa Control" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar pt-2 gap-6">
-                    {/* Shortcuts */}
-                    <div>
-                      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#d7a76c] font-bold">
-                        Chapter II • Control
+                  {/* ── Step 4 Personalization: Interactive Room Environment Switcher ── */}
+                  {step === 3 && (
+                    <div className="pt-3 border-t border-white/[0.06]">
+                      <span className="text-[11px] font-mono text-[#d7a76c]/90 font-medium block mb-2">
+                        Choose Your Listening Atmosphere
                       </span>
-                      <h2 className="font-serif text-2xl min-[900px]:text-3xl text-[#f5efe6] font-medium tracking-tight mt-1 mb-3">
-                        Keyboard Shortcuts
-                      </h2>
-                      
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <kbd className="h-6 px-2 rounded bg-white/[0.08] border border-white/[0.1] text-white font-sans text-[11px] font-semibold flex items-center justify-center shadow-sm">F11</kbd>
-                          <span className="font-sans text-[12px] text-[#a89b8d]">Toggle Fullscreen Listening Room</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <kbd className="h-6 px-2.5 rounded bg-white/[0.08] border border-white/[0.1] text-white font-sans text-[11px] font-semibold flex items-center justify-center shadow-sm">Space</kbd>
-                          <span className="font-sans text-[12px] text-[#a89b8d]">Play / Pause Audio</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1 mr-2">
-                            <kbd className="w-6 h-6 rounded bg-white/[0.08] border border-white/[0.1] text-white font-sans text-[10px] flex items-center justify-center shadow-sm">←</kbd>
-                            <kbd className="w-6 h-6 rounded bg-white/[0.08] border border-white/[0.1] text-white font-sans text-[10px] flex items-center justify-center shadow-sm">→</kbd>
-                          </div>
-                          <span className="font-sans text-[12px] text-[#a89b8d]">Seek 5s backward / forward</span>
-                        </div>
+                      <div className="grid grid-cols-2 gap-2 max-h-[140px] overflow-y-auto no-scrollbar pr-1">
+                        {LISTENING_ENVIRONMENTS.slice(0, 6).map((env) => {
+                          const isSelected = theme === env.id
+                          return (
+                            <button
+                              key={env.id}
+                              type="button"
+                              onClick={() => {
+                                playTick()
+                                setTheme(env.id)
+                              }}
+                              className={cn(
+                                'flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-left transition-all cursor-pointer group',
+                                isSelected
+                                  ? 'bg-[#d7a76c]/15 border-[#d7a76c] text-[#f5efe6]'
+                                  : 'bg-white/[0.03] border-white/[0.06] text-[#a89b8d] hover:bg-white/[0.06] hover:text-[#f5efe6]'
+                              )}
+                            >
+                              <span
+                                className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
+                                style={{ backgroundColor: env.accentColor }}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[11px] font-medium block truncate">
+                                  {env.name}
+                                </span>
+                              </div>
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
+                  )}
 
-                    {/* About Kissa */}
-                    <div className="border-t border-white/[0.08] pt-4">
-                      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#d7a76c] font-bold">
-                        Chapter III • Philosophy
+                  {/* ── Step 6 Personalization: Screensaver Lyric Preference ── */}
+                  {step === 5 && (
+                    <div className="pt-3 border-t border-white/[0.06]">
+                      <span className="text-[11px] font-mono text-[#d7a76c]/90 font-medium block mb-2">
+                        Screensaver Preference
                       </span>
-                      <h2 className="font-serif text-2xl min-[900px]:text-3xl text-[#f5efe6] font-medium tracking-tight mt-1 mb-3">
-                        About Kissa
-                      </h2>
-                      
-                      <div className="space-y-2.5">
-                        <p className="font-sans text-[12.5px] text-[#b7a99b] leading-relaxed font-light">
-                          Digital music often feels weightless and disposable. Kissa was designed to bring back the deliberate, tactile reverence of playing a physical vinyl record.
-                        </p>
-                        <p className="font-sans text-[12.5px] text-[#b7a99b] leading-relaxed font-light">
-                          No algorithmic distractions or intrusive banners. Simply a quiet space for you and your collection to coexist.
-                        </p>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playTick()
+                          toggleScreensaverLyrics()
+                        }}
+                        className={cn(
+                          'flex items-center justify-between w-full px-3 py-2 rounded-lg border transition-all cursor-pointer',
+                          screensaverLyrics
+                            ? 'bg-[#d7a76c]/15 border-[#d7a76c] text-[#f5efe6]'
+                            : 'bg-white/[0.03] border-white/[0.06] text-[#a89b8d] hover:bg-white/[0.06] hover:text-[#f5efe6]'
+                        )}
+                      >
+                        <span className="text-[11.5px] font-medium">Show Live Lyrics on Screensaver</span>
+                        <span
+                          className={cn(
+                            'text-[10px] font-mono uppercase px-1.5 py-0.5 rounded',
+                            screensaverLyrics
+                              ? 'bg-[#d7a76c] text-[#14110e] font-bold'
+                              : 'bg-white/10 text-[#a89b8d]'
+                          )}
+                        >
+                          {screensaverLyrics ? 'Active' : 'Muted'}
+                        </span>
+                      </button>
                     </div>
-                  </div>
+                  )}
                 </div>
-              </motion.div>
-            )}
-
-            {/* STEP 4: ATMOSPHERE & HARDWARE CONFIGURATION */}
-            {step === 3 && (
-              <motion.div
-                key="step-3"
-                variants={slideVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={slideTransition}
-                className="absolute inset-0 flex flex-col p-6 min-[900px]:p-10 overflow-hidden"
-              >
-                <div className="flex flex-col min-[900px]:flex-row gap-6 h-full">
-                  {/* Image */}
-                  <div className="w-full min-[900px]:w-[45%] h-40 min-[900px]:h-full rounded-2xl overflow-hidden shadow-[0_16px_32px_rgba(0,0,0,0.4)] border border-white/5 relative shrink-0">
-                    <img src={onboardingSettings} className="absolute inset-0 w-full h-full object-cover" draggable={false} alt="Kissa Settings" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 flex flex-col overflow-y-auto no-scrollbar pt-2">
-                    <div className="mb-4 shrink-0">
-                      <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#d7a76c] font-bold">
-                        Chapter IV • Preferences
-                      </span>
-                      <h2 className="font-serif text-2xl min-[900px]:text-3xl text-[#f5efe6] font-medium tracking-tight mt-1">
-                        Atmosphere & Audio
-                      </h2>
-                    </div>
-
-                    <div className="flex-1 border-t border-white/[0.08] grid grid-cols-1 min-[640px]:grid-cols-2 gap-x-4 gap-y-1 content-start pt-3">
-                      <div className="flex flex-col py-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-[8px] text-[#d7a76c] font-bold">01</span>
-                          <h3 className="font-kissa-chassis uppercase tracking-[0.15em] text-[8.5px] min-[900px]:text-[9.5px] text-[#f5efe6] font-semibold">Atmospheres</h3>
-                        </div>
-                        <p className="font-serif text-[13px] min-[900px]:text-[14px] text-[#a89b8d] leading-snug">8 bespoke environments or adaptive album art.</p>
-                      </div>
-
-                      <div className="flex flex-col py-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-[8px] text-[#d7a76c] font-bold">02</span>
-                          <h3 className="font-kissa-chassis uppercase tracking-[0.15em] text-[8.5px] min-[900px]:text-[9.5px] text-[#f5efe6] font-semibold">Hardware Mechanics</h3>
-                        </div>
-                        <p className="font-serif text-[13px] min-[900px]:text-[14px] text-[#a89b8d] leading-snug">33/45 RPM speeds and tactile needle thud.</p>
-                      </div>
-
-                      <div className="flex flex-col py-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-[8px] text-[#d7a76c] font-bold">03</span>
-                          <h3 className="font-kissa-chassis uppercase tracking-[0.15em] text-[8.5px] min-[900px]:text-[9.5px] text-[#f5efe6] font-semibold">Lyrics Calibration</h3>
-                        </div>
-                        <p className="font-serif text-[13px] min-[900px]:text-[14px] text-[#a89b8d] leading-snug">Fine-tune vocal timing offset and auto-scroll.</p>
-                      </div>
-
-                      <div className="flex flex-col py-1.5">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-[8px] text-[#d7a76c] font-bold">04</span>
-                          <h3 className="font-kissa-chassis uppercase tracking-[0.15em] text-[8.5px] min-[900px]:text-[9.5px] text-[#f5efe6] font-semibold">System Integration</h3>
-                        </div>
-                        <p className="font-serif text-[13px] min-[900px]:text-[14px] text-[#a89b8d] leading-snug">Spotify, Apple Music & Windows SMTC sync.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* STEP 5: START LISTENING */}
-            {step === 4 && (
-              <motion.div
-                key="step-4"
-                variants={slideVariants}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                transition={slideTransition}
-                className="absolute inset-0 flex flex-col items-center justify-center p-6 min-[900px]:p-12 text-center"
-              >
-                <div className="w-full max-w-2xl h-[35vh] max-h-[280px] rounded-2xl overflow-hidden shadow-[0_16px_32px_rgba(0,0,0,0.4)] border border-white/5 mb-6 relative">
-                  <img src={onboardingReady} className="absolute inset-0 w-full h-full object-cover" draggable={false} alt="Kissa Sanctuary" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                </div>
-
-                <h1 className="font-serif text-4xl min-[640px]:text-5xl text-[#f5efe6] font-medium tracking-tight mb-3">
-                  Ready.
-                </h1>
-                <p className="font-sans text-[14px] min-[640px]:text-[15.5px] text-[#b7a99b] max-w-sm leading-relaxed font-light mb-6">
-                  Place a record on the platter, lower the tonearm, and enjoy the music.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={close}
-                  className="px-8 py-3.5 rounded-full bg-gradient-to-r from-[#d7a76c] to-[#e4b982] text-[#14110e] font-sans text-[14px] font-bold tracking-wide hover:brightness-110 shadow-[0_8px_32px_rgba(215,167,108,0.35)] transition duration-ui ease-primary active:scale-95 cursor-pointer focus:outline-none focus:ring-4 focus:ring-[#d7a76c]/30"
-                >
-                  Start Listening
-                </button>
-              </motion.div>
-            )}
+              </div>
+            </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* Footer Navigation */}
-        <div className="flex items-center justify-between px-8 py-5 border-t border-[#2a241e] bg-[#0f0c0a] shrink-0">
-          <div>
-            {step > 0 ? (
+        {/* Footer Navigation Controls */}
+        <div className="px-6 py-4 border-t border-white/[0.06] bg-[#100d0a] flex items-center justify-between shrink-0">
+          {/* Step Indicators */}
+          <div className="flex items-center gap-1.5">
+            {GUIDE_STEPS.map((_, i) => (
               <button
-                type="button"
-                onClick={() => setStep((s) => s - 1)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-medium text-[#8e8175] hover:text-[#f5efe6] hover:bg-white/[0.04] transition-colors focus:outline-none focus:ring-2 focus:ring-white/20 cursor-pointer"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Previous
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={close}
-                className="px-4 py-2 rounded-xl text-[13px] font-medium text-[#7a6e62] hover:text-[#b7a99b] transition-colors focus:outline-none focus:ring-2 focus:ring-white/20 cursor-pointer"
-              >
-                Skip Intro
-              </button>
-            )}
-          </div>
-
-          {/* Pagination dots */}
-          <div className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <div
                 key={i}
+                type="button"
+                onClick={() => setStep(i)}
                 className={cn(
-                  'w-1.5 h-1.5 rounded-full transition-colors duration-300',
-                  step === i ? 'bg-[#d7a76c]' : 'bg-[#2a241e]'
+                  'h-1.5 rounded-full transition-all duration-300 cursor-pointer',
+                  i === step
+                    ? 'w-6 bg-[#d7a76c]'
+                    : 'w-1.5 bg-white/15 hover:bg-white/30'
                 )}
+                aria-label={`Go to step ${i + 1}`}
               />
             ))}
           </div>
 
-          <div>
-            {step < 4 ? (
+          {/* Navigation Buttons */}
+          <div className="flex items-center gap-3">
+            {step > 0 && (
+              <button
+                type="button"
+                onClick={() => setStep((s) => s - 1)}
+                className="px-4 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-[#f5efe6] text-[12px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95 border border-white/[0.06]"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-[#a89b8d]" />
+                Previous
+              </button>
+            )}
+
+            {isLastStep ? (
+              <button
+                type="button"
+                onClick={close}
+                className="px-5 py-1.5 rounded-xl bg-[#d7a76c] hover:bg-[#e0b279] text-[#14110e] text-[12px] font-bold transition-all cursor-pointer shadow-[0_2px_12px_rgba(215,167,108,0.3)] active:scale-95"
+              >
+                Start Listening
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={() => setStep((s) => s + 1)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-medium text-[#f5efe6] bg-white/[0.04] hover:bg-white/[0.08] transition-colors focus:outline-none focus:ring-2 focus:ring-white/20 cursor-pointer"
+                className="px-4 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#f5efe6] text-[12px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95 border border-white/[0.08]"
               >
                 Next
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5 text-[#a89b8d]" />
               </button>
-            ) : (
-              <div className="w-[84px]">
-                {/* Spacer to keep dots centered */}
-              </div>
             )}
           </div>
         </div>

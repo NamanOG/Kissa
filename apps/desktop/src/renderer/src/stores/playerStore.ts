@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { PlaybackClock } from '@renderer/utils/PlaybackClock'
 
 import kissaIdleCover from '@renderer/media/kissa_idle_cover.jpg'
 
@@ -39,6 +40,8 @@ export interface PlayerState {
   showSideLyrics: boolean
   isMiniPlayer: boolean
   isFullscreen: boolean
+  isListeningDisplay: boolean
+  screensaverLyrics: boolean
   miniPlayerAlwaysOnTop: boolean
   theme: AppTheme
   previousManualTheme: AppTheme | null
@@ -59,6 +62,7 @@ export interface PlayerState {
   togglePlayPause: () => void
   setTrack: (track: TrackInfo | null) => void
   setProgress: (progress: number | ((prev: number) => number)) => void
+  seek: (timeSeconds: number) => void
   setVolume: (volume: number) => void
   setIlluminationLevel: (level: number) => void
   setRpm: (rpm: '33' | '45') => void
@@ -72,6 +76,9 @@ export interface PlayerState {
   toggleSideLyrics: () => void
   setFullscreen: (value: boolean) => void
   toggleFullscreen: () => void
+  setIsListeningDisplay: (isListeningDisplay: boolean) => void
+  setScreensaverLyrics: (screensaverLyrics: boolean) => void
+  toggleScreensaverLyrics: () => void
   setTheme: (theme: AppTheme) => void
   toggleMiniPlayer: () => void
   setMiniPlayerAlwaysOnTop: (alwaysOnTop: boolean) => void
@@ -172,6 +179,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   showSideLyrics: false,
   isMiniPlayer: false,
   isFullscreen: false,
+  isListeningDisplay: false,
+  screensaverLyrics: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_screensaver_lyrics') === 'true' : false,
   miniPlayerAlwaysOnTop: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_always_on_top') !== 'false' : true,
   theme: getInitialTheme(),
   previousManualTheme: getInitialTheme() === 'adaptive' ? 'quiet-room' : getInitialTheme(),
@@ -201,6 +210,36 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         : Math.max(0, duration > 0 ? Math.min(duration, raw) : Math.max(0, raw))
       return { progress: nextProgress }
     }),
+  seek: (timeSeconds) => {
+    if (typeof timeSeconds !== 'number' || isNaN(timeSeconds) || !isFinite(timeSeconds)) {
+      return
+    }
+    const state = get()
+    const duration = state.currentTrack?.duration ?? 0
+    let target = Math.max(0, timeSeconds)
+    if (duration > 0) {
+      target = Math.min(target, duration)
+    }
+
+    // 1. Authoritative visual clock update
+    PlaybackClock.setSeekPosition(target)
+    set({ progress: target })
+
+    // 2. Set seek cooldown to prevent rubberbanding from pre-seek packets
+    if (typeof window !== 'undefined') {
+      ;(window as any).__kissaSeekCooldown = {
+        target,
+        timestamp: performance.now()
+      }
+    }
+
+    // 3. Dispatch to external SMTC via Electron IPC
+    if (typeof window !== 'undefined' && window.electron?.mediaSeek) {
+      window.electron.mediaSeek(target).catch(() => {
+        // Handled gracefully if unsupported by active app
+      })
+    }
+  },
   setVolume: (volume) => set({ volume: Math.max(0, Math.min(100, volume)) }),
   setIlluminationLevel: (level) => {
     const clamped = Math.max(0, Math.min(100, level))
@@ -237,6 +276,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     )
   },
   toggleFullscreen: () => get().setFullscreen(!get().isFullscreen),
+  setIsListeningDisplay: (isListeningDisplay) => set({ isListeningDisplay }),
+  setScreensaverLyrics: (screensaverLyrics) => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('kissa_screensaver_lyrics', screensaverLyrics.toString())
+    }
+    set({ screensaverLyrics })
+  },
+  toggleScreensaverLyrics: () => get().setScreensaverLyrics(!get().screensaverLyrics),
   toggleMiniPlayer: () => {
     set((state) => {
       const isMini = !state.isMiniPlayer

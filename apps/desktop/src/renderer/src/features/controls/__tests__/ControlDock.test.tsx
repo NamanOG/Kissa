@@ -38,4 +38,14 @@ describe('ControlDock component', () => {
     const dockEl = container.firstChild as HTMLElement
     expect(dockEl).toHaveClass('opacity-50', 'pointer-events-none')
   })
+
+  it('renders Start Listening Display button and activates isListeningDisplay', () => {
+    usePlayerStore.setState({ isListeningDisplay: false })
+    render(<ControlDock />)
+    const displayBtn = screen.getByRole('button', { name: 'Start Listening Display' })
+    expect(displayBtn).toBeInTheDocument()
+
+    fireEvent.click(displayBtn)
+    expect(usePlayerStore.getState().isListeningDisplay).toBe(true)
+  })
 })
