@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { SystemMediaPayload } from '../types/media'
 import type { LyricsRequest, LyricsResponse } from '../types/lyrics'
 import type { ShareExportOptions, SharePayload } from '../types/share'
+import type { UpdateStatusPayload, UpdateInstallResult } from '../types/update'
 
 export interface KissaSystemMediaAPI {
   getSystemMedia: () => Promise<SystemMediaPayload | null>
@@ -32,6 +33,12 @@ export interface KissaSystemMediaAPI {
   registerScreensaver: () => Promise<{ success: boolean; error?: string; path?: string }>
   unregisterScreensaver: () => Promise<{ success: boolean; removed: boolean; reason?: string; currentPath?: string; error?: string }>
   openScreensaverSettings: () => Promise<{ success: boolean; error?: string }>
+  getUpdateStatus: () => Promise<UpdateStatusPayload>
+  checkForUpdates: () => Promise<UpdateStatusPayload>
+  downloadUpdate: () => Promise<UpdateStatusPayload>
+  cancelUpdate: () => Promise<UpdateStatusPayload>
+  installUpdate: () => Promise<UpdateInstallResult>
+  onUpdateStatusChanged: (callback: (status: UpdateStatusPayload) => void) => () => void
 }
 
 const kissaMediaAPI: KissaSystemMediaAPI = {
@@ -85,7 +92,21 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
   isScreensaverRegistered: () => ipcRenderer.invoke('kissa:is-screensaver-registered'),
   registerScreensaver: () => ipcRenderer.invoke('kissa:register-screensaver'),
   unregisterScreensaver: () => ipcRenderer.invoke('kissa:unregister-screensaver'),
-  openScreensaverSettings: () => ipcRenderer.invoke('kissa:open-screensaver-settings')
+  openScreensaverSettings: () => ipcRenderer.invoke('kissa:open-screensaver-settings'),
+  getUpdateStatus: () => ipcRenderer.invoke('kissa:get-update-status'),
+  checkForUpdates: () => ipcRenderer.invoke('kissa:check-for-updates'),
+  downloadUpdate: () => ipcRenderer.invoke('kissa:download-update'),
+  cancelUpdate: () => ipcRenderer.invoke('kissa:cancel-update'),
+  installUpdate: () => ipcRenderer.invoke('kissa:install-update'),
+  onUpdateStatusChanged: (callback) => {
+    const handler = (_event: unknown, status: UpdateStatusPayload): void => {
+      callback(status)
+    }
+    ipcRenderer.on('kissa:update-status-changed', handler)
+    return (): void => {
+      ipcRenderer.removeListener('kissa:update-status-changed', handler)
+    }
+  }
 }
 
 contextBridge.exposeInMainWorld('electron', {

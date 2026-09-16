@@ -4,6 +4,7 @@ import { getWindowConfig } from './windowConfig'
 import { setupWindowEvents } from './windowEvents'
 import { getPlayIcon, getPauseIcon, getPrevIcon, getNextIcon } from './icons'
 import { ScreensaverRegistryService } from '../services/ScreensaverRegistryService'
+import { UpdateService } from '../services/UpdateService'
 
 export function setWindowFullscreen(
   mainWindow: Pick<BrowserWindow, 'isFullScreen' | 'setFullScreen'> | null,
@@ -79,6 +80,8 @@ export class WindowManager {
       ipcMain.handle('kissa:open-screensaver-settings', () => {
         return ScreensaverRegistryService.getInstance().openScreensaverSettings()
       })
+
+      UpdateService.getInstance().setupIpcHandlers()
 
       ipcMain.handle('kissa:toggle-mini-player', (_event, isMini: boolean, alwaysOnTop: boolean = true) => {
         if (!this.mainWindow) return

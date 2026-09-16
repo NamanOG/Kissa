@@ -21,6 +21,7 @@ declare module '*.svg' {
 
 import type { SystemMediaPayload } from '../../types/media'
 import type { LyricsRequest, LyricsResponse } from '../../types/lyrics'
+import type { UpdateStatusPayload, UpdateInstallResult } from '../../types/update'
 
 export interface KissaSystemMediaAPI {
   getSystemMedia: () => Promise<SystemMediaPayload | null>
@@ -48,6 +49,12 @@ export interface KissaSystemMediaAPI {
   registerScreensaver?: () => Promise<{ success: boolean; error?: string; path?: string }>
   unregisterScreensaver?: () => Promise<{ success: boolean; removed: boolean; reason?: string; currentPath?: string; error?: string }>
   openScreensaverSettings?: () => Promise<{ success: boolean; error?: string }>
+  getUpdateStatus?: () => Promise<UpdateStatusPayload>
+  checkForUpdates?: () => Promise<UpdateStatusPayload>
+  downloadUpdate?: () => Promise<UpdateStatusPayload>
+  cancelUpdate?: () => Promise<UpdateStatusPayload>
+  installUpdate?: () => Promise<UpdateInstallResult>
+  onUpdateStatusChanged?: (callback: (status: UpdateStatusPayload) => void) => () => void
 }
 
 declare global {
