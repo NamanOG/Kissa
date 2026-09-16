@@ -40,6 +40,7 @@ Kissa connects directly to active Windows System Media Transport Controls (SMTC)
 Binaries for **Windows 10 and Windows 11 (64-bit)** are available on the [**Releases Page**](https://github.com/NamanOG/Kissa/releases/latest).
 
 ### Release Packages
+
 - **`Kissa-Setup-4.1.0.exe`** — Standard Windows installer (NSIS) with Start Menu integration, desktop shortcut, and native screensaver (`Kissa.scr`) packaging.
 - **`Kissa-Portable-4.1.0.exe`** — Self-contained standalone executable requiring no installation or registry changes.
 
@@ -50,6 +51,7 @@ Binaries for **Windows 10 and Windows 11 (64-bit)** are available on the [**Rele
 ## Core Features
 
 ### Physical Turntable
+
 - Machined, hardware-inspired turntable assembly with realistic depth and lighting
 - Animated vinyl rotation at 33 ⅓ RPM and 45 RPM speeds
 - Rotational phase preservation across pause and track changes
@@ -58,6 +60,7 @@ Binaries for **Windows 10 and Windows 11 (64-bit)** are available on the [**Rele
 - Tactile rotary dials and hardware switches for speed and power
 
 ### Windows System Media Integration
+
 - Native Windows System Media Transport Controls (SMTC) synchronization
 - Automatic session detection for Spotify, Apple Music, Tidal, and Chromium-based browsers
 - Bidirectional transport controls: Play, Pause, Previous, Next
@@ -67,6 +70,7 @@ Binaries for **Windows 10 and Windows 11 (64-bit)** are available on the [**Rele
 - System tray background operation with quick playback access
 
 ### Synchronized Lyrics
+
 - Real-time lyric synchronization powered by LRCLIB
 - Word-level karaoke progression where source LRC data permits
 - Dedicated instrumental break indicators and countdowns
@@ -76,6 +80,7 @@ Binaries for **Windows 10 and Windows 11 (64-bit)** are available on the [**Rele
 - Automatic, smooth scrolling with manual scroll lock recovery
 
 ### Listening Environments & Match Album
+
 - Eight curated listening environments:
   1. **Quiet Listening Room** — Walnut, warm paper, and late-night lamp glow
   2. **Dusty Record Store** — Faded sleeves, cardboard, and muted olive
@@ -88,6 +93,7 @@ Binaries for **Windows 10 and Windows 11 (64-bit)** are available on the [**Rele
 - **Match Album:** Dynamic ambient illumination driven by dominant and accent colors extracted from the current album art
 
 ### Listening Display & Native Screensaver
+
 - **Manual Listening Display:** Immersive, full-screen listening mode switchable between a 12" album cover stand and turntable presentation
 - **Native Windows Screensaver (`Kissa.scr`):** Full-fidelity screensaver that activates during Windows idle periods
 - **Safe HKCU Registration:** Optional user-activated screensaver registration that only sets `SCRNSAVE.EXE` without modifying system timeout policies
@@ -95,6 +101,7 @@ Binaries for **Windows 10 and Windows 11 (64-bit)** are available on the [**Rele
 - **Clean Wake Detection:** Seamlessly resumes your desktop on mouse movement, keyboard input, or touch without leaving orphaned processes
 
 ### Record Shelf & Crate Browsing
+
 - Archival catalog presentation for your music history
 - Stable grid layout with detailed record spine and sleeve aesthetics
 - Sorting by Recently Played, Recently Added, Play Count, and Alphabetical
@@ -102,10 +109,18 @@ Binaries for **Windows 10 and Windows 11 (64-bit)** are available on the [**Rele
 - Source-aware track sharing modal supporting direct links for Spotify, Apple Music, Tidal, YouTube, or clean text citations
 
 ### Startup Experience & Interactive Setup
+
 - Restrained, cinematic startup screen with animated vinyl transitions
 - Interactive first-run setup modal allowing users to configure preferred RPM, environment, and display preferences
 - Settings persistence backed by local storage and Zustand state management
 
+### In-App Update System
+
+- **User-Controlled Lifecycle:** In-app update checking, streaming download with live transfer progress, and explicit confirmation before installation
+- **Installed NSIS Workflow:** Downloads the installer securely into your local update cache, confirms readiness, cleanly quits active playback processes, and hands off to the NSIS installer
+- **Portable Build Awareness:** Respects running portable executables by downloading the updated portable `.exe` to your Downloads directory and providing a direct "Show in Folder" action—never attempting unsafe in-place file replacement
+- **Screensaver Guard:** Update checks, downloads, and restarts are strictly suppressed while Kissa is running in Windows screensaver mode (`--screensaver`)
+  
 ---
 
 ## Windows Screensaver Architecture
@@ -113,6 +128,7 @@ Binaries for **Windows 10 and Windows 11 (64-bit)** are available on the [**Rele
 Kissa includes a dedicated Windows screensaver implementation that renders the full-fidelity **Listening Display** when invoked by Windows.
 
 ### How It Works
+
 1. **Supervisor (`Kissa.scr`):** A lightweight C# .NET 8 native Windows executable that receives Windows screensaver arguments (`/s`, `/c`, `/p`). On `/s`, it spawns `Kissa.exe --screensaver` and waits for the child process to terminate.
 2. **Renderer (`Kissa.exe --screensaver`):** Electron initializes directly into the `ListeningDisplay` component with user chrome stripped. Audio hooks listen for wake input (mouse movement exceeding threshold, key press, or click) and exit cleanly.
 3. **Safe Registry Management:** Screensaver registration is strictly opt-in via **Settings → Windows Screensaver**:
@@ -128,27 +144,38 @@ For comprehensive technical specifications, see [docs/windows-screensaver.md](do
 ## Usage Guide
 
 ### Getting Started
+
 1. Launch Kissa. If you are launching for the first time, the onboarding dialog lets you choose your default turntable speed and listening environment.
 2. Open your preferred music player (Spotify, Apple Music, Tidal, or browser). Start playing a song.
 3. Kissa detects the active Windows media session within seconds, displaying the album artwork, track details, and starting vinyl rotation.
 
 ### Turntable Controls
+
 - **Power Switch:** Toggle turntable motor on or off.
 - **33 ⅓ / 45 RPM Switch:** Switch rotational velocity.
 - **Tonearm:** Click and drag the tonearm across the record surface to seek through the active track (supported players).
 - **Transport Controls:** Use the bottom dock for Play/Pause, Next, Previous, and volume adjustments.
 
 ### Listening Display & Screensaver
+
 - Press the **Display** button in the dock (or press `F11`) to enter the manual Listening Display. Press `Esc` or move your mouse to exit.
 - Toggle between **Turntable Mode** and **Album Art Mode** using the top display selector.
 - To use Kissa as your automatic screensaver, open **Settings (gear icon) → Windows Screensaver → Set as Windows Screensaver**, then click **Open Windows Screensaver Settings** to configure your preferred idle timeout in Windows.
 
 ### Synchronized Lyrics
+
 - Click the **Lyrics** button in the dock or press `L` to toggle the lyrics drawer.
 - If lyrics appear slightly ahead of or behind external audio, use the `+` / `-` offset buttons in the lyrics panel to calibrate timing in 250ms increments.
 
-### Checking for Updates
-- Open **Settings → Updates**. Click **Check for Updates** to verify if a new release is available on GitHub.
+### In-App Updates
+
+- Open **Settings (gear icon) → Application → Check for Updates** (or right-click the system tray icon and select **Check for Updates...**).
+- If a new version is available, Kissa displays the release version and a **Download Update** button.
+- Click **Download Update** to stream the release binary directly within the app. A real-time progress bar reports transfer percentage, download speed, and transferred megabytes, with a **Cancel** button if you wish to abort.
+- **Installed Version:** Once the download completes, click **Restart & Install**. Kissa prompts for confirmation (*"Restart Kissa now to apply update? Active playback will stop."*) before closing cleanly and handing off to the NSIS installer.
+- **Portable Version:** Kissa downloads the new portable executable to your Windows Downloads folder and presents a **Show in Folder** button so you can launch the updated binary at your convenience without risking in-place executable corruption.
+- **Safe Fallbacks:** If a download is interrupted or encounters network errors, click **Try Again** or use **View Release** to view release notes directly on GitHub.
+- **Screensaver Guard:** Update checks and installation handoffs are strictly suppressed while Kissa is running in native screensaver mode (`--screensaver`).
 
 ---
 
@@ -160,7 +187,7 @@ For comprehensive technical specifications, see [docs/windows-screensaver.md](do
 | **Build Tooling** | `electron-vite` / Vite 7 | Fast development HMR and production bundling |
 | **User Interface** | React 19 + TypeScript | UI component architecture and strict type safety |
 | **Native SMTC Helper** | C# .NET 8 (`smtc-helper.exe`) | WinRT `Windows.Media.Control` integration for external media discovery and seeking |
-| **Screensaver Supervisor**| C# .NET 8 (`Kissa.scr`) | Native Windows screensaver protocol bridge (`/s`, `/c`, `/p`) |
+| **Screensaver Supervisor** | C# .NET 8 (`Kissa.scr`) | Native Windows screensaver protocol bridge (`/s`, `/c`, `/p`) |
 | **State Management** | Zustand 5 | Application state, player store, and user preferences |
 | **Styling** | TailwindCSS v3 + CSS Variables | Hardware design system, typography tokens, and atmospheric themes |
 | **Motion & Animation** | Web Animations API + Framer Motion 12 | Smooth 60 FPS vinyl rotation, tonearm physics, and UI transitions |
@@ -182,12 +209,14 @@ For comprehensive technical specifications, see [docs/windows-screensaver.md](do
 ## Development & Building
 
 ### Prerequisites
+
 - Windows 10 or Windows 11 (64-bit)
 - Node.js `>= 20.0.0`
 - npm `>= 10.0.0`
 - .NET 8 SDK (required to compile `smtc-helper` and `KissaScreensaver`)
 
 ### Local Setup
+
 ```bash
 # Clone the repository
 git clone https://github.com/NamanOG/Kissa.git
@@ -201,6 +230,7 @@ npm run dev
 ```
 
 ### Verification Commands
+
 ```bash
 # Type checking
 npm run typecheck
@@ -222,12 +252,14 @@ npm run build:unpack
 ```
 
 ### Production Build
+
 ```bash
 # Package production installer and portable binary
 npm run build:win
 ```
 
 Production artifacts are output to `apps/desktop/dist/`:
+
 - `Kissa-Setup-4.1.0.exe`
 - `Kissa-Portable-4.1.0.exe`
 
@@ -236,6 +268,7 @@ Production artifacts are output to `apps/desktop/dist/`:
 ## Version History
 
 ### v4.1.0 — The Deliberate Listening Update
+
 - **External SMTC Seeking:** Real-time bidirectional seeking through Windows System Media Transport Controls via `TryChangePlaybackPositionAsync` with optimistic clock settlement.
 - **Native Windows Screensaver:** Bundled `Kissa.scr` supervisor with safe HKCU user registration and unregistration.
 - **Listening Display Refinement:** Expanded 12" album cover stand with centered typography, atmospheric lighting, and seamless manual/screensaver transitions.
@@ -243,9 +276,11 @@ Production artifacts are output to `apps/desktop/dist/`:
 - **Synchronized Lyrics Improvements:** Instrumental break countdowns, fine-grained offset adjustment (-5.0s to +5.0s), and click-to-seek navigation.
 - **Source-Aware Track Sharing:** Contextual modal generating direct links for Spotify, Apple Music, Tidal, and YouTube.
 - **Hardware Setup Onboarding:** Interactive first-run setup flow for initial turntable and room personalization.
-- **Production Polish:** Clean production updater diagnostics gating, zero-warning Tailwind build, and complete test coverage across 37 suites.
+- **In-App Update System:** Safe, user-controlled update checking, in-app streaming download with real-time transfer progress, cancellation support, confirmation dialogs, and clean installer handoff (with separate safe handling for portable builds).
+- **Production Polish:** Clean production updater diagnostics gating, zero-warning Tailwind build, and complete test coverage across 38 suites.
 
 ### v4.0.0 — The Listening Machine
+
 - Redesigned Listening Room and turntable interaction
 - Archival Record Shelf with crate browsing
 - Cinematic synchronized lyrics
@@ -255,18 +290,21 @@ Production artifacts are output to `apps/desktop/dist/`:
 - Mini Player companion
 
 ### v3.0.1 — The Room Responds
+
 - Match Album adaptive atmosphere
 - Artwork-driven ambient lighting
 - Playback duration synchronization improvements
 - Tonearm and lyric adjustments
 
 ### v3.0.0
+
 - Unified playback architecture
 - High-performance vinyl animation
 - Dedicated Mini Player
 - Listening environments
 
 ### v1.0.0
+
 - Initial Kissa release featuring turntable interface, SMTC synchronization, and synchronized lyrics.
 
 ---

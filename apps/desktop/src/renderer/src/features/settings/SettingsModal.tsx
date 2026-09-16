@@ -6,7 +6,8 @@ import { usePlayerStore } from '@renderer/stores/playerStore'
 import { LISTENING_ENVIRONMENTS } from './themes'
 import { ThemeCard } from './ThemeCard'
 import { cn } from '@renderer/utils/cn'
-import { checkForUpdates, UpdateCheckResult } from '@renderer/utils/updater'
+import { checkForUpdates, KISSA_RELEASES_URL } from '@renderer/utils/updater'
+import type { UpdateStatusPayload } from '../../../../types/update'
 
 export interface SettingsModalProps {
   className?: string
@@ -37,20 +38,60 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
   const toggleScreensaverLyrics = usePlayerStore((s) => s.toggleScreensaverLyrics)
 
   const [appVersion, setAppVersion] = useState<string>('')
-  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'up-to-date' | 'available' | 'error'>('idle')
-  const [updateResult, setUpdateResult] = useState<UpdateCheckResult | null>(null)
+  const [updatePayload, setUpdatePayload] = useState<UpdateStatusPayload | null>(null)
+  const [isConfirmingRestart, setIsConfirmingRestart] = useState<boolean>(false)
   const [isScreensaverRegistered, setIsScreensaverRegistered] = useState<boolean>(false)
   const [isScreensaverWorking, setIsScreensaverWorking] = useState<boolean>(false)
-  const hasUpdateAvailable = usePlayerStore((s) => s.hasUpdateAvailable)
+
+  const currentState = updatePayload?.state || 'idle'
 
   useEffect(() => {
-    if (isSettingsOpen && !appVersion) {
-      window.electron?.getAppVersion?.().then(setAppVersion).catch(console.error)
+    if (isSettingsOpen) {
+      if (window.electron?.getUpdateStatus) {
+        window.electron.getUpdateStatus().then((payload) => {
+          if (payload) {
+            setUpdatePayload(payload)
+            if (payload.currentVersion) setAppVersion(payload.currentVersion)
+          }
+        }).catch(console.error)
+      }
+      if (!appVersion && window.electron?.getAppVersion) {
+        window.electron.getAppVersion().then(setAppVersion).catch(console.error)
+      }
     }
   }, [isSettingsOpen, appVersion])
 
+  useEffect(() => {
+    if (!window.electron?.onUpdateStatusChanged) return
+    const unsubscribe = window.electron.onUpdateStatusChanged((payload) => {
+      setUpdatePayload(payload)
+      if (payload.currentVersion) setAppVersion(payload.currentVersion)
+    })
+    return () => {
+      unsubscribe()
+    }
+  }, [])
+
   const handleCheckUpdate = async () => {
-    if (updateStatus === 'checking') return
+    if (currentState === 'checking' || currentState === 'downloading') return
+    setIsConfirmingRestart(false)
+
+    if (window.electron?.checkForUpdates) {
+      try {
+        const payload = await window.electron.checkForUpdates()
+        if (payload) {
+          setUpdatePayload(payload)
+          if (payload.currentVersion) setAppVersion(payload.currentVersion)
+        }
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.error('[Update Check Error]', err)
+        }
+      }
+      return
+    }
+
+    // Fallback for mock/test environments
     let ver = appVersion
     if (!ver && window.electron?.getAppVersion) {
       try {
@@ -61,27 +102,120 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
       }
     }
     if (!ver) {
-      setUpdateStatus('error')
+      setUpdatePayload({
+        state: 'error',
+        currentVersion: '',
+        updateInfo: null,
+        progress: null,
+        downloadedFilePath: null,
+        error: 'Current version is required to check for updates.',
+        isScreensaverActive: false,
+        isPortable: false
+      })
       return
     }
 
-    setUpdateStatus('checking')
+    setUpdatePayload({
+      state: 'checking',
+      currentVersion: ver,
+      updateInfo: null,
+      progress: null,
+      downloadedFilePath: null,
+      error: null,
+      isScreensaverActive: false,
+      isPortable: false
+    })
+
     try {
       const [result] = await Promise.all([
         checkForUpdates(ver),
         new Promise((resolve) => setTimeout(resolve, 500))
       ])
       if (result.hasUpdate) {
-        setUpdateResult(result)
-        setUpdateStatus('available')
+        setUpdatePayload({
+          state: 'available',
+          currentVersion: ver,
+          updateInfo: {
+            version: result.version,
+            releaseName: result.version,
+            assetName: `Kissa-Setup-${result.version}.exe`,
+            assetSize: 0,
+            downloadUrl: result.url,
+            isPortable: false
+          },
+          progress: null,
+          downloadedFilePath: null,
+          error: null,
+          isScreensaverActive: false,
+          isPortable: false
+        })
       } else {
-        setUpdateStatus('up-to-date')
+        setUpdatePayload({
+          state: 'up-to-date',
+          currentVersion: ver,
+          updateInfo: null,
+          progress: null,
+          downloadedFilePath: null,
+          error: null,
+          isScreensaverActive: false,
+          isPortable: false
+        })
       }
-    } catch (err) {
+    } catch (err: any) {
       if (import.meta.env.DEV) {
         console.error('[Update Check Error]', err)
       }
-      setUpdateStatus('error')
+      setUpdatePayload({
+        state: 'error',
+        currentVersion: ver,
+        updateInfo: null,
+        progress: null,
+        downloadedFilePath: null,
+        error: err?.message || "Couldn't check for updates",
+        isScreensaverActive: false,
+        isPortable: false
+      })
+    }
+  }
+
+  const handleDownloadUpdate = async () => {
+    if (window.electron?.downloadUpdate) {
+      try {
+        const payload = await window.electron.downloadUpdate()
+        setUpdatePayload(payload)
+      } catch (err) {
+        console.error('[Download Update Error]', err)
+      }
+    }
+  }
+
+  const handleCancelDownload = async () => {
+    if (window.electron?.cancelUpdate) {
+      try {
+        const payload = await window.electron.cancelUpdate()
+        setUpdatePayload(payload)
+      } catch (err) {
+        console.error('[Cancel Update Error]', err)
+      }
+    }
+  }
+
+  const handleInstallUpdate = () => {
+    if (updatePayload?.isPortable) {
+      window.electron?.installUpdate?.().catch(console.error)
+    } else {
+      setIsConfirmingRestart(true)
+    }
+  }
+
+  const handleConfirmRestart = async () => {
+    setIsConfirmingRestart(false)
+    if (window.electron?.installUpdate) {
+      try {
+        await window.electron.installUpdate()
+      } catch (err) {
+        console.error('[Install Update Error]', err)
+      }
     }
   }
 
@@ -407,43 +541,124 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                 <div className="rounded-2xl bg-[var(--on-surface)]/[0.03] border border-[var(--on-surface)]/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)]">
                   
                   {/* Version & Updates */}
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-[var(--on-surface)]/[0.02] transition-colors">
-                    <div className="flex flex-col">
-                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Software Version</span>
-                      <span className={cn(
-                        "text-[11.5px] mt-0.5 font-mono",
-                        updateStatus === 'available' ? 'text-[var(--accent)]' :
-                        updateStatus === 'error' ? 'text-red-400' : 'text-[var(--muted)]'
-                      )}>
-                        {updateStatus === 'checking' && 'Checking for updates…'}
-                        {updateStatus === 'error' && "Couldn't check for updates"}
-                        {updateStatus === 'up-to-date' && "You're up to date"}
-                        {updateStatus === 'available' && updateResult ? `Kissa ${updateResult.version} is available` : ''}
-                        {updateStatus === 'idle' && (appVersion ? `Version ${appVersion}` : 'Loading…')}
-                      </span>
+                  <div className="flex flex-col p-4 min-[600px]:px-5 hover:bg-[var(--on-surface)]/[0.02] transition-colors gap-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex flex-col">
+                        <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Software Version</span>
+                        <span className={cn(
+                          "text-[11.5px] mt-0.5 font-mono",
+                          currentState === 'available' || currentState === 'downloaded' ? 'text-[var(--accent)]' :
+                          currentState === 'error' ? 'text-red-400' : 'text-[var(--muted)]'
+                        )}>
+                          {isConfirmingRestart && 'Restart Kissa now to apply update? Active playback will stop.'}
+                          {!isConfirmingRestart && (
+                            <>
+                              {currentState === 'checking' && 'Checking for updates…'}
+                              {currentState === 'error' && (updatePayload?.error || "Couldn't check for updates")}
+                              {currentState === 'up-to-date' && "You're up to date"}
+                              {currentState === 'available' && updatePayload?.updateInfo ? `Kissa ${updatePayload.updateInfo.version} is available${updatePayload.updateInfo.assetSize ? ` (${Math.round(updatePayload.updateInfo.assetSize / (1024 * 1024))} MB)` : ''}` : ''}
+                              {currentState === 'downloading' && `Downloading ${updatePayload?.updateInfo?.version || ''}… ${updatePayload?.progress?.percent ?? 0}%`}
+                              {currentState === 'downloaded' && (updatePayload?.isPortable ? 'Portable update downloaded to Downloads' : 'Update ready to install')}
+                              {currentState === 'installing' && 'Restarting Kissa…'}
+                              {currentState === 'cancelled' && 'Download cancelled'}
+                              {currentState === 'idle' && (appVersion ? `Version ${appVersion}` : 'Loading…')}
+                            </>
+                          )}
+                        </span>
+                      </div>
+
+                      {/* Action buttons */}
+                      {isConfirmingRestart ? (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setIsConfirmingRestart(false)}
+                            className="px-3 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.12] text-[var(--on-surface)] text-[12px] font-medium transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleConfirmRestart}
+                            className="px-3.5 py-1.5 rounded-xl bg-[var(--accent)] text-[var(--panel-bg)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95"
+                          >
+                            Restart Now
+                          </button>
+                        </div>
+                      ) : currentState === 'downloading' ? (
+                        <button
+                          type="button"
+                          onClick={handleCancelDownload}
+                          className="px-3.5 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.08] hover:bg-red-500/20 hover:text-red-400 text-[var(--on-surface)] text-[12px] font-bold transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95 shrink-0"
+                        >
+                          Cancel
+                        </button>
+                      ) : currentState === 'downloaded' ? (
+                        <button
+                          type="button"
+                          onClick={handleInstallUpdate}
+                          className="px-4 py-1.5 rounded-xl bg-[var(--accent)] text-[var(--panel-bg)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95 shrink-0"
+                        >
+                          {updatePayload?.isPortable ? 'Show in Folder' : 'Restart & Install'}
+                        </button>
+                      ) : currentState === 'available' ? (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              window.electron?.openExternal?.(KISSA_RELEASES_URL)
+                            }}
+                            className="hidden sm:inline-flex px-3 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.12] text-[var(--muted)] hover:text-[var(--on-surface)] text-[12px] font-medium transition-colors cursor-pointer border border-[var(--on-surface)]/10"
+                          >
+                            View Release
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleDownloadUpdate}
+                            className="px-4 py-1.5 rounded-xl bg-[var(--accent)] text-[var(--panel-bg)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95"
+                          >
+                            Download Update
+                          </button>
+                        </div>
+                      ) : currentState === 'error' ? (
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              window.electron?.openExternal?.(KISSA_RELEASES_URL)
+                            }}
+                            className="hidden sm:inline-flex px-3 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.12] text-[var(--muted)] hover:text-[var(--on-surface)] text-[12px] font-medium transition-colors cursor-pointer border border-[var(--on-surface)]/10"
+                          >
+                            View Release
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCheckUpdate}
+                            className="px-4 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.08] hover:bg-[var(--on-surface)]/[0.14] text-[var(--on-surface)] text-[12px] font-bold transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95"
+                          >
+                            Try Again
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleCheckUpdate}
+                          disabled={currentState === 'checking'}
+                          className="px-4 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.08] hover:bg-[var(--on-surface)]/[0.14] text-[var(--on-surface)] text-[12px] font-bold transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none shrink-0"
+                        >
+                          {currentState === 'checking' ? 'Checking…' : 'Check for Updates'}
+                        </button>
+                      )}
                     </div>
-                    {updateStatus === 'available' ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          // Mandatory security boundary: enforce only the exact repo releases page
-                          if (updateResult?.url.startsWith('https://github.com/NamanOG/Kissa/releases')) {
-                            window.electron?.openExternal?.(updateResult.url)
-                          }
-                        }}
-                        className="px-4 py-1.5 rounded-xl bg-[var(--accent)] text-[var(--panel-bg)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95"
-                      >
-                        View Release
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handleCheckUpdate}
-                        disabled={updateStatus === 'checking'}
-                        className="px-4 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.08] hover:bg-[var(--on-surface)]/[0.14] text-[var(--on-surface)] text-[12px] font-bold transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-                      >
-                        {updateStatus === 'checking' ? 'Checking…' : 'Check for Updates'}
-                      </button>
+
+                    {/* Progress Bar when downloading */}
+                    {currentState === 'downloading' && (
+                      <div className="w-full bg-[var(--on-surface)]/[0.08] h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className="bg-[var(--accent)] h-full transition-all duration-150 rounded-full"
+                          style={{ width: `${updatePayload?.progress?.percent ?? 0}%` }}
+                        />
+                      </div>
                     )}
                   </div>
 

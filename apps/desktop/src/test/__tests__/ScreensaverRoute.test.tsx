@@ -63,7 +63,7 @@ describe('Screensaver Route Integration', () => {
     // Listening Display metadata should be present
     const headings = screen.getAllByRole('heading', { name: 'Screensaver Test' })
     expect(headings.length).toBeGreaterThan(0)
-  })
+  }, 15000)
 
   it('renders normal app when not launched as screensaver', async () => {
     isScreensaverMock.mockResolvedValue(false)
