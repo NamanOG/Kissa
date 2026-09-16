@@ -41,8 +41,8 @@ Binaries for **Windows 10 and Windows 11 (64-bit)** are available on the [**Rele
 
 ### Release Packages
 
-- **`Kissa-Setup-4.1.0.exe`** — Standard Windows installer (NSIS) with Start Menu integration, desktop shortcut, and native screensaver (`Kissa.scr`) packaging.
-- **`Kissa-Portable-4.1.0.exe`** — Self-contained standalone executable requiring no installation or registry changes.
+- **`Kissa-Setup-x.x.x.exe`** — Standard Windows installer (NSIS) with Start Menu integration, desktop shortcut, and native screensaver (`Kissa.scr`) packaging.
+- **`Kissa-Portable-x.x.x.exe`** — Self-contained standalone executable requiring no installation or registry changes.
 
 > **Windows SmartScreen Notice:** Kissa is distributed independently and is not code-signed with an expensive commercial EV certificate. When installing for the first time, Windows Defender SmartScreen may present an informational prompt. Click **More info → Run anyway** to proceed.
 
