@@ -52,6 +52,10 @@ export class WindowManager {
       : baseConfig
 
     this.mainWindow = new BrowserWindow(config)
+    // Keep the renderer alive and responsive even when Kissa is hidden in the tray.
+    // Without this, a throttled renderer may miss IPC events (e.g. screensaver activation)
+    // and show a blank screen with no way to recover.
+    this.mainWindow.webContents.setBackgroundThrottling(false)
     setupWindowEvents(this.mainWindow, isHidden)
     if (process.env['ELECTRON_RENDERER_URL']) {
       this.mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
@@ -83,6 +87,8 @@ export class WindowManager {
 
     this.isScreensaver = true
 
+    // Always bring the window to a visible, focused state before going fullscreen.
+    // If the window was minimized or hidden (tray mode), restore/show it first.
     if (this.mainWindow.isMinimized()) {
       this.mainWindow.restore()
     }
@@ -91,9 +97,22 @@ export class WindowManager {
     }
 
     this.mainWindow.setFullScreen(true)
+    this.mainWindow.setAlwaysOnTop?.(true)
     this.mainWindow.focus()
+    this.mainWindow.webContents?.focus?.()
 
     this.mainWindow.webContents.send('kissa:screensaver-mode-changed', true)
+
+    // Hardware-level global escape registration as fail-safe fallback
+    import('electron').then(({ globalShortcut }) => {
+      try {
+        globalShortcut.register('Escape', () => {
+          ScreensaverSessionService.getInstance().notifyWake()
+        })
+      } catch {
+        // Fallback gracefully if shortcut cannot be registered
+      }
+    })
     return true
   }
 
@@ -111,6 +130,17 @@ export class WindowManager {
     const saved = this.savedWindowState
     this.savedWindowState = null
 
+    // Unregister global shortcut fail-safe
+    import('electron').then(({ globalShortcut }) => {
+      try {
+        if (globalShortcut.isRegistered('Escape')) {
+          globalShortcut.unregister('Escape')
+        }
+      } catch {
+        // ignore
+      }
+    })
+
     this.mainWindow.webContents.send('kissa:screensaver-mode-changed', false)
 
     if (saved) {
@@ -118,23 +148,32 @@ export class WindowManager {
         this.mainWindow.setFullScreen(false)
       }
 
+      this.mainWindow.setAlwaysOnTop?.(false)
+
       if (saved.isMaximized) {
         this.mainWindow.maximize()
       } else if (saved.bounds) {
         this.mainWindow.setBounds(saved.bounds)
       }
 
-      if (saved.isMinimized) {
-        this.mainWindow.minimize()
+      // NOTE: We intentionally do NOT restore minimized or hidden state.
+      // The user has physically interacted with their machine to end the screensaver,
+      // so we must always leave the window in a visible, focused state.
+      // Re-hiding the window (when it was previously hidden in the tray) would cause
+      // a permanent blank-screen lockout with no way to recover.
+      if (!this.mainWindow.isVisible()) {
+        this.mainWindow.show()
       }
-
-      if (!saved.isVisible) {
-        this.mainWindow.hide()
-      }
+      this.mainWindow.focus()
     } else {
       if (this.mainWindow.isFullScreen()) {
         this.mainWindow.setFullScreen(false)
       }
+      this.mainWindow.setAlwaysOnTop?.(false)
+      if (!this.mainWindow.isVisible()) {
+        this.mainWindow.show()
+      }
+      this.mainWindow.focus()
     }
   }
 

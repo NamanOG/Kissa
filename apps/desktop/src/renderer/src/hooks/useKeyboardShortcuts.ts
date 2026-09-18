@@ -38,7 +38,7 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
-      // Escape: Close open modals first, or exit Listening Display / fullscreen
+      // Escape: Close open modals first, or exit screensaver / Listening Display / fullscreen
       if (e.key === 'Escape' || e.code === 'Escape') {
         if (store.isSettingsOpen || store.isOnboardingOpen || store.isKeyboardHelpOpen) {
           e.preventDefault()
@@ -46,6 +46,9 @@ export function useKeyboardShortcuts(): void {
           if (store.isOnboardingOpen) store.setIsOnboardingOpen(false)
           if (store.isKeyboardHelpOpen) store.toggleKeyboardHelp()
           return
+        }
+        if (window.electron?.exitScreensaver) {
+          window.electron.exitScreensaver()
         }
         if (store.isListeningDisplay) {
           e.preventDefault()

@@ -1,5 +1,6 @@
 import { BrowserWindow, shell, app } from 'electron'
 import { WindowManager } from './WindowManager'
+import { ScreensaverSessionService } from '../services/ScreensaverSessionService'
 
 export function attachFullscreenEventSync(
   window: Pick<BrowserWindow, 'isDestroyed' | 'on' | 'webContents'>
@@ -42,6 +43,14 @@ export function setupWindowEvents(window: BrowserWindow, isHidden: boolean = fal
 
   window.on('close', (event) => {
     const wm = WindowManager.getInstance()
+    // During screensaver mode, exit screensaver instead of hiding or closing.
+    // Without this, Alt+F4 would hide the window while Kissa.scr keeps the pipe alive,
+    // producing a permanent blank-screen lockout that the user cannot escape.
+    if (wm.isScreensaver) {
+      event.preventDefault()
+      ScreensaverSessionService.getInstance().notifyWake()
+      return
+    }
     if (wm.isBackgroundEnabled && !wm.isQuitting) {
       event.preventDefault()
       window.hide()
