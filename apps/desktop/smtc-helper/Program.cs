@@ -112,6 +112,8 @@ namespace SmtcHelper
         private static readonly object _lock = new object();
         private static string _lastBroadcastJson = "";
         private static string _lastTrackKey = "";
+        private static string _cachedThumbnailKey = "";
+        private static string? _cachedThumbnailBase64 = null;
         private static int _lastVolume = -1;
         private static GlobalSystemMediaTransportControlsSession? _authoritySession;
         private static GlobalSystemMediaTransportControlsSession? _challengerSession;
@@ -744,12 +746,18 @@ namespace SmtcHelper
                 bool isNewTrack = trackKey != _lastTrackKey;
                 UpdateAuthorityTrack(session, trackKey);
 
-                string? thumbnailBase64 = null;
-                if (mediaProps?.Thumbnail != null)
+                if (trackKey != _cachedThumbnailKey)
+                {
+                    _cachedThumbnailKey = trackKey;
+                    _cachedThumbnailBase64 = null;
+                }
+
+                string? thumbnailBase64 = _cachedThumbnailBase64;
+                if (thumbnailBase64 == null && mediaProps?.Thumbnail != null)
                 {
                     try
                     {
-                        using var cts = new CancellationTokenSource(isNewTrack ? 250 : 100);
+                        using var cts = new CancellationTokenSource(2500);
                         using var stream = await mediaProps.Thumbnail.OpenReadAsync().AsTask(cts.Token);
                         if (stream != null && stream.Size > 0)
                         {
@@ -759,7 +767,8 @@ namespace SmtcHelper
                             var bytes = memStream.ToArray();
                             if (bytes.Length > 0)
                             {
-                                thumbnailBase64 = Convert.ToBase64String(bytes);
+                                _cachedThumbnailBase64 = Convert.ToBase64String(bytes);
+                                thumbnailBase64 = _cachedThumbnailBase64;
                             }
                         }
                     }

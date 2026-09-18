@@ -80,8 +80,8 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
-      // If a modal is open, prevent media hotkeys from conflicting
-      if (store.isOnboardingOpen || store.isSettingsOpen || store.isKeyboardHelpOpen) {
+      // If a modal is open, prevent media hotkeys from conflicting (unless in screensaver or listening display mode)
+      if (!store.isScreensaver && !store.isListeningDisplay && (store.isOnboardingOpen || store.isSettingsOpen || store.isKeyboardHelpOpen)) {
         if (e.key === 's' || e.key === 'S') {
           e.preventDefault()
           store.toggleSettings()
@@ -110,7 +110,7 @@ export function useKeyboardShortcuts(): void {
         case 'l':
         case 'L': {
           e.preventDefault()
-          if (store.isListeningDisplay) {
+          if (store.isListeningDisplay || store.isScreensaver) {
             store.toggleScreensaverLyrics()
           } else if (store.activeView === 'lyrics') {
             store.setActiveView('deck')

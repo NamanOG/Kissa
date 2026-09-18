@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import App from '@renderer/App'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 
@@ -76,5 +76,39 @@ describe('Screensaver Route Integration', () => {
 
     // Turntable is still rendered in normal app mode
     expect(screen.getByTitle('Drag tonearm to drop needle & seek')).toBeInTheDocument()
+  })
+
+  it('toggles between album art and synced lyrics via L key in screensaver mode without exiting', async () => {
+    usePlayerStore.setState({ screensaverLyrics: false })
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('main', { name: 'Listening Display' })).toBeInTheDocument()
+    })
+
+    expect(screen.getByText(/\[ L \] Live Lyrics/)).toBeInTheDocument()
+
+    // Press L to switch to lyrics
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l' }))
+    })
+
+    await waitFor(() => {
+      expect(usePlayerStore.getState().screensaverLyrics).toBe(true)
+      expect(screen.getByText(/\[ L \] Album Art/)).toBeInTheDocument()
+    })
+
+    // Press L again to switch back to album art
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l' }))
+    })
+
+    await waitFor(() => {
+      expect(usePlayerStore.getState().screensaverLyrics).toBe(false)
+      expect(screen.getByText(/\[ L \] Live Lyrics/)).toBeInTheDocument()
+    })
+
+    // Ensure screensaver did NOT exit
+    expect(window.electron.exitScreensaver).not.toHaveBeenCalled()
   })
 })

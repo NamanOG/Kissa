@@ -41,6 +41,7 @@ export interface PlayerState {
   isMiniPlayer: boolean
   isFullscreen: boolean
   isListeningDisplay: boolean
+  isScreensaver: boolean
   screensaverLyrics: boolean
   miniPlayerAlwaysOnTop: boolean
   theme: AppTheme
@@ -77,6 +78,7 @@ export interface PlayerState {
   setFullscreen: (value: boolean) => void
   toggleFullscreen: () => void
   setIsListeningDisplay: (isListeningDisplay: boolean) => void
+  setIsScreensaver: (isScreensaver: boolean) => void
   setScreensaverLyrics: (screensaverLyrics: boolean) => void
   toggleScreensaverLyrics: () => void
   setTheme: (theme: AppTheme) => void
@@ -180,6 +182,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   isMiniPlayer: false,
   isFullscreen: false,
   isListeningDisplay: false,
+  isScreensaver: false,
   screensaverLyrics: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_screensaver_lyrics') === 'true' : false,
   miniPlayerAlwaysOnTop: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_always_on_top') !== 'false' : true,
   theme: getInitialTheme(),
@@ -277,6 +280,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   },
   toggleFullscreen: () => get().setFullscreen(!get().isFullscreen),
   setIsListeningDisplay: (isListeningDisplay) => set({ isListeningDisplay }),
+  setIsScreensaver: (isScreensaver) => set({ isScreensaver }),
   setScreensaverLyrics: (screensaverLyrics) => {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('kissa_screensaver_lyrics', screensaverLyrics.toString())
