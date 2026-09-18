@@ -1,87 +1,302 @@
 using System;
-using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace KissaScreensaver
 {
     class Program
     {
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern int MessageBoxW(IntPtr hWnd, string text, string caption, uint type);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+        private const uint MB_OK = 0x00000000;
+        private const uint MB_ICONINFORMATION = 0x00000040;
+
+        [DllImport("shell32.dll")]
+        private static extern int SHQueryUserNotificationState(out QUERY_USER_NOTIFICATION_STATE pquns);
+
+        private enum QUERY_USER_NOTIFICATION_STATE
+        {
+            QUNS_NOT_PRESENT = 1,
+            QUNS_BUSY = 2,
+            QUNS_RUNNING_D3D_FULL_SCREEN = 3,
+            QUNS_PRESENTATION_MODE = 4,
+            QUNS_ACCEPTS_NOTIFICATIONS = 5,
+            QUNS_QUIET_TIME = 6,
+            QUNS_APP = 7
+        }
+
+        private static string GetScreensaverPipeName()
+        {
+            string username = (Environment.GetEnvironmentVariable("USERNAME") ?? Environment.UserName ?? "default").ToLowerInvariant();
+            using (var sha256 = SHA256.Create())
+            {
+                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(username));
+                var sb = new StringBuilder(16);
+                for (int i = 0; i < 8; i++) // 8 bytes = 16 hex digits
+                {
+                    sb.Append(bytes[i].ToString("x2"));
+                }
+                return $"kissa-screensaver-{sb}";
+            }
+        }
+
+        private static bool IsUserInBusyOrVideoMode()
+        {
+            try
+            {
+                if (SHQueryUserNotificationState(out var state) == 0)
+                {
+                    if (state == QUERY_USER_NOTIFICATION_STATE.QUNS_BUSY ||
+                        state == QUERY_USER_NOTIFICATION_STATE.QUNS_RUNNING_D3D_FULL_SCREEN ||
+                        state == QUERY_USER_NOTIFICATION_STATE.QUNS_PRESENTATION_MODE)
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback to false if query fails
+            }
+            return false;
+        }
+
+        private static readonly System.Collections.Generic.HashSet<string> AllowedKissaProcessNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "kissa",
+            "electron"
+        };
+
+        private static readonly System.Collections.Generic.HashSet<string> KnownVideoProcessNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "vlc", "vlc64", "mpc-hc", "mpc-hc64", "mpc-be", "mpc-be64",
+            "potplayer", "potplayermini", "potplayermini64", "kmplayer", "kmplayer64",
+            "gom", "gom64", "kodi", "plex", "plexmediaplayer", "mpv", "netflix",
+            "zunevideo", "movies", "video.ui"
+        };
+
+        private static readonly System.Collections.Generic.HashSet<string> KnownBrowserProcessNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "chrome", "msedge", "firefox", "brave", "opera", "opera_gx",
+            "vivaldi", "arc", "waterfox", "librewolf", "floorp", "tor", "chromium"
+        };
+
+        private static string? GetForegroundProcessName()
+        {
+            try
+            {
+                IntPtr hWnd = GetForegroundWindow();
+                if (hWnd == IntPtr.Zero)
+                {
+                    return null;
+                }
+
+                if (GetWindowThreadProcessId(hWnd, out uint pid) == 0 || pid == 0)
+                {
+                    return "unknown";
+                }
+
+                using var proc = System.Diagnostics.Process.GetProcessById((int)pid);
+                return proc.ProcessName.ToLowerInvariant();
+            }
+            catch
+            {
+                return "unknown";
+            }
+        }
+
+        private static bool IsProcessVideoOrBrowser(string? procName)
+        {
+            if (string.IsNullOrEmpty(procName)) return false;
+
+            // Fail closed if process could not be determined
+            if (procName == "unknown") return true;
+
+            // Allowed Kissa processes
+            if (AllowedKissaProcessNames.Contains(procName)) return false;
+
+            // Check known video players (exact or prefixed)
+            if (KnownVideoProcessNames.Contains(procName) ||
+                procName.StartsWith("mpc-", StringComparison.OrdinalIgnoreCase) ||
+                procName.StartsWith("potplayer", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // Check browsers
+            if (KnownBrowserProcessNames.Contains(procName) ||
+                procName.StartsWith("chrome", StringComparison.OrdinalIgnoreCase) ||
+                procName.StartsWith("msedge", StringComparison.OrdinalIgnoreCase) ||
+                procName.StartsWith("firefox", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         [STAThread]
         static int Main(string[] args)
         {
             try
             {
-                // The base directory where this .scr/.exe resides
-                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string targetExe = Path.Combine(baseDir, "Kissa.exe");
-
-                if (!File.Exists(targetExe))
-                {
-                    // Fallback to searching up just in case we are in development structure,
-                    // but for production Kissa.exe will be right next to Kissa.scr.
-                    return 1;
-                }
+                string pipeName = GetScreensaverPipeName();
 
                 if (args.Length > 0)
                 {
                     string firstArg = args[0].ToLowerInvariant().Trim();
 
-                    // /p <HWND> - Preview mode
+                    // /p <HWND> - Preview mode: exit cleanly to prevent preview crash
                     if (firstArg.StartsWith("/p") || firstArg.StartsWith("-p"))
                     {
-                        // We intentionally do not embed the Electron BrowserWindow inside the HWND.
-                        // We exit cleanly to prevent the Windows Screensaver Settings panel from crashing.
                         return 0;
                     }
 
                     // /c - Configure mode
                     if (firstArg.StartsWith("/c") || firstArg.StartsWith("-c"))
                     {
-                        // Launch normal Kissa to show settings
-                        Process.Start(new ProcessStartInfo
-                        {
-                            FileName = targetExe,
-                            UseShellExecute = true
-                        });
-                        return 0;
+                        return HandleConfigure(pipeName);
                     }
 
                     // /s - Start screensaver mode
                     if (firstArg.StartsWith("/s") || firstArg.StartsWith("-s"))
                     {
-                        ProcessStartInfo psi = new ProcessStartInfo
-                        {
-                            FileName = targetExe,
-                            Arguments = "--screensaver",
-                            UseShellExecute = false
-                        };
-
-                        using (Process? proc = Process.Start(psi))
-                        {
-                            if (proc != null)
-                            {
-                                // SUPERVISOR LIFECYCLE: Block and keep .scr alive while Electron renders.
-                                proc.WaitForExit();
-                                return proc.ExitCode;
-                            }
-                        }
-                        return 1;
+                        return HandleScreensaver(pipeName);
                     }
                 }
 
-                // No arguments - Treat as /c Configure Mode
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = targetExe,
-                    UseShellExecute = true
-                });
+                // No arguments or unrecognized flag: treat as configure mode
+                return HandleConfigure(pipeName);
+            }
+            catch
+            {
+                // Fail closed silently with code 0
                 return 0;
             }
-            catch (Exception)
+        }
+
+        private static int HandleScreensaver(string pipeName)
+        {
+            // Windows-level safety check: if user is running full screen D3D app/game or presenting, suppress screensaver
+            if (IsUserInBusyOrVideoMode())
             {
-                // In a WinExe, writing to console silently fails unless redirected, which is safe.
-                // We return a non-zero exit code on failure.
-                return 1;
+                return 0;
+            }
+
+            // Conservative foreground-window pre-flight check:
+            string? foregroundProc = GetForegroundProcessName();
+            if (IsProcessVideoOrBrowser(foregroundProc))
+            {
+                return 0;
+            }
+
+            try
+            {
+                using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+
+                try
+                {
+                    // Fail-closed: 250ms timeout ensures instant exit if Kissa is closed
+                    pipe.Connect(250);
+                }
+                catch
+                {
+                    // Kissa is closed or pipe is not listening: exit immediately with code 0.
+                    // Kissa.scr must NEVER launch Kissa.exe.
+                    return 0;
+                }
+
+                using var reader = new StreamReader(pipe, Encoding.UTF8);
+                using var writer = new StreamWriter(pipe, Encoding.UTF8) { AutoFlush = true };
+
+                EventHandler exitHandler = (s, e) => { try { pipe.Dispose(); } catch { } };
+                AppDomain.CurrentDomain.ProcessExit += exitHandler;
+
+                try
+                {
+                    // Re-sample foreground immediately before request to guard against race conditions
+                    foregroundProc = GetForegroundProcessName();
+                    if (IsProcessVideoOrBrowser(foregroundProc))
+                    {
+                        return 0;
+                    }
+
+                    // Request screensaver activation with foreground context
+                    writer.WriteLine($"{{\"action\":\"activate\",\"foregroundProcess\":\"{foregroundProc ?? ""}\"}}");
+
+                    var readTask = reader.ReadLineAsync();
+                    if (!readTask.Wait(3000))
+                    {
+                        return 0; // Fail closed if Kissa does not respond in 3 seconds
+                    }
+
+                    string? response = readTask.Result;
+                    if (string.IsNullOrEmpty(response) || !response.Contains("\"status\":\"activated\""))
+                    {
+                        // Music not playing, video playing, window not ready, or already active: fail closed
+                        return 0;
+                    }
+
+                    // Screensaver is active in Kissa's existing window.
+                    // Keep the supervisor process alive until wake signal or pipe closure.
+                    while (pipe.IsConnected)
+                    {
+                        string? msg = reader.ReadLine();
+                        if (msg == null) break; // Pipe closed / EOF
+                        if (msg.Contains("\"action\":\"wake\"")) break;
+                    }
+
+                    return 0;
+                }
+                finally
+                {
+                    AppDomain.CurrentDomain.ProcessExit -= exitHandler;
+                }
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        private static int HandleConfigure(string pipeName)
+        {
+            try
+            {
+                using var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+
+                try
+                {
+                    pipe.Connect(250);
+                    using var writer = new StreamWriter(pipe, Encoding.UTF8) { AutoFlush = true };
+                    writer.WriteLine("{\"action\":\"configure\"}");
+                    return 0;
+                }
+                catch
+                {
+                    // Kissa is closed: do NOT launch Kissa.exe. Display informative native dialog.
+                    MessageBoxW(
+                        IntPtr.Zero,
+                        "Kissa is not currently running.\n\nPlease open Kissa to adjust screensaver and player settings.",
+                        "Kissa Screensaver",
+                        MB_OK | MB_ICONINFORMATION
+                    );
+                    return 0;
+                }
+            }
+            catch
+            {
+                return 0;
             }
         }
     }

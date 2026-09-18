@@ -29,6 +29,7 @@ export interface KissaSystemMediaAPI {
   sendShareReady: (success: boolean) => Promise<void>
   isScreensaver: () => Promise<boolean>
   exitScreensaver: () => Promise<void>
+  onScreensaverModeChanged: (callback: (isScreensaver: boolean) => void) => () => void
   isScreensaverRegistered: () => Promise<boolean>
   registerScreensaver: () => Promise<{ success: boolean; error?: string; path?: string }>
   unregisterScreensaver: () => Promise<{ success: boolean; removed: boolean; reason?: string; currentPath?: string; error?: string }>
@@ -89,6 +90,15 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
   sendShareReady: (success) => ipcRenderer.invoke('kissa:share-ready', success),
   isScreensaver: () => ipcRenderer.invoke('kissa:is-screensaver'),
   exitScreensaver: () => ipcRenderer.invoke('kissa:exit-screensaver'),
+  onScreensaverModeChanged: (callback) => {
+    const handler = (_event: unknown, isScreensaver: boolean): void => {
+      callback(isScreensaver)
+    }
+    ipcRenderer.on('kissa:screensaver-mode-changed', handler)
+    return (): void => {
+      ipcRenderer.removeListener('kissa:screensaver-mode-changed', handler)
+    }
+  },
   isScreensaverRegistered: () => ipcRenderer.invoke('kissa:is-screensaver-registered'),
   registerScreensaver: () => ipcRenderer.invoke('kissa:register-screensaver'),
   unregisterScreensaver: () => ipcRenderer.invoke('kissa:unregister-screensaver'),

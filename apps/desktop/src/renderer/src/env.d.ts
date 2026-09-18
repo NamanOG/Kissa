@@ -45,6 +45,7 @@ export interface KissaSystemMediaAPI {
   onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void
   isScreensaver: () => Promise<boolean>
   exitScreensaver: () => Promise<void>
+  onScreensaverModeChanged?: (callback: (isScreensaver: boolean) => void) => () => void
   isScreensaverRegistered?: () => Promise<boolean>
   registerScreensaver?: () => Promise<{ success: boolean; error?: string; path?: string }>
   unregisterScreensaver?: () => Promise<{ success: boolean; removed: boolean; reason?: string; currentPath?: string; error?: string }>
