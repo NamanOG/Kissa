@@ -49,6 +49,10 @@ export class ArtworkService {
     if (!title || !url) return
     const rawKey = this.getKey(title, artist)
     const cleanKey = this.getCleanKey(title, artist)
+    const existing = this.cache.get(rawKey) || this.cache.get(cleanKey)
+    if (existing && (existing.startsWith('http://') || existing.startsWith('https://')) && url.startsWith('data:')) {
+      return
+    }
     this.cache.set(rawKey, url)
     this.cache.set(cleanKey, url)
     this.enforceCacheLimit()

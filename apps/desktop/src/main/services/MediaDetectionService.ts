@@ -141,10 +141,13 @@ function formatSession(
     }
   }
 
-  if (artworkDataUrl) {
+  const cachedArtwork = ArtworkService.getInstance().getCachedArtwork(title, artist)
+  if (cachedArtwork && (cachedArtwork.startsWith('http://') || cachedArtwork.startsWith('https://'))) {
+    artworkDataUrl = cachedArtwork
+  } else if (artworkDataUrl) {
     ArtworkService.getInstance().setCachedArtwork(title, artist, artworkDataUrl)
-  } else {
-    artworkDataUrl = ArtworkService.getInstance().getCachedArtwork(title, artist)
+  } else if (cachedArtwork) {
+    artworkDataUrl = cachedArtwork
   }
 
   const isPlaying = session.playback?.playbackStatus === PlaybackStatus.PLAYING // 4
@@ -415,7 +418,8 @@ export class MediaDetectionService {
       this.broadcast(payload)
     }
 
-    if (payload && !payload.artworkDataUrl && payload.title && payload.artist) {
+    const needsWebArtwork = !payload?.artworkDataUrl || payload.artworkDataUrl.startsWith('data:')
+    if (payload && payload.title && payload.artist && needsWebArtwork) {
       const currentTitle = payload.title
       const currentArtist = payload.artist
       ArtworkService.getInstance()
@@ -425,7 +429,7 @@ export class MediaDetectionService {
             if (
               this.latestPayload.title === currentTitle &&
               this.latestPayload.artist === currentArtist &&
-              !this.latestPayload.artworkDataUrl
+              this.latestPayload.artworkDataUrl !== fetchedUrl
             ) {
               this.latestPayload = {
                 ...this.latestPayload,
