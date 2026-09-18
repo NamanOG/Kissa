@@ -1,6 +1,6 @@
 {
   "name": "apps-desktop",
-  "version": "4.1.1",
+  "version": "4.1.0",
   "description": "A contemplative desktop vinyl player & listening environment for Windows.",
   "main": "./out/main/index.js",
   "author": "NamanOG",

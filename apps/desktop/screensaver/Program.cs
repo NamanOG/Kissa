@@ -50,14 +50,13 @@ namespace KissaScreensaver
             }
         }
 
-        private static bool IsUserInBusyOrVideoMode()
+        private static bool IsExternalFullscreenOrPresentation()
         {
             try
             {
                 if (SHQueryUserNotificationState(out var state) == 0)
                 {
-                    if (state == QUERY_USER_NOTIFICATION_STATE.QUNS_BUSY ||
-                        state == QUERY_USER_NOTIFICATION_STATE.QUNS_RUNNING_D3D_FULL_SCREEN ||
+                    if (state == QUERY_USER_NOTIFICATION_STATE.QUNS_RUNNING_D3D_FULL_SCREEN ||
                         state == QUERY_USER_NOTIFICATION_STATE.QUNS_PRESENTATION_MODE)
                     {
                         return true;
@@ -187,17 +186,21 @@ namespace KissaScreensaver
 
         private static int HandleScreensaver(string pipeName)
         {
-            // Windows-level safety check: if user is running full screen D3D app/game or presenting, suppress screensaver
-            if (IsUserInBusyOrVideoMode())
-            {
-                return 0;
-            }
-
-            // Conservative foreground-window pre-flight check:
+            // Sample foreground window
             string? foregroundProc = GetForegroundProcessName();
-            if (IsProcessVideoOrBrowser(foregroundProc))
+
+            // If an external process is in foreground, ensure it is not video/browser and not in exclusive 3D game/presentation
+            if (!AllowedKissaProcessNames.Contains(foregroundProc ?? ""))
             {
-                return 0;
+                if (IsProcessVideoOrBrowser(foregroundProc))
+                {
+                    return 0;
+                }
+
+                if (IsExternalFullscreenOrPresentation())
+                {
+                    return 0;
+                }
             }
 
             try
@@ -226,9 +229,12 @@ namespace KissaScreensaver
                 {
                     // Re-sample foreground immediately before request to guard against race conditions
                     foregroundProc = GetForegroundProcessName();
-                    if (IsProcessVideoOrBrowser(foregroundProc))
+                    if (!AllowedKissaProcessNames.Contains(foregroundProc ?? ""))
                     {
-                        return 0;
+                        if (IsProcessVideoOrBrowser(foregroundProc) || IsExternalFullscreenOrPresentation())
+                        {
+                            return 0;
+                        }
                     }
 
                     // Request screensaver activation with foreground context

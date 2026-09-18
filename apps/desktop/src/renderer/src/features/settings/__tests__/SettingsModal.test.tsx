@@ -31,7 +31,7 @@ describe('SettingsModal Windows Screensaver integration', () => {
     openScreensaverSettingsMock = vi.fn().mockResolvedValue({ success: true })
 
     window.electron = {
-      getAppVersion: vi.fn().mockResolvedValue('4.1.1'),
+      getAppVersion: vi.fn().mockResolvedValue('4.1.0'),
       isScreensaverRegistered: isScreensaverRegisteredMock,
       registerScreensaver: registerScreensaverMock,
       unregisterScreensaver: unregisterScreensaverMock,
@@ -194,11 +194,11 @@ describe('SettingsModal In-App Update System', () => {
       state: 'available',
       currentVersion: '4.0.0',
       updateInfo: {
-        version: 'v4.1.1',
-        releaseName: 'Kissa v4.1.1',
-        assetName: 'Kissa-Setup-4.1.1.exe',
+        version: 'v4.1.0',
+        releaseName: 'Kissa v4.1.0',
+        assetName: 'Kissa-Setup-4.1.0.exe',
         assetSize: 267336266,
-        downloadUrl: 'https://github.com/NamanOG/Kissa/releases/download/v4.1.1/Kissa-Setup-4.1.1.exe',
+        downloadUrl: 'https://github.com/NamanOG/Kissa/releases/download/v4.1.0/Kissa-Setup-4.1.0.exe',
         isPortable: false
       },
       progress: null,
@@ -212,11 +212,11 @@ describe('SettingsModal In-App Update System', () => {
       state: 'downloading',
       currentVersion: '4.0.0',
       updateInfo: {
-        version: 'v4.1.1',
-        releaseName: 'Kissa v4.1.1',
-        assetName: 'Kissa-Setup-4.1.1.exe',
+        version: 'v4.1.0',
+        releaseName: 'Kissa v4.1.0',
+        assetName: 'Kissa-Setup-4.1.0.exe',
         assetSize: 267336266,
-        downloadUrl: 'https://github.com/NamanOG/Kissa/releases/download/v4.1.1/Kissa-Setup-4.1.1.exe',
+        downloadUrl: 'https://github.com/NamanOG/Kissa/releases/download/v4.1.0/Kissa-Setup-4.1.0.exe',
         isPortable: false
       },
       progress: { percent: 0, transferredBytes: 0, totalBytes: 267336266, bytesPerSecond: 0 },
@@ -228,7 +228,7 @@ describe('SettingsModal In-App Update System', () => {
 
     render(<SettingsModal />)
 
-    expect(await screen.findByText(/Kissa v4\.1\.1 is available/)).toBeInTheDocument()
+    expect(await screen.findByText(/Kissa v4\.1\.0 is available/)).toBeInTheDocument()
     const downloadBtn = screen.getByRole('button', { name: 'Download Update' })
     expect(downloadBtn).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'View Release' })).toBeInTheDocument()
@@ -244,11 +244,11 @@ describe('SettingsModal In-App Update System', () => {
       state: 'downloading',
       currentVersion: '4.0.0',
       updateInfo: {
-        version: 'v4.1.1',
-        releaseName: 'Kissa v4.1.1',
-        assetName: 'Kissa-Setup-4.1.1.exe',
+        version: 'v4.1.0',
+        releaseName: 'Kissa v4.1.0',
+        assetName: 'Kissa-Setup-4.1.0.exe',
         assetSize: 200000000,
-        downloadUrl: 'https://github.com/NamanOG/Kissa/releases/download/v4.1.1/Kissa-Setup-4.1.1.exe',
+        downloadUrl: 'https://github.com/NamanOG/Kissa/releases/download/v4.1.0/Kissa-Setup-4.1.0.exe',
         isPortable: false
       },
       progress: { percent: 45, transferredBytes: 90000000, totalBytes: 200000000, bytesPerSecond: 1000000 },
@@ -260,7 +260,7 @@ describe('SettingsModal In-App Update System', () => {
 
     render(<SettingsModal />)
 
-    expect(await screen.findByText(/Downloading v4\.1\.1… 45%/)).toBeInTheDocument()
+    expect(await screen.findByText(/Downloading v4\.1\.0… 45%/)).toBeInTheDocument()
     const cancelBtn = screen.getByRole('button', { name: 'Cancel' })
     expect(cancelBtn).toBeInTheDocument()
 
@@ -275,15 +275,15 @@ describe('SettingsModal In-App Update System', () => {
       state: 'downloaded',
       currentVersion: '4.0.0',
       updateInfo: {
-        version: 'v4.1.1',
-        releaseName: 'Kissa v4.1.1',
-        assetName: 'Kissa-Setup-4.1.1.exe',
+        version: 'v4.1.0',
+        releaseName: 'Kissa v4.1.0',
+        assetName: 'Kissa-Setup-4.1.0.exe',
         assetSize: 200000000,
-        downloadUrl: 'https://github.com/NamanOG/Kissa/releases/download/v4.1.1/Kissa-Setup-4.1.1.exe',
+        downloadUrl: 'https://github.com/NamanOG/Kissa/releases/download/v4.1.0/Kissa-Setup-4.1.0.exe',
         isPortable: false
       },
       progress: { percent: 100, transferredBytes: 200000000, totalBytes: 200000000, bytesPerSecond: 0 },
-      downloadedFilePath: 'C:\\temp\\Kissa-Setup-4.1.1.exe',
+      downloadedFilePath: 'C:\\temp\\Kissa-Setup-4.1.0.exe',
       error: null,
       isScreensaverActive: false,
       isPortable: false
@@ -315,15 +315,15 @@ describe('SettingsModal In-App Update System', () => {
       state: 'downloaded',
       currentVersion: '4.0.0',
       updateInfo: {
-        version: 'v4.1.1',
-        releaseName: 'Kissa v4.1.1',
-        assetName: 'Kissa-Portable-4.1.1.exe',
+        version: 'v4.1.0',
+        releaseName: 'Kissa v4.1.0',
+        assetName: 'Kissa-Portable-4.1.0.exe',
         assetSize: 200000000,
-        downloadUrl: 'https://github.com/NamanOG/Kissa/releases/download/v4.1.1/Kissa-Portable-4.1.1.exe',
+        downloadUrl: 'https://github.com/NamanOG/Kissa/releases/download/v4.1.0/Kissa-Portable-4.1.0.exe',
         isPortable: true
       },
       progress: { percent: 100, transferredBytes: 200000000, totalBytes: 200000000, bytesPerSecond: 0 },
-      downloadedFilePath: 'C:\\Downloads\\Kissa-Portable-4.1.1.exe',
+      downloadedFilePath: 'C:\\Downloads\\Kissa-Portable-4.1.0.exe',
       error: null,
       isScreensaverActive: false,
       isPortable: true
