@@ -112,8 +112,14 @@ namespace SmtcHelper
         private static readonly object _lock = new object();
         private static string _lastBroadcastJson = "";
         private static string _lastTrackKey = "";
+        private static string _lastTrackArtist = "";
+        private static string _lastTrackAlbum = "";
         private static string _cachedThumbnailKey = "";
         private static string? _cachedThumbnailBase64 = null;
+        private static bool _cachedThumbnailSettled = false;
+        private static string _prevTrackThumbnailBase64 = "";
+        private static string _prevTrackArtist = "";
+        private static string _prevTrackAlbum = "";
         private static int _lastVolume = -1;
         private static GlobalSystemMediaTransportControlsSession? _authoritySession;
         private static GlobalSystemMediaTransportControlsSession? _challengerSession;
@@ -742,22 +748,48 @@ namespace SmtcHelper
 
                 string rawTitle = mediaProps?.Title ?? "";
                 string rawArtist = mediaProps?.Artist ?? "";
+                string currentAlbum = mediaProps?.AlbumTitle ?? "";
                 string trackKey = $"{rawTitle}|{rawArtist}";
                 bool isNewTrack = trackKey != _lastTrackKey;
                 UpdateAuthorityTrack(session, trackKey);
 
                 if (trackKey != _cachedThumbnailKey)
                 {
+                    if (!string.IsNullOrEmpty(_cachedThumbnailBase64))
+                    {
+                        _prevTrackThumbnailBase64 = _cachedThumbnailBase64;
+                        _prevTrackArtist = _lastTrackArtist;
+                        _prevTrackAlbum = _lastTrackAlbum;
+                    }
                     _cachedThumbnailKey = trackKey;
                     _cachedThumbnailBase64 = null;
+                    _cachedThumbnailSettled = false;
+
+                    // Schedule delayed retries during track transition to capture the thumbnail
+                    // as soon as the media player (e.g. Apple Music / Spotify) finishes updating SMTC.
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await Task.Delay(250);
+                            await BroadcastStateAsync(true);
+                            await Task.Delay(400);
+                            await BroadcastStateAsync(true);
+                        }
+                        catch
+                        {
+                        }
+                    });
                 }
 
                 string? thumbnailBase64 = _cachedThumbnailBase64;
-                if (thumbnailBase64 == null && mediaProps?.Thumbnail != null)
+                bool shouldReadThumbnail = (thumbnailBase64 == null) || (force && !_cachedThumbnailSettled);
+
+                if (shouldReadThumbnail && mediaProps?.Thumbnail != null)
                 {
                     try
                     {
-                        using var cts = new CancellationTokenSource(2500);
+                        using var cts = new CancellationTokenSource(1500);
                         using var stream = await mediaProps.Thumbnail.OpenReadAsync().AsTask(cts.Token);
                         if (stream != null && stream.Size > 0)
                         {
@@ -767,8 +799,25 @@ namespace SmtcHelper
                             var bytes = memStream.ToArray();
                             if (bytes.Length > 0)
                             {
-                                _cachedThumbnailBase64 = Convert.ToBase64String(bytes);
-                                thumbnailBase64 = _cachedThumbnailBase64;
+                                string readBase64 = Convert.ToBase64String(bytes);
+
+                                bool isStalePrevThumbnail = !_cachedThumbnailSettled &&
+                                    !string.IsNullOrEmpty(_prevTrackThumbnailBase64) &&
+                                    readBase64 == _prevTrackThumbnailBase64 &&
+                                    (!string.Equals(rawArtist, _prevTrackArtist, StringComparison.OrdinalIgnoreCase) ||
+                                     (!string.IsNullOrEmpty(currentAlbum) && !string.IsNullOrEmpty(_prevTrackAlbum) && !string.Equals(currentAlbum, _prevTrackAlbum, StringComparison.OrdinalIgnoreCase)));
+
+                                if (isStalePrevThumbnail)
+                                {
+                                    // The OS SMTC has not swapped the stream yet; do not lock in the stale thumbnail.
+                                    thumbnailBase64 = null;
+                                }
+                                else
+                                {
+                                    _cachedThumbnailBase64 = readBase64;
+                                    thumbnailBase64 = readBase64;
+                                    _cachedThumbnailSettled = true;
+                                }
                             }
                         }
                     }
@@ -781,7 +830,7 @@ namespace SmtcHelper
                 string sourceAppId = JsonEscape(session.SourceAppUserModelId);
                 string title = JsonEscape(rawTitle);
                 string artist = JsonEscape(rawArtist);
-                string albumTitle = JsonEscape(mediaProps?.AlbumTitle ?? "");
+                string albumTitle = JsonEscape(currentAlbum);
                 string albumArtist = JsonEscape(mediaProps?.AlbumArtist ?? "");
                 string thumb = thumbnailBase64 != null ? JsonEscape(thumbnailBase64) : "null";
                 
@@ -798,6 +847,8 @@ namespace SmtcHelper
                 {
                     _lastBroadcastJson = cleanJson;
                     _lastTrackKey = trackKey;
+                    _lastTrackArtist = rawArtist;
+                    _lastTrackAlbum = currentAlbum;
                     _lastVolume = masterVol;
                     _lastVideoState = videoState;
                     _lastHasActiveVideo = hasActiveVideo;
