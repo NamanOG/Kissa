@@ -97,7 +97,7 @@ export class WindowManager {
     }
 
     this.mainWindow.setFullScreen(true)
-    this.mainWindow.setAlwaysOnTop?.(true)
+    this.mainWindow.setAlwaysOnTop?.(true, 'screen-saver')
     this.mainWindow.focus()
     this.mainWindow.webContents?.focus?.()
 

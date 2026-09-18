@@ -239,21 +239,19 @@ describe('ScreensaverSessionService', () => {
       expect(mockMainWindow.webContents.send).toHaveBeenCalledWith('kissa:open-settings')
     })
 
-    it('rejects duplicate activation requests and preserves original active client socket', () => {
+    it('rejects duplicate activation requests when already active', () => {
       const primarySocket: any = { write: vi.fn(), end: vi.fn(), on: vi.fn(), setTimeout: vi.fn() }
       const secondarySocket: any = { write: vi.fn(), end: vi.fn(), on: vi.fn(), setTimeout: vi.fn() }
 
       ;(service as any).handleClientMessage(primarySocket, JSON.stringify({ action: 'activate' }))
       expect(service.isScreensaverActive()).toBe(true)
       expect(primarySocket.write).toHaveBeenCalledWith(expect.stringContaining('"status":"activated"'))
+      expect(primarySocket.end).toHaveBeenCalledTimes(1)
 
       // Secondary activate request while active
       ;(service as any).handleClientMessage(secondarySocket, JSON.stringify({ action: 'activate' }))
       expect(secondarySocket.write).toHaveBeenCalledWith(expect.stringContaining('"status":"already_active"'))
       expect(secondarySocket.end).toHaveBeenCalledTimes(1)
-
-      // Primary socket is still the active session holder
-      expect((service as any).activeClientSocket).toBe(primarySocket)
     })
 
     it('handles repeated wake events idempotently without throwing', () => {
@@ -268,7 +266,7 @@ describe('ScreensaverSessionService', () => {
       expect(() => service.notifyWake()).not.toThrow()
     })
 
-    it('exits screensaver mode when the active client socket unexpectedly disconnects', () => {
+    it('maintains screensaver session when activating client socket completes handshake and closes', () => {
       let closeHandler: (() => void) | null = null
       const fakeSocket: any = {
         write: vi.fn(),
@@ -283,12 +281,11 @@ describe('ScreensaverSessionService', () => {
       ;(service as any).handleClientMessage(fakeSocket, JSON.stringify({ action: 'activate' }))
       expect(service.isScreensaverActive()).toBe(true)
 
-      // Simulate supervisor process closing or terminating
+      // When supervisor process completes activation and closes socket, session remains active
       expect(closeHandler).toBeTruthy()
       closeHandler!()
 
-      expect(service.isScreensaverActive()).toBe(false)
-      expect(WindowManager.getInstance().exitScreensaverMode).toHaveBeenCalled()
+      expect(service.isScreensaverActive()).toBe(true)
     })
 
     it('handles invalid JSON safely and closes socket with error message', () => {

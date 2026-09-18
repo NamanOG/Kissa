@@ -247,21 +247,17 @@ namespace KissaScreensaver
                     }
 
                     string? response = readTask.Result;
-                    if (string.IsNullOrEmpty(response) || !response.Contains("\"status\":\"activated\""))
+                    if (string.IsNullOrEmpty(response) || 
+                        (!response.Contains("\"status\":\"activated\"") && !response.Contains("\"status\":\"already_active\"")))
                     {
-                        // Music not playing, video playing, window not ready, or already active: fail closed
+                        // Music not playing, video playing, window not ready, or rejected: fail closed
                         return 0;
                     }
 
-                    // Screensaver is active in Kissa's existing window.
-                    // Keep the supervisor process alive until wake signal or pipe closure.
-                    while (pipe.IsConnected)
-                    {
-                        string? msg = reader.ReadLine();
-                        if (msg == null) break; // Pipe closed / EOF
-                        if (msg.Contains("\"action\":\"wake\"")) break;
-                    }
-
+                    // Screensaver has been activated in Kissa's window on the user's interactive desktop.
+                    // We must exit the .scr process immediately with code 0 so that Windows unblanks the screen
+                    // and returns control to the user's interactive desktop where Kissa's fullscreen Listening Display
+                    // is running. Remaining in a blocking loop keeps Windows trapped on the blank ScreenSaver desktop.
                     return 0;
                 }
                 finally

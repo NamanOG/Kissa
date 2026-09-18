@@ -150,10 +150,6 @@ export class ScreensaverSessionService {
     socket.on('close', () => {
       if (socket === this.activeClientSocket) {
         this.activeClientSocket = null
-        if (this.sessionActive) {
-          // If the supervisor disconnected or was terminated by Windows, restore window state
-          this.exitScreensaverMode()
-        }
       }
     })
 
@@ -177,7 +173,7 @@ export class ScreensaverSessionService {
 
     if (action === 'activate') {
       if (this.sessionActive) {
-        // Prevent duplicate activation requests from hijacking or overwriting active socket
+        // Already active: confirm to client so it can exit cleanly
         socket.write(JSON.stringify({ status: 'already_active', token: this.sessionToken }) + '\n')
         socket.end()
         return
@@ -194,9 +190,9 @@ export class ScreensaverSessionService {
 
       const activated = this.enterScreensaverMode(socket)
       if (activated) {
-        // Clear socket timeout since this socket is now maintaining the active session
-        socket.setTimeout(0)
+        // Handshake complete: write activation confirmation and close socket so Kissa.scr can exit immediately
         socket.write(JSON.stringify({ status: 'activated', token: this.sessionToken }) + '\n')
+        socket.end()
       } else {
         socket.write(JSON.stringify({ status: 'rejected', reason: 'transition_failed' }) + '\n')
         socket.end()
@@ -214,7 +210,7 @@ export class ScreensaverSessionService {
     }
   }
 
-  public enterScreensaverMode(socket: net.Socket): boolean {
+  public enterScreensaverMode(socket?: net.Socket): boolean {
     if (this.sessionActive) {
       return true
     }
@@ -227,7 +223,7 @@ export class ScreensaverSessionService {
 
     this.sessionActive = true
     this.sessionToken = crypto.randomUUID()
-    this.activeClientSocket = socket
+    this.activeClientSocket = socket ?? null
     return true
   }
 
