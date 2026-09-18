@@ -36,7 +36,9 @@ function KissaApp(): React.JSX.Element {
   const isListeningDisplay = usePlayerStore((s) => s.isListeningDisplay)
   const theme = usePlayerStore((s) => s.theme)
   
-  const [isScreensaver, setIsScreensaver] = useState<boolean | null>(null)
+  const isScreensaver = usePlayerStore((s) => s.isScreensaver)
+  const setIsScreensaver = usePlayerStore((s) => s.setIsScreensaver)
+  const [isScreensaverReady, setIsScreensaverReady] = useState<boolean>(false)
   const [hasStarted, setHasStarted] = useState<boolean>(false)
 
   // Real audio playback engine (handles audio elements, time sync, seeking & volume)
@@ -66,9 +68,13 @@ function KissaApp(): React.JSX.Element {
       const state = usePlayerStore.getState()
       ;(window as any).electron.syncSettings({ runInBackground: state.runInBackground })
       ;(window as any).electron.setStartup(state.startWithWindows)
-      ;(window as any).electron.isScreensaver().then(setIsScreensaver)
+      ;(window as any).electron.isScreensaver().then((active: boolean) => {
+        setIsScreensaver(Boolean(active))
+        setIsScreensaverReady(true)
+      })
     } else {
       setIsScreensaver(false)
+      setIsScreensaverReady(true)
     }
   }, [])
 
@@ -93,26 +99,19 @@ function KissaApp(): React.JSX.Element {
     })
   }, [])
 
-  if (isScreensaver === null) {
+  if (!isScreensaverReady) {
     return <></>
   }
 
-  if (isScreensaver) {
-    return (
-      <AppLayout className="fixed inset-0 w-screen h-screen overflow-hidden bg-[#0f0b07]">
-        <Background />
-        <ListeningDisplay key="screensaver" mode="screensaver" />
-      </AppLayout>
-    )
-  }
-
   return (
-    <AppLayout>
+    <AppLayout className={cn(isScreensaver && 'fixed inset-0 w-screen h-screen overflow-hidden bg-[#0f0b07]')}>
       {/* Fixed atmospheric background */}
       <Background />
 
       <AnimatePresence mode="wait">
-        {isMiniPlayer ? (
+        {isScreensaver ? (
+          <ListeningDisplay key="screensaver" mode="screensaver" />
+        ) : isMiniPlayer ? (
           <motion.div
             key="mini-player"
             initial={{ opacity: 0 }}
@@ -131,8 +130,9 @@ function KissaApp(): React.JSX.Element {
           <motion.div
             key="normal-app"
             initial={false}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
             className="absolute inset-0 z-0 flex flex-col min-w-0 overflow-hidden"
           >
             {/* Invisible drag region for frameless window movement */}
@@ -283,13 +283,13 @@ function KissaApp(): React.JSX.Element {
       )}
       </AnimatePresence>
       {/* ── Settings & Preferences Modal ── */}
-      <SettingsModal />
+      {!isScreensaver && <SettingsModal />}
 
       {/* ── First-Time User Introduction & Guide Modal ── */}
-      <OnboardingModal />
+      {!isScreensaver && <OnboardingModal />}
 
       {/* ── Keyboard Shortcuts Quick Reference ── */}
-      <KeyboardHelpOverlay />
+      {!isScreensaver && <KeyboardHelpOverlay />}
 
       {/* ── Subtle Physical Startup Experience (Bypassed in screensaver mode) ── */}
       {!hasStarted && isScreensaver === false && (
