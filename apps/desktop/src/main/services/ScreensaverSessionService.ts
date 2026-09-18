@@ -185,6 +185,7 @@ export class ScreensaverSessionService {
 
       const foregroundProcess = typeof message?.foregroundProcess === 'string' ? message.foregroundProcess : undefined
       const check = this.isActivationEligible(foregroundProcess)
+      console.log(`[ScreensaverSessionService] Activation request (foreground=${foregroundProcess || 'none'}):`, check)
       if (!check.eligible) {
         socket.write(JSON.stringify({ status: 'rejected', reason: check.reason }) + '\n')
         socket.end()
@@ -259,6 +260,7 @@ export class ScreensaverSessionService {
     // If screensaver is active and music playback stops OR video playback is detected or unknown,
     // immediately exit screensaver mode and restore normal window state.
     if (this.sessionActive && (!isPlaying || videoState !== 'not_detected')) {
+      console.log(`[ScreensaverSessionService] Auto-waking screensaver (isPlaying=${isPlaying}, videoState=${videoState})`)
       this.notifyWake()
     }
   }

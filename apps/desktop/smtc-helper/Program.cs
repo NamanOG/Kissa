@@ -472,41 +472,6 @@ namespace SmtcHelper
         }
 
 
-        [DllImport("shell32.dll")]
-        private static extern int SHQueryUserNotificationState(out QUERY_USER_NOTIFICATION_STATE pquns);
-
-        private enum QUERY_USER_NOTIFICATION_STATE
-        {
-            QUNS_NOT_PRESENT = 1,
-            QUNS_BUSY = 2,
-            QUNS_RUNNING_D3D_FULL_SCREEN = 3,
-            QUNS_PRESENTATION_MODE = 4,
-            QUNS_ACCEPTS_NOTIFICATIONS = 5,
-            QUNS_QUIET_TIME = 6,
-            QUNS_APP = 7
-        }
-
-        private static bool IsUserInBusyOrVideoMode()
-        {
-            try
-            {
-                if (SHQueryUserNotificationState(out var state) == 0)
-                {
-                    if (state == QUERY_USER_NOTIFICATION_STATE.QUNS_BUSY ||
-                        state == QUERY_USER_NOTIFICATION_STATE.QUNS_RUNNING_D3D_FULL_SCREEN ||
-                        state == QUERY_USER_NOTIFICATION_STATE.QUNS_PRESENTATION_MODE)
-                    {
-                        return true;
-                    }
-                }
-            }
-            catch
-            {
-                // Fallback to false if shell32 call fails
-            }
-            return false;
-        }
-
         private static bool IsTerminal(GlobalSystemMediaTransportControlsSessionPlaybackStatus playbackStatus)
         {
             return playbackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Stopped ||
@@ -534,11 +499,6 @@ namespace SmtcHelper
         {
             try
             {
-                if (IsUserInBusyOrVideoMode())
-                {
-                    return "detected";
-                }
-
                 if (sessions == null) return "not_detected";
                 foreach (var session in sessions)
                 {
@@ -567,8 +527,8 @@ namespace SmtcHelper
                     }
                     catch
                     {
-                        // Transient query error: fail closed with unknown state
-                        return "unknown";
+                        // Transient query error on a single session (e.g. closing tab/process): continue inspecting remaining sessions
+                        continue;
                     }
                 }
                 return "not_detected";

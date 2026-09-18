@@ -76,7 +76,7 @@ vi.mock('../../window/WindowManager', () => {
 describe('UpdateService', () => {
   describe('Semver utilities', () => {
     it('parses semver versions correctly', () => {
-      expect(parseSemver('v4.1.1')).toEqual([4, 1, 1])
+      expect(parseSemver('v4.1.0')).toEqual([4, 1, 0])
       expect(parseSemver('4.0.0')).toEqual([4, 0, 0])
       expect(parseSemver('v1.10.2-beta')).toEqual([1, 10, 2])
       expect(parseSemver('')).toEqual([])
@@ -84,9 +84,9 @@ describe('UpdateService', () => {
     })
 
     it('correctly compares local and remote versions', () => {
-      expect(isNewerVersion('v4.1.1', '4.0.0')).toBe(true)
-      expect(isNewerVersion('v4.1.1', '4.1.1')).toBe(false)
-      expect(isNewerVersion('4.0.0', '4.1.1')).toBe(false)
+      expect(isNewerVersion('v4.1.0', '4.0.0')).toBe(true)
+      expect(isNewerVersion('v4.1.0', '4.1.0')).toBe(false)
+      expect(isNewerVersion('4.0.0', '4.1.0')).toBe(false)
       expect(isNewerVersion('v5.0.0', '4.9.9')).toBe(true)
       expect(isNewerVersion('v4.0.1', '4.0.0')).toBe(true)
       expect(isNewerVersion('', '4.0.0')).toBe(false)
@@ -97,7 +97,7 @@ describe('UpdateService', () => {
     it('approves trusted GitHub release and CDN asset URLs', () => {
       expect(
         isSafeDownloadUrl(
-          'https://github.com/NamanOG/Kissa/releases/download/v4.1.1/Kissa-Setup-4.1.1.exe'
+          'https://github.com/NamanOG/Kissa/releases/download/v4.1.0/Kissa-Setup-4.1.0.exe'
         )
       ).toBe(true)
       expect(
@@ -112,9 +112,9 @@ describe('UpdateService', () => {
 
     it('rejects insecure HTTP protocols and untrusted domains', () => {
       expect(
-        isSafeDownloadUrl('http://github.com/NamanOG/Kissa/releases/download/v4.1.1/Kissa-Setup-4.1.1.exe')
+        isSafeDownloadUrl('http://github.com/NamanOG/Kissa/releases/download/v4.1.0/Kissa-Setup-4.1.0.exe')
       ).toBe(false)
-      expect(isSafeDownloadUrl('https://malicious-site.com/Kissa-Setup-4.1.1.exe')).toBe(false)
+      expect(isSafeDownloadUrl('https://malicious-site.com/Kissa-Setup-4.1.0.exe')).toBe(false)
       expect(isSafeDownloadUrl('https://github.com.attacker.com/malware.exe')).toBe(false)
       expect(isSafeDownloadUrl('not-a-valid-url')).toBe(false)
     })
@@ -146,24 +146,24 @@ describe('UpdateService', () => {
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          tag_name: 'v4.1.1',
-          name: 'Kissa v4.1.1 — The Deliberate Listening Update',
+          tag_name: 'v4.1.0',
+          name: 'Kissa v4.1.0 — The Deliberate Listening Update',
           published_at: '2026-09-17T02:44:37Z',
           body: 'Release notes here',
           draft: false,
           prerelease: false,
           assets: [
             {
-              name: 'Kissa-Setup-4.1.1.exe',
+              name: 'Kissa-Setup-4.1.0.exe',
               size: 267336266,
               browser_download_url:
-                'https://github.com/NamanOG/Kissa/releases/download/v4.1.1/Kissa-Setup-4.1.1.exe'
+                'https://github.com/NamanOG/Kissa/releases/download/v4.1.0/Kissa-Setup-4.1.0.exe'
             },
             {
-              name: 'Kissa-Portable-4.1.1.exe',
+              name: 'Kissa-Portable-4.1.0.exe',
               size: 266731891,
               browser_download_url:
-                'https://github.com/NamanOG/Kissa/releases/download/v4.1.1/Kissa-Portable-4.1.1.exe'
+                'https://github.com/NamanOG/Kissa/releases/download/v4.1.0/Kissa-Portable-4.1.0.exe'
             }
           ]
         })
@@ -172,8 +172,8 @@ describe('UpdateService', () => {
       const payload = await service.checkForUpdates()
       expect(payload.state).toBe('available')
       expect(payload.updateInfo).not.toBeNull()
-      expect(payload.updateInfo?.version).toBe('v4.1.1')
-      expect(payload.updateInfo?.assetName).toBe('Kissa-Setup-4.1.1.exe')
+      expect(payload.updateInfo?.version).toBe('v4.1.0')
+      expect(payload.updateInfo?.assetName).toBe('Kissa-Setup-4.1.0.exe')
       expect(payload.updateInfo?.assetSize).toBe(267336266)
       expect(payload.updateInfo?.isPortable).toBe(false)
     })
@@ -184,21 +184,21 @@ describe('UpdateService', () => {
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          tag_name: 'v4.1.1',
+          tag_name: 'v4.1.0',
           draft: false,
           prerelease: false,
           assets: [
             {
-              name: 'Kissa-Setup-4.1.1.exe',
+              name: 'Kissa-Setup-4.1.0.exe',
               size: 267336266,
               browser_download_url:
-                'https://github.com/NamanOG/Kissa/releases/download/v4.1.1/Kissa-Setup-4.1.1.exe'
+                'https://github.com/NamanOG/Kissa/releases/download/v4.1.0/Kissa-Setup-4.1.0.exe'
             },
             {
-              name: 'Kissa-Portable-4.1.1.exe',
+              name: 'Kissa-Portable-4.1.0.exe',
               size: 266731891,
               browser_download_url:
-                'https://github.com/NamanOG/Kissa/releases/download/v4.1.1/Kissa-Portable-4.1.1.exe'
+                'https://github.com/NamanOG/Kissa/releases/download/v4.1.0/Kissa-Portable-4.1.0.exe'
             }
           ]
         })
@@ -206,7 +206,7 @@ describe('UpdateService', () => {
 
       const payload = await service.checkForUpdates()
       expect(payload.state).toBe('available')
-      expect(payload.updateInfo?.assetName).toBe('Kissa-Portable-4.1.1.exe')
+      expect(payload.updateInfo?.assetName).toBe('Kissa-Portable-4.1.0.exe')
       expect(payload.updateInfo?.isPortable).toBe(true)
     })
 
@@ -291,7 +291,7 @@ describe('UpdateService', () => {
 
     it('refuses installation if screensaver is active', async () => {
       ;(service as any).state = 'downloaded'
-      ;(service as any).downloadedFilePath = 'C:\\mock-temp\\Kissa-Setup-4.1.1.exe'
+      ;(service as any).downloadedFilePath = 'C:\\mock-temp\\Kissa-Setup-4.1.0.exe'
 
       const { WindowManager } = await import('../../window/WindowManager')
       vi.mocked(WindowManager.getInstance).mockReturnValueOnce({
@@ -306,7 +306,7 @@ describe('UpdateService', () => {
     it('reveals downloaded portable file in explorer', async () => {
       process.env.PORTABLE_EXECUTABLE_DIR = 'D:\\Portable'
       ;(service as any).state = 'downloaded'
-      ;(service as any).downloadedFilePath = 'C:\\mock-downloads\\Kissa-Portable-4.1.1.exe'
+      ;(service as any).downloadedFilePath = 'C:\\mock-downloads\\Kissa-Portable-4.1.0.exe'
 
       const { shell } = await import('electron')
       const result = await service.installUpdate()
@@ -314,20 +314,20 @@ describe('UpdateService', () => {
       expect(result.success).toBe(true)
       expect(result.action).toBe('revealed')
       expect(shell.showItemInFolder).toHaveBeenCalledWith(
-        'C:\\mock-downloads\\Kissa-Portable-4.1.1.exe'
+        'C:\\mock-downloads\\Kissa-Portable-4.1.0.exe'
       )
     })
 
     it('spawns installer and quits app for installed version', async () => {
       ;(service as any).state = 'downloaded'
-      ;(service as any).downloadedFilePath = 'C:\\mock-temp\\Kissa-Setup-4.1.1.exe'
+      ;(service as any).downloadedFilePath = 'C:\\mock-temp\\Kissa-Setup-4.1.0.exe'
 
       const { spawn } = await import('child_process')
       const result = await service.installUpdate()
 
       expect(result.success).toBe(true)
       expect(result.action).toBe('restarting')
-      expect(mockSpawn).toHaveBeenCalledWith('C:\\mock-temp\\Kissa-Setup-4.1.1.exe', [], {
+      expect(mockSpawn).toHaveBeenCalledWith('C:\\mock-temp\\Kissa-Setup-4.1.0.exe', [], {
         detached: true,
         stdio: 'ignore'
       })
