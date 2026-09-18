@@ -69,10 +69,16 @@ describe('WindowManager screensaver transitions', () => {
     expect(mockWindow.restore).toHaveBeenCalled()
     expect(mockWindow.show).toHaveBeenCalled()
 
+    // After exitScreensaverMode, the window is always left visible and focused
+    // so the user can interact after waking the screensaver.
+    // Re-hiding or re-minimizing would cause a permanent blank-screen lockout.
+    mockWindow.isVisible.mockReturnValue(false) // simulate still-hidden during exit
     wm.exitScreensaverMode()
 
-    expect(mockWindow.minimize).toHaveBeenCalled()
-    expect(mockWindow.hide).toHaveBeenCalled()
+    expect(mockWindow.minimize).not.toHaveBeenCalled()
+    expect(mockWindow.hide).not.toHaveBeenCalled()
+    expect(mockWindow.show).toHaveBeenCalled()
+    expect(mockWindow.focus).toHaveBeenCalled()
   })
 
   it('restores maximized state without calling setBounds when window was originally maximized', () => {
