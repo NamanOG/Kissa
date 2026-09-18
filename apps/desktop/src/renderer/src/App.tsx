@@ -84,6 +84,15 @@ function KissaApp(): React.JSX.Element {
     })
   }, [])
 
+  // Dynamic screensaver mode transition listener
+  useEffect(() => {
+    if (!window.electron?.onScreensaverModeChanged) return
+
+    return window.electron.onScreensaverModeChanged((active) => {
+      setIsScreensaver(active)
+    })
+  }, [])
+
   if (isScreensaver === null) {
     return <></>
   }

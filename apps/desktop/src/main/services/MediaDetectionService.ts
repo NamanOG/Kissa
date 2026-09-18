@@ -6,6 +6,7 @@ import type { LyricsRequest } from '../../types/lyrics'
 import { LyricsService } from './LyricsService'
 import { Worker } from 'worker_threads'
 import { join } from 'path'
+import { ScreensaverSessionService } from './ScreensaverSessionService'
 
 function sendMediaKey(keyCode: number): void {
   try {
@@ -164,12 +165,19 @@ function formatSession(
   }
 }
 
+export type VideoPlaybackState = 'detected' | 'not_detected' | 'unknown'
+
 export class MediaDetectionService {
   private static instance: MediaDetectionService
+  private static readonly FRESHNESS_WINDOW_MS = 3000
   private worker: Worker | null = null
   private latestPayload: SystemMediaPayload | null = null
   private lastPayloadJson: string | null = null
   private latestVolume: { master: number; isMuted: boolean } = { master: 100, isMuted: false }
+  private videoPlaybackState: VideoPlaybackState = 'unknown'
+  private lastUpdateTimestamp: number = 0
+  private isWorkerHealthy: boolean = false
+  private isInternalAudioPlaying: boolean = false
 
   private constructor() { }
 
@@ -178,6 +186,67 @@ export class MediaDetectionService {
       MediaDetectionService.instance = new MediaDetectionService()
     }
     return MediaDetectionService.instance
+  }
+
+  public getVideoPlaybackState(): VideoPlaybackState {
+    if (!this.isWorkerHealthy || Date.now() - this.lastUpdateTimestamp > MediaDetectionService.FRESHNESS_WINDOW_MS) {
+      return 'unknown'
+    }
+    return this.videoPlaybackState
+  }
+
+  public isMusicPlaying(): boolean {
+    if (this.isInternalAudioPlaying) {
+      return true
+    }
+
+    if (!this.isWorkerHealthy || Date.now() - this.lastUpdateTimestamp > MediaDetectionService.FRESHNESS_WINDOW_MS) {
+      return false
+    }
+
+    if (!this.latestPayload || !this.latestPayload.isPlaying) {
+      return false
+    }
+
+    const title = this.latestPayload.title?.trim()
+    if (!title) {
+      return false
+    }
+
+    const sourceAppId = this.latestPayload.sourceAppId?.toLowerCase() || ''
+    const isBrowserSource =
+      sourceAppId.includes('chrome') ||
+      sourceAppId.includes('edge') ||
+      sourceAppId.includes('msedge') ||
+      sourceAppId.includes('firefox') ||
+      sourceAppId.includes('brave') ||
+      sourceAppId.includes('opera') ||
+      sourceAppId.includes('vivaldi') ||
+      sourceAppId.includes('arc')
+
+    if (isBrowserSource && this.videoPlaybackState !== 'not_detected') {
+      return false
+    }
+
+    return true
+  }
+
+  public setInternalAudioPlaying(isPlaying: boolean): void {
+    if (this.isInternalAudioPlaying !== isPlaying) {
+      this.isInternalAudioPlaying = isPlaying
+      ScreensaverSessionService.getInstance().onPlaybackStateChanged(
+        this.isMusicPlaying(),
+        this.getVideoPlaybackState()
+      )
+    }
+  }
+
+  public hasActiveVideo(): boolean {
+    return this.getVideoPlaybackState() !== 'not_detected'
+  }
+
+  public getLatestPayload(): SystemMediaPayload | null {
+    return this.latestPayload
   }
 
   public setVolume(volume: number): void {
@@ -279,6 +348,15 @@ export class MediaDetectionService {
 
       this.worker.on('message', (msg) => {
         if (msg.type === 'update') {
+          this.isWorkerHealthy = true
+          this.lastUpdateTimestamp = Date.now()
+
+          if (msg.videoState === 'detected' || msg.videoState === 'not_detected' || msg.videoState === 'unknown') {
+            this.videoPlaybackState = msg.videoState
+          } else if (typeof msg.hasActiveVideoPlayback === 'boolean') {
+            this.videoPlaybackState = msg.hasActiveVideoPlayback ? 'detected' : 'not_detected'
+          }
+
           if (msg.volume) {
             this.latestVolume = {
               master: msg.volume.master ?? 100,
@@ -286,19 +364,40 @@ export class MediaDetectionService {
             }
           }
           this.processSessionUpdate(msg.session, msg.volume)
+          ScreensaverSessionService.getInstance().onPlaybackStateChanged(
+            this.isMusicPlaying(),
+            this.getVideoPlaybackState()
+          )
         } else if (msg.type === 'error') {
           console.warn('[MediaDetectionService] Worker reported error:', msg.error)
+          this.videoPlaybackState = 'unknown'
+          ScreensaverSessionService.getInstance().onPlaybackStateChanged(
+            this.isMusicPlaying(),
+            this.getVideoPlaybackState()
+          )
         }
       })
 
       this.worker.on('error', (err) => {
         console.error('[MediaDetectionService] Worker threw error:', err)
+        this.isWorkerHealthy = false
+        this.videoPlaybackState = 'unknown'
+        ScreensaverSessionService.getInstance().onPlaybackStateChanged(
+          this.isMusicPlaying(),
+          this.getVideoPlaybackState()
+        )
       })
 
       this.worker.on('exit', (code) => {
         if (code !== 0) {
           console.error(`[MediaDetectionService] Worker stopped with exit code ${code}`)
         }
+        this.isWorkerHealthy = false
+        this.videoPlaybackState = 'unknown'
+        ScreensaverSessionService.getInstance().onPlaybackStateChanged(
+          this.isMusicPlaying(),
+          this.getVideoPlaybackState()
+        )
       })
 
       console.log('[MediaDetectionService] SMTC worker spawned successfully.')
@@ -352,6 +451,8 @@ export class MediaDetectionService {
   }
 
   public stop(): void {
+    this.isWorkerHealthy = false
+    this.videoPlaybackState = 'unknown'
     if (this.worker) {
       try {
         this.worker.postMessage('stop')
@@ -360,15 +461,17 @@ export class MediaDetectionService {
       }
       this.worker = null
     }
-    ipcMain.removeHandler('kissa:get-system-media')
-    ipcMain.removeHandler('kissa:get-lyrics')
-    ipcMain.removeHandler('kissa:set-volume')
-    ipcMain.removeHandler('kissa:get-volume')
-    ipcMain.removeHandler('kissa:media-play-pause')
-    ipcMain.removeHandler('kissa:media-next')
-    ipcMain.removeHandler('kissa:media-prev')
-    ipcMain.removeHandler('kissa:media-seek')
-    ipcMain.removeHandler('kissa:open-external')
-    ipcMain.removeHandler('kissa:get-app-version')
+    if (ipcMain && typeof ipcMain.removeHandler === 'function') {
+      ipcMain.removeHandler('kissa:get-system-media')
+      ipcMain.removeHandler('kissa:get-lyrics')
+      ipcMain.removeHandler('kissa:set-volume')
+      ipcMain.removeHandler('kissa:get-volume')
+      ipcMain.removeHandler('kissa:media-play-pause')
+      ipcMain.removeHandler('kissa:media-next')
+      ipcMain.removeHandler('kissa:media-prev')
+      ipcMain.removeHandler('kissa:media-seek')
+      ipcMain.removeHandler('kissa:open-external')
+      ipcMain.removeHandler('kissa:get-app-version')
+    }
   }
 }

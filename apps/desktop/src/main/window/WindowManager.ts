@@ -5,6 +5,16 @@ import { setupWindowEvents } from './windowEvents'
 import { getPlayIcon, getPauseIcon, getPrevIcon, getNextIcon } from './icons'
 import { ScreensaverRegistryService } from '../services/ScreensaverRegistryService'
 import { UpdateService } from '../services/UpdateService'
+import { ScreensaverSessionService } from '../services/ScreensaverSessionService'
+import { MediaDetectionService } from '../services/MediaDetectionService'
+
+export interface SavedWindowState {
+  bounds: Electron.Rectangle
+  isFullScreen: boolean
+  isMaximized: boolean
+  isMinimized: boolean
+  isVisible: boolean
+}
 
 export function setWindowFullscreen(
   mainWindow: Pick<BrowserWindow, 'isFullScreen' | 'setFullScreen'> | null,
@@ -24,6 +34,7 @@ export class WindowManager {
   public isBackgroundEnabled: boolean = false
   public isQuitting: boolean = false
   public isScreensaver: boolean = false
+  private savedWindowState: SavedWindowState | null = null
   private constructor() {}
   public static getInstance(): WindowManager {
     if (!WindowManager.instance) {
@@ -53,6 +64,80 @@ export class WindowManager {
     return this.mainWindow
   }
 
+  public enterScreensaverMode(): boolean {
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+      return false
+    }
+
+    if (this.isScreensaver) {
+      return true
+    }
+
+    this.savedWindowState = {
+      bounds: this.mainWindow.getBounds(),
+      isFullScreen: this.mainWindow.isFullScreen(),
+      isMaximized: this.mainWindow.isMaximized(),
+      isMinimized: this.mainWindow.isMinimized(),
+      isVisible: this.mainWindow.isVisible()
+    }
+
+    this.isScreensaver = true
+
+    if (this.mainWindow.isMinimized()) {
+      this.mainWindow.restore()
+    }
+    if (!this.mainWindow.isVisible()) {
+      this.mainWindow.show()
+    }
+
+    this.mainWindow.setFullScreen(true)
+    this.mainWindow.focus()
+
+    this.mainWindow.webContents.send('kissa:screensaver-mode-changed', true)
+    return true
+  }
+
+  public exitScreensaverMode(): void {
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+      this.isScreensaver = false
+      return
+    }
+
+    if (!this.isScreensaver) {
+      return
+    }
+
+    this.isScreensaver = false
+    const saved = this.savedWindowState
+    this.savedWindowState = null
+
+    this.mainWindow.webContents.send('kissa:screensaver-mode-changed', false)
+
+    if (saved) {
+      if (!saved.isFullScreen && this.mainWindow.isFullScreen()) {
+        this.mainWindow.setFullScreen(false)
+      }
+
+      if (saved.isMaximized) {
+        this.mainWindow.maximize()
+      } else if (saved.bounds) {
+        this.mainWindow.setBounds(saved.bounds)
+      }
+
+      if (saved.isMinimized) {
+        this.mainWindow.minimize()
+      }
+
+      if (!saved.isVisible) {
+        this.mainWindow.hide()
+      }
+    } else {
+      if (this.mainWindow.isFullScreen()) {
+        this.mainWindow.setFullScreen(false)
+      }
+    }
+  }
+
   public setupIpcHandlers(): void {
     import('electron').then(({ ipcMain, app }) => {
       // Screensaver specific scoped IPCs
@@ -60,8 +145,7 @@ export class WindowManager {
       
       ipcMain.handle('kissa:exit-screensaver', () => {
         if (this.isScreensaver) {
-          this.isQuitting = true
-          app.quit()
+          ScreensaverSessionService.getInstance().notifyWake()
         }
       })
 
@@ -112,6 +196,7 @@ export class WindowManager {
       })
 
       ipcMain.handle('kissa:set-thumbar', (_event, isPlaying: boolean) => {
+        MediaDetectionService.getInstance().setInternalAudioPlaying(Boolean(isPlaying))
         if (!this.mainWindow) return
         
         this.mainWindow.setThumbarButtons([

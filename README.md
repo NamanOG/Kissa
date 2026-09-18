@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-4.1.0-blue?style=flat-square" alt="Version 4.1.0" />
+  <img src="https://img.shields.io/badge/Version-4.1.1-blue?style=flat-square" alt="Version 4.1.1" />
   <img src="https://img.shields.io/badge/Electron-39-blue?style=flat-square&logo=electron" alt="Electron 39" />
   <img src="https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-Strict-blue?style=flat-square&logo=typescript" alt="TypeScript" />
@@ -41,8 +41,8 @@ Binaries for **Windows 10 and Windows 11 (64-bit)** are available on the [**Rele
 
 ### Release Packages
 
-- **`Kissa-Setup-4.1.0.exe`** — Standard Windows installer (NSIS) with Start Menu integration, desktop shortcut, and native screensaver (`Kissa.scr`) packaging.
-- **`Kissa-Portable-4.1.0.exe`** — Self-contained standalone executable requiring no installation or registry changes.
+- **`Kissa-Setup-4.1.1.exe`** — Standard Windows installer (NSIS) with Start Menu integration, desktop shortcut, and native screensaver (`Kissa.scr`) packaging.
+- **`Kissa-Portable-4.1.1.exe`** — Self-contained standalone executable requiring no installation or registry changes.
 
 > **Windows SmartScreen Notice:** Kissa is distributed independently and is not code-signed with an expensive commercial EV certificate. When installing for the first time, Windows Defender SmartScreen may present an informational prompt. Click **More info → Run anyway** to proceed.
 
@@ -260,14 +260,14 @@ npm run build:win
 
 Production artifacts are output to `apps/desktop/dist/`:
 
-- `Kissa-Setup-4.1.0.exe`
-- `Kissa-Portable-4.1.0.exe`
+- `Kissa-Setup-4.1.1.exe`
+- `Kissa-Portable-4.1.1.exe`
 
 ---
 
 ## Version History
 
-### v4.1.0 — The Deliberate Listening Update
+### v4.1.1 — The Deliberate Listening Update
 
 - **External SMTC Seeking:** Real-time bidirectional seeking through Windows System Media Transport Controls via `TryChangePlaybackPositionAsync` with optimistic clock settlement.
 - **Native Windows Screensaver:** Bundled `Kissa.scr` supervisor with safe HKCU user registration and unregistration.

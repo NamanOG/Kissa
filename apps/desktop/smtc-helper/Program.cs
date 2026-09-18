@@ -118,6 +118,8 @@ namespace SmtcHelper
         private static DateTime _challengerSince = DateTime.MinValue;
         private static string _authorityTrackKey = "";
         private static string _lastResolverDiagnostic = "";
+        private static bool _lastHasActiveVideo = false;
+        private static string _lastVideoState = "unknown";
 
         private const int TierOneMusicAppScore = 80;
         private const int TierTwoMusicAppScore = 60;
@@ -164,6 +166,8 @@ namespace SmtcHelper
                 if (_sessionManager == null)
                 {
                     Console.Error.WriteLine("Failed to get SessionManager");
+                    Console.WriteLine($@"{{""type"":""update"",""timestamp"":{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()},""session"":null,""videoState"":""unknown"",""hasActiveVideoPlayback"":false,""volume"":{{""master"":100,""isMuted"":false}}}}");
+                    Console.Out.Flush();
                     return;
                 }
 
@@ -467,10 +471,112 @@ namespace SmtcHelper
             return !IsBrowser(candidate.AppId) || candidate.PlaybackType == MediaPlaybackType.Music;
         }
 
+
+        [DllImport("shell32.dll")]
+        private static extern int SHQueryUserNotificationState(out QUERY_USER_NOTIFICATION_STATE pquns);
+
+        private enum QUERY_USER_NOTIFICATION_STATE
+        {
+            QUNS_NOT_PRESENT = 1,
+            QUNS_BUSY = 2,
+            QUNS_RUNNING_D3D_FULL_SCREEN = 3,
+            QUNS_PRESENTATION_MODE = 4,
+            QUNS_ACCEPTS_NOTIFICATIONS = 5,
+            QUNS_QUIET_TIME = 6,
+            QUNS_APP = 7
+        }
+
+        private static bool IsUserInBusyOrVideoMode()
+        {
+            try
+            {
+                if (SHQueryUserNotificationState(out var state) == 0)
+                {
+                    if (state == QUERY_USER_NOTIFICATION_STATE.QUNS_BUSY ||
+                        state == QUERY_USER_NOTIFICATION_STATE.QUNS_RUNNING_D3D_FULL_SCREEN ||
+                        state == QUERY_USER_NOTIFICATION_STATE.QUNS_PRESENTATION_MODE)
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback to false if shell32 call fails
+            }
+            return false;
+        }
+
         private static bool IsTerminal(GlobalSystemMediaTransportControlsSessionPlaybackStatus playbackStatus)
         {
             return playbackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Stopped ||
                    playbackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Closed;
+        }
+
+        private static bool IsKnownVideoApp(string appId)
+        {
+            if (string.IsNullOrEmpty(appId)) return false;
+            return appId.Contains("vlc") ||
+                   appId.Contains("netflix") ||
+                   appId.Contains("zunevideo") ||
+                   appId.Contains("movies") ||
+                   appId.Contains("mpc-hc") ||
+                   appId.Contains("mpc-be") ||
+                   appId.Contains("potplayer") ||
+                   appId.Contains("kmplayer") ||
+                   appId.Contains("gom") ||
+                   appId.Contains("kodi") ||
+                   appId.Contains("plex") ||
+                   appId.Contains("mpv");
+        }
+
+        private static string DetermineVideoPlaybackState(IReadOnlyList<GlobalSystemMediaTransportControlsSession>? sessions)
+        {
+            try
+            {
+                if (IsUserInBusyOrVideoMode())
+                {
+                    return "detected";
+                }
+
+                if (sessions == null) return "not_detected";
+                foreach (var session in sessions)
+                {
+                    try
+                    {
+                        var pInfo = session.GetPlaybackInfo();
+                        if (pInfo?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+                        {
+                            if (pInfo.PlaybackType == MediaPlaybackType.Video)
+                            {
+                                return "detected";
+                            }
+                            var appId = session.SourceAppUserModelId?.ToLowerInvariant() ?? "";
+                            if (IsKnownVideoApp(appId))
+                            {
+                                return "detected";
+                            }
+                            // Conservative fail-closed posture for browser sessions:
+                            // If a browser is playing media and PlaybackType is NOT explicitly Music,
+                            // it is either video (YouTube, Netflix, Twitch, etc.) or ambiguous media.
+                            if (IsBrowser(appId) && pInfo.PlaybackType != MediaPlaybackType.Music)
+                            {
+                                return "detected";
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Transient query error: fail closed with unknown state
+                        return "unknown";
+                    }
+                }
+                return "not_detected";
+            }
+            catch
+            {
+                return "unknown";
+            }
         }
 
         private static SessionCandidate? FindCandidate(
@@ -648,14 +754,20 @@ namespace SmtcHelper
 
                 var (masterVol, isMuted) = AudioManager.GetMasterVolume();
                 bool isVolChanged = masterVol != _lastVolume;
+                string videoState = DetermineVideoPlaybackState(_sessionManager?.GetSessions());
+                bool isVideoChanged = videoState != _lastVideoState;
+                bool hasActiveVideo = videoState == "detected";
+                long nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
                 if (session == null)
                 {
-                    string fallbackJson = $@"{{""type"":""update"",""session"":null,""volume"":{{""master"":{masterVol},""isMuted"":{(isMuted ? "true" : "false")}}}}}";
-                    if (force || isVolChanged || _lastBroadcastJson != fallbackJson)
+                    string fallbackJson = $@"{{""type"":""update"",""timestamp"":{nowMs},""session"":null,""videoState"":""{videoState}"",""hasActiveVideoPlayback"":{(hasActiveVideo ? "true" : "false")},""volume"":{{""master"":{masterVol},""isMuted"":{(isMuted ? "true" : "false")}}}}}";
+                    if (force || isVolChanged || isVideoChanged || _lastBroadcastJson != fallbackJson)
                     {
                         _lastBroadcastJson = fallbackJson;
                         _lastVolume = masterVol;
+                        _lastVideoState = videoState;
+                        _lastHasActiveVideo = hasActiveVideo;
                         Console.WriteLine(fallbackJson);
                         Console.Out.Flush();
                     }
@@ -710,14 +822,16 @@ namespace SmtcHelper
                 double pos = timelineInfo?.Position.TotalSeconds ?? 0;
                 double dur = timelineInfo?.EndTime.TotalSeconds ?? 0;
 
-                string json = $@"{{""type"":""update"",""session"":{{""sourceAppId"":{sourceAppId},""media"":{{""title"":{title},""artist"":{artist},""albumTitle"":{albumTitle},""albumArtist"":{albumArtist},""thumbnailBase64"":{thumb}}},""playback"":{{""playbackStatus"":{pStatus},""playbackType"":{pType}}},""timeline"":{{""position"":{pos},""duration"":{dur}}},""volume"":{{""master"":{masterVol},""isMuted"":{(isMuted ? "true" : "false")}}}}}}}";
+                string json = $@"{{""type"":""update"",""timestamp"":{nowMs},""session"":{{""sourceAppId"":{sourceAppId},""media"":{{""title"":{title},""artist"":{artist},""albumTitle"":{albumTitle},""albumArtist"":{albumArtist},""thumbnailBase64"":{thumb}}},""playback"":{{""playbackStatus"":{pStatus},""playbackType"":{pType}}},""timeline"":{{""position"":{pos},""duration"":{dur}}},""volume"":{{""master"":{masterVol},""isMuted"":{(isMuted ? "true" : "false")}}}}},""videoState"":""{videoState}"",""hasActiveVideoPlayback"":{(hasActiveVideo ? "true" : "false")}}}";
 
                 string cleanJson = json.Replace("\r", "").Replace("\n", "");
-                if (force || isNewTrack || isVolChanged || cleanJson != _lastBroadcastJson)
+                if (force || isNewTrack || isVolChanged || isVideoChanged || cleanJson != _lastBroadcastJson)
                 {
                     _lastBroadcastJson = cleanJson;
                     _lastTrackKey = trackKey;
                     _lastVolume = masterVol;
+                    _lastVideoState = videoState;
+                    _lastHasActiveVideo = hasActiveVideo;
                     Console.WriteLine(cleanJson);
                     Console.Out.Flush();
                 }
