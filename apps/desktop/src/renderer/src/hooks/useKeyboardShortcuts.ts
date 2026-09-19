@@ -106,19 +106,55 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
-      switch (e.key) {
-        case 'l':
-        case 'L': {
-          e.preventDefault()
-          if (store.isListeningDisplay || store.isScreensaver) {
-            store.toggleScreensaverLyrics()
-          } else if (store.activeView === 'lyrics') {
-            store.setActiveView('deck')
-          } else {
-            store.toggleSideLyrics()
-          }
-          break
+      if (e.key === 'l' || e.key === 'L' || e.code === 'KeyL') {
+        e.preventDefault()
+        if (store.isListeningDisplay || store.isScreensaver) {
+          store.toggleScreensaverLyrics()
+        } else if (store.activeView === 'lyrics') {
+          store.setActiveView('deck')
+        } else {
+          store.toggleSideLyrics()
         }
+        return
+      }
+
+      if (e.key === 'm' || e.key === 'M' || e.code === 'KeyM') {
+        e.preventDefault()
+        if (store.volume > 0) {
+          store.setVolume(0)
+        } else {
+          store.setVolume(78)
+        }
+        return
+      }
+
+      if (e.key === 't' || e.key === 'T' || e.code === 'KeyT') {
+        e.preventDefault()
+        const currentIndex = THEMES.indexOf(store.theme)
+        const nextIndex = (currentIndex + 1) % THEMES.length
+        store.setTheme(THEMES[nextIndex])
+        return
+      }
+
+      if (e.key === 'a' || e.key === 'A' || e.code === 'KeyA') {
+        e.preventDefault()
+        if (store.theme === 'adaptive') {
+          store.setTheme(store.previousManualTheme || 'quiet-room')
+        } else {
+          usePlayerStore.setState({ previousManualTheme: store.theme })
+          store.setTheme('adaptive')
+        }
+        return
+      }
+
+      if (e.key === 's' || e.key === 'S' || e.code === 'KeyS') {
+        e.preventDefault()
+        store.toggleSettings()
+        return
+      }
+
+      switch (e.key) {
+
         case 'ArrowLeft': {
           e.preventDefault()
           const isExternal = !!store.currentTrack?.sourceAppId
@@ -167,41 +203,7 @@ export function useKeyboardShortcuts(): void {
           store.setVolume(newVol)
           break
         }
-        case 'm':
-        case 'M': {
-          e.preventDefault()
-          if (store.volume > 0) {
-            store.setVolume(0)
-          } else {
-            store.setVolume(78)
-          }
-          break
-        }
-        case 't':
-        case 'T': {
-          e.preventDefault()
-          const currentIndex = THEMES.indexOf(store.theme)
-          const nextIndex = (currentIndex + 1) % THEMES.length
-          store.setTheme(THEMES[nextIndex])
-          break
-        }
-        case 'a':
-        case 'A': {
-          e.preventDefault()
-          if (store.theme === 'adaptive') {
-            store.setTheme(store.previousManualTheme || 'quiet-room')
-          } else {
-            usePlayerStore.setState({ previousManualTheme: store.theme })
-            store.setTheme('adaptive')
-          }
-          break
-        }
-        case 's':
-        case 'S': {
-          e.preventDefault()
-          store.toggleSettings()
-          break
-        }
+
         case '?':
         case '/': {
           e.preventDefault()

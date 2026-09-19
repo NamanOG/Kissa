@@ -19,6 +19,24 @@ export interface AdaptivePalette {
   spatialHighlightY: string
 }
 
+export const DEFAULT_ADAPTIVE_PALETTE: AdaptivePalette = {
+  accent: '#e0a868',
+  panelBg: 'rgba(24, 20, 18, 0.75)',
+  deckBg: 'rgba(18, 14, 12, 0.85)',
+  onSurface: '#faf3ea',
+  muted: '#a89f91',
+  baseTemp: '#0f0b07',
+  ambientPrimary: 'rgba(224, 168, 104, 0.18)',
+  ambientSecondary: 'rgba(180, 120, 70, 0.12)',
+  ambientHighlight: 'rgba(255, 200, 140, 0.09)',
+  spatialPrimaryX: '50%',
+  spatialPrimaryY: '50%',
+  spatialSecondaryX: '50%',
+  spatialSecondaryY: '50%',
+  spatialHighlightX: '50%',
+  spatialHighlightY: '50%',
+}
+
 const colorCache = new Map<string, AdaptivePalette>()
 
 // Helper to convert RGB to HSL for easier manipulation
@@ -67,7 +85,9 @@ export function extractColorsFromImage(artworkUrl: string): Promise<AdaptivePale
     }
 
     const img = new Image()
-    img.crossOrigin = 'Anonymous'
+    if (!artworkUrl.startsWith('data:')) {
+      img.crossOrigin = 'Anonymous'
+    }
     img.src = artworkUrl
     
     img.onload = () => {
@@ -226,7 +246,7 @@ export function extractColorsFromImage(artworkUrl: string): Promise<AdaptivePale
         
         const accent = hslToRgbString(highlight.h, highlight.s, Math.max(highlight.l, 55))
         const onSurface = hslToRgbString(primary.h, 10, 92)
-        const muted = hslToRgbString(primary.h, 10, Math.min(65, baseL + 40))
+        const muted = hslToRgbString(primary.h, 10, Math.max(52, Math.min(70, baseL + 40)))
 
         const newColors: AdaptivePalette = {
           accent,
@@ -271,6 +291,10 @@ export function useAdaptiveColor() {
       return
     }
 
+    if (artworkUrl.includes('placeholder-album')) {
+      return
+    }
+
     let isMounted = true
 
     extractColorsFromImage(artworkUrl)
@@ -279,6 +303,7 @@ export function useAdaptiveColor() {
       })
       .catch((err) => {
         console.warn('Could not extract color from artwork', err)
+        if (isMounted) setColors(DEFAULT_ADAPTIVE_PALETTE)
       })
 
     return () => {
@@ -286,23 +311,25 @@ export function useAdaptiveColor() {
     }
   }, [artworkUrl, theme])
 
+  const activePalette = colors || DEFAULT_ADAPTIVE_PALETTE
+
   useEffect(() => {
-    if (theme === 'adaptive' && colors) {
-      document.documentElement.style.setProperty('--adaptive-accent', colors.accent)
-      document.documentElement.style.setProperty('--adaptive-panel-bg', colors.panelBg)
-      document.documentElement.style.setProperty('--adaptive-deck-bg', colors.deckBg)
-      document.documentElement.style.setProperty('--adaptive-on-surface', colors.onSurface)
-      document.documentElement.style.setProperty('--adaptive-muted', colors.muted)
-      document.documentElement.style.setProperty('--adaptive-base-temp', colors.baseTemp)
-      document.documentElement.style.setProperty('--adaptive-ambient-primary', colors.ambientPrimary)
-      document.documentElement.style.setProperty('--adaptive-ambient-secondary', colors.ambientSecondary)
-      document.documentElement.style.setProperty('--adaptive-ambient-highlight', colors.ambientHighlight)
-      document.documentElement.style.setProperty('--adaptive-primary-x', colors.spatialPrimaryX)
-      document.documentElement.style.setProperty('--adaptive-primary-y', colors.spatialPrimaryY)
-      document.documentElement.style.setProperty('--adaptive-secondary-x', colors.spatialSecondaryX)
-      document.documentElement.style.setProperty('--adaptive-secondary-y', colors.spatialSecondaryY)
-      document.documentElement.style.setProperty('--adaptive-highlight-x', colors.spatialHighlightX)
-      document.documentElement.style.setProperty('--adaptive-highlight-y', colors.spatialHighlightY)
+    if (theme === 'adaptive') {
+      document.documentElement.style.setProperty('--adaptive-accent', activePalette.accent)
+      document.documentElement.style.setProperty('--adaptive-panel-bg', activePalette.panelBg)
+      document.documentElement.style.setProperty('--adaptive-deck-bg', activePalette.deckBg)
+      document.documentElement.style.setProperty('--adaptive-on-surface', activePalette.onSurface)
+      document.documentElement.style.setProperty('--adaptive-muted', activePalette.muted)
+      document.documentElement.style.setProperty('--adaptive-base-temp', activePalette.baseTemp)
+      document.documentElement.style.setProperty('--adaptive-ambient-primary', activePalette.ambientPrimary)
+      document.documentElement.style.setProperty('--adaptive-ambient-secondary', activePalette.ambientSecondary)
+      document.documentElement.style.setProperty('--adaptive-ambient-highlight', activePalette.ambientHighlight)
+      document.documentElement.style.setProperty('--adaptive-primary-x', activePalette.spatialPrimaryX)
+      document.documentElement.style.setProperty('--adaptive-primary-y', activePalette.spatialPrimaryY)
+      document.documentElement.style.setProperty('--adaptive-secondary-x', activePalette.spatialSecondaryX)
+      document.documentElement.style.setProperty('--adaptive-secondary-y', activePalette.spatialSecondaryY)
+      document.documentElement.style.setProperty('--adaptive-highlight-x', activePalette.spatialHighlightX)
+      document.documentElement.style.setProperty('--adaptive-highlight-y', activePalette.spatialHighlightY)
     } else {
       document.documentElement.style.removeProperty('--adaptive-accent')
       document.documentElement.style.removeProperty('--adaptive-panel-bg')
@@ -320,5 +347,5 @@ export function useAdaptiveColor() {
       document.documentElement.style.removeProperty('--adaptive-highlight-x')
       document.documentElement.style.removeProperty('--adaptive-highlight-y')
     }
-  }, [colors, theme])
+  }, [activePalette, theme])
 }

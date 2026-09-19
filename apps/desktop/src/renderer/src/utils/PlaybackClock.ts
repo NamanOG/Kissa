@@ -16,6 +16,7 @@ export class PlaybackClock {
   private static useSmtc: boolean = false
   private static subscribers = new Set<{ callback: (time: number) => void }>()
   private static subscriberRafId: number | null = null
+  private static lastMonotonicTime: number = 0
 
   /**
    * Subscribe to playback-time updates from the shared animation frame loop.
@@ -56,6 +57,7 @@ export class PlaybackClock {
       // Sync internal audio time to prevent jumps
       this.smtcTime = this.audioEl.currentTime
       this.smtcAnchorTime = performance.now()
+      this.lastMonotonicTime = this.audioEl.currentTime
     }
   }
 
@@ -66,12 +68,14 @@ export class PlaybackClock {
     this.smtcTime = positionSeconds
     this.smtcAnchorTime = performance.now()
     this.isSmtcPlaying = isPlaying
+    this.lastMonotonicTime = positionSeconds
   }
 
   /**
    * Handle user seeking visually (allows UI to update instantly)
    */
   static setSeekPosition(positionSeconds: number) {
+    this.lastMonotonicTime = positionSeconds
     if (this.useSmtc) {
       this.smtcTime = positionSeconds
       this.smtcAnchorTime = performance.now()
@@ -96,7 +100,12 @@ export class PlaybackClock {
     if (this.useSmtc) {
       if (!this.isSmtcPlaying) return this.smtcTime
       const elapsedSeconds = (performance.now() - this.smtcAnchorTime) / 1000
-      return this.smtcTime + elapsedSeconds
+      const current = this.smtcTime + elapsedSeconds
+      if (current >= this.lastMonotonicTime) {
+        this.lastMonotonicTime = current
+        return current
+      }
+      return this.lastMonotonicTime
     }
 
     return 0

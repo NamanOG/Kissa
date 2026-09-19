@@ -45,10 +45,10 @@ export const ListeningDisplay = memo(({ mode }: ListeningDisplayProps): React.JS
   return (
     <motion.main
       aria-label="Listening Display"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      initial={{ opacity: 0, scale: 0.985 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.985 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
       className="absolute inset-0 z-10 overflow-hidden cursor-none select-none bg-transparent"
     >
       <motion.div
@@ -62,11 +62,13 @@ export const ListeningDisplay = memo(({ mode }: ListeningDisplayProps): React.JS
           {/* Turntable as the Hero (Left/Center) */}
           <div className="w-full max-w-[85vh] min-[1200px]:max-w-[58vw] min-[1600px]:max-w-[62vw] flex-shrink-0 flex items-center justify-center pointer-events-none [&_.mechanical-controls-class-if-any]:pointer-events-none">
             {/* We override the default max-w-[840px] constraint and ensure buttons are unclickable */}
-            <TurntableEngine 
-              albumArt={currentTrack?.artworkUrl} 
-              isActive={isPlaying} 
-              className="!max-w-none w-full [&_button]:pointer-events-none [&_.pointer-events-auto]:!pointer-events-none" 
-            />
+            <div className="w-full flex items-center justify-center">
+              <TurntableEngine 
+                albumArt={currentTrack?.artworkUrl} 
+                isActive={isPlaying} 
+                className="!max-w-none w-full [&_button]:pointer-events-none [&_.pointer-events-auto]:!pointer-events-none" 
+              />
+            </div>
           </div>
 
           {/* Right Area: Album Artwork Jacket Stand & Lyrics */}

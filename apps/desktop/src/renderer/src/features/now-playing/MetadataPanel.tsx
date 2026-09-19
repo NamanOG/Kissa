@@ -66,9 +66,9 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
 
   const hasTrack = currentTrack !== null
   const artworkUrl = currentTrack?.artworkUrl ?? albumPlaceholder
-  const title = currentTrack?.title ?? '—'
-  const artist = currentTrack?.artist ?? '—'
-  const album = currentTrack?.album ?? '—'
+  const title = currentTrack?.title?.trim() || '—'
+  const artist = currentTrack?.artist?.trim() || '—'
+  const album = currentTrack?.album?.trim() || '—'
   const duration = currentTrack?.duration ?? 0
   const [isShareOpen, setIsShareOpen] = useState(false)
 
@@ -106,13 +106,13 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
         </div>
 
         <div className="w-full relative min-h-[5rem]">
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             <motion.div
-              key={hasTrack ? currentTrack?.audioUrl || title : 'empty'}
-              initial={{ opacity: 0, y: 4 }}
+              key={hasTrack ? `${title}|${artist}` : 'empty'}
+              initial={{ opacity: 0, y: 3 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              exit={{ opacity: 0, y: -3 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
               className="absolute inset-0"
             >
               <>
@@ -166,13 +166,13 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
         <div className="relative mt-24 min-[800px]:mt-28 min-[1200px]:mt-32 w-full max-w-[min(220px,78%)] min-[1200px]:max-w-[260px] transform-gpu">
           <div className="pointer-events-none absolute inset-3 translate-y-4 rounded-[1.2rem] bg-[var(--accent)]/20 blur-2xl" />
           <div className="relative aspect-square w-full overflow-hidden rounded-[1rem] border border-white/[0.1] bg-[var(--panel-bg)] shadow-[0_16px_36px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] transform-gpu">
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
               <motion.img
-                key={artworkUrl}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1.05 }}
-                transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                key={hasTrack ? `${title}|${artist}` : 'empty-cover'}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 src={artworkUrl}
                 alt={hasTrack ? `${title} — ${artist}` : 'Album artwork'}
                 className="absolute inset-0 h-full w-full object-cover"

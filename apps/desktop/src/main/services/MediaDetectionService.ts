@@ -67,13 +67,13 @@ function normalizeTime(raw: number | undefined | null): number {
   if (!raw || raw <= 0 || !Number.isFinite(raw)) return 0
   // If > 10 million, value is in 100ns ticks (Windows TimeSpan)
   if (raw >= 10_000_000) {
-    return Math.round(raw / 10_000_000)
+    return raw / 10_000_000
   }
   // If between 86,400 (1 day in seconds) and 10 million, likely in milliseconds
   if (raw > 86_400) {
-    return Math.round(raw / 1000)
+    return raw / 1000
   }
-  return Math.round(raw)
+  return raw
 }
 
 import { ArtworkService } from './ArtworkService'
@@ -411,6 +411,23 @@ export class MediaDetectionService {
 
   private processSessionUpdate(session: MediaInfo | null, volumeInfo?: { master?: number; isMuted?: boolean }): void {
     const payload = formatSession(session, volumeInfo || this.latestVolume)
+
+    // Preserve high-res web artwork if it's the exact same track and we already fetched it
+    if (
+      this.latestPayload &&
+      payload &&
+      this.latestPayload.title?.trim().toLowerCase() === payload.title?.trim().toLowerCase() &&
+      this.latestPayload.artist?.trim().toLowerCase() === payload.artist?.trim().toLowerCase() &&
+      this.latestPayload.artworkDataUrl?.startsWith('http')
+    ) {
+      payload.artworkDataUrl = this.latestPayload.artworkDataUrl
+    } else if (payload && (!payload.artworkDataUrl || payload.artworkDataUrl.startsWith('data:'))) {
+      const cached = ArtworkService.getInstance().getCachedArtwork(payload.title, payload.artist)
+      if (cached && cached.startsWith('http')) {
+        payload.artworkDataUrl = cached
+      }
+    }
+
     const json = JSON.stringify(payload)
     if (json !== this.lastPayloadJson) {
       this.lastPayloadJson = json

@@ -8,6 +8,15 @@ function cleanTrackTitle(title: string): string {
     .trim()
 }
 
+function cleanAlbum(album: string): string {
+  if (!album) return ''
+  return album
+    .replace(/\s*[\(\[](deluxe|bonus|remastered|anniversary|expanded|special|edition|version|explicit).*?[\)\]]/gi, '')
+    .replace(/\s*-\s*(deluxe|bonus|remastered|anniversary|expanded|special|edition|version|explicit).*$/gi, '')
+    .replace(/\s*-\s*(single|ep)$/gi, '')
+    .trim()
+}
+
 function cleanArtist(artist: string): string {
   if (!artist) return ''
   let cleaned = artist
@@ -22,7 +31,40 @@ function cleanArtist(artist: string): string {
   return cleaned
     .replace(/\s*(feat\.|ft\.|featuring).*$/gi, '')
     .replace(/\s*,\s*.*$/g, '')
+    .replace(/\s+(&|and|\/)\s+.*$/gi, '')
     .trim()
+}
+
+function norm(s: string): string {
+  return (s || '').toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+function tracksMatch(a: string, b: string): boolean {
+  const cA = norm(cleanTrackTitle(a))
+  const cB = norm(cleanTrackTitle(b))
+  if (!cA || !cB) return false
+  if (cA === cB) return true
+  if (cA.startsWith(cB + ' ') || cB.startsWith(cA + ' ')) return true
+  return false
+}
+
+function artistsMatch(a: string, b: string): boolean {
+  const cA = norm(cleanArtist(a)).replace(/^the\s+/, '')
+  const cB = norm(cleanArtist(b)).replace(/^the\s+/, '')
+  if (!cA || !cB) return true
+  if (cA === cB) return true
+  if ((cA === 'ye' && cB === 'kanye west') || (cA === 'kanye west' && cB === 'ye')) return true
+  if (cA.startsWith(cB + ' ') || cB.startsWith(cA + ' ')) return true
+  return false
+}
+
+function albumsMatch(a: string, b: string): boolean {
+  const cA = norm(cleanAlbum(a)).replace(/^the\s+/, '')
+  const cB = norm(cleanAlbum(b)).replace(/^the\s+/, '')
+  if (!cA || !cB) return false
+  if (cA === cB) return true
+  if (cA.startsWith(cB + ' ') || cB.startsWith(cA + ' ')) return true
+  return false
 }
 
 export class ArtworkService {
@@ -71,12 +113,14 @@ export class ArtworkService {
     if (!title || title === 'Unknown Title') return null
     const key = this.getKey(title, artist)
     const cleanKey = this.getCleanKey(title, artist)
-    
-    if (this.cache.has(key)) {
-      return this.cache.get(key)!
+    const cachedRaw = this.cache.get(key)
+    if (cachedRaw && cachedRaw.startsWith('http')) {
+      return cachedRaw
     }
-    if (this.cache.has(cleanKey)) {
-      return this.cache.get(cleanKey)!
+    
+    const cachedClean = this.cache.get(cleanKey)
+    if (cachedClean && cachedClean.startsWith('http')) {
+      return cachedClean
     }
 
     if (this.inFlight.has(key)) {
@@ -104,31 +148,64 @@ export class ArtworkService {
   ): Promise<string | null> {
     const cleanT = cleanTrackTitle(title)
     const cleanA = cleanArtist(artist)
+    const validArtist = cleanA && cleanA.toLowerCase() !== 'unknown artist' ? cleanA : ''
+    const isGenericAlbum = !album || norm(album) === norm(title) || norm(album).includes('single')
 
+    // 1. First attempt: Search iTunes by ALBUM if a valid album name is present
+    if (!isGenericAlbum && validArtist) {
+      try {
+        const term = encodeURIComponent(`${album} ${validArtist}`)
+        const res = await fetch(`https://itunes.apple.com/search?term=${term}&entity=album&limit=5`, {
+          signal: AbortSignal.timeout(3_000)
+        })
+        if (res.ok) {
+          const data = (await res.json()) as { results?: Array<{ artworkUrl100?: string; collectionName?: string; artistName?: string }> }
+          if (data.results && data.results.length > 0) {
+            for (const item of data.results) {
+              if (item.artworkUrl100 && albumsMatch(album!, item.collectionName || '') && artistsMatch(artist, item.artistName || '')) {
+                const highRes = item.artworkUrl100.replace(/100x100bb\.(jpg|png|webp)/i, '1200x1200bb.$1')
+                this.cache.set(key, highRes)
+                this.cache.set(cleanKey, highRes)
+                this.enforceCacheLimit()
+                return highRes
+              }
+            }
+          }
+        }
+      } catch {
+        // Fall through to song search
+      }
+    }
+
+    // 2. Second attempt: Search iTunes by SONG with strict candidate verification
     const queries = [
-      `${cleanT} ${cleanA}`,
-      `${title} ${artist}`,
-      album && cleanA ? `${album} ${cleanA}` : '',
+      validArtist ? `${cleanT} ${validArtist}` : cleanT,
+      validArtist ? `${title} ${artist}` : title,
       cleanT
     ].filter((q): q is string => Boolean(q && q.trim()))
 
-    // 1. First attempt: Apple iTunes Search API (1200x1200 high-res)
     for (const q of queries) {
       try {
         const term = encodeURIComponent(q.trim())
-        const res = await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=5`, {
+        const res = await fetch(`https://itunes.apple.com/search?term=${term}&entity=song&limit=10`, {
           signal: AbortSignal.timeout(3_000)
         })
         if (!res.ok) continue
-        const data = (await res.json()) as { results?: Array<{ artworkUrl100?: string; trackName?: string; artistName?: string }> }
+        const data = (await res.json()) as { results?: Array<{ artworkUrl100?: string; trackName?: string; artistName?: string; collectionName?: string }> }
         if (data.results && data.results.length > 0) {
-          const item = data.results.find((r) => r.artworkUrl100) || data.results[0]
-          if (item?.artworkUrl100) {
-            const highRes = item.artworkUrl100.replace(/100x100bb\.(jpg|png|webp)/i, '1200x1200bb.$1')
-            this.cache.set(key, highRes)
-            this.cache.set(cleanKey, highRes)
-            this.enforceCacheLimit()
-            return highRes
+          for (const item of data.results) {
+            if (!item.artworkUrl100) continue
+            const isTrackMatch = tracksMatch(title, item.trackName || '')
+            const isArtistMatch = artistsMatch(artist, item.artistName || '')
+            const isAlbumMatch = album ? albumsMatch(album, item.collectionName || '') : false
+
+            if ((isTrackMatch && isArtistMatch) || (isAlbumMatch && isArtistMatch)) {
+              const highRes = item.artworkUrl100.replace(/100x100bb\.(jpg|png|webp)/i, '1200x1200bb.$1')
+              this.cache.set(key, highRes)
+              this.cache.set(cleanKey, highRes)
+              this.enforceCacheLimit()
+              return highRes
+            }
           }
         }
       } catch {
@@ -136,17 +213,48 @@ export class ArtworkService {
       }
     }
 
-    // 2. Fallback attempt: Deezer Public Search API (1000x1000 cover_xl)
+    // 3. Third attempt: Deezer Album search with verification
+    if (!isGenericAlbum && validArtist) {
+      try {
+        const term = encodeURIComponent(`${album} ${validArtist}`)
+        const res = await fetch(`https://api.deezer.com/search/album?q=${term}&limit=5`, {
+          signal: AbortSignal.timeout(2_500)
+        })
+        if (res.ok) {
+          const data = (await res.json()) as { data?: Array<{ title?: string; artist?: { name?: string }; cover_xl?: string; cover_big?: string; cover_medium?: string }> }
+          if (data.data && data.data.length > 0) {
+            for (const item of data.data) {
+              if (albumsMatch(album!, item.title || '') && artistsMatch(artist, item.artist?.name || '')) {
+                const cover = item.cover_xl || item.cover_big || item.cover_medium
+                if (cover) {
+                  this.cache.set(key, cover)
+                  this.cache.set(cleanKey, cover)
+                  this.enforceCacheLimit()
+                  return cover
+                }
+              }
+            }
+          }
+        }
+      } catch {
+        // Fall through
+      }
+    }
+
+    // 4. Fourth attempt: Deezer Track search with verification
     for (const q of queries.slice(0, 2)) {
       try {
         const term = encodeURIComponent(q.trim())
-        const res = await fetch(`https://api.deezer.com/search?q=${term}&limit=3`, {
+        const res = await fetch(`https://api.deezer.com/search?q=${term}&limit=5`, {
           signal: AbortSignal.timeout(2_500)
         })
         if (!res.ok) continue
         const data = (await res.json()) as {
           data?: Array<{
+            title?: string
+            artist?: { name?: string }
             album?: {
+              title?: string
               cover_xl?: string
               cover_big?: string
               cover_medium?: string
@@ -154,13 +262,21 @@ export class ArtworkService {
           }>
         }
         if (data.data && data.data.length > 0) {
-          const albumObj = data.data[0].album
-          const cover = albumObj?.cover_xl || albumObj?.cover_big || albumObj?.cover_medium
-          if (cover) {
-            this.cache.set(key, cover)
-            this.cache.set(cleanKey, cover)
-            this.enforceCacheLimit()
-            return cover
+          for (const item of data.data) {
+            const isTrackMatch = tracksMatch(title, item.title || '')
+            const isArtistMatch = artistsMatch(artist, item.artist?.name || '')
+            const isAlbumMatch = album ? albumsMatch(album, item.album?.title || '') : false
+
+            if ((isTrackMatch && isArtistMatch) || (isAlbumMatch && isArtistMatch)) {
+              const albumObj = item.album
+              const cover = albumObj?.cover_xl || albumObj?.cover_big || albumObj?.cover_medium
+              if (cover) {
+                this.cache.set(key, cover)
+                this.cache.set(cleanKey, cover)
+                this.enforceCacheLimit()
+                return cover
+              }
+            }
           }
         }
       } catch {
