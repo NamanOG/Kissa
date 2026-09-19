@@ -112,14 +112,17 @@ namespace SmtcHelper
         private static readonly object _lock = new object();
         private static string _lastBroadcastJson = "";
         private static string _lastTrackKey = "";
+        private static string _lastTrackTitle = "";
         private static string _lastTrackArtist = "";
         private static string _lastTrackAlbum = "";
         private static string _cachedThumbnailKey = "";
         private static string? _cachedThumbnailBase64 = null;
         private static bool _cachedThumbnailSettled = false;
         private static string _prevTrackThumbnailBase64 = "";
+        private static string _prevTrackTitle = "";
         private static string _prevTrackArtist = "";
         private static string _prevTrackAlbum = "";
+        private static DateTime _trackChangeTime = DateTime.MinValue;
         private static int _lastVolume = -1;
         private static GlobalSystemMediaTransportControlsSession? _authoritySession;
         private static GlobalSystemMediaTransportControlsSession? _challengerSession;
@@ -758,12 +761,14 @@ namespace SmtcHelper
                     if (!string.IsNullOrEmpty(_cachedThumbnailBase64))
                     {
                         _prevTrackThumbnailBase64 = _cachedThumbnailBase64;
+                        _prevTrackTitle = _lastTrackTitle;
                         _prevTrackArtist = _lastTrackArtist;
                         _prevTrackAlbum = _lastTrackAlbum;
                     }
                     _cachedThumbnailKey = trackKey;
                     _cachedThumbnailBase64 = null;
                     _cachedThumbnailSettled = false;
+                    _trackChangeTime = DateTime.UtcNow;
 
                     // Schedule delayed retries during track transition to capture the thumbnail
                     // as soon as the media player (e.g. Apple Music / Spotify) finishes updating SMTC.
@@ -804,7 +809,9 @@ namespace SmtcHelper
                                 bool isStalePrevThumbnail = !_cachedThumbnailSettled &&
                                     !string.IsNullOrEmpty(_prevTrackThumbnailBase64) &&
                                     readBase64 == _prevTrackThumbnailBase64 &&
-                                    (!string.Equals(rawArtist, _prevTrackArtist, StringComparison.OrdinalIgnoreCase) ||
+                                    (DateTime.UtcNow - _trackChangeTime).TotalMilliseconds < 1000 &&
+                                    (!string.Equals(rawTitle, _prevTrackTitle, StringComparison.OrdinalIgnoreCase) ||
+                                     !string.Equals(rawArtist, _prevTrackArtist, StringComparison.OrdinalIgnoreCase) ||
                                      (!string.IsNullOrEmpty(currentAlbum) && !string.IsNullOrEmpty(_prevTrackAlbum) && !string.Equals(currentAlbum, _prevTrackAlbum, StringComparison.OrdinalIgnoreCase)));
 
                                 if (isStalePrevThumbnail)
@@ -837,8 +844,26 @@ namespace SmtcHelper
                 int pStatus = (int)(playbackInfo?.PlaybackStatus ?? 0);
                 int pType = (int)(playbackInfo?.PlaybackType ?? 0);
                 
-                double pos = timelineInfo?.Position.TotalSeconds ?? 0;
                 double dur = timelineInfo?.EndTime.TotalSeconds ?? 0;
+                double pos = 0;
+                if (timelineInfo != null)
+                {
+                    double rawPos = timelineInfo.Position.TotalSeconds;
+                    DateTimeOffset lastUpdated = timelineInfo.LastUpdatedTime;
+                    if (playbackInfo?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing && lastUpdated > DateTimeOffset.MinValue)
+                    {
+                        double elapsed = (DateTimeOffset.UtcNow - lastUpdated).TotalSeconds;
+                        if (elapsed > 0 && elapsed < 60)
+                        {
+                            rawPos += elapsed;
+                        }
+                    }
+                    if (dur > 0 && rawPos > dur)
+                    {
+                        rawPos = dur;
+                    }
+                    pos = rawPos;
+                }
 
                 string json = $@"{{""type"":""update"",""timestamp"":{nowMs},""session"":{{""sourceAppId"":{sourceAppId},""media"":{{""title"":{title},""artist"":{artist},""albumTitle"":{albumTitle},""albumArtist"":{albumArtist},""thumbnailBase64"":{thumb}}},""playback"":{{""playbackStatus"":{pStatus},""playbackType"":{pType}}},""timeline"":{{""position"":{pos},""duration"":{dur}}},""volume"":{{""master"":{masterVol},""isMuted"":{(isMuted ? "true" : "false")}}}}},""videoState"":""{videoState}"",""hasActiveVideoPlayback"":{(hasActiveVideo ? "true" : "false")}}}";
 
@@ -847,6 +872,7 @@ namespace SmtcHelper
                 {
                     _lastBroadcastJson = cleanJson;
                     _lastTrackKey = trackKey;
+                    _lastTrackTitle = rawTitle;
                     _lastTrackArtist = rawArtist;
                     _lastTrackAlbum = currentAlbum;
                     _lastVolume = masterVol;

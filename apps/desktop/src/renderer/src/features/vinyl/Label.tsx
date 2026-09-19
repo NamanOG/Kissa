@@ -35,14 +35,14 @@ export const Label = memo(({ className, style, size = '28%', albumArt, ...props 
       {...props}
     >
       {/* Album artwork image background */}
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {albumArt ? (
           <motion.img
-            key={albumArt}
+            key={currentTrack ? `${title}|${artist}` : 'empty-label'}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             src={albumArt}
             alt="Album Art"
             className="absolute inset-0 w-full h-full object-cover object-center brightness-[0.95] contrast-[1.02]"
@@ -57,7 +57,7 @@ export const Label = memo(({ className, style, size = '28%', albumArt, ...props 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="absolute inset-0 w-full h-full bg-[#1c1c1e] flex flex-col items-center justify-start pt-[14%] text-center px-1"
           >
             <span className="font-sans text-[6px] min-[900px]:text-[7px] font-bold tracking-[0.14em] text-white/95 uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] leading-none line-clamp-1">

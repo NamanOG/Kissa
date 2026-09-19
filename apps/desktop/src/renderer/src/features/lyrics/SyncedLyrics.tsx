@@ -131,8 +131,17 @@ const LyricRowItem = memo(
       }
 
       const spans = Array.from(containerRef.current.querySelectorAll('.lyric-word')) as HTMLElement[]
+      const prevProgressMap = new Float32Array(line.tokens!.length)
+      let lastReportedTime = 0
 
       return PlaybackClock.subscribe((time) => {
+        // If a distinct seek or jump occurred (> 0.5s), reset previous progress
+        const isSeek = Math.abs(time - lastReportedTime) > 0.5
+        lastReportedTime = time
+        if (isSeek) {
+          prevProgressMap.fill(0)
+        }
+
         line.tokens!.forEach((token, i) => {
           const span = spans[i]
           if (!span) return
@@ -140,8 +149,17 @@ const LyricRowItem = memo(
           if (time >= token.endTime) {
             progress = 1
           } else if (time > token.startTime) {
-            progress = (time - token.startTime) / (token.endTime - token.startTime)
+            const rawProgress = (time - token.startTime) / (token.endTime - token.startTime)
+            progress = Math.min(1, Math.max(0, rawProgress))
           }
+
+          // Enforce monotonic forward progression during playback of the line
+          if (!isSeek && progress < prevProgressMap[i]) {
+            progress = prevProgressMap[i]
+          } else {
+            prevProgressMap[i] = progress
+          }
+
           span.style.setProperty('--word-progress', `${progress * 100}%`)
         })
       })

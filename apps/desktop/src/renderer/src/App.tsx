@@ -104,11 +104,11 @@ function KissaApp(): React.JSX.Element {
   }
 
   return (
-    <AppLayout className={cn(isScreensaver && 'fixed inset-0 w-screen h-screen overflow-hidden bg-[#0f0b07]')}>
+    <AppLayout className={cn(isScreensaver && 'fixed inset-0 w-screen h-screen overflow-hidden')}>
       {/* Fixed atmospheric background */}
       <Background />
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {isScreensaver ? (
           <ListeningDisplay key="screensaver" mode="screensaver" />
         ) : isMiniPlayer ? (
@@ -132,7 +132,7 @@ function KissaApp(): React.JSX.Element {
             initial={false}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="absolute inset-0 z-0 flex flex-col min-w-0 overflow-hidden"
           >
             {/* Invisible drag region for frameless window movement */}
@@ -169,7 +169,9 @@ function KissaApp(): React.JSX.Element {
 
               {/* Center: Turntable Deck */}
               <section className="min-h-0 flex items-center justify-center p-2 min-[900px]:p-4 overflow-hidden transform-gpu">
-                <TurntableEngine />
+                <div className="w-full flex items-center justify-center">
+                  <TurntableEngine />
+                </div>
               </section>
 
               {/* Optional Side Lyrics Panel (Only shown when user requests) */}

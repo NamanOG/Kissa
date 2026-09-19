@@ -119,18 +119,25 @@ export function useSystemMediaSync(): void {
         setProgress(payload.progress || 0)
       } else {
         // Same track - check for metadata and thumbnail updates
-        if (
-          (payload.artworkDataUrl && currentStoreTrack?.artworkUrl !== payload.artworkDataUrl) ||
-          (payload.artist && payload.artist !== currentStoreTrack?.artist) ||
-          (payload.album && payload.album !== currentStoreTrack?.album)
-        ) {
+        const isCurrentPlaceholder = !currentStoreTrack?.artworkUrl || currentStoreTrack.artworkUrl === albumPlaceholder
+        const isCurrentSameAsNew = currentStoreTrack?.artworkUrl === payload.artworkDataUrl
+        const isUpgradingFromDataToHttp = Boolean(currentStoreTrack?.artworkUrl?.startsWith('data:') && payload.artworkDataUrl?.startsWith('http'))
+        const shouldUpdateArtwork =
+          Boolean(payload.artworkDataUrl) &&
+          !isCurrentSameAsNew &&
+          (isCurrentPlaceholder || isUpgradingFromDataToHttp || !currentStoreTrack?.artworkUrl?.startsWith('http'))
+
+        const shouldUpdateArtist = Boolean(payload.artist) && payload.artist !== currentStoreTrack?.artist
+        const shouldUpdateAlbum = Boolean(payload.album) && payload.album !== currentStoreTrack?.album
+
+        if (shouldUpdateArtwork || shouldUpdateArtist || shouldUpdateAlbum) {
           usePlayerStore.setState((state) => ({
             currentTrack: state.currentTrack
               ? {
                 ...state.currentTrack,
-                artist: payload.artist || state.currentTrack.artist,
-                album: payload.album || state.currentTrack.album,
-                artworkUrl: payload.artworkDataUrl || state.currentTrack.artworkUrl
+                artist: shouldUpdateArtist ? payload.artist! : state.currentTrack.artist,
+                album: shouldUpdateAlbum ? payload.album! : state.currentTrack.album,
+                artworkUrl: shouldUpdateArtwork ? payload.artworkDataUrl! : state.currentTrack.artworkUrl
               }
               : null
           }))
@@ -158,6 +165,7 @@ export function useSystemMediaSync(): void {
         const currentIsPlaying = usePlayerStore.getState().isPlaying
         if (!commandCooldownRef.current && currentIsPlaying !== payload.isPlaying) {
           setIsPlaying(payload.isPlaying)
+          PlaybackClock.setSmtcState(payload.progress, payload.isPlaying)
         }
 
         // Sync timeline progress with monotonic filter via PlaybackClock
@@ -178,15 +186,12 @@ export function useSystemMediaSync(): void {
           }
         }
 
-        // If difference is large (> 1.5s) or a distinct seek/loop restart, accept SMTC position immediately
-        if (Math.abs(diff) > 1.5 || payload.progress === 0) {
+        // If difference is large (> 2.0s) or a distinct seek/loop restart, accept SMTC position immediately
+        if (Math.abs(diff) > 2.0 || (payload.progress < 1.0 && localEstimate > 5.0)) {
           PlaybackClock.setSmtcState(payload.progress, payload.isPlaying)
           setProgress(payload.progress)
-        } else if (payload.progress > localEstimate + 0.1) { // Slight buffer
-          PlaybackClock.setSmtcState(payload.progress, payload.isPlaying)
-        } else {
-          // If local estimate is ahead, let SMTC just catch up or update playing state only
-          PlaybackClock.setSmtcState(Math.max(localEstimate, payload.progress), payload.isPlaying)
+        } else if (!payload.isPlaying) {
+          PlaybackClock.setSmtcState(payload.progress, false)
         }
       }
 
