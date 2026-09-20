@@ -1,0 +1,96 @@
+/**
+ * Kissa Website — CSS Reset
+ *
+ * Minimal, modern reset. Not Tailwind, not Normalize.
+ * Enough to remove browser inconsistencies, nothing more.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Remove default margin/padding */
+* {
+  margin: 0;
+  padding: 0;
+}
+
+/* Smooth scrolling — respects user preference */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Inherit fonts everywhere */
+body,
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Sensible media defaults */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Remove list decoration when semantic list role is removed */
+ul[role='list'],
+ol[role='list'] {
+  list-style: none;
+}
+
+/* Typography improvements */
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/* Accessible focus — removed only for mouse users */
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Ensure root document containers never retain browser default blue focus rings */
+html:focus,
+body:focus,
+#root:focus,
+main:focus {
+  outline: none;
+}
+
+/* Preserve motion for those who need it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
