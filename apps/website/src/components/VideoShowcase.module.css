@@ -1,0 +1,307 @@
+/**
+ * VideoShowcase — Near-full-width cinematic media stage
+ */
+
+.section {
+  padding-block: var(--section-gap);
+  border-top: 1px solid var(--color-border-rule);
+  background-color: var(--color-bg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Section Header ──────────────────────────── */
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-block-end: var(--space-8);
+  max-width: 720px;
+}
+
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wider);
+  color: var(--color-accent);
+  text-transform: uppercase;
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: var(--text-title);
+  font-weight: 400;
+  line-height: var(--leading-heading);
+  letter-spacing: var(--tracking-tight);
+  color: var(--color-fg);
+  margin-block-end: var(--space-2);
+}
+
+.lead {
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  color: var(--color-fg-muted);
+  margin: 0;
+}
+
+/* ── Player Frame ────────────────────────────── */
+
+.playerWrap {
+  position: relative;
+  width: 100%;
+}
+
+.ambientBacklight {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  height: 90%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(224, 142, 69, 0.12) 0%,
+    rgba(224, 142, 69, 0.02) 60%,
+    transparent 80%
+  );
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.playerFrame {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-raised);
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.staticFrame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.staticPoster {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.placeholderStage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schematicSvg {
+  width: 75%;
+  height: 75%;
+  opacity: 0.6;
+}
+
+.staticOverlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(13, 13, 15, 0.3) 0%,
+    rgba(13, 13, 15, 0.85) 100%
+  );
+}
+
+.videoSlotNotice {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 480px;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.slotTag {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wider);
+  color: var(--color-accent);
+  text-transform: uppercase;
+}
+
+.slotTitle {
+  font-family: var(--font-serif);
+  font-size: clamp(1.4rem, 2.2vw, 2rem);
+  font-weight: 400;
+  color: var(--color-fg);
+  margin: 0;
+}
+
+.slotText {
+  font-size: var(--text-small);
+  color: var(--color-fg-muted);
+  line-height: var(--leading-body);
+  margin: 0;
+}
+
+/* ── Video Controls Bar ──────────────────────── */
+
+.controlsBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-3) var(--space-4) var(--space-3);
+  background: linear-gradient(to top, rgba(10, 10, 12, 0.96) 0%, transparent 100%);
+  z-index: 10;
+  gap: var(--space-2);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.controlsBar.controlsVisible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Seek / Progress Row ─────────────────────── */
+
+.progressRow {
+  width: 100%;
+}
+
+/* shared range reset */
+.seekBar,
+.volumeBar {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 2px;
+  height: 3px;
+  background-image: linear-gradient(
+    to right,
+    var(--color-accent) var(--progress, 0%),
+    rgba(247, 246, 242, 0.18) var(--progress, 0%)
+  );
+}
+
+.seekBar {
+  width: 100%;
+  height: 3px;
+  transition: height 0.15s ease;
+}
+
+.seekBar:hover {
+  height: 5px;
+}
+
+.seekBar::-webkit-slider-thumb,
+.volumeBar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-fg);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
+  transition: transform 0.1s ease;
+}
+
+.seekBar:hover::-webkit-slider-thumb,
+.volumeBar:hover::-webkit-slider-thumb {
+  transform: scale(1.25);
+}
+
+.seekBar::-moz-range-thumb,
+.volumeBar::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-fg);
+  border: none;
+  cursor: pointer;
+}
+
+/* ── Bottom Controls Row ─────────────────────── */
+
+.controlsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.controlsLeft,
+.controlsRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.iconBtn {
+  background: none;
+  border: none;
+  color: var(--color-fg);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out);
+  flex-shrink: 0;
+}
+
+.iconBtn:hover {
+  color: var(--color-accent);
+  background-color: rgba(247, 246, 242, 0.08);
+}
+
+.timeDisplay {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-fg-muted);
+  white-space: nowrap;
+  padding-inline-start: var(--space-1);
+}
+
+.volumeBar {
+  width: 72px;
+  height: 3px;
+}
+
+@media (max-width: 480px) {
+  .volumeBar {
+    display: none;
+  }
+}

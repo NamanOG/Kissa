@@ -1,0 +1,29 @@
+.container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.glow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(40px);
+  transition: opacity 0.3s ease-out;
+  will-change: transform, opacity;
+  z-index: 1;
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow {
+    display: none;
+  }
+}

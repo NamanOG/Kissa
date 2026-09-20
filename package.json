@@ -16,7 +16,11 @@
     "format": "npm --workspace apps-desktop run format",
     "lint": "npm --workspace apps-desktop run lint",
     "test": "npm --workspace apps-desktop run test",
-    "typecheck": "npm --workspace apps-desktop run typecheck"
+    "typecheck": "npm --workspace apps-desktop run typecheck",
+    "website:dev": "npm --workspace apps-website run dev",
+    "website:build": "npm --workspace apps-website run build",
+    "website:typecheck": "npm --workspace apps-website run typecheck",
+    "website:lint": "npm --workspace apps-website run lint"
   },
   "devDependencies": {
     "electron": "39.8.10"
