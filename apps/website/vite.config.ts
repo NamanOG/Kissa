@@ -11,10 +11,22 @@ const REPO = 'NamanOG/Kissa'
  * (canonical link, social preview image, sitemap, structured data) and the
  * asset base path are derived from this one value.
  *
+ * Defaults:
+ * - If KISSA_SITE_URL is provided, use it.
+ * - On Vercel (process.env.VERCEL), derive from VERCEL_PROJECT_PRODUCTION_URL or VERCEL_URL.
+ * - Otherwise (e.g. GitHub Pages build), fall back to https://namanog.github.io/Kissa/
+ *
  * Override with the KISSA_SITE_URL environment variable when deploying to a
  * custom domain, e.g. KISSA_SITE_URL=https://kissa.example.com/
  */
-const SITE_URL = (process.env.KISSA_SITE_URL ?? 'https://namanog.github.io/Kissa/').replace(/\/?$/, '/')
+const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL
+const defaultSiteUrl = vercelHost
+  ? `https://${vercelHost}/`
+  : process.env.VERCEL
+    ? 'https://localhost/'
+    : 'https://namanog.github.io/Kissa/'
+
+const SITE_URL = (process.env.KISSA_SITE_URL ?? defaultSiteUrl).replace(/\/?$/, '/')
 
 interface GithubAsset {
   name: string
