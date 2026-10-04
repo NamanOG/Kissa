@@ -173,7 +173,6 @@ export class ArtworkService {
           }
         }
       } catch {
-        // Fall through to song search
       }
     }
 
@@ -209,11 +208,9 @@ export class ArtworkService {
           }
         }
       } catch {
-        // Try next query
       }
     }
 
-    // 3. Third attempt: Deezer Album search with verification
     if (!isGenericAlbum && validArtist) {
       try {
         const term = encodeURIComponent(`${album} ${validArtist}`)
@@ -237,11 +234,9 @@ export class ArtworkService {
           }
         }
       } catch {
-        // Fall through
       }
     }
 
-    // 4. Fourth attempt: Deezer Track search with verification
     for (const q of queries.slice(0, 2)) {
       try {
         const term = encodeURIComponent(q.trim())
@@ -280,7 +275,6 @@ export class ArtworkService {
           }
         }
       } catch {
-        // Try next query
       }
     }
 

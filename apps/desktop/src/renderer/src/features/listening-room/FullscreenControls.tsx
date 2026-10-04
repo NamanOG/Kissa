@@ -64,7 +64,6 @@ export const FullscreenControls = memo(({
         transitionTimingFunction: 'var(--ease-out, cubic-bezier(0.22,1,0.36,1))'
       }}
     >
-      {/* Top Right: Exit Fullscreen & Enter Display */}
       <div className="flex justify-end gap-3">
         <button
           type="button"
@@ -85,7 +84,6 @@ export const FullscreenControls = memo(({
         </button>
       </div>
 
-      {/* Bottom Controls */}
       <div 
         className={cn(
           "absolute bottom-6 min-[900px]:bottom-10 transition-all flex justify-center",
@@ -96,10 +94,8 @@ export const FullscreenControls = memo(({
           transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)'
         }}
       >
-        {/* Unified Glass Dock */}
         <div className="flex items-center gap-4 min-[900px]:gap-6 bg-black/40 backdrop-blur-3xl px-6 min-[900px]:px-8 py-3.5 min-[900px]:py-4 rounded-full border border-white/10 shadow-[0_32px_64px_rgba(0,0,0,0.6)] transform-gpu">
           
-          {/* Left Accessory (Fixed width for symmetry) */}
           <div className="flex items-center justify-start w-[140px] min-[1100px]:w-[180px] gap-3">
             {canShowLyrics && onToggleLyrics && (
               <button
@@ -134,7 +130,6 @@ export const FullscreenControls = memo(({
             </button>
           </div>
 
-          {/* Transport Controls (Center) */}
           <div className="flex items-center gap-4 min-[900px]:gap-5 shrink-0">
             <button
               type="button"
@@ -173,7 +168,6 @@ export const FullscreenControls = memo(({
             </button>
           </div>
 
-          {/* Right Accessory (Fixed width for symmetry) */}
           <div className="flex items-center justify-end w-[140px] min-[1100px]:w-[180px] gap-3">
             <div className="h-8 w-[1px] bg-white/10 mr-1 shrink-0" />
             <div className="flex-1 max-w-[140px]">

@@ -5,6 +5,7 @@ import * as https from 'https'
 import { URL } from 'url'
 import { spawn } from 'child_process'
 import { WindowManager } from '../window/WindowManager'
+import { StorePackageService } from './StorePackageService'
 import type {
   UpdateInstallResult,
   UpdateProgress,
@@ -85,6 +86,19 @@ export class UpdateService {
     )
   }
 
+  /**
+   * True for the Microsoft Store build. The Store delivers its updates, and
+   * Store policy forbids an app from downloading and running its own
+   * installer, so every update action below is a no-op there.
+   */
+  public isStoreManaged(): boolean {
+    try {
+      return StorePackageService.getInstance().isStorePackage()
+    } catch {
+      return false
+    }
+  }
+
   public isScreensaverActive(): boolean {
     try {
       return WindowManager.getInstance().isScreensaver
@@ -106,7 +120,8 @@ export class UpdateService {
       downloadedFilePath: this.downloadedFilePath,
       error: this.errorMessage,
       isScreensaverActive: this.isScreensaverActive(),
-      isPortable: this.isPortable()
+      isPortable: this.isPortable(),
+      isStoreManaged: this.isStoreManaged()
     }
   }
 
@@ -117,11 +132,16 @@ export class UpdateService {
         win.webContents.send('kissa:update-status-changed', this.getStatusPayload())
       }
     } catch {
-      // Best-effort notification
     }
   }
 
   public async checkForUpdates(): Promise<UpdateStatusPayload> {
+    if (this.isStoreManaged()) {
+      this.state = 'idle'
+      this.errorMessage = null
+      return this.getStatusPayload()
+    }
+
     if (this.isScreensaverActive()) {
       this.state = 'error'
       this.errorMessage = 'Cannot check for updates while in screensaver mode.'
@@ -176,7 +196,6 @@ export class UpdateService {
         return this.getStatusPayload()
       }
 
-      // Look for the appropriate asset in the release
       const assets = Array.isArray(data.assets) ? data.assets : []
       const isPortable = this.isPortable()
 
@@ -188,7 +207,6 @@ export class UpdateService {
       })
 
       if (!targetAsset) {
-        // Fallback: look for any .exe installer/portable
         targetAsset = assets.find((a: any) => typeof a.name === 'string' && a.name.endsWith('.exe'))
       }
 
@@ -224,6 +242,10 @@ export class UpdateService {
   }
 
   public async downloadUpdate(): Promise<UpdateStatusPayload> {
+    if (this.isStoreManaged()) {
+      return this.getStatusPayload()
+    }
+
     if (this.isScreensaverActive()) {
       this.state = 'error'
       this.errorMessage = 'Cannot download updates while in screensaver mode.'
@@ -308,7 +330,6 @@ export class UpdateService {
         }
       )
 
-      // Verification: verify file exists and is not empty
       const stats = fs.statSync(tempFilePath)
       if (stats.size === 0) {
         throw new Error('Downloaded file is empty.')
@@ -320,12 +341,10 @@ export class UpdateService {
         )
       }
 
-      // Atomically move .download to final .exe
       if (fs.existsSync(finalFilePath)) {
         try {
           fs.unlinkSync(finalFilePath)
         } catch {
-          // ignore
         }
       }
       fs.renameSync(tempFilePath, finalFilePath)
@@ -341,13 +360,11 @@ export class UpdateService {
       this.broadcastStatus()
       return this.getStatusPayload()
     } catch (err: any) {
-      // Clean up partial temp file if it exists
       try {
         if (fs.existsSync(tempFilePath)) {
           fs.unlinkSync(tempFilePath)
         }
       } catch {
-        // ignore
       }
 
       if (abortController.signal.aborted) {
@@ -379,6 +396,10 @@ export class UpdateService {
   }
 
   public async installUpdate(): Promise<UpdateInstallResult> {
+    if (this.isStoreManaged()) {
+      return { success: false, error: 'Updates for this build are delivered by the Microsoft Store.' }
+    }
+
     if (this.isScreensaverActive()) {
       return { success: false, error: 'Cannot install updates while in screensaver mode.' }
     }
@@ -395,12 +416,10 @@ export class UpdateService {
     }
 
     if (this.isPortable()) {
-      // For portable, reveal file in Explorer and let user launch it
       shell.showItemInFolder(this.downloadedFilePath)
       return { success: true, action: 'revealed' }
     }
 
-    // For installed NSIS: launch installer detached and exit cleanly
     try {
       this.state = 'installing'
       this.broadcastStatus()
@@ -411,7 +430,6 @@ export class UpdateService {
       })
       child.unref()
 
-      // Allow brief moment for process spawn handoff then quit
       setTimeout(() => {
         app.quit()
       }, 300)

@@ -36,6 +36,8 @@ export interface UpdateStatusPayload {
   error: string | null
   isScreensaverActive: boolean
   isPortable: boolean
+  /** True for the Microsoft Store build, where the Store delivers updates. */
+  isStoreManaged?: boolean
 }
 
 export interface UpdateInstallResult {

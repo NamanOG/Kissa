@@ -2,6 +2,7 @@ import React, { memo, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useShelfStore, RecordEntry } from '../../stores/shelfStore'
 import { usePlayerStore } from '../../stores/playerStore'
+import { possessive } from '../../utils/greeting'
 import { Play, Disc3, X, Share, Trash2 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { SharePreviewModal } from '../share/SharePreviewModal'
@@ -14,10 +15,10 @@ export const RecordShelfView = memo(() => {
   const clearShelf = useShelfStore((s) => s.clearShelf)
   const removeRecord = useShelfStore((s) => s.removeRecord)
   const [sort, setSort] = useState<SortOption>('recent')
+  const listenerName = usePlayerStore((s) => s.listenerName)
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   
-  // Share state
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedForShare, setSelectedForShare] = useState<Set<string>>(new Set())
@@ -84,7 +85,7 @@ export const RecordShelfView = memo(() => {
         <div>
           <h1 className="font-serif text-3xl min-[900px]:text-4xl font-medium tracking-tight text-[var(--on-surface)] flex items-center gap-3">
             <Disc3 className="w-8 h-8 opacity-40" />
-            My Records
+            {listenerName.trim() ? `${possessive(listenerName)} Records` : 'My Records'}
           </h1>
           <p className="font-kissa-chassis uppercase tracking-[0.2em] text-[10px] mt-3 text-[var(--muted)]/80">
             {records.length} {records.length === 1 ? 'RECORD' : 'RECORDS'}
@@ -154,7 +155,6 @@ export const RecordShelfView = memo(() => {
         )}
       </header>
 
-      {/* Clear Shelf Dialog */}
       <AnimatePresence>
         {showClearConfirm && (
           <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
@@ -199,7 +199,7 @@ export const RecordShelfView = memo(() => {
       </AnimatePresence>
 
       {records.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-10 pb-32 select-none opacity-50">
+        <div className="flex-1 flex flex-col items-center justify-center p-10 pb-32 select-none opacity-80">
           <div className="w-48 h-28 border border-[var(--panel-border)] rounded-sm flex items-end p-4 mb-6 relative overflow-hidden bg-black/40 shadow-[inset_0_4px_24px_rgba(0,0,0,0.5)]">
             <div className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[var(--panel-border)]/50" />
             <div className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[var(--panel-border)]/50" />
@@ -207,13 +207,12 @@ export const RecordShelfView = memo(() => {
               EMPTY SHELF
             </span>
           </div>
-          <p className="font-kissa-chassis text-[10px] uppercase tracking-[0.1em] text-[var(--muted)]/80 text-center max-w-xs">
-            Audio played via Kissa will appear in your record shelf.
+          <p className="font-kissa-chassis text-[11px] uppercase tracking-[0.1em] leading-relaxed text-[var(--muted)] text-center max-w-xs">
+            Play something in Spotify, Apple Music or TIDAL. Each album you listen to is kept here.
           </p>
         </div>
       ) : (
         <div className="flex-1 w-full min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar pb-32">
-          {/* Grid Layout for Albums */}
           <div 
             className="grid gap-x-10 min-[900px]:gap-x-12 gap-y-16 px-10 min-[900px]:px-16 pb-32 max-w-[2400px] mx-auto w-full"
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}
@@ -245,11 +244,9 @@ export const RecordShelfView = memo(() => {
         </div>
       )}
 
-      {/* Record Inspector Overlay */}
       <AnimatePresence>
         {selectedAlbum && selectedRecord && !selectionMode && (
           <>
-            {/* Subtle backdrop to obscure records slightly */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -264,7 +261,6 @@ export const RecordShelfView = memo(() => {
               transition={{ type: 'spring', damping: 28, stiffness: 220 }}
               className="absolute right-0 top-0 bottom-0 w-[340px] min-[1400px]:w-[380px] bg-[#121013] border-l border-white/[0.03] shadow-[-16px_0_64px_rgba(0,0,0,0.8)] z-40 flex flex-col border-t border-t-white/[0.02]"
             >
-              {/* Header */}
               <div className="flex items-center justify-between p-6 pb-4 border-b border-white/5">
                 <span className="font-kissa-chassis text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]/60">
                   Record Inspector
@@ -277,7 +273,6 @@ export const RecordShelfView = memo(() => {
                 </button>
               </div>
 
-              {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto no-scrollbar p-6">
                 <div className="w-full aspect-square rounded-sm overflow-hidden mb-6 shadow-xl border border-white/5 relative bg-[#1a1411]">
                   {selectedRecord.artworkUrl ? (
@@ -287,7 +282,6 @@ export const RecordShelfView = memo(() => {
                       <Disc3 className="w-12 h-12 text-[var(--accent)]/30 mb-2" />
                     </div>
                   )}
-                  {/* Sleeve highlight/shading */}
                   <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-white/10 pointer-events-none mix-blend-overlay" />
                   <div className="absolute top-0 left-0 bottom-0 w-[3px] bg-gradient-to-r from-white/20 to-transparent pointer-events-none" />
                 </div>
@@ -325,7 +319,6 @@ export const RecordShelfView = memo(() => {
                 </div>
               </div>
 
-              {/* Footer Actions */}
               <div className="p-6 border-t border-white/5 flex gap-3 shrink-0">
                 <button
                   onClick={() => {
@@ -352,7 +345,6 @@ export const RecordShelfView = memo(() => {
         )}
       </AnimatePresence>
 
-      {/* Share Preview Modal */}
       <SharePreviewModal 
         payload={sharePayload} 
         onClose={() => setSharePayload(null)} 
@@ -393,7 +385,6 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
 
   return (
     <div className={cn("flex flex-col relative group cursor-pointer", isSelected ? "z-20" : "hover:z-20")} onClick={onClick}>
-      {/* Album Cover / Sleeve */}
       <div 
         className={cn(
           "relative w-full aspect-square transform-gpu transition-[transform,box-shadow,border-color] duration-content ease-primary rounded-sm shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.15),inset_1px_0_0_rgba(255,255,255,0.1)]",
@@ -401,7 +392,6 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
           isSelectedForShare ? "border-2 border-[var(--accent)]" : "border-2 border-transparent"
         )}
       >
-        {/* Record sticking out on hover/select */}
         {!selectionMode && (
           <div 
             className={cn(
@@ -412,7 +402,6 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
             )}
             style={{ backgroundImage: 'repeating-radial-gradient(#111 0px, #1a1a1a 2px, #111 4px)' }}
           >
-            {/* Label */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1/3 aspect-square rounded-full border border-white/10 overflow-hidden">
               {record.artworkUrl ? (
                  <img src={record.artworkUrl} className="w-full h-full object-cover opacity-80" alt="" />
@@ -424,7 +413,6 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
           </div>
         )}
 
-        {/* Sleeve Image */}
         <div className="absolute inset-0 z-10 rounded-sm overflow-hidden bg-[#1a1411]">
           {record.artworkUrl ? (
             <img src={record.artworkUrl} alt={record.album} className="w-full h-full object-cover pointer-events-none" />
@@ -434,13 +422,11 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
               <span className="text-[10px] font-mono text-white/30 text-center uppercase break-all">{record.album}</span>
             </div>
           )}
-          {/* Record Sleeve highlight/shading */}
           <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-white/10 pointer-events-none mix-blend-overlay" />
           <div className="absolute top-0 left-0 bottom-0 w-[3px] bg-gradient-to-r from-white/20 to-transparent pointer-events-none" />
         </div>
       </div>
 
-      {/* Mechanical Selection Indicator */}
       {selectionMode && (
         <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 h-1 rounded-full transition-colors flex items-center justify-center">
            {isSelectedForShare ? (
@@ -451,7 +437,6 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
         </div>
       )}
 
-      {/* Album Info */}
       <div className="mt-4 flex flex-col px-1 z-10 transition-opacity" style={{ opacity: isSelected ? 1 : 0.85 }}>
         <h3 className="font-serif text-[16px] leading-snug font-medium tracking-tight text-white/90 truncate">
           {record.album}

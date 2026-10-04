@@ -44,16 +44,12 @@ function KissaApp(): React.JSX.Element {
   // Real audio playback engine (handles audio elements, time sync, seeking & volume)
   useAudioPlayback()
 
-  // Live Windows system media detection (Apple Music, Spotify, etc.)
   useSystemMediaSync()
 
-  // Global Keyboard Shortcuts
   useKeyboardShortcuts()
 
-  // Dynamic Theme Lighting
   useAdaptiveColor()
 
-  // Update Record Shelf listening history
   const addOrUpdateRecord = useShelfStore((s) => s.addOrUpdateRecord)
   
   useEffect(() => {
@@ -62,7 +58,6 @@ function KissaApp(): React.JSX.Element {
     }
   }, [currentTrack, addOrUpdateRecord])
 
-  // Sync settings with main process on boot
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).electron) {
       const state = usePlayerStore.getState()
@@ -90,7 +85,6 @@ function KissaApp(): React.JSX.Element {
     })
   }, [])
 
-  // Dynamic screensaver mode transition listener
   useEffect(() => {
     if (!window.electron?.onScreensaverModeChanged) return
 
@@ -105,7 +99,6 @@ function KissaApp(): React.JSX.Element {
 
   return (
     <AppLayout className={cn(isScreensaver && 'fixed inset-0 w-screen h-screen overflow-hidden')}>
-      {/* Fixed atmospheric background */}
       <Background />
 
       <AnimatePresence>
@@ -135,16 +128,12 @@ function KissaApp(): React.JSX.Element {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="absolute inset-0 z-0 flex flex-col min-w-0 overflow-hidden"
           >
-            {/* Invisible drag region for frameless window movement */}
             <div className="absolute top-0 left-0 w-full h-8 app-region-drag z-50 pointer-events-auto" />
 
-            <div className="flex flex-1 min-h-0 relative w-full overflow-hidden transform-gpu">
-              {/* Navigation rail */}
+            <div className="flex flex-1 min-h-0 relative w-full">
               <Sidebar />
 
-              {/* Main content area */}
               <ContentArea>
-              {/* Dynamic Main View Switcher */}
               <div className="relative flex-1 min-h-0 w-full overflow-hidden">
         <AnimatePresence mode="wait">
           {activeView === 'deck' && (
@@ -162,19 +151,16 @@ function KissaApp(): React.JSX.Element {
                   : 'grid-cols-1 min-[900px]:grid-cols-[minmax(280px,0.9fr)_minmax(340px,1.5fr)] min-[1200px]:grid-cols-[minmax(320px,1fr)_minmax(400px,1.7fr)]'
               )}
             >
-              {/* Left: Metadata & Now Playing Panel */}
               <aside className="min-h-0 flex flex-col justify-center overflow-y-auto no-scrollbar transform-gpu">
                 <MetadataPanel />
               </aside>
 
-              {/* Center: Turntable Deck */}
               <section className="min-h-0 flex items-center justify-center p-2 min-[900px]:p-4 overflow-hidden transform-gpu">
                 <div className="w-full flex items-center justify-center">
                   <TurntableEngine />
                 </div>
               </section>
 
-              {/* Optional Side Lyrics Panel (Only shown when user requests) */}
               {showSideLyrics && (
                 <motion.div
                   initial={{ opacity: 0, x: 16 }}
@@ -214,15 +200,12 @@ function KissaApp(): React.JSX.Element {
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               className="absolute inset-0 grid grid-cols-1 min-[900px]:grid-cols-[minmax(0,0.65fr)_minmax(280px,0.35fr)] overflow-hidden transform-gpu"
             >
-              {/* Left/Center: Large Fluid Apple Music Lyrics Stream */}
               <div className="relative h-full min-h-0 flex flex-col px-4 min-[900px]:px-10 py-6 min-[900px]:py-8">
                 <SyncedLyrics isLargeView />
               </div>
-              {/* Right: Floating Vinyl Album Card Widget */}
               <div
                 className="hidden min-[900px]:flex flex-col items-center justify-center p-8 border-l border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-[var(--panel-shadow)]"
               >
-                {/* Floating Spinning Vinyl */}
                 <div className="relative w-full max-w-[280px] aspect-square flex items-center justify-center">
                   <div className="absolute inset-4 rounded-full blur-2xl pointer-events-none bg-[var(--accent)]/15" />
                   <VinylEngine
@@ -231,7 +214,6 @@ function KissaApp(): React.JSX.Element {
                   />
                 </div>
 
-                {/* Track Info Below Floating Vinyl */}
                 <div className="mt-8 text-center w-full px-4 relative min-h-[4rem]">
                   <AnimatePresence mode="wait">
                     <motion.div
@@ -279,21 +261,16 @@ function KissaApp(): React.JSX.Element {
             </ContentArea>
           </div>
 
-          {/* ── Bottom Dock (Integrated into Chassis) ── */}
           <ControlDock />
         </motion.div>
       )}
       </AnimatePresence>
-      {/* ── Settings & Preferences Modal ── */}
       {!isScreensaver && <SettingsModal />}
 
-      {/* ── First-Time User Introduction & Guide Modal ── */}
       {!isScreensaver && <OnboardingModal />}
 
-      {/* ── Keyboard Shortcuts Quick Reference ── */}
       {!isScreensaver && <KeyboardHelpOverlay />}
 
-      {/* ── Subtle Physical Startup Experience (Bypassed in screensaver mode) ── */}
       {!hasStarted && isScreensaver === false && (
         <StartupExperience onComplete={() => setHasStarted(true)} />
       )}

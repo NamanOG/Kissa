@@ -24,7 +24,6 @@ export const TurntableBase = memo(
           preserveAspectRatio="none"
         >
           <defs>
-            {/* Rich obsidian brushed lacquer composite */}
             <linearGradient id="plinth-top" x1="10%" y1="0%" x2="90%" y2="100%">
               <stop offset="0%" stopColor="#3c332e" />
               <stop offset="25%" stopColor="#2a231f" />
@@ -33,7 +32,6 @@ export const TurntableBase = memo(
               <stop offset="100%" stopColor="#0d0a09" />
             </linearGradient>
 
-            {/* Front face — vertical thickness with directional ambient occlusion */}
             <linearGradient id="plinth-front" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="#382e29" />
               <stop offset="20%" stopColor="#251e1b" />
@@ -41,7 +39,6 @@ export const TurntableBase = memo(
               <stop offset="100%" stopColor="#0a0807" />
             </linearGradient>
 
-            {/* Subtle front seam highlight */}
             <linearGradient id="front-seam-highlight" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="rgba(255,245,225,0.05)" />
               <stop offset="30%" stopColor="rgba(255,245,225,0.25)" />
@@ -49,7 +46,6 @@ export const TurntableBase = memo(
               <stop offset="100%" stopColor="rgba(255,245,225,0.05)" />
             </linearGradient>
 
-            {/* Rubber isolation feet */}
             <linearGradient id="foot-grad" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="#302824" />
               <stop offset="40%" stopColor="#1c1614" />
@@ -57,7 +53,6 @@ export const TurntableBase = memo(
               <stop offset="100%" stopColor="#060504" />
             </linearGradient>
 
-            {/* Recessed Platter Well — deep shadow well without bright outer borders */}
             <radialGradient id="well-gradient" cx="50%" cy="48%" r="50%">
               <stop offset="0%" stopColor="#08080a" />
               <stop offset="80%" stopColor="#050506" />
@@ -65,21 +60,17 @@ export const TurntableBase = memo(
             </radialGradient>
           </defs>
 
-          {/* ── Isolation Feet (beneath plinth) ─────────────── */}
-          {/* Left Foot */}
           <g>
             <rect x="70" y="650" width="76" height="24" rx="7" fill="url(#foot-grad)" />
             <line x1="72" y1="651" x2="144" y2="651" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
             <line x1="70" y1="673" x2="146" y2="673" stroke="rgba(0,0,0,0.95)" strokeWidth="1.5" />
           </g>
-          {/* Right Foot */}
           <g>
             <rect x="854" y="650" width="76" height="24" rx="7" fill="url(#foot-grad)" />
             <line x1="856" y1="651" x2="928" y2="651" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
             <line x1="854" y1="673" x2="930" y2="673" stroke="rgba(0,0,0,0.95)" strokeWidth="1.5" />
           </g>
 
-          {/* ── Main Plinth Top Surface ─────────────────────── */}
           <rect
             x="10"
             y="10"
@@ -90,7 +81,6 @@ export const TurntableBase = memo(
             fill="url(#plinth-top)"
           />
 
-          {/* Fine subtle top edge chamfer catchlight (zero harsh white borders) */}
           <rect
             x="10.5"
             y="10.5"
@@ -103,25 +93,20 @@ export const TurntableBase = memo(
             strokeWidth="1"
           />
 
-          {/* ── Front Face (3D vertical thickness) ──────────── */}
           <path
             d="M 10 632 Q 10 650 28 650 L 972 650 Q 990 650 990 632 L 990 670 Q 990 688 972 688 L 28 688 Q 10 688 10 670 Z"
             fill="url(#plinth-front)"
           />
-          {/* Subtle bevel seam line between top surface and front face */}
           <line x1="12" y1="648" x2="988" y2="648" stroke="url(#front-seam-highlight)" strokeWidth="1" />
           <line x1="10" y1="650" x2="990" y2="650" stroke="rgba(0,0,0,0.7)" strokeWidth="1" />
-          {/* Bottom ground contact line */}
           <line x1="28" y1="688" x2="972" y2="688" stroke="rgba(0,0,0,0.95)" strokeWidth="1.5" />
 
-          {/* ── Recessed Platter Well (Clean shadow well without stray rim strokes) ── */}
           <circle
             cx="420"
             cy="325"
             r="285"
             fill="url(#well-gradient)"
           />
-          {/* Deep inner shadow ring */}
           <circle
             cx="420"
             cy="325"

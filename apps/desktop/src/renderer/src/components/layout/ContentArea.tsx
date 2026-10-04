@@ -9,7 +9,6 @@ export const ContentArea = React.forwardRef<HTMLDivElement, ContentAreaProps>(
       <main
         ref={ref}
         className={cn(
-          // flex-col: grid fills top, ControlDock pins to bottom
           'relative flex min-w-0 flex-1 flex-col overflow-hidden',
           className
         )}

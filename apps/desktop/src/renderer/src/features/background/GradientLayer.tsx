@@ -13,7 +13,6 @@ export const GradientLayer = memo(() => {
 
   return (
     <BackgroundLayer className="overflow-hidden">
-      {/* 1. Static base fill — transitions smoothly on theme change or palette base Temp */}
       <div
         className="absolute inset-0"
         style={{
@@ -22,7 +21,6 @@ export const GradientLayer = memo(() => {
         }}
       />
 
-      {/* 2. Hybrid Artwork Ambient Field (Adaptive Mode Only) */}
       {currentThemeId === 'adaptive' ? (
         <AnimatePresence>
           {artworkUrl && (
@@ -55,8 +53,6 @@ export const GradientLayer = memo(() => {
         />
       )}
 
-      {/* 3. Deep Radial Vignette / Dark Compositing mask */}
-      {/* This pushes the bright blurred artwork far into the background, darkening edges and center slightly to keep it feeling like a dark room */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -67,7 +63,6 @@ export const GradientLayer = memo(() => {
         }}
       />
       
-      {/* 4. Subtle palette enhancement for adaptive mode (optional but adds dimension to primary focus area) */}
       {currentThemeId === 'adaptive' && (
         <div
           className="absolute inset-0 pointer-events-none"

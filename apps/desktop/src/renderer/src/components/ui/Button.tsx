@@ -10,14 +10,12 @@ export interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'className'
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'secondary', active = false, children, ...props }, ref) => {
-    // Shared base styles for all premium buttons
     const baseStyles = cn(
       'relative flex items-center justify-center outline-none select-none',
       'transition-colors duration-200 ease-out',
       'disabled:opacity-50 disabled:pointer-events-none'
     )
 
-    // Machined aluminium physical styling
     const materials = {
       primary: cn(
         'bg-gradient-to-b from-amber-800 to-amber-950',

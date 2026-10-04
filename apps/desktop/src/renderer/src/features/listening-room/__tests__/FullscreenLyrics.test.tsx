@@ -58,10 +58,8 @@ describe('FullscreenLyrics', () => {
     })
 
     const { container } = await act(async () => render(<FullscreenLyrics />))
-    // The lyrics panel is mounted
     expect(container).toBeInTheDocument()
 
-    // It should render lines from the track
     await waitFor(() => expect(screen.getByText(/Pool/i)).toBeInTheDocument())
     expect(screen.getByText(/convo/i)).toBeInTheDocument()
   })
@@ -70,7 +68,6 @@ describe('FullscreenLyrics', () => {
     usePlayerStore.setState({ currentTrack: null })
     await act(async () => render(<FullscreenLyrics />))
     
-    // SyncedLyrics shows waiting or unavailable
     expect(screen.getByText(/Waiting/i)).toBeInTheDocument()
   })
 })

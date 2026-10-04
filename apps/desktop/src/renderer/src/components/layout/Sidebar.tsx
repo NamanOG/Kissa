@@ -2,7 +2,21 @@ import React from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { Quote, Settings, HelpCircle, Keyboard, Minimize2, Maximize2, Disc3 } from 'lucide-react'
+import { motion, useReducedMotion } from 'framer-motion'
 import kissaLogo from '@renderer/media/kissa_logo.png'
+
+/** Marks the open view. One element, shared across the three destinations, so it glides. */
+function NavMarker(): React.JSX.Element {
+  const reduceMotion = useReducedMotion()
+  return (
+    <motion.div
+      layoutId="kissa-nav-marker"
+      aria-hidden="true"
+      transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 34 }}
+      className="absolute left-0 top-[30%] h-[40%] w-[3px] rounded-r-full bg-[var(--accent)]"
+    />
+  )
+}
 
 export interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -38,21 +52,18 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
         }}
         {...props}
       >
-        {/* Navigation Items */}
         <nav className="flex flex-col items-center space-y-4 w-full">
-          {/* DECK */}
           <button
             type="button"
             onClick={() => setActiveView('deck')}
+            aria-current={activeView === 'deck' ? 'page' : undefined}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-1.5 cursor-pointer transition-colors active:scale-95",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-1.5 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06]",
               activeView === 'deck' ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
             )}
             title="Kissa (Home Deck)"
           >
-            {activeView === 'deck' && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
-            )}
+            {activeView === 'deck' && <NavMarker />}
             <div className={cn("relative w-7 h-7 min-[900px]:w-8 min-[900px]:h-8 rounded-full overflow-hidden shadow-sm transition-opacity", activeView === 'deck' ? "border border-white/20 opacity-100" : "border border-white/5 opacity-60")}>
               <img src={kissaLogo} alt="Kissa" className="w-full h-full object-cover" draggable={false} />
             </div>
@@ -61,38 +72,34 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             </span>
           </button>
 
-          {/* LYRICS */}
           <button
             type="button"
             onClick={() => setActiveView('lyrics')}
+            aria-current={activeView === 'lyrics' ? 'page' : undefined}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06]",
               activeView === 'lyrics' ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
             )}
             title="Live Synced Lyrics"
           >
-            {activeView === 'lyrics' && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
-            )}
+            {activeView === 'lyrics' && <NavMarker />}
             <Quote className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={activeView === 'lyrics' ? 2 : 1.5} />
             <span className="font-mono text-[9px] min-[900px]:text-[10px] tracking-widest font-medium uppercase">
               Lyrics
             </span>
           </button>
 
-          {/* SHELF */}
           <button
             type="button"
             onClick={() => setActiveView('shelf')}
+            aria-current={activeView === 'shelf' ? 'page' : undefined}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 group",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06] group",
               activeView === 'shelf' ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
             )}
             title="My Records"
           >
-            {activeView === 'shelf' && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
-            )}
+            {activeView === 'shelf' && <NavMarker />}
             <Disc3 className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4 transition-transform duration-200 ease-out group-hover:rotate-[15deg]" strokeWidth={activeView === 'shelf' ? 2 : 1.5} />
             <span className="font-mono text-[9px] min-[900px]:text-[10px] tracking-widest font-medium uppercase">
               Shelf
@@ -100,17 +107,16 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
           </button>
         </nav>
 
-        {/* Bottom Panel Controls */}
         <div className="mt-auto w-full flex flex-col items-center gap-2">
-          {/* Mini Player */}
           <button
             type="button"
             onClick={() => usePlayerStore.getState().toggleMiniPlayer()}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06]",
               isMiniPlayer ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
             )}
-            title="Toggle Mini Player"
+            title="Mini player"
+            aria-label="Mini player"
           >
             {isMiniPlayer && (
               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
@@ -122,15 +128,15 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             )}
           </button>
 
-          {/* Guide */}
           <button
             type="button"
             onClick={() => setIsOnboardingOpen(true)}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06]",
               isOnboardingOpen ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
             )}
-            title="Guide & Introduction"
+            title="Guide"
+            aria-label="Guide"
           >
             {isOnboardingOpen && (
               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
@@ -138,15 +144,15 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             <HelpCircle className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isOnboardingOpen ? 2 : 1.5} />
           </button>
 
-          {/* Keyboard Shortcuts */}
           <button
             type="button"
             onClick={toggleKeyboardHelp}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06]",
               isKeyboardHelpOpen ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
             )}
-            title="Keyboard Shortcuts"
+            title="Keyboard shortcuts"
+            aria-label="Keyboard shortcuts"
           >
             {isKeyboardHelpOpen && (
               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
@@ -154,15 +160,15 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             <Keyboard className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isKeyboardHelpOpen ? 2 : 1.5} />
           </button>
 
-          {/* Settings */}
           <button
             type="button"
             onClick={toggleSettings}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 group",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06] group",
               isSettingsOpen ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
             )}
-            title="Preferences"
+            title="Settings"
+            aria-label="Settings"
           >
             {isSettingsOpen && (
               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
@@ -173,9 +179,6 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                 <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse" />
               )}
             </div>
-            <span className="font-mono text-[9px] min-[900px]:text-[10px] tracking-widest font-medium uppercase mt-0.5">
-              Config
-            </span>
           </button>
         </div>
       </aside>

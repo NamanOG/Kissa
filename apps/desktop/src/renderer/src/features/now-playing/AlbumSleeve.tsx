@@ -26,13 +26,10 @@ export const AlbumSleeve = memo(({ artworkUrl, title, className, flat = false }:
         className
       )}
     >
-      {/* Physical ambient contact shadow & floor falloff */}
       <div className="absolute inset-0 translate-y-3 rounded-[2px] bg-black/80 blur-xl opacity-90 transition-transform duration-content ease-primary" />
       <div className="absolute inset-0 translate-y-1 rounded-[2px] bg-black/90 blur-sm opacity-95" />
 
-      {/* Main Physical 12" Vinyl Cardstock Jacket */}
       <div className="relative flex aspect-square w-full flex-col overflow-hidden rounded-[2px] border border-white/[0.06] bg-[#121214] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.85),_0_8px_16px_-4px_rgba(0,0,0,0.65)]">
-        {/* Album Artwork Image */}
         <img
           src={artwork}
           alt={title || 'Album cover'}
@@ -42,10 +39,8 @@ export const AlbumSleeve = memo(({ artworkUrl, title, className, flat = false }:
           }}
         />
 
-        {/* Cardstock Fine Matte Sheen Overlay */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.04] via-transparent to-black/25" />
 
-        {/* Cardstock Seam Edge & Micro-Bevel Catchlights */}
         <div className="pointer-events-none absolute inset-0 rounded-[2px] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),_inset_0_-1px_0_rgba(0,0,0,0.4)]" />
       </div>
     </motion.div>

@@ -150,18 +150,14 @@ export function useAudioPlayback(): void {
         })
       }
 
-      // Seek to wherever the store's progress currently is
       const storeProg = usePlayerStore.getState().progress
       audio.currentTime = storeProg
 
-      // Set volume
       const vol = usePlayerStore.getState().volume
       audio.volume = Math.max(0, Math.min(1, vol / 100))
 
-      // Auto-play if the store says we should be playing
       if (usePlayerStore.getState().isPlaying) {
         audio.play().catch(() => {
-          // Autoplay may be blocked until a user gesture
         })
       }
       }
@@ -195,7 +191,6 @@ export function useAudioPlayback(): void {
     
     const physicalFeedback = usePlayerStore.getState().physicalFeedback
     
-    // Play synthetic physical feedback thud
     const playNeedleSound = (isDrop: boolean) => {
       if (!physicalFeedback || typeof window === 'undefined') return
       try {
@@ -204,7 +199,6 @@ export function useAudioPlayback(): void {
         const ctx = new AudioContextClass()
         const now = ctx.currentTime
 
-        // Base mechanical transient (wide-band noise burst)
         const bufferSize = Math.floor(ctx.sampleRate * 0.05) // 50ms buffer
         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
         const data = buffer.getChannelData(0)
@@ -223,14 +217,12 @@ export function useAudioPlayback(): void {
         noiseGain.connect(ctx.destination)
 
         if (isDrop) {
-          // Drop: dull, heavy transient
           noiseFilter.type = 'lowpass'
           noiseFilter.frequency.setValueAtTime(800, now)
           
           noiseGain.gain.setValueAtTime(0.04, now)
           noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03)
 
-          // Sub-bass resonance (plinth vibration)
           const sub = ctx.createOscillator()
           const subGain = ctx.createGain()
           sub.type = 'sine'
@@ -246,7 +238,6 @@ export function useAudioPlayback(): void {
           sub.start(now)
           sub.stop(now + 0.2)
         } else {
-          // Lift: sharp, light mechanical click
           noiseFilter.type = 'highpass'
           noiseFilter.frequency.setValueAtTime(3000, now)
           
@@ -262,7 +253,6 @@ export function useAudioPlayback(): void {
           ctx.close().catch(() => {})
         }, 300)
       } catch (e) {
-        // Ignore audio context errors
       }
     }
 
@@ -271,7 +261,6 @@ export function useAudioPlayback(): void {
       if (typeof window !== 'undefined' && (window as any).electron) (window as any).electron.setThumbarButtons(true)
       if (audio.src) {
         audio.play().catch(() => {
-          // Autoplay policy may block
         })
       }
       playNeedleSound(true)
@@ -293,7 +282,6 @@ export function useAudioPlayback(): void {
       const progress = state.progress
       if (progress === prevState.progress) return
 
-      // Skip if WE just pushed this value from timeupdate
       if (isSyncingTimeRef.current) return
 
       const audio = audioRef.current
@@ -364,7 +352,6 @@ export function useAudioPlayback(): void {
             store.toggleMiniPlayer()
             break
           case 'checkForUpdates':
-            // Open settings modal so user can see/click the update check
             store.setIsSettingsOpen(true)
             break
         }

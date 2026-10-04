@@ -106,7 +106,6 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
       setCopiedText(true)
       setTimeout(() => setCopiedText(false), 2000)
     } catch {
-      // Ignore clipboard write failure
     }
   }
 
@@ -117,7 +116,6 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
       setCopiedLink(true)
       setTimeout(() => setCopiedLink(false), 2000)
     } catch {
-      // Ignore clipboard write failure
     }
   }
 
@@ -131,7 +129,6 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -140,7 +137,6 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
             className="absolute inset-0 bg-black/75 backdrop-blur-sm"
           />
 
-          {/* Modal Card */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -149,7 +145,6 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
             className="relative w-full max-w-[440px] bg-[var(--panel-bg)] border border-white/[0.08] rounded-2xl shadow-[0_24px_48px_rgba(0,0,0,0.8)] overflow-hidden z-10"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="flex items-center justify-between p-5 pb-4 border-b border-white/[0.06]">
               <div className="flex flex-col">
                 <span className="text-[14px] font-medium text-[var(--on-surface)]">Share Track</span>
@@ -167,7 +162,6 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
               </button>
             </div>
 
-            {/* Track Info Preview */}
             <div className="p-5 flex items-center gap-4">
               <img
                 src={track.artworkUrl || albumPlaceholder}
@@ -192,14 +186,12 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
               </div>
             </div>
 
-            {/* Share Text Preview Area */}
             <div className="px-5 pb-4">
               <div className="p-3.5 rounded-xl bg-black/40 border border-white/[0.05] text-[11.5px] font-mono leading-relaxed text-[var(--muted)] select-all whitespace-pre-wrap max-h-36 overflow-y-auto">
                 {shareText}
               </div>
             </div>
 
-            {/* Actions */}
             <div className="p-5 pt-3 border-t border-white/[0.06] flex items-center justify-between gap-2.5">
               <div className="flex items-center gap-2">
                 {sourceInfo?.url && (

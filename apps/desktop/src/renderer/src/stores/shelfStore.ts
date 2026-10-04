@@ -24,19 +24,26 @@ function normalizeKey(album: string, artist: string): string {
   return `${album.trim().toLowerCase()}-${artist.trim().toLowerCase()}`
 }
 
+/**
+ * The placeholder shown on the deck when nothing is playing ("Kissa — Listening
+ * Room"). It is not something the user listened to, so it never belongs on the shelf.
+ */
+export const IDLE_SOURCE_APP_ID = 'kissa-idle'
+const IDLE_RECORD_KEY = normalizeKey('Kissa', 'Listening Room')
+
 export const useShelfStore = create<ShelfState>()(
   persist(
     (set) => ({
       records: [],
       addOrUpdateRecord: (track) => set((state) => {
         if (!track.album || !track.artist) return state // Ignore incomplete metadata
+        if (track.sourceAppId === IDLE_SOURCE_APP_ID) return state // Not a real listen
         
         const key = normalizeKey(track.album, track.artist)
         const existingIdx = state.records.findIndex((r) => r.albumKey === key)
         const now = Date.now()
 
         if (existingIdx !== -1) {
-          // Update existing
           const existing = state.records[existingIdx]
           const isNewTrack = !existing.tracksEncountered.includes(track.title)
           
@@ -54,7 +61,6 @@ export const useShelfStore = create<ShelfState>()(
           newRecords[existingIdx] = updated
           return { records: newRecords }
         } else {
-          // Add new record
           const newRecord: RecordEntry = {
             albumKey: key,
             album: track.album,
@@ -74,7 +80,16 @@ export const useShelfStore = create<ShelfState>()(
       clearShelf: () => set({ records: [] })
     }),
     {
-      name: 'kissa-record-shelf' // Persists to localStorage automatically
+      name: 'kissa-record-shelf', // Persists to localStorage automatically
+      version: 1,
+      // v0 shelves recorded the idle placeholder as an album; drop that entry.
+      migrate: (persisted) => {
+        const state = (persisted ?? {}) as Partial<ShelfState>
+        return {
+          ...state,
+          records: (state.records ?? []).filter((r) => r.albumKey !== IDLE_RECORD_KEY)
+        } as ShelfState
+      }
     }
   )
 )

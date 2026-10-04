@@ -24,7 +24,6 @@ function playMechanicalSound(type: 'switch' | 'button' | 'radio'): void {
     const now = ctx.currentTime
 
     if (type === 'switch') {
-      // Power switch: short tactile thunk
       const bufferSize = Math.floor(ctx.sampleRate * 0.015)
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
       const data = buffer.getChannelData(0)
@@ -160,7 +159,6 @@ function playMechanicalSound(type: 'switch' | 'button' | 'radio'): void {
       tickSource.stop(now + 0.008)
     }
   } catch {
-    // Ignore audio if unsupported
   }
 }
 
@@ -216,7 +214,6 @@ export const PowerControl = memo(({ active, onClick }: { active: boolean; onClic
                 : 'shadow-[0_1.5px_3px_rgba(0,0,0,0.85),inset_0_0.6px_0.6px_rgba(255,255,255,0.08)]'
           )}
         >
-          {/* Micro-Pinhole LED Status Indicator (No glow halo) */}
           <div
             className="w-1.5 h-1.5 rounded-full border border-black/90 transition-colors duration-micro ease-primary"
             style={{
@@ -226,7 +223,6 @@ export const PowerControl = memo(({ active, onClick }: { active: boolean; onClic
         </div>
       </button>
 
-      {/* Silkscreened hardware marking on plinth surface */}
       <span className="font-mono text-[6.5px] font-bold tracking-[0.2em] text-[#635548] uppercase pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]">
         Power
       </span>
@@ -256,7 +252,6 @@ export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick:
   return (
     <div className="flex flex-col items-center gap-1 select-none pointer-events-auto">
       <div className="flex gap-[2px] p-[1.5px] rounded-[2.5px] bg-[#110d0a] shadow-[inset_0_1px_2px_rgba(0,0,0,0.9),0_0.5px_0.5px_rgba(255,255,255,0.05)]">
-        {/* 33 Button */}
         <button
           type="button"
           onPointerDown={handlePointerDown('33')}
@@ -282,7 +277,6 @@ export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick:
           </span>
         </button>
 
-        {/* 45 Button */}
         <button
           type="button"
           onPointerDown={handlePointerDown('45')}
@@ -309,7 +303,6 @@ export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick:
         </button>
       </div>
 
-      {/* Silkscreened hardware marking on plinth surface */}
       <span className="font-mono text-[6.5px] font-bold tracking-[0.2em] text-[#635548] uppercase pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]">
         Speed
       </span>
@@ -348,7 +341,6 @@ export const StartStopControl = memo(({ isPlaying, onClick }: { isPlaying: boole
 
   return (
     <div className="flex flex-col items-center select-none pointer-events-auto">
-      {/* Refined recessed chassis well */}
       <div className="p-[1.5px] rounded-[2.5px] bg-[#110d0a] shadow-[inset_0_1px_2px_rgba(0,0,0,0.9),0_0.5px_0.5px_rgba(255,255,255,0.05)]">
         <button
           type="button"
@@ -367,7 +359,6 @@ export const StartStopControl = memo(({ isPlaying, onClick }: { isPlaying: boole
               : '0 1.2px 2.5px rgba(0,0,0,0.85), inset 0 0.5px 0.5px rgba(255,255,255,0.06)'
           }}
         >
-          {/* Dynamic hardware state label: START when stopped, STOP when playing */}
           <span className="font-mono text-[6.5px] font-bold tracking-[0.18em] text-[#8e8175] uppercase pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]">
             {isPlaying ? 'STOP' : 'START'}
           </span>
@@ -408,7 +399,6 @@ export const MatchAlbumControl = memo(() => {
 
   return (
     <div className="flex flex-col items-center select-none pointer-events-auto onboarding-match-album">
-      {/* Refined recessed chassis well */}
       <div className="p-[2px] rounded-[3px] bg-[#110d0a] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.95),0_0.5px_0.5px_rgba(255,255,255,0.08)]">
         <button
           type="button"
@@ -428,7 +418,6 @@ export const MatchAlbumControl = memo(() => {
               : '0 1.5px 3px rgba(0,0,0,0.85), inset 0 0.5px 0.5px rgba(255,255,255,0.06)'
           }}
         >
-          {/* Silkscreened Backlit Label */}
           <span
             className={cn(
               'font-mono text-[8px] font-bold tracking-[0.2em] uppercase pointer-events-none transition-colors duration-micro ease-primary',
@@ -493,22 +482,18 @@ export const MechanicalControls = memo(({ className, style }: MechanicalControls
         opacity: 'calc(0.35 + 0.65 * var(--room-illumination, 1))'
       }}
     >
-      {/* ── Top-Left Hardware Anchor: Power Switch ── */}
       <div className="absolute" style={{ left: '4.5%', top: '7%' }}>
         <PowerControl active={isPowered} onClick={handlePower} />
       </div>
 
-      {/* ── Lower-Left Group: 33 / 45 Speed Selector ── */}
       <div className="absolute" style={{ left: '4.5%', bottom: '16%' }}>
         <SpeedControl rpm={rpm} onClick={toggleRpm} />
       </div>
 
-      {/* ── Lower-Left Group: Start / Stop Motor Switch ── */}
       <div className="absolute" style={{ left: '4.5%', bottom: '9.5%' }}>
         <StartStopControl isPlaying={isPlaying} onClick={handlePlayPause} />
       </div>
 
-      {/* ── Lower-Right: Ambient Adapt Toggle ── */}
       <div className="absolute" style={{ right: '4.5%', bottom: '9.5%' }}>
         <MatchAlbumControl />
       </div>

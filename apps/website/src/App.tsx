@@ -1,27 +1,39 @@
+import { MotionConfig } from 'motion/react'
 import { SiteNav } from './components/SiteNav'
-import { Hero } from './components/Hero'
-import { ProductShowcase } from './components/ProductShowcase'
+import { Stage } from './components/Stage'
+import { Waveline } from './components/Waveline'
+import { PluckString } from './components/ui/PluckString'
+import { Modes } from './components/Modes'
 import { VideoShowcase } from './components/VideoShowcase'
-import { ListeningEnvironments } from './components/ListeningEnvironments'
-import { AboutCreator } from './components/AboutCreator'
+import { Rooms } from './components/Rooms'
+import { Sleeve } from './components/Sleeve'
+import { Faq } from './components/Faq'
 import { DownloadCta } from './components/DownloadCta'
 import { SiteFooter } from './components/SiteFooter'
 
 export default function App() {
   return (
-    <>
+    <MotionConfig reducedMotion="user">
+      <div id="top" />
       <SiteNav />
 
       <main id="main-content">
-        <Hero />
-        <ProductShowcase />
+        <Stage />
+        <Waveline />
+        <PluckString />
+        <Modes />
+        <PluckString />
         <VideoShowcase />
-        <ListeningEnvironments />
-        <AboutCreator />
+        <PluckString />
+        <Rooms />
+        <Sleeve />
+        <Faq />
+        <PluckString />
         <DownloadCta />
       </main>
 
+      <PluckString />
       <SiteFooter />
-    </>
+    </MotionConfig>
   )
 }

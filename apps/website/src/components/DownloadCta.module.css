@@ -1,180 +1,66 @@
-/**
- * DownloadCta — Expansive, confident closing stage (open canvas)
- */
-
 .section {
-  padding-block: clamp(6rem, 12vw, 12rem);
-  border-top: 1px solid var(--color-border-rule);
-  background-color: var(--color-bg);
+  --size: min(78vw, 940px);
   position: relative;
+  /* room below the copy for the visible part of the record */
+  padding-block: var(--section-pad) calc(var(--size) * 0.44 + var(--space-16));
   overflow: hidden;
+  isolation: isolate;
   text-align: center;
 }
 
-/* ── Subtle Vinyl Backdrop Silhouette ───────────── */
-
-.vinylBackdrop {
+/* Cropped so the top of the label — and its turning artwork — stays in view */
+.record {
   position: absolute;
-  top: 50%;
+  z-index: -1;
   left: 50%;
-  transform: translate(-50%, -50%);
-  width: 900px;
-  height: 900px;
-  pointer-events: none;
-  opacity: 0.35;
+  bottom: calc(var(--size) * -0.56);
+  width: var(--size);
+  margin-left: calc(var(--size) / -2);
 }
-
-.grooveCircle1,
-.grooveCircle2,
-.grooveCircle3 {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  border: 1px solid rgba(247, 246, 242, 0.05);
-}
-
-.grooveCircle1 {
-  width: 400px;
-  height: 400px;
-}
-
-.grooveCircle2 {
-  width: 650px;
-  height: 650px;
-  border-color: rgba(224, 142, 69, 0.08);
-}
-
-.grooveCircle3 {
-  width: 880px;
-  height: 880px;
-}
-
-.grooveGlow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 450px;
-  height: 450px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(224, 142, 69, 0.12) 0%,
-    rgba(224, 142, 69, 0.03) 45%,
-    transparent 70%
-  );
-  filter: blur(40px);
-}
-
-/* ── Content ─────────────────────────────────────── */
 
 .content {
-  position: relative;
-  z-index: 1;
-  max-width: 720px;
-  margin-inline: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.eyebrow {
-  display: inline-block;
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: var(--tracking-wider);
-  color: var(--color-accent);
-  text-transform: uppercase;
-  margin-block-end: var(--space-3);
+  gap: var(--space-6);
 }
 
 .title {
-  font-family: var(--font-serif);
-  font-size: clamp(2.4rem, 5vw, 4.2rem);
-  font-weight: 400;
-  line-height: 1.12;
-  letter-spacing: var(--tracking-tight);
-  color: var(--color-fg-bright, #fff);
-  margin-block-end: var(--space-4);
-  max-width: 18ch;
+  font-size: var(--text-hero);
+  line-height: 0.92;
 }
 
-.desc {
-  font-size: var(--text-body);
-  line-height: var(--leading-relaxed);
-  color: var(--color-fg-muted);
-  max-width: 48ch;
-  margin-block-end: var(--space-8);
+.lead {
+  font-size: var(--text-lead);
+  max-width: 38ch;
 }
 
-.actions {
+.button {
+  align-items: center;
+  margin-top: var(--space-4);
+}
+
+.alt {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-4);
   flex-wrap: wrap;
-  margin-block-end: var(--space-6);
-}
-
-.btnPrimary {
-  font-family: var(--font-sans);
-  font-size: var(--text-body);
-  font-weight: 600;
-  letter-spacing: var(--tracking-wide);
-  color: #111113;
-  background-color: var(--color-accent);
-  text-decoration: none;
-  padding: 1rem 2.2rem;
-  border-radius: var(--radius-sm);
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-  box-shadow: 0 4px 24px rgba(224, 142, 69, 0.35);
-  border: none;
-  cursor: pointer;
-  transition:
-    background-color var(--dur-micro) var(--ease-out),
-    box-shadow var(--dur-micro) var(--ease-out);
-}
-
-.btnPrimary:hover {
-  background-color: #eb9a52;
-  box-shadow: 0 8px 32px rgba(224, 142, 69, 0.5);
-}
-
-.winIcon {
-  width: 17px;
-  height: 17px;
-}
-
-.btnSecondary {
-  font-family: var(--font-sans);
-  font-size: var(--text-body);
-  font-weight: 500;
-  letter-spacing: var(--tracking-wide);
+  justify-content: center;
+  gap: var(--space-2) var(--space-6);
+  list-style: none;
+  font-size: var(--text-small);
   color: var(--color-fg-muted);
-  text-decoration: none;
-  padding: 1rem 1.8rem;
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  transition:
-    color var(--dur-micro) var(--ease-out),
-    border-color var(--dur-micro) var(--ease-out);
 }
 
-.btnSecondary:hover {
+.alt a {
+  background: linear-gradient(var(--color-border-strong), var(--color-border-strong)) no-repeat 0 100% / 100% 1px;
+  transition: color var(--dur-micro) var(--ease-out);
+}
+
+.alt a:hover {
   color: var(--color-fg);
-  border-color: var(--color-accent);
 }
 
-.note {
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
+.smartscreen {
+  font-size: 0.8125rem;
   color: var(--color-fg-subtle);
-  margin: 0;
+  max-width: 44ch;
 }

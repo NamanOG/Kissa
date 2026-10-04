@@ -1,4 +1,5 @@
 import { app, Tray, Menu, nativeImage } from 'electron'
+import { StorePackageService } from '../services/StorePackageService'
 import { join } from 'path'
 import { WindowManager } from './WindowManager'
 
@@ -20,7 +21,6 @@ export class TrayManager {
     if (this.tray) return
 
     try {
-      // Use the existing icon
       const iconPath = join(__dirname, '../../resources/icon.png')
       const icon = nativeImage.createFromPath(iconPath)
       this.tray = new Tray(icon.resize({ width: 16, height: 16 }))
@@ -87,11 +87,16 @@ export class TrayManager {
         label: 'Mini Player',
         click: () => this.sendTrayAction('toggleMiniPlayer')
       },
-      { type: 'separator' },
-      {
-        label: 'Check for Updates...',
-        click: () => this.sendTrayAction('checkForUpdates')
-      },
+      // The Store build is updated by the Microsoft Store, so it has nothing to check.
+      ...(StorePackageService.getInstance().isStorePackage()
+        ? []
+        : ([
+            { type: 'separator' },
+            {
+              label: 'Check for Updates...',
+              click: () => this.sendTrayAction('checkForUpdates')
+            }
+          ] as Electron.MenuItemConstructorOptions[])),
       { type: 'separator' },
       {
         label: 'Quit Kissa',

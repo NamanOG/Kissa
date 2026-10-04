@@ -42,3 +42,10 @@ Thumbs.db
 *.sln
 *.sw?
 *.pdb
+
+# Raw website captures (see apps/website/captures/README.md)
+apps/website/captures/*
+!apps/website/captures/README.md
+
+# Local assistant tooling
+.claude/

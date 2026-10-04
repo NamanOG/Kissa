@@ -23,7 +23,6 @@ export interface ThemeDefinition {
   /** Secondary / muted text */
   mutedColor: string
   
-  // Advanced UI overrides for distinct environments
   ui: {
     panelBg: string
     panelBorder: string
@@ -45,7 +44,6 @@ export interface ThemeDefinition {
 }
 
 export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
-  // ── 01 WARM WALNUT STUDIO (Amber lamplight, walnut grain)
   {
     id: 'quiet-room',
     number: '01',
@@ -81,7 +79,6 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
     }
   },
   
-  // ── 02 VINTAGE AMBER (Sepia photographs, faded gold)
   {
     id: 'dusty-record',
     number: '02',
@@ -117,7 +114,6 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
     }
   },
 
-  // ── 03 INDIGO JAZZ CLUB (Neon signs, velvet booths)
   {
     id: 'jazz-bar',
     number: '03',
@@ -153,7 +149,6 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
     }
   },
 
-  // ── 04 COLD MIDNIGHT (Insomnia blue, graphite walls)
   {
     id: 'midnight-apartment',
     number: '04',
@@ -189,7 +184,6 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
     }
   },
 
-  // ── 05 PETRICHOR (Rain on glass, slate sky)
   {
     id: 'rainy-window',
     number: '05',
@@ -225,7 +219,6 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
     }
   },
 
-  // ── 06 HI-FI LIBRARY (Hunter green walls, mahogany shelves)
   {
     id: 'hifi-library',
     number: '06',
@@ -261,7 +254,6 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
     }
   },
 
-  // ── 07 CONCRETE LOFT (Raw concrete, warm terracotta)
   {
     id: 'concrete-vinyl',
     number: '07',
@@ -295,7 +287,6 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
     }
   },
 
-  // ── 08 SUNDAY MORNING (Linen sheets, warm cream light)
   {
     id: 'sunday-morning',
     number: '08',
@@ -329,7 +320,6 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
     }
   },
   
-  // ── 09 ADAPTIVE (Artwork matched)
   {
     id: 'adaptive',
     number: '09',

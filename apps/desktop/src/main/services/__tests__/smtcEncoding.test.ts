@@ -3,7 +3,6 @@ import { StringDecoder } from 'string_decoder'
 
 describe('SMTC Helper and Worker Encoding Pipeline', () => {
   it('correctly parses Unicode escape sequences for accented characters and emojis', () => {
-    // Simulating the JSON emitted by smtc-helper's JsonEscape
     const jsonFromHelper = JSON.stringify({
       type: 'update',
       session: {
@@ -34,7 +33,6 @@ describe('SMTC Helper and Worker Encoding Pipeline', () => {
     const originalText = 'Canción con í, ó, ñ y emoji 🎵'
     const fullBuffer = Buffer.from(originalText, 'utf-8')
 
-    // Deliberately split right across multi-byte character boundaries
     let reconstructed = ''
     for (let i = 0; i < fullBuffer.length; i += 3) {
       const slice = fullBuffer.subarray(i, Math.min(i + 3, fullBuffer.length))

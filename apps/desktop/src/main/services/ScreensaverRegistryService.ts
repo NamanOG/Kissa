@@ -2,7 +2,8 @@ import { app } from 'electron'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { dirname, join, normalize, resolve } from 'node:path'
-import { existsSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, statSync } from 'node:fs'
+import { StorePackageService } from './StorePackageService'
 
 export type RegExecFile = (
   file: string,
@@ -36,13 +37,10 @@ const REG_VALUE = 'SCRNSAVE.EXE'
 export function normalizeWindowsPath(rawPath: string): string {
   if (!rawPath || typeof rawPath !== 'string') return ''
   let p = rawPath.trim()
-  // Strip surrounding quotes
   if ((p.startsWith('"') && p.endsWith('"')) || (p.startsWith("'") && p.endsWith("'"))) {
     p = p.slice(1, -1).trim()
   }
-  // Replace slashes and normalize
   p = normalize(p.replace(/\//g, '\\'))
-  // Strip any trailing backslash unless it's a root drive like C:\
   if (p.length > 3 && p.endsWith('\\')) {
     p = p.slice(0, -1)
   }
@@ -112,15 +110,74 @@ export class ScreensaverRegistryService {
   }
 
   /**
-   * Resolves the absolute path to Kissa.scr beside Kissa.exe.
+   * The path Windows should run as the screensaver.
+   *
+   * Classic builds register the Kissa.scr that sits beside Kissa.exe. A
+   * Microsoft Store package can't do that: its install folder is versioned
+   * (the path changes with every update) and is not meant to be launched
+   * from outside the package. So the Store build keeps a copy of Kissa.scr in
+   * the package's LocalState folder — a real, stable, user-owned location that
+   * Windows can run, and that is removed with the app — and registers that.
+   */
+  public async resolveScreensaverPath(): Promise<string> {
+    const store = StorePackageService.getInstance()
+    if (!store.isStorePackage()) return this.getScreensaverPath()
+
+    const localState = await store.getLocalStatePath()
+    return localState ? join(localState, 'Kissa.scr') : this.getScreensaverPath()
+  }
+
+  /**
+   * Store build only: makes sure the LocalState copy of Kissa.scr exists and
+   * matches the one shipped in this version of the package.
+   * Returns the copy's path, or null when not a Store package or on failure.
+   */
+  public async ensureStoreScreensaverCopy(): Promise<string | null> {
+    const store = StorePackageService.getInstance()
+    if (!store.isStorePackage()) return null
+
+    const localState = await store.getLocalStatePath()
+    if (!localState) return null
+
+    const source = this.getScreensaverPath()
+    const target = join(localState, 'Kissa.scr')
+    try {
+      const sourceStat = statSync(source)
+      const current = existsSync(target) ? statSync(target) : null
+      const upToDate =
+        current !== null && current.size === sourceStat.size && current.mtimeMs >= sourceStat.mtimeMs
+      if (!upToDate) {
+        mkdirSync(localState, { recursive: true })
+        copyFileSync(source, target)
+      }
+      return target
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Store build only: after a Store update the bundled Kissa.scr may be newer
+   * than the registered copy. Refresh it, but only if Kissa is the screensaver.
+   */
+  public async refreshStoreCopyIfRegistered(): Promise<void> {
+    if (!StorePackageService.getInstance().isStorePackage()) return
+    try {
+      if (await this.isScreensaverRegistered()) {
+        await this.ensureStoreScreensaverCopy()
+      }
+    } catch {
+    }
+  }
+
+  /**
+   * Resolves the absolute path to the Kissa.scr shipped beside Kissa.exe.
    */
   public getScreensaverPath(): string {
     if (app && app.isPackaged) {
-      // In production (NSIS or Portable), Kissa.scr is beside Kissa.exe
       return resolve(dirname(app.getPath('exe')), 'Kissa.scr')
     }
 
-    // In development mode, check resources/Kissa.scr or root resources
     const devPath = resolve(app ? app.getAppPath() : process.cwd(), 'resources', 'Kissa.scr')
     if (existsSync(devPath)) {
       return devPath
@@ -142,7 +199,6 @@ export class ScreensaverRegistryService {
       })
       return parseRegQueryOutput(stdout)
     } catch {
-      // Non-zero exit code means key or value does not exist
       return null
     }
   }
@@ -156,7 +212,7 @@ export class ScreensaverRegistryService {
     const currentRegistered = await this.getRegisteredScreensaverPath()
     if (!currentRegistered) return false
 
-    const expectedPath = this.getScreensaverPath()
+    const expectedPath = await this.resolveScreensaverPath()
     return areWindowsPathsEqual(currentRegistered, expectedPath)
   }
 
@@ -170,7 +226,15 @@ export class ScreensaverRegistryService {
       return { success: false, error: 'Windows screensavers are only supported on Windows.' }
     }
 
-    const scrPath = this.getScreensaverPath()
+    const store = StorePackageService.getInstance()
+    let scrPath = this.getScreensaverPath()
+    if (store.isStorePackage()) {
+      const copied = await this.ensureStoreScreensaverCopy()
+      if (!copied) {
+        return { success: false, error: 'Could not prepare the screensaver file for Windows.' }
+      }
+      scrPath = copied
+    }
 
     try {
       await this.execFn(
@@ -199,7 +263,7 @@ export class ScreensaverRegistryService {
       return { success: true, removed: false, reason: 'not_registered' }
     }
 
-    const expectedPath = this.getScreensaverPath()
+    const expectedPath = await this.resolveScreensaverPath()
     if (!areWindowsPathsEqual(currentRegistered, expectedPath)) {
       // Mandatory safety guard: current screensaver points elsewhere. DO NOT TOUCH.
       return {

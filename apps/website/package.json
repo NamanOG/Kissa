@@ -2,6 +2,7 @@
   "name": "apps-website",
   "version": "1.0.0",
   "description": "Official website for Kissa — a contemplative desktop vinyl player for Windows.",
+  "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "type": "module",
   "scripts": {

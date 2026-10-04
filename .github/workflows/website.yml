@@ -1,0 +1,77 @@
+name: Deploy website
+
+# Publishes apps/website to GitHub Pages.
+#
+# One-time setup: repository Settings → Pages → Build and deployment →
+# Source: "GitHub Actions".
+#
+# Runs when the website changes, and again after every app release so the
+# version number and download links baked into the page are always current.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/website/**'
+      - '.github/workflows/website.yml'
+  workflow_run:
+    workflows: ['Release Kissa']
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Skip when triggered by a release run that failed.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install website dependencies
+        run: npm ci --workspace apps-website --include-workspace-root=false
+
+      - name: Build
+        run: npm run website:build
+        env:
+          # Lets the build read the latest release without hitting API rate limits.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Change this (or set a repository variable) when moving to a custom domain.
+          KISSA_SITE_URL: ${{ vars.KISSA_SITE_URL || 'https://namanog.github.io/Kissa/' }}
+
+      - name: Drop source media the site does not serve
+        working-directory: apps/website/dist
+        run: |
+          rm -rf environments kissa_logo.png kissa_welcome_hero.jpg placeholder-album.png
+          rm -f product/*.png product/README.md
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/website/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

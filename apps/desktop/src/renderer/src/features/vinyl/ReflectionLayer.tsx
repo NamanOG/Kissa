@@ -10,7 +10,6 @@ export const ReflectionLayer = memo(
         style={{ width: size, height: size, ...style }}
         {...props}
       >
-        {/* Primary sweeping anisotropic highlight beam (10 o'clock to 4 o'clock) */}
         <div
           className="absolute inset-0 rounded-full"
           style={{
@@ -23,7 +22,6 @@ export const ReflectionLayer = memo(
           }}
         />
 
-        {/* Secondary cross reflection (2 o'clock to 8 o'clock) */}
         <div
           className="absolute inset-0 rounded-full opacity-60"
           style={{

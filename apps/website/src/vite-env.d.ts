@@ -44,3 +44,20 @@ declare module '*.webp' {
   const src: string
   export default src
 }
+
+/**
+ * Latest GitHub release resolved at build time (see vite.config.ts).
+ */
+declare const __KISSA_RELEASE__: import('./hooks/useLatestRelease').LatestRelease
+
+/**
+ * The parts of Vite's import.meta.env this site uses.
+ */
+interface ImportMetaEnv {
+  /** The base path the site is served from, e.g. "/" or "/Kissa/". */
+  readonly BASE_URL: string
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}

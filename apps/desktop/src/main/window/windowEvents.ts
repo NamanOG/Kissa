@@ -25,7 +25,6 @@ export function setupWindowEvents(window: BrowserWindow, isHidden: boolean = fal
     }
   })
 
-  // Fallback in case ready-to-show was already fired
   if (!window.isVisible() && !isHidden) {
     setTimeout(() => {
       if (!window.isDestroyed() && !window.isVisible()) {

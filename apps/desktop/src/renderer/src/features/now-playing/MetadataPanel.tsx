@@ -6,6 +6,7 @@ import { usePlayerStore } from '@renderer/stores/playerStore'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
 import { HiFiVisualizer } from '@renderer/components/ui/HiFiVisualizer'
 import { ShareTrackModal } from '@renderer/features/share/ShareTrackModal'
+import { greetingFor } from '@renderer/utils/greeting'
 
 /** Format seconds as m:ss */
 function formatTime(seconds: number): string {
@@ -18,163 +19,109 @@ export interface MetadataPanelProps {
   className?: string
 }
 
-interface MiniTrackScrubberProps {
-  duration: number
-}
-
-const MiniTrackScrubber = memo(({ duration }: MiniTrackScrubberProps) => {
-  const progress = usePlayerStore((s) => s.progress)
-  const seek = usePlayerStore((s) => s.seek)
-  const elapsed = duration > 0 ? Math.min(progress, duration) : progress
-  const progressPercent = duration > 0 ? (elapsed / duration) * 100 : 0
-
-  return (
-    <div className="mt-2.5 flex items-center justify-between w-full select-none">
-      <span className="font-mono text-[9.5px] tabular-nums font-medium transition-colors text-[var(--muted)]">
-        {formatTime(elapsed)}
-      </span>
-
-      <div
-        className="relative flex-1 mx-2.5 h-4 flex items-center cursor-pointer group"
-        onClick={(e) => {
-          if (duration <= 0) return
-          const rect = e.currentTarget.getBoundingClientRect()
-          const clickX = e.clientX - rect.left
-          const ratio = Math.max(0, Math.min(1, clickX / rect.width))
-          seek(Math.round(ratio * duration))
-        }}
-      >
-        <div className="w-full h-[2.5px] rounded-full relative transition-colors bg-[var(--on-surface)]/20">
-          <div
-            className="h-full rounded-full bg-[var(--accent)]"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      </div>
-
-      <span className="font-mono text-[9.5px] tabular-nums font-medium transition-colors text-[var(--muted)] opacity-60">
-        {formatTime(duration)}
-      </span>
-    </div>
-  )
-})
-MiniTrackScrubber.displayName = 'MiniTrackScrubber'
-
+/**
+ * The sleeve notes beside the deck: what is playing, who by, and its cover.
+ * Time and transport live in the dock, so nothing here repeats them.
+ */
 export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const isPlaying = usePlayerStore((s) => s.isPlaying)
+  const listenerName = usePlayerStore((s) => s.listenerName)
+  const [isShareOpen, setIsShareOpen] = useState(false)
 
-  const hasTrack = currentTrack !== null
+  const isIdle = !currentTrack || currentTrack.sourceAppId === 'kissa-idle'
   const artworkUrl = currentTrack?.artworkUrl ?? albumPlaceholder
   const title = currentTrack?.title?.trim() || '—'
   const artist = currentTrack?.artist?.trim() || '—'
-  const album = currentTrack?.album?.trim() || '—'
+  const album = currentTrack?.album?.trim() || ''
   const duration = currentTrack?.duration ?? 0
-  const [isShareOpen, setIsShareOpen] = useState(false)
-
-  const theme = usePlayerStore((s) => s.theme)
+  const showAlbum = !isIdle && album && album.toLowerCase() !== title.toLowerCase()
 
   return (
     <section
       className={cn(
-        'flex w-full flex-col items-start justify-between select-none overflow-y-auto no-scrollbar',
-        'px-4 py-4 min-[800px]:px-6 min-[800px]:py-6 min-[1200px]:pl-10 min-[1200px]:pr-6',
+        'flex w-full flex-col items-start select-none',
+        'px-4 pt-4 pb-14 min-[800px]:px-6 min-[800px]:pt-6 min-[1200px]:pl-10 min-[1200px]:pr-6',
         className
       )}
     >
-      {/* ── Top Section: Header & Track Typography Stack ── */}
       <div
-        className="flex flex-col items-start w-full transition-opacity duration-75"
+        className="flex w-full flex-col items-start transition-opacity duration-75"
         style={{ opacity: 'calc(0.4 + 0.6 * var(--room-illumination, 1))' }}
       >
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              'font-kissa-chassis text-[9.5px] min-[800px]:text-[10px] uppercase tracking-[0.22em] transition-colors text-[var(--accent)] font-semibold',
-            )}
-          >
-            {hasTrack ? 'NOW PLAYING' : 'WAITING FOR MUSIC'}
+        <div className="flex h-4 items-center gap-2">
+          <span className="font-kissa-chassis text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
+            {isIdle ? 'The room is quiet' : isPlaying ? 'Now playing' : 'Paused'}
           </span>
-          {hasTrack && (
-            <HiFiVisualizer
-              isPlaying={isPlaying}
-              barsCount={5}
-              height={10}
-              showPeaks={false}
-            />
-          )}
+          {!isIdle && <HiFiVisualizer isPlaying={isPlaying} barsCount={5} height={10} showPeaks={false} />}
         </div>
 
-        <div className="w-full relative min-h-[5rem]">
-          <AnimatePresence>
-            <motion.div
-              key={hasTrack ? `${title}|${artist}` : 'empty'}
-              initial={{ opacity: 0, y: 3 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -3 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-0"
-            >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={isIdle ? 'idle' : `${title}|${artist}`}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -2 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full"
+          >
+            {isIdle ? (
+              <>
+                <h1 className="mt-2 font-kissa-editorial text-[clamp(1.5rem,2.4vw,2.8rem)] font-medium leading-[1.1] tracking-[-0.025em] text-[var(--on-surface)] text-balance">
+                  {greetingFor(new Date(), listenerName)}
+                </h1>
+                <p className="mt-3 max-w-[30ch] text-[13px] leading-relaxed text-[var(--muted)]">
+                  Play something in Spotify, Apple Music or your browser. It lands on the platter.
+                </p>
+              </>
+            ) : (
               <>
                 <h1
-                  className={cn(
-                    'mt-1 min-[800px]:mt-2 font-kissa-editorial text-[clamp(1.5rem,2.4vw,2.8rem)] font-medium leading-[1.1] pb-1 tracking-[-0.025em] line-clamp-2 transition-colors text-[var(--on-surface)]',
-                  )}
+                  className="mt-2 pb-1 font-kissa-editorial text-[clamp(1.5rem,2.4vw,2.8rem)] font-medium leading-[1.1] tracking-[-0.025em] text-[var(--on-surface)] line-clamp-2 text-balance"
                   style={{ textShadow: 'var(--typography-glow)' }}
                   title={title}
                 >
                   {title}
                 </h1>
-                <p
-                  className={cn(
-                    'mt-1.5 min-[800px]:mt-2.5 font-kissa-editorial text-[1rem] min-[800px]:text-[1.1rem] font-medium line-clamp-1 transition-colors text-[var(--muted)]',
-                  )}
-                >
+                <p className="mt-2 font-kissa-editorial text-[1.1rem] font-medium text-[var(--on-surface)]/80 line-clamp-1" title={artist}>
                   {artist}
                 </p>
+                {showAlbum && (
+                  <p className="mt-0.5 font-kissa-editorial text-[0.95rem] italic text-[var(--muted)] line-clamp-1" title={album}>
+                    {album}
+                  </p>
+                )}
 
-                {/* Source & Hardware Readout */}
-                <div className="mt-4 flex items-center gap-2.5 flex-wrap">
-                  <div className="font-kissa-chassis text-[9.5px] uppercase tracking-[0.15em] text-[var(--muted)]/70 font-semibold tabular-nums">
-                    {formatTime(duration)}
-                  </div>
-                  {currentTrack?.source && (
-                    <>
-                      <span className="text-[var(--muted)]/40 text-[9px] select-none">•</span>
-                      <div className="font-mono text-[9.5px] tracking-wide text-[var(--muted)]/80">
-                        {currentTrack.source} · Following
-                      </div>
-                    </>
-                  )}
-                  {hasTrack && (
-                    <button
-                      type="button"
-                      onClick={() => setIsShareOpen(true)}
-                      className="p-1 rounded text-[var(--muted)]/60 hover:text-[var(--on-surface)] transition-colors cursor-pointer active:scale-95 ml-1"
-                      title="Share track"
-                      aria-label="Share track"
-                    >
-                      <Share2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                <div className="mt-4 flex items-center gap-2.5 font-mono text-[10px] tracking-wide text-[var(--muted)]">
+                  {duration > 0 && <span className="tabular-nums">{formatTime(duration)}</span>}
+                  {duration > 0 && currentTrack?.source && <span aria-hidden="true" className="opacity-50">·</span>}
+                  {currentTrack?.source && <span>from {currentTrack.source}</span>}
+                  <button
+                    type="button"
+                    onClick={() => setIsShareOpen(true)}
+                    className="ml-1 rounded p-1 text-[var(--muted)] transition-colors hover:text-[var(--on-surface)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[var(--accent)] active:scale-95"
+                    title="Share this track"
+                    aria-label="Share this track"
+                  >
+                    <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
                 </div>
               </>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
 
-        <div className="relative mt-24 min-[800px]:mt-28 min-[1200px]:mt-32 w-full max-w-[min(220px,78%)] min-[1200px]:max-w-[260px] transform-gpu">
-          <div className="pointer-events-none absolute inset-3 translate-y-4 rounded-[1.2rem] bg-[var(--accent)]/20 blur-2xl" />
-          <div className="relative aspect-square w-full overflow-hidden rounded-[1rem] border border-white/[0.1] bg-[var(--panel-bg)] shadow-[0_16px_36px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.1)] transform-gpu">
-            <AnimatePresence>
+        <div className="relative mt-9 w-full max-w-[min(220px,78%)] min-[900px]:mt-12 min-[1200px]:max-w-[260px]">
+          <div className="relative aspect-square w-full overflow-hidden rounded-[1rem] bg-[var(--panel-bg)] shadow-[0_14px_32px_rgba(0,0,0,0.45)] ring-1 ring-inset ring-white/10">
+            <AnimatePresence initial={false}>
               <motion.img
-                key={hasTrack ? `${title}|${artist}` : 'empty-cover'}
+                key={isIdle ? 'idle-cover' : `${title}|${artist}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                 src={artworkUrl}
-                alt={hasTrack ? `${title} — ${artist}` : 'Album artwork'}
+                alt={isIdle ? '' : `Cover of ${album || title} by ${artist}`}
                 className="absolute inset-0 h-full w-full object-cover"
                 draggable={false}
                 onError={(e) => {
@@ -182,59 +129,11 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
                 }}
               />
             </AnimatePresence>
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/10" />
-          </div>
-
-          {/* Mini Track Progress Bar */}
-          <MiniTrackScrubber duration={duration} />
-
-          {/* Editorial Developer Mark */}
-          <div className="flex items-center gap-2 mt-0.5 opacity-60 transition-opacity hover:opacity-100">
-            <span className="text-[10px] text-[var(--muted)]">
-              Crafted by{' '}
-              <a
-                href="https://github.com/NamanOG"
-                onClick={(e) => {
-                  e.preventDefault()
-                  if (window.electron?.openExternal) {
-                    window.electron.openExternal('https://github.com/NamanOG')
-                  } else {
-                    window.open('https://github.com/NamanOG', '_blank', 'noopener,noreferrer')
-                  }
-                }}
-                className="font-medium transition-all hover:underline underline-offset-2 cursor-pointer text-[var(--on-surface)] hover:text-[var(--accent)]"
-              >
-                Naman
-              </a>
-            </span>
-            <a
-              href="https://github.com/NamanOG"
-              onClick={(e) => {
-                e.preventDefault()
-                if (window.electron?.openExternal) {
-                  window.electron.openExternal('https://github.com/NamanOG')
-                } else {
-                  window.open('https://github.com/NamanOG', '_blank', 'noopener,noreferrer')
-                }
-              }}
-              className="group/gh flex items-center justify-center w-5 h-5 rounded-full border transition-all cursor-pointer shadow-sm hover:scale-110 active:scale-95 border-[var(--panel-border)] bg-[var(--panel-bg)] text-[var(--on-surface)] hover:bg-[var(--accent)]/20 hover:border-[var(--accent)] hover:text-[var(--accent)]"
-              title="View Naman on GitHub (@NamanOG)"
-              aria-label="GitHub Profile"
-            >
-              <svg className="w-3 h-3 fill-current transition-transform group-hover/gh:scale-105" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-              </svg>
-            </a>
           </div>
         </div>
       </div>
 
-      {/* ── Share Track Modal ── */}
-      <ShareTrackModal
-        isOpen={isShareOpen}
-        onClose={() => setIsShareOpen(false)}
-        track={currentTrack}
-      />
+      <ShareTrackModal isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} track={currentTrack} />
     </section>
   )
 })

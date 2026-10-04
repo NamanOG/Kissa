@@ -5,6 +5,8 @@ import { TrayManager } from './window/TrayManager'
 import { MediaDetectionService } from './services/MediaDetectionService'
 import { ShareManager } from './services/ShareManager'
 import { ScreensaverSessionService } from './services/ScreensaverSessionService'
+import { ScreensaverRegistryService } from './services/ScreensaverRegistryService'
+import { StorePackageService } from './services/StorePackageService'
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
@@ -27,8 +29,13 @@ if (!gotSingleInstanceLock) {
   // This method will be called when Electron has finished
   // initialization and is ready to create browser windows.
   app.whenReady().then(() => {
-    // Set app user model id for windows
-    electronApp.setAppUserModelId('com.namanog.kissa')
+    const isStorePackage = StorePackageService.getInstance().isStorePackage()
+
+    // Set app user model id for windows. A Store package already has one,
+    // assigned from its identity; overriding it would detach the taskbar icon.
+    if (!isStorePackage) {
+      electronApp.setAppUserModelId('com.namanog.kissa')
+    }
 
     // Default open or close DevTools by F12 in development
     // and ignore CommandOrControl + R in production.
@@ -42,7 +49,6 @@ if (!gotSingleInstanceLock) {
     // Start named pipe server for Windows screensaver supervisor coordination
     ScreensaverSessionService.getInstance().start()
 
-    // Use the dedicated WindowManager module
     const isHidden = process.argv.includes('--hidden')
     const isScreensaver = process.argv.includes('--screensaver')
     WindowManager.getInstance().createMainWindow(isHidden, isScreensaver)
@@ -51,6 +57,9 @@ if (!gotSingleInstanceLock) {
     ShareManager.getInstance().init()
 
     TrayManager.getInstance().init()
+
+    // Store build: keep the registered screensaver copy current across updates.
+    void ScreensaverRegistryService.getInstance().refreshStoreCopyIfRegistered()
 
     app.on('activate', function () {
       // On macOS it's common to re-create a window in the app when the

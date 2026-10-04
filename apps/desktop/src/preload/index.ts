@@ -42,12 +42,28 @@ export interface KissaSystemMediaAPI {
   onUpdateStatusChanged: (callback: (status: UpdateStatusPayload) => void) => () => void
 }
 
+// The main process sends an embedded cover once and then marks updates "unchanged".
+// Keep the last one here and put it back, so the renderer always sees a whole payload.
+let lastEmbeddedArtwork: string | undefined
+
+function restoreArtwork(data: SystemMediaPayload | null): SystemMediaPayload | null {
+  if (!data) return data
+  if (data.artworkUnchanged) {
+    return { ...data, artworkDataUrl: lastEmbeddedArtwork, artworkUnchanged: undefined }
+  }
+  if (data.artworkDataUrl?.startsWith('data:')) lastEmbeddedArtwork = data.artworkDataUrl
+  return data
+}
+
 const kissaMediaAPI: KissaSystemMediaAPI = {
-  getSystemMedia: () => ipcRenderer.invoke('kissa:get-system-media'),
+  getSystemMedia: () =>
+    ipcRenderer
+      .invoke('kissa:get-system-media')
+      .then((data: SystemMediaPayload | null) => restoreArtwork(data)),
   getLyrics: (request) => ipcRenderer.invoke('kissa:get-lyrics', request),
   onSystemMediaUpdate: (callback) => {
     const handler = (_event: unknown, data: SystemMediaPayload | null): void => {
-      callback(data)
+      callback(restoreArtwork(data))
     }
     ipcRenderer.on('kissa:system-media-update', handler)
     return (): void => {

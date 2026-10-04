@@ -78,12 +78,10 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateChe
     throw new Error('Malformed JSON received from GitHub API.')
   }
 
-  // Validate release payload
   if (!data || typeof data !== 'object' || !data.tag_name || typeof data.tag_name !== 'string') {
     throw new Error('Malformed release payload from GitHub.')
   }
 
-  // Reject drafts or prereleases
   if (data.draft || data.prerelease) {
     throw new Error('Latest release is a draft or prerelease.')
   }

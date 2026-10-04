@@ -14,7 +14,6 @@ export const GrooveLayer = memo(
         }}
         {...props}
       >
-        {/* Program grooves — dense music area (main visible grooves) */}
         <div
           className="absolute inset-0 rounded-full"
           style={{
@@ -27,7 +26,6 @@ export const GrooveLayer = memo(
           }}
         />
 
-        {/* Run-out groove — sparser, inner zone */}
         <div
           className="absolute inset-0 rounded-full opacity-60"
           style={{
@@ -40,7 +38,6 @@ export const GrooveLayer = memo(
           }}
         />
 
-        {/* Lead-in groove — sparse, outer edge */}
         <div
           className="absolute inset-0 rounded-full opacity-60"
           style={{
@@ -53,7 +50,6 @@ export const GrooveLayer = memo(
           }}
         />
 
-        {/* Physical SVG groove rings catching light */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="22" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.15" />
           <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.15" />

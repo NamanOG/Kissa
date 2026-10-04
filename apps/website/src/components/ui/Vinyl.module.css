@@ -1,0 +1,208 @@
+/*
+ * Material rendering of a physical object — the one place gradients are
+ * used on this site, and only to describe how lacquer, paper and steel
+ * take light. Values mirror the desktop app's vinyl layers.
+ */
+
+.vinyl {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.vinyl > *,
+.spin > * {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Machined platter lip showing just outside the record */
+.platter {
+  inset: -1.6%;
+  background: radial-gradient(circle, #101012 0 96%, #3a3a44 98.4%, #1e1e22 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 12px 32px rgba(0, 0, 0, 0.7);
+}
+
+/* With strobe dots the platter shows a wider machined rim */
+.vinyl > .platterWide {
+  inset: -5.2%;
+  background: radial-gradient(circle, #101012 0 90%, #26262c 91%, #33333b 96.5%, #1a1a1e 100%);
+}
+
+/* 180 dots: at 33⅓ rpm under 50 Hz light they stand still */
+.vinyl > .strobe {
+  inset: -4.4%;
+  background: repeating-conic-gradient(from 0deg, rgba(237, 234, 227, 0.7) 0 0.75deg, transparent 0.75deg 2deg);
+  -webkit-mask-image: radial-gradient(circle, transparent 0 67.6%, #000 68% 69.4%, transparent 69.8%);
+  mask-image: radial-gradient(circle, transparent 0 67.6%, #000 68% 69.4%, transparent 69.8%);
+  will-change: transform;
+}
+
+/* The record sitting on something */
+.contact {
+  inset: 2%;
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.8),
+    0 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+.spin {
+  will-change: transform;
+}
+
+.spinning {
+  animation: turn 1.8s linear infinite; /* 33⅓ rpm */
+}
+
+@keyframes turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.base {
+  background: radial-gradient(circle, #1e1e1e 0%, #0a0a0a 100%);
+  box-shadow: 0 0 0 0.5px #000;
+}
+
+/* Programme grooves — the dense music area */
+.grooves {
+  background: repeating-radial-gradient(
+    circle at center,
+    transparent 0,
+    rgba(255, 255, 255, 0.03) 0.5px,
+    transparent 1px,
+    rgba(255, 255, 255, 0.02) 1.5px,
+    transparent 2px
+  );
+  -webkit-mask-image: radial-gradient(circle at center, transparent 14%, #000 14.5%, #000 94%, transparent 95%);
+  mask-image: radial-gradient(circle at center, transparent 14%, #000 14.5%, #000 94%, transparent 95%);
+}
+
+/* Run-out — sparse, by the label */
+.runout {
+  opacity: 0.6;
+  background: repeating-radial-gradient(
+    circle at center,
+    transparent 0,
+    transparent 3px,
+    rgba(255, 255, 255, 0.03) 4px,
+    transparent 5px
+  );
+  -webkit-mask-image: radial-gradient(circle at center, transparent 14%, #000 14.5%, #000 20%, transparent 21%);
+  mask-image: radial-gradient(circle at center, transparent 14%, #000 14.5%, #000 20%, transparent 21%);
+}
+
+/* Lead-in — sparse, at the rim */
+.leadin {
+  opacity: 0.6;
+  background: repeating-radial-gradient(
+    circle at center,
+    transparent 0,
+    transparent 2px,
+    rgba(255, 255, 255, 0.04) 3px,
+    transparent 4px
+  );
+  -webkit-mask-image: radial-gradient(circle at center, transparent 94%, #000 95%, #000 98%, transparent 99%);
+  mask-image: radial-gradient(circle at center, transparent 94%, #000 95%, #000 98%, transparent 99%);
+}
+
+/* Track gaps catching the light */
+.rings {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #fff;
+}
+
+/* Bevelled rim */
+.edge {
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.15),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.95);
+}
+
+/* Pressed paper label — 28% of the record, as on the app */
+.spin > .label {
+  inset: 36%;
+  overflow: hidden;
+  background: #1c1c1e;
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+.label img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.95) contrast(1.02);
+}
+
+/* Anisotropic highlight: a beam from ten o'clock to four, and a fainter cross.
+   Static — it does not turn with the record. */
+.reflection {
+  background: conic-gradient(
+    from 205deg,
+    transparent 0deg,
+    transparent 20deg,
+    rgba(255, 245, 230, 0.06) 32deg,
+    rgba(255, 255, 255, 0.18) 46deg,
+    rgba(255, 255, 255, 0.3) 58deg,
+    rgba(255, 245, 225, 0.16) 68deg,
+    rgba(215, 167, 108, 0.06) 80deg,
+    transparent 96deg,
+    transparent 200deg,
+    rgba(255, 245, 230, 0.06) 212deg,
+    rgba(255, 255, 255, 0.16) 226deg,
+    rgba(255, 255, 255, 0.26) 238deg,
+    rgba(255, 245, 225, 0.14) 248deg,
+    rgba(215, 167, 108, 0.04) 262deg,
+    transparent 278deg
+  );
+  -webkit-mask-image: radial-gradient(circle at center, transparent 14%, #000 15%, #000 96%, transparent 98%);
+  mask-image: radial-gradient(circle at center, transparent 14%, #000 15%, #000 96%, transparent 98%);
+}
+
+.reflectionCross {
+  opacity: 0.6;
+  background: conic-gradient(
+    from 25deg,
+    transparent 0deg,
+    transparent 125deg,
+    rgba(255, 255, 255, 0.05) 140deg,
+    rgba(255, 255, 255, 0.14) 156deg,
+    rgba(255, 240, 215, 0.06) 168deg,
+    transparent 185deg,
+    transparent 305deg,
+    rgba(255, 255, 255, 0.05) 320deg,
+    rgba(255, 255, 255, 0.12) 336deg,
+    rgba(255, 240, 215, 0.05) 348deg,
+    transparent 360deg
+  );
+  -webkit-mask-image: radial-gradient(circle at center, transparent 14%, #000 15%, #000 96%, transparent 98%);
+  mask-image: radial-gradient(circle at center, transparent 14%, #000 15%, #000 96%, transparent 98%);
+}
+
+/* Polished steel spindle */
+.vinyl > .spindle {
+  inset: 48.8%;
+  background:
+    radial-gradient(circle at 40% 35%, #fff 0%, #e0e0e8 35%, #8a8a92 72%, #3a3a40 100%);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.8),
+    1px 3px 4px rgba(0, 0, 0, 0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinning {
+    animation: none;
+  }
+}

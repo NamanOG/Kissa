@@ -111,6 +111,12 @@ namespace SmtcHelper
         private static GlobalSystemMediaTransportControlsSession? _currentSession;
         private static readonly object _lock = new object();
         private static string _lastBroadcastJson = "";
+        // What was last written, ignoring the clock: lets the 200ms poll stay silent unless
+        // something actually changed, with a one-second heartbeat so the app knows we are alive.
+        private static string _lastStateKey = "";
+        private static long _lastEmitMs = 0;
+        private static string? _lastSentThumbnail = null;
+        private const int HeartbeatMs = 1000;
         private static string _lastTrackKey = "";
         private static string _lastTrackTitle = "";
         private static string _lastTrackArtist = "";
@@ -168,10 +174,21 @@ namespace SmtcHelper
 
         static async Task Main(string[] args)
         {
+            // One-shot host commands (package identity, startup task) never start the media loop.
+            if (HostCommands.Handles(args))
+            {
+                await HostCommands.RunAsync(args);
+                return;
+            }
+
             try
             {
                 Console.OutputEncoding = System.Text.Encoding.UTF8;
                 Console.InputEncoding = System.Text.Encoding.UTF8;
+
+                // Numbers go into hand-written JSON: never let a comma-decimal locale format them.
+                System.Globalization.CultureInfo.DefaultThreadCurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+                System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
 
                 _sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
                 if (_sessionManager == null)
@@ -733,8 +750,11 @@ namespace SmtcHelper
                 if (session == null)
                 {
                     string fallbackJson = $@"{{""type"":""update"",""timestamp"":{nowMs},""session"":null,""videoState"":""{videoState}"",""hasActiveVideoPlayback"":{(hasActiveVideo ? "true" : "false")},""volume"":{{""master"":{masterVol},""isMuted"":{(isMuted ? "true" : "false")}}}}}";
-                    if (force || isVolChanged || isVideoChanged || _lastBroadcastJson != fallbackJson)
+                    string idleKey = $"none|{videoState}|{masterVol}|{isMuted}";
+                    if (force || idleKey != _lastStateKey || nowMs - _lastEmitMs >= HeartbeatMs)
                     {
+                        _lastStateKey = idleKey;
+                        _lastEmitMs = nowMs;
                         _lastBroadcastJson = fallbackJson;
                         _lastVolume = masterVol;
                         _lastVideoState = videoState;
@@ -839,15 +859,22 @@ namespace SmtcHelper
                 string artist = JsonEscape(rawArtist);
                 string albumTitle = JsonEscape(currentAlbum);
                 string albumArtist = JsonEscape(mediaProps?.AlbumArtist ?? "");
-                string thumb = thumbnailBase64 != null ? JsonEscape(thumbnailBase64) : "null";
+                // The cover is the bulk of a message (often 100 KB+). Send it when it changes
+                // and otherwise say "same as before"; the app keeps the last one it was given.
+                bool thumbnailChanged = thumbnailBase64 != _lastSentThumbnail;
+                bool sendThumbnail = thumbnailBase64 != null && (thumbnailChanged || force);
+                string thumb = sendThumbnail ? JsonEscape(thumbnailBase64!) : "null";
+                string thumbUnchanged = (thumbnailBase64 != null && !sendThumbnail) ? "true" : "false";
                 
                 int pStatus = (int)(playbackInfo?.PlaybackStatus ?? 0);
                 int pType = (int)(playbackInfo?.PlaybackType ?? 0);
                 
                 double dur = timelineInfo?.EndTime.TotalSeconds ?? 0;
                 double pos = 0;
+                string timelineKey = "";
                 if (timelineInfo != null)
                 {
+                    timelineKey = $"{timelineInfo.Position.Ticks}@{timelineInfo.LastUpdatedTime.UtcTicks}";
                     double rawPos = timelineInfo.Position.TotalSeconds;
                     DateTimeOffset lastUpdated = timelineInfo.LastUpdatedTime;
                     if (playbackInfo?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing && lastUpdated > DateTimeOffset.MinValue)
@@ -865,11 +892,21 @@ namespace SmtcHelper
                     pos = rawPos;
                 }
 
-                string json = $@"{{""type"":""update"",""timestamp"":{nowMs},""session"":{{""sourceAppId"":{sourceAppId},""media"":{{""title"":{title},""artist"":{artist},""albumTitle"":{albumTitle},""albumArtist"":{albumArtist},""thumbnailBase64"":{thumb}}},""playback"":{{""playbackStatus"":{pStatus},""playbackType"":{pType}}},""timeline"":{{""position"":{pos},""duration"":{dur}}},""volume"":{{""master"":{masterVol},""isMuted"":{(isMuted ? "true" : "false")}}}}},""videoState"":""{videoState}"",""hasActiveVideoPlayback"":{(hasActiveVideo ? "true" : "false")}}}";
+                var invariant = System.Globalization.CultureInfo.InvariantCulture;
+                string posText = pos.ToString("0.###", invariant);
+                string durText = dur.ToString("0.###", invariant);
+                // Everything except the running clock. The raw timeline is included so a seek
+                // or a fresh report from the source is passed on at once.
+                string stateKey = $"{sourceAppId}|{title}|{artist}|{albumTitle}|{pStatus}|{pType}|{durText}|{masterVol}|{isMuted}|{videoState}|{timelineKey}|{(thumbnailChanged ? 1 : 0)}";
+
+                string json = $@"{{""type"":""update"",""timestamp"":{nowMs},""session"":{{""sourceAppId"":{sourceAppId},""media"":{{""title"":{title},""artist"":{artist},""albumTitle"":{albumTitle},""albumArtist"":{albumArtist},""thumbnailBase64"":{thumb},""thumbnailUnchanged"":{thumbUnchanged}}},""playback"":{{""playbackStatus"":{pStatus},""playbackType"":{pType}}},""timeline"":{{""position"":{posText},""duration"":{durText}}},""volume"":{{""master"":{masterVol},""isMuted"":{(isMuted ? "true" : "false")}}}}},""videoState"":""{videoState}"",""hasActiveVideoPlayback"":{(hasActiveVideo ? "true" : "false")}}}";
 
                 string cleanJson = json.Replace("\r", "").Replace("\n", "");
-                if (force || isNewTrack || isVolChanged || isVideoChanged || cleanJson != _lastBroadcastJson)
+                if (force || isNewTrack || isVolChanged || isVideoChanged || stateKey != _lastStateKey || nowMs - _lastEmitMs >= HeartbeatMs)
                 {
+                    _lastStateKey = stateKey.Substring(0, stateKey.Length - 1) + "0";
+                    _lastEmitMs = nowMs;
+                    if (sendThumbnail || thumbnailBase64 == null) _lastSentThumbnail = thumbnailBase64;
                     _lastBroadcastJson = cleanJson;
                     _lastTrackKey = trackKey;
                     _lastTrackTitle = rawTitle;

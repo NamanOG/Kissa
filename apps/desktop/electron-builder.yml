@@ -10,6 +10,17 @@ files:
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  # The .NET helper projects are compiled to resources/ before packaging; their
+  # sources and bin/obj/publish output (hundreds of MB) must not ship.
+  - '!screensaver/**'
+  - '!smtc-helper/**'
+  - '!scripts/**'
+  - '!out/ui-preview/**'
+  # Shipped once each, outside the archive, via extraResources / extraFiles below.
+  - '!resources/smtc-helper.exe'
+  - '!resources/Kissa.scr'
+  - '!resources/kissa_logo.png'
+  - '!{vitest.config.ts,tsconfig*.json,tailwind.config.js,postcss.config.js,components.json}'
 extraResources:
   - from: "resources"
     to: "."
@@ -53,6 +64,28 @@ nsis:
   deleteAppDataOnUninstall: false
 portable:
   artifactName: ${productName}-Portable-${version}.${ext}
+# Microsoft Store (MSIX) package. Built only by `npm run build:store`; it is not
+# part of `win.target`, so the regular release is unaffected.
+# identityName / publisher / publisherDisplayName are the values Partner Center
+# shows under Product identity. They must match it exactly.
+appx:
+  artifactName: ${productName}-Store-${version}.${ext}
+  applicationId: Kissa
+  identityName: GlyphCode.Kissa
+  publisher: CN=EA71DE1F-A797-4E0B-B533-577BD634E912
+  publisherDisplayName: GlyphCode
+  displayName: Kissa
+  backgroundColor: '#0f0b07'
+  languages:
+    - en-US
+  # uap10 (startup task arguments) and unvirtualizedResources need Windows 10 2004+
+  minVersion: 10.0.19041.0
+  maxVersionTested: 10.0.26100.0
+  customManifestPath: appx-manifest.xml
+  capabilities:
+    - runFullTrust
+    # Restricted: lets the screensaver setting reach the real registry. See build/appx-manifest.xml.
+    - unvirtualizedResources
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:

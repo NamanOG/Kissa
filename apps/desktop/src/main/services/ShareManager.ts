@@ -5,14 +5,11 @@ import { ShareExportOptions, SharePayload } from '../../types/share'
 function sanitizeFilename(name: string): string {
   // Remove path separators and illegal Windows characters, and control characters
   let clean = name.replace(/[<>:"\/\\|?*\x00-\x1F]/g, '')
-  // Trim spaces and dots from start and end
   clean = clean.replace(/^[. ]+|[. ]+$/g, '')
-  // Reserved Windows names
   const reserved = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i
   if (reserved.test(clean) || clean === '') {
     clean = `share`
   }
-  // Max length
   return clean.slice(0, 100)
 }
 
@@ -119,7 +116,6 @@ export class ShareManager {
 
       this.hiddenWindow.loadURL(renderUrl)
 
-      // Timeout in case rendering hangs
       setTimeout(() => {
         if (this.hiddenWindow) {
           console.error('[ShareManager] Export timed out')
@@ -133,10 +129,8 @@ export class ShareManager {
     if (!this.hiddenWindow || !this.currentPayload || !this.resolveExport || !this.currentAction) return
 
     try {
-      // Capture the exact bounds of the hidden window
       let image: NativeImage = await this.hiddenWindow.webContents.capturePage()
 
-      // Enforce exact dimensions regardless of high DPI scaling
       const targetWidth = 1080
       const targetHeight = this.currentPayload.aspectRatio === '4:5' ? 1350 : 1080
       
@@ -186,6 +180,5 @@ export class ShareManager {
   }
 }
 
-// Export purely for tests
 export const _test_sanitizeFilename = sanitizeFilename
 export const _test_validateShareOptions = validateShareOptions

@@ -68,7 +68,6 @@ export class ScreensaverSessionService {
   }
 
   public isActivationEligible(foregroundProcess?: string): ActivationCheckResult {
-    // 1. Validate Kissa window exists and is valid
     const mainWindow = WindowManager.getInstance().getMainWindow()
     if (!mainWindow || mainWindow.isDestroyed()) {
       return { eligible: false, reason: 'window_unavailable' }
@@ -80,7 +79,6 @@ export class ScreensaverSessionService {
       return { eligible: false, reason: 'not_playing' }
     }
 
-    // 3. Validate video state and helper freshness
     const videoState = mediaService.getVideoPlaybackState()
     if (videoState === 'detected') {
       return { eligible: false, reason: 'video_playback_active' }
@@ -89,7 +87,6 @@ export class ScreensaverSessionService {
       return { eligible: false, reason: 'media_state_unknown' }
     }
 
-    // 4. Validate foreground application safety if reported by client
     if (foregroundProcess) {
       const proc = foregroundProcess.trim().toLowerCase()
       if (proc === 'unknown') {
@@ -128,7 +125,6 @@ export class ScreensaverSessionService {
   private handleClientSocket(socket: net.Socket): void {
     let buffer = ''
 
-    // 3000ms handshake timeout to reap abandoned or hung connections
     socket.setTimeout(3000, () => {
       if (socket !== this.activeClientSocket) {
         socket.destroy()
@@ -173,7 +169,6 @@ export class ScreensaverSessionService {
 
     if (action === 'activate') {
       if (this.sessionActive) {
-        // Already active: confirm to client so it can exit cleanly
         socket.write(JSON.stringify({ status: 'already_active', token: this.sessionToken }) + '\n')
         socket.end()
         return
@@ -233,16 +228,13 @@ export class ScreensaverSessionService {
     this.sessionActive = false
     this.sessionToken = null
 
-    // Restore the window state in WindowManager
     WindowManager.getInstance().exitScreensaverMode()
 
-    // Notify client socket if still open
     if (this.activeClientSocket && !this.activeClientSocket.destroyed) {
       try {
         this.activeClientSocket.write(JSON.stringify({ action: 'wake' }) + '\n')
         this.activeClientSocket.end()
       } catch {
-        // Socket may already be closed
       }
       this.activeClientSocket = null
     }

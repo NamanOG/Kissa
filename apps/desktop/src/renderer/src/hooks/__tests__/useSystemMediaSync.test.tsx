@@ -107,11 +107,9 @@ describe('useSystemMediaSync', () => {
       isPlaying: true
     })
     
-    // Exact match -> assume Kissa echo
     triggerPayload(makePayload('', 'Test Song', 'Test Artist'))
     expect(PlaybackClock.setMode).not.toHaveBeenCalledWith(true)
 
-    // Mismatch -> assume genuine external
     triggerPayload(makePayload('', 'Different Song', 'Test Artist'))
     expect(PlaybackClock.setMode).toHaveBeenCalledWith(true)
   })

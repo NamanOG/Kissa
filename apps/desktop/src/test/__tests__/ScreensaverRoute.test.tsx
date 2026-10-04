@@ -50,7 +50,6 @@ describe('Screensaver Route Integration', () => {
   it('renders ONLY ListeningDisplay when launched as screensaver', async () => {
     render(<App />)
 
-    // Wait for the async isScreensaver resolution
     await waitFor(() => {
       expect(screen.getByRole('main', { name: 'Listening Display' })).toBeInTheDocument()
     })
@@ -60,7 +59,6 @@ describe('Screensaver Route Integration', () => {
     expect(screen.queryByRole('heading', { name: 'Kissa' })).not.toBeInTheDocument() // Usually in sidebar/header
     expect(screen.queryByTitle('Room Illumination')).not.toBeInTheDocument() // Part of normal room
     
-    // Listening Display metadata should be present
     const headings = screen.getAllByRole('heading', { name: 'Screensaver Test' })
     expect(headings.length).toBeGreaterThan(0)
   }, 15000)
@@ -70,11 +68,9 @@ describe('Screensaver Route Integration', () => {
     render(<App />)
 
     await waitFor(() => {
-      // The Listening Display shouldn't be here in normal mode
       expect(screen.queryByRole('main', { name: 'Listening Display' })).not.toBeInTheDocument()
     })
 
-    // Turntable is still rendered in normal app mode
     expect(screen.getByTitle('Drag tonearm to drop needle & seek')).toBeInTheDocument()
   })
 
@@ -88,7 +84,6 @@ describe('Screensaver Route Integration', () => {
 
     expect(screen.getByText(/\[ L \] Live Lyrics/)).toBeInTheDocument()
 
-    // Press L to switch to lyrics
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l' }))
     })
@@ -98,7 +93,6 @@ describe('Screensaver Route Integration', () => {
       expect(screen.getByText(/\[ L \] Album Art/)).toBeInTheDocument()
     })
 
-    // Press L again to switch back to album art
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l' }))
     })
@@ -108,7 +102,6 @@ describe('Screensaver Route Integration', () => {
       expect(screen.getByText(/\[ L \] Live Lyrics/)).toBeInTheDocument()
     })
 
-    // Ensure screensaver did NOT exit
     expect(window.electron.exitScreensaver).not.toHaveBeenCalled()
   })
 })

@@ -40,6 +40,7 @@ describe('SettingsModal Windows Screensaver integration', () => {
 
     usePlayerStore.setState({
       isSettingsOpen: true,
+      settingsTab: 'system',
       hasUpdateAvailable: false
     })
   })
@@ -157,7 +158,8 @@ describe('SettingsModal In-App Update System', () => {
     } as any
 
     usePlayerStore.setState({
-      isSettingsOpen: true
+      isSettingsOpen: true,
+      settingsTab: 'system'
     })
   })
 
@@ -294,7 +296,6 @@ describe('SettingsModal In-App Update System', () => {
     expect(await screen.findByText('Update ready to install')).toBeInTheDocument()
     const installBtn = screen.getByRole('button', { name: 'Restart & Install' })
 
-    // Clicking Restart & Install asks for confirmation
     fireEvent.click(installBtn)
     expect(
       screen.getByText('Restart Kissa now to apply update? Active playback will stop.')
@@ -364,5 +365,67 @@ describe('SettingsModal In-App Update System', () => {
     await waitFor(() => {
       expect(checkForUpdatesMock).toHaveBeenCalledTimes(1)
     })
+  })
+})
+
+describe('SettingsModal startup and background switches', () => {
+  let setStartupMock: ReturnType<typeof vi.fn>
+  let syncSettingsMock: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    setStartupMock = vi.fn().mockResolvedValue(undefined)
+    syncSettingsMock = vi.fn().mockResolvedValue(undefined)
+    window.electron = {
+      getAppVersion: vi.fn().mockResolvedValue('4.1.0'),
+      setStartup: setStartupMock,
+      syncSettings: syncSettingsMock
+    } as any
+
+    usePlayerStore.setState({ isSettingsOpen: true, settingsTab: 'system', startWithWindows: false, runInBackground: false })
+  })
+
+  afterEach(() => {
+    delete (window as Partial<Window>).electron
+    vi.restoreAllMocks()
+  })
+
+  it('turns Start with Windows on and tells the main process', () => {
+    render(<SettingsModal />)
+
+    fireEvent.click(screen.getByLabelText('Toggle Start with Windows'))
+
+    expect(usePlayerStore.getState().startWithWindows).toBe(true)
+    expect(setStartupMock).toHaveBeenCalledWith(true)
+  })
+
+  it('turns Keep Running in Tray on and syncs it to the main process', () => {
+    render(<SettingsModal />)
+
+    fireEvent.click(screen.getByLabelText('Toggle Keep Running in Tray'))
+
+    expect(usePlayerStore.getState().runInBackground).toBe(true)
+    expect(syncSettingsMock).toHaveBeenCalledWith({ runInBackground: true })
+  })
+
+  it('shows the Store build as updated by Microsoft Store, with no update button', async () => {
+    window.electron = {
+      ...window.electron,
+      getUpdateStatus: vi.fn().mockResolvedValue({
+        state: 'idle',
+        currentVersion: '4.1.0',
+        updateInfo: null,
+        progress: null,
+        downloadedFilePath: null,
+        error: null,
+        isScreensaverActive: false,
+        isPortable: false,
+        isStoreManaged: true
+      })
+    } as any
+
+    render(<SettingsModal />)
+
+    expect(await screen.findByText('Version 4.1.0 · Updated by Microsoft Store')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Check for Updates' })).not.toBeInTheDocument()
   })
 })

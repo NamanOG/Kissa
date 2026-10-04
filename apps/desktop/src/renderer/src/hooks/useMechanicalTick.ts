@@ -39,25 +39,20 @@ export function useMechanicalTick() {
       const gainNode = ctx.createGain()
       const filterNode = ctx.createBiquadFilter()
       
-      // Chain: Oscillator -> Lowpass Filter -> Gain -> Destination
       osc.connect(filterNode)
       filterNode.connect(gainNode)
       gainNode.connect(ctx.destination)
       
       const time = ctx.currentTime
       
-      // Use a triangle wave for a softer mechanical thump
       osc.type = 'triangle'
       
-      // Pitch drop to simulate the physical 'snick' of a detent
       osc.frequency.setValueAtTime(180, time)
       osc.frequency.exponentialRampToValueAtTime(40, time + 0.015)
       
-      // Filter out high harshness
       filterNode.type = 'lowpass'
       filterNode.frequency.value = 1000
       
-      // Amplitude envelope (extremely quiet and short)
       gainNode.gain.setValueAtTime(0, time)
       gainNode.gain.linearRampToValueAtTime(0.04, time + 0.002) // subtle attack
       gainNode.gain.exponentialRampToValueAtTime(0.001, time + 0.02) // quick decay
@@ -65,7 +60,6 @@ export function useMechanicalTick() {
       osc.start(time)
       osc.stop(time + 0.02)
     } catch (err) {
-      // Silently ignore if AudioContext fails (e.g., autoplay policies)
     }
   }, [])
 

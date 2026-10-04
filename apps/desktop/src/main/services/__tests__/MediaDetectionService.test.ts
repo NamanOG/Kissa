@@ -53,7 +53,6 @@ describe('MediaDetectionService tri-state video and music playback semantics', (
     it('fails closed to unknown when last update has expired (> 3000ms freshness window)', () => {
       ;(service as any).isWorkerHealthy = true
       ;(service as any).videoPlaybackState = 'not_detected'
-      // 3.5 seconds in the past
       ;(service as any).lastUpdateTimestamp = Date.now() - 3500
 
       expect(service.getVideoPlaybackState()).toBe('unknown')

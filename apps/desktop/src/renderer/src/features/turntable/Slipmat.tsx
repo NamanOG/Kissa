@@ -37,7 +37,6 @@ export const Slipmat = memo(({ className, style, size = '92%', ...props }: Slipm
           stroke="rgba(0,0,0,0.85)"
           strokeWidth="0.5"
         />
-        {/* Subtle acoustic alignment guide ring */}
         <circle
           cx="50"
           cy="50"

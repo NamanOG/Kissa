@@ -1,122 +1,91 @@
 /**
  * Kissa Website — Design Tokens
  *
- * Derived directly from the desktop application's theme system.
- * Source: apps/desktop/src/renderer/src/themes/
- * Primary theme: Warm Walnut Studio (quiet-room)
+ * Minimal by rule: flat lacquer black, warm ivory, and copper as the only
+ * accent (the platter ring and tonearm of the Kissa mark). No gradients,
+ * glows or textures — hierarchy comes from type, space and thin rules.
  *
- * Rule: add tokens here, not inline. Every visual value that
- * appears more than once must be a token.
+ * Add tokens here, not inline. Every visual value that appears more than
+ * once must be a token.
  */
 
 :root {
-  /* ─── Color: Soft Ink & Deep Lacquer + Muted Amber Accent ─── */
+  /* ─── Color ───────────────────────────────────────────────── */
+  --color-bg:          #0d0c0b;
+  --color-bg-raised:   #161513;
+  --color-vinyl:       #121110;
 
-  /* Backgrounds — deep lacquer ink surfaces */
-  --color-bg:            #0d0d0f; /* Deep lacquer ink */
-  --color-bg-raised:     #151518; /* Layered charcoal surface */
-  --color-bg-overlay:    rgba(18, 18, 22, 0.94); /* Semi-translucent overlay */
+  --color-fg:          #edeae3;
+  --color-fg-muted:    #a6a199;
+  --color-fg-subtle:   #837e76;
 
-  /* Foreground — warm soft ivory & neutral zinc */
-  --color-fg:            #f7f6f2; /* Warm soft ivory — primary text */
-  --color-fg-muted:      #9d9ca4; /* Balanced neutral — secondary text */
-  --color-fg-subtle:     #686770; /* Muted caption & metadata */
+  --color-accent:      #d98a4a;
+  --color-accent-ink:  #170d06; /* text on copper */
 
-  /* Accent — warm amber from analog hardware */
-  --color-accent:        #e08e45; /* Primary accent: amber indicator */
-  --color-accent-hover:  #ebb076; /* Hover state */
-  --color-accent-muted:  rgba(224, 142, 69, 0.12); /* Subtle amber tint */
-  --color-accent-glow:   rgba(224, 142, 69, 0.08); /* Atmospheric glow */
+  --color-border:        rgba(237, 234, 227, 0.1);
+  --color-border-strong: rgba(237, 234, 227, 0.2);
+  --color-ink-rule:      rgba(23, 13, 6, 0.2); /* rules on copper */
 
-  /* Teal — reserved brand wave motif */
-  --color-teal:          #2dd4bf;
-  --color-teal-muted:    rgba(45, 212, 191, 0.12);
+  --color-focus: var(--color-fg);
 
-  /* Borders — delicate ivory tint */
-  --color-border:        rgba(247, 246, 242, 0.08); /* Subtle border */
-  --color-border-subtle: rgba(247, 246, 242, 0.04); /* Faint border */
-  --color-border-rule:   rgba(247, 246, 242, 0.06); /* Section divider */
+  /* ─── Typography ──────────────────────────────────────────── */
 
-  /* Focus ring — accessible, visible */
-  --color-focus:         #e08e45;
+  /* Mona Sans, one family at two widths: an extended cut for display
+     (the lettering on hi-fi faceplates) and the normal cut for reading.
+     Martian Mono for small technical labels. */
+  --font-sans: 'Mona Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Martian Mono', 'Cascadia Mono', Consolas, monospace;
+  --font-jp:   'Zen Kaku Gothic New', 'Yu Gothic', sans-serif;
 
-  /* ─── Typography: Editorial Instrument Serif + Plus Jakarta Sans ─ */
+  --width-display: 118%;
+  --weight-display: 500;
 
-  /* Font stacks */
-  --font-serif:    'Instrument Serif', Georgia, serif;
-  --font-sans:     'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-mono:     'JetBrains Mono', Consolas, monospace;
+  --text-hero:    clamp(2.4rem, 1rem + 5.2vw, 6.25rem);
+  --text-title:   clamp(2.1rem, 1.2rem + 3.2vw, 4rem);
+  --text-heading: clamp(1.5rem, 1.15rem + 1.3vw, 2.4rem);
+  --text-lead:    clamp(1.05rem, 0.98rem + 0.3vw, 1.2rem);
+  --text-body:    1rem;
+  --text-small:   0.875rem;
+  --text-label:   0.6875rem;
 
-  /* Scale — confident editorial display, refined body */
-  --text-display:  clamp(2.5rem, 4.5vw, 4.25rem); /* Hero display */
-  --text-title:    clamp(1.75rem, 2.8vw, 2.75rem); /* Section title */
-  --text-heading:  clamp(1.15rem, 1.5vw, 1.45rem); /* Sub-heading */
-  --text-body:     0.9375rem;                      /* Body copy (15px) */
-  --text-small:    0.8125rem;                      /* Small label (13px) */
-  --text-xs:       0.75rem;                        /* Caption/meta/eyebrow (12px) */
+  --leading-display: 0.98;
+  --leading-body:    1.55;
 
-  /* Line heights */
-  --leading-display: 1.05;
-  --leading-heading: 1.2;
-  --leading-body:    1.65;
-  --leading-tight:   1.3;
+  --tracking-display: -0.045em;
+  --tracking-label:   0.12em;
 
-  /* Letter spacing */
-  --tracking-tight:  -0.02em;
-  --tracking-normal: 0;
-  --tracking-wide:   0.02em;
-  --tracking-wider:  0.05em;
-  --tracking-label:  0.08em;
+  /* ─── Spacing ─────────────────────────────────────────────── */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
 
-  /* ─── Spacing ────────────────────────────────────────────── */
-  --space-1:   0.25rem;   /*  4px */
-  --space-2:   0.5rem;    /*  8px */
-  --space-3:   0.75rem;   /* 12px */
-  --space-4:   1rem;      /* 16px */
-  --space-5:   1.25rem;   /* 20px */
-  --space-6:   1.5rem;    /* 24px */
-  --space-8:   2rem;      /* 32px */
-  --space-10:  2.5rem;    /* 40px */
-  --space-12:  3rem;      /* 48px */
-  --space-16:  4rem;      /* 64px */
-  --space-20:  5rem;      /* 80px */
-  --space-24:  6rem;      /* 96px */
-  --space-32:  8rem;      /* 128px */
+  --section-pad: clamp(5rem, 3rem + 7vw, 10rem);
 
-  /* Section vertical rhythm */
-  --section-gap: clamp(4rem, 7vw, 6.5rem);
+  /* ─── Layout ──────────────────────────────────────────────── */
+  --container-max: 1320px;
+  --gutter:        clamp(1.25rem, 0.5rem + 3vw, 3rem);
+  --nav-height:    64px;
 
-  /* ─── Layout: Expansive Desktop Frame (92-96vw) ──────────── */
-  --container-max:   clamp(1280px, 94vw, 1640px);
-  --container-wide:  96vw;
-  --container-prose: 58ch;      /* Reading line length */
-  --gutter:          clamp(1.5rem, 4vw, 3.5rem);
-
-
-  /* ─── Border radius ──────────────────────────────────────── */
-  --radius-sm:   3px;
-  --radius-md:   6px;
-  --radius-lg:   10px;
+  /* ─── Radius ──────────────────────────────────────────────── */
+  --radius-sm:   4px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
   --radius-full: 9999px;
 
-  /* ─── Shadows: Minimal & Quiet ───────────────────────────── */
-  --shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg:  0 10px 28px rgba(0, 0, 0, 0.5);
-  --shadow-xl:  0 18px 48px rgba(0, 0, 0, 0.6);
+  /* ─── Motion ──────────────────────────────────────────────── */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
-  /* Subtle accent shadow */
-  --shadow-accent: 0 4px 20px rgba(224, 142, 69, 0.12);
-
-  /* ─── Motion ─────────────────────────────────────────────── */
-  --ease-out:    cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
-  --ease-spring: cubic-bezier(0.65, 0, 0.35, 1); /* Kinetics Tab Pill glide */
-
-  --dur-instant:  75ms;
-  --dur-micro:    150ms;
-  --dur-ui:       260ms;
-  --dur-content:  360ms;
-  --dur-artwork:  500ms;
-  --dur-ambient:  1200ms;
+  --dur-micro:   160ms;
+  --dur-ui:      280ms;
+  --dur-content: 600ms;
 }

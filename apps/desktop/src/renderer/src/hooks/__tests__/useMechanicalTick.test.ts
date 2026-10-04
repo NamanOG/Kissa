@@ -49,7 +49,6 @@ describe('useMechanicalTick', () => {
     let currentTime = 1000
     vi.spyOn(performance, 'now').mockImplementation(() => currentTime)
     
-    // helper to advance time
     ;(global as any).advanceTime = (ms: number) => {
       currentTime += ms
     }
@@ -77,15 +76,12 @@ describe('useMechanicalTick', () => {
     result.current() // Initial call
     expect(mockOscillator.start).toHaveBeenCalledTimes(1)
     
-    // Call immediately again (should be throttled)
     ;(global as any).advanceTime(10)
     result.current()
     expect(mockOscillator.start).toHaveBeenCalledTimes(1)
     
-    // Advance time beyond the 35ms threshold
     ;(global as any).advanceTime(30) // total 40ms since first call
     
-    // Call again (should play)
     result.current()
     expect(mockOscillator.start).toHaveBeenCalledTimes(2)
   })

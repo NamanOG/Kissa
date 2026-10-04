@@ -29,7 +29,6 @@ export const RoomDimmer = memo(() => {
     return clamped
   }, [])
 
-  // Sync initial and external changes (not during drag)
   useEffect(() => {
     if (!isDraggingRef.current) {
       const clamped = applyIllumination(illuminationLevel)
@@ -42,7 +41,6 @@ export const RoomDimmer = memo(() => {
   const calculateLevelFromX = useCallback((clientX: number) => {
     if (!trackRectRef.current) return startValRef.current
     const rect = trackRectRef.current
-    // calculate percentage
     const x = clientX - rect.left
     const percent = Math.max(0, Math.min(1, x / rect.width))
     return percent * 100
@@ -81,7 +79,6 @@ export const RoomDimmer = memo(() => {
       trackRectRef.current = trackRef.current.getBoundingClientRect()
     }
     
-    // Immediately calculate new position on click
     const newLevel = calculateLevelFromX(e.clientX)
     startValRef.current = newLevel
     
@@ -142,7 +139,6 @@ export const RoomDimmer = memo(() => {
         Room
       </span>
       
-      {/* Rail Container */}
       <div
         ref={trackRef}
         className={cn(
@@ -160,12 +156,10 @@ export const RoomDimmer = memo(() => {
         aria-valuenow={illuminationLevel}
         aria-label="Room illumination"
       >
-        {/* Track Line */}
         <div 
           className="absolute left-0 right-0 h-[2.5px] rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.8),0_1px_0_rgba(255,255,255,0.08)] pointer-events-none"
           style={{ backgroundColor: '#111' }}
         >
-          {/* Fill indicator */}
           <div 
             className="absolute top-0 left-0 bottom-0 rounded-full transition-opacity"
             style={{ 
@@ -176,7 +170,6 @@ export const RoomDimmer = memo(() => {
           />
         </div>
 
-        {/* Thumb */}
         <div
           ref={thumbRef}
           className="absolute top-1/2 w-2.5 h-2.5 min-[900px]:w-3 min-[900px]:h-3 rounded-full pointer-events-none transition-transform"

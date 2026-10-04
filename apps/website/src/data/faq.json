@@ -1,0 +1,34 @@
+[
+  {
+    "q": "What is Kissa?",
+    "a": "Kissa is a free vinyl player for Windows 10 and 11. It follows whatever is already playing on your PC and shows it as a record on a turntable, with a tonearm you can drag to seek, synced lyrics and eight listening rooms."
+  },
+  {
+    "q": "Does Kissa work with Spotify, Apple Music and TIDAL?",
+    "a": "Yes. Kissa reads the Windows system media session, so it picks up Spotify, Apple Music, TIDAL, local media players and music playing in Chromium-based browsers. There is nothing to connect and no account to sign in to."
+  },
+  {
+    "q": "Is Kissa free?",
+    "a": "Yes. Kissa is free, with no ads, no account and no telemetry. The source code is public on GitHub so anyone can see what it does."
+  },
+  {
+    "q": "Is there an online version, or a version for Mac?",
+    "a": "No. Kissa is a desktop music player for Windows, because it depends on the Windows media session to know what is playing. You can try the turntable, lyrics and rooms on this page before downloading it."
+  },
+  {
+    "q": "Which versions of Windows does it support?",
+    "a": "Windows 10 and Windows 11. There is a standard installer and a portable .exe that needs no installation."
+  },
+  {
+    "q": "Why does Windows show a SmartScreen warning when I install it?",
+    "a": "The installer is not code-signed yet, so Windows SmartScreen may warn about an unrecognised app. Choose More info, then Run anyway. The full source code is available on GitHub if you want to inspect or build it yourself."
+  },
+  {
+    "q": "Where do the lyrics come from?",
+    "a": "Synced lyrics come from LRCLIB. Kissa highlights them line by line, and word by word where the source provides that timing. You can click a line to jump to it and nudge the timing if a track runs early or late."
+  },
+  {
+    "q": "Can Kissa be used as a Windows screensaver?",
+    "a": "Yes. Kissa includes a native Windows screensaver that keeps the record turning, with or without lyrics, when your PC is idle."
+  }
+]

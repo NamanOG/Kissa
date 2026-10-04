@@ -5,6 +5,8 @@ import { HardwareSwitch } from '@renderer/components/ui/HardwareSwitch'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { LISTENING_ENVIRONMENTS } from './themes'
 import { ThemeCard } from './ThemeCard'
+import { SegmentedTabs } from '@renderer/components/ui/SegmentedTabs'
+import { AboutRow, LyricsAppearanceRows, RoomPersonalSettings } from './PersonalSettings'
 import { cn } from '@renderer/utils/cn'
 import { checkForUpdates, KISSA_RELEASES_URL } from '@renderer/utils/updater'
 import type { UpdateStatusPayload } from '../../../../types/update'
@@ -34,8 +36,14 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
   const setPhysicalFeedback = usePlayerStore((s) => s.setPhysicalFeedback)
   const miniPlayerAlwaysOnTop = usePlayerStore((s) => s.miniPlayerAlwaysOnTop)
   const setMiniPlayerAlwaysOnTop = usePlayerStore((s) => s.setMiniPlayerAlwaysOnTop)
+  const startWithWindows = usePlayerStore((s) => s.startWithWindows)
+  const setStartWithWindows = usePlayerStore((s) => s.setStartWithWindows)
+  const runInBackground = usePlayerStore((s) => s.runInBackground)
+  const setRunInBackground = usePlayerStore((s) => s.setRunInBackground)
   const screensaverLyrics = usePlayerStore((s) => s.screensaverLyrics)
   const toggleScreensaverLyrics = usePlayerStore((s) => s.toggleScreensaverLyrics)
+  const settingsTab = usePlayerStore((s) => s.settingsTab)
+  const setSettingsTab = usePlayerStore((s) => s.setSettingsTab)
 
   const [appVersion, setAppVersion] = useState<string>('')
   const [updatePayload, setUpdatePayload] = useState<UpdateStatusPayload | null>(null)
@@ -44,6 +52,8 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
   const [isScreensaverWorking, setIsScreensaverWorking] = useState<boolean>(false)
 
   const currentState = updatePayload?.state || 'idle'
+  // Microsoft Store build: the Store delivers updates, so there is nothing to check here.
+  const isStoreManaged = Boolean(updatePayload?.isStoreManaged)
 
   useEffect(() => {
     if (isSettingsOpen) {
@@ -91,7 +101,6 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
       return
     }
 
-    // Fallback for mock/test environments
     let ver = appVersion
     if (!ver && window.electron?.getAppVersion) {
       try {
@@ -219,7 +228,6 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
     }
   }
 
-  // Fetch screensaver registration state when settings open
   useEffect(() => {
     if (isSettingsOpen) {
       window.electron?.isScreensaverRegistered?.()
@@ -272,7 +280,6 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
     <AnimatePresence>
       {isSettingsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 min-[640px]:p-8">
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -282,7 +289,6 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
             onClick={toggleSettings}
           />
 
-          {/* Hardware Faceplate Surface */}
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -294,11 +300,18 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
             )}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="flex items-center justify-between px-8 py-5 border-b border-[var(--panel-border)] shrink-0 bg-[var(--panel-bg)]">
-              <h2 className="text-[12.5px] text-[var(--muted)] uppercase tracking-[0.2em] font-kissa-chassis font-bold">
-                Kissa Configuration
-              </h2>
+              <h2 className="sr-only">Settings</h2>
+              <SegmentedTabs
+                label="Settings sections"
+                value={settingsTab}
+                onChange={setSettingsTab}
+                tabs={[
+                  { id: 'room', label: 'Room' },
+                  { id: 'playback', label: 'Playback' },
+                  { id: 'system', label: 'System' }
+                ]}
+              />
               <button
                 type="button"
                 onClick={toggleSettings}
@@ -309,13 +322,12 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
               </button>
             </div>
 
-            {/* Smooth GPU Scrollable Content */}
             <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8 no-scrollbar overscroll-contain [transform:translateZ(0)]">
               
-              {/* Removed legacy automatic banner */}
-              {/* Section 1: Atmosphere */}
+              {settingsTab === 'room' && (
+              <>
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-3 tracking-[0.2em] uppercase">Atmosphere</h4>
+                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-3 tracking-[0.2em] uppercase">Listening Room</h4>
                 <div className="grid grid-cols-4 gap-x-4 gap-y-5">
                   {LISTENING_ENVIRONMENTS.map((env) => (
                     <ThemeCard
@@ -328,12 +340,16 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                 </div>
               </div>
 
-              {/* Section 2: Playback */}
+              <RoomPersonalSettings />
+              </>
+              )}
+
+              {settingsTab === 'playback' && (
+              <>
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-2.5 tracking-[0.2em] uppercase">Hardware Configuration</h4>
+                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-2.5 tracking-[0.2em] uppercase">The Deck</h4>
                 <div className="rounded-2xl bg-[var(--on-surface)]/[0.03] border border-[var(--on-surface)]/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]">
                   
-                  {/* Speed */}
                   <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
                     <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Platter Speed</span>
                     <div className="flex items-center rounded-xl bg-[var(--on-surface)]/[0.05] p-1 border border-[var(--on-surface)]/10 shadow-inner gap-1">
@@ -364,8 +380,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     </div>
                   </div>
 
-                  {/* Physical Feedback */}
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-[var(--on-surface)]/[0.02] transition-colors">
                     <div className="flex flex-col">
                       <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Physical Feedback</span>
                       <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Physical needle thud and visual tonearm weight</span>
@@ -377,9 +392,19 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  {/* Auto-scroll Lyrics */}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-2.5 tracking-[0.2em] uppercase">Lyrics</h4>
+                <div className="rounded-2xl bg-[var(--on-surface)]/[0.03] border border-[var(--on-surface)]/[0.08] overflow-hidden flex flex-col">
+                  <LyricsAppearanceRows />
+
                   <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
-                    <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Auto-scroll Lyrics</span>
+                    <div className="flex flex-col">
+                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Follow the Song</span>
+                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Keep the line being sung in view</span>
+                    </div>
                     <HardwareSwitch
                       checked={autoScrollLyrics}
                       onChange={setAutoScrollLyrics}
@@ -387,11 +412,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  {/* Lyrics Timing Sync Offset */}
                   <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-[var(--on-surface)]/[0.02] transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Lyrics Timing Sync</span>
-                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Calibrate vocal alignment (- earlier, + later)</span>
+                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Timing</span>
+                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Nudge lyrics that run early or late (also in the lyrics view)</span>
                     </div>
                     <div className="flex items-center rounded-xl bg-[var(--on-surface)]/[0.05] p-1 border border-[var(--on-surface)]/10 shadow-inner gap-1.5">
                       <button
@@ -424,12 +448,15 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                 </div>
               </div>
 
-              {/* Section 3: Integrations & Help */}
+              </>
+              )}
+
+              {settingsTab === 'system' && (
+              <>
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-2.5 tracking-[0.2em] uppercase">System Integrations</h4>
+                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-2.5 tracking-[0.2em] uppercase">Windows</h4>
                 <div className="rounded-2xl bg-[var(--on-surface)]/[0.03] border border-[var(--on-surface)]/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)]">
                   
-                  {/* Mini Player Always on Top */}
                   <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
                     <div className="flex flex-col">
                       <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Always on Top (Mini Player)</span>
@@ -442,19 +469,30 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  {/* Telemetry */}
                   <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Windows Media Sync (SMTC)</span>
-                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Spotify, Apple Music, Tidal, & Web Media tracking</span>
+                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Start with Windows</span>
+                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Open Kissa in the tray when you sign in</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-[var(--accent)]/15 px-3 py-1.5 rounded-full border border-[var(--accent)]/30">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)] animate-pulse" />
-                      <span className="text-[10px] text-[var(--accent)] font-bold tracking-widest uppercase">Active</span>
-                    </div>
+                    <HardwareSwitch
+                      checked={startWithWindows}
+                      onChange={setStartWithWindows}
+                      aria-label="Toggle Start with Windows"
+                    />
                   </div>
 
-                  {/* Windows Screensaver */}
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                    <div className="flex flex-col">
+                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Keep Running in Tray</span>
+                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Closing the window keeps Kissa following your music</span>
+                    </div>
+                    <HardwareSwitch
+                      checked={runInBackground}
+                      onChange={setRunInBackground}
+                      aria-label="Toggle Keep Running in Tray"
+                    />
+                  </div>
+
                   <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
                     <div className="flex flex-col pr-4">
                       <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Windows Screensaver</span>
@@ -485,7 +523,6 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     )}
                   </div>
 
-                  {/* Windows Screensaver Timeout & Native Settings */}
                   <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
                     <div className="flex flex-col pr-4">
                       <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Windows Screensaver Settings</span>
@@ -502,7 +539,6 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     </button>
                   </div>
 
-                  {/* Screensaver & Display Lyrics */}
                   <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
                     <div className="flex flex-col pr-4">
                       <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Screensaver & Display Lyrics</span>
@@ -517,7 +553,6 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  {/* Help */}
                   <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-[var(--on-surface)]/[0.02] transition-colors">
                     <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Interactive Guide</span>
                     <button
@@ -535,12 +570,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                 </div>
               </div>
 
-              {/* Section 4: Application */}
               <div>
                 <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-2.5 tracking-[0.2em] uppercase">Application</h4>
                 <div className="rounded-2xl bg-[var(--on-surface)]/[0.03] border border-[var(--on-surface)]/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)]">
                   
-                  {/* Version & Updates */}
                   <div className="flex flex-col p-4 min-[600px]:px-5 hover:bg-[var(--on-surface)]/[0.02] transition-colors gap-3">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex flex-col">
@@ -561,14 +594,16 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                               {currentState === 'downloaded' && (updatePayload?.isPortable ? 'Portable update downloaded to Downloads' : 'Update ready to install')}
                               {currentState === 'installing' && 'Restarting Kissa…'}
                               {currentState === 'cancelled' && 'Download cancelled'}
-                              {currentState === 'idle' && (appVersion ? `Version ${appVersion}` : 'Loading…')}
+                              {currentState === 'idle' &&
+                                (appVersion
+                                  ? `Version ${appVersion}${isStoreManaged ? ' · Updated by Microsoft Store' : ''}`
+                                  : 'Loading…')}
                             </>
                           )}
                         </span>
                       </div>
 
-                      {/* Action buttons */}
-                      {isConfirmingRestart ? (
+                      {isStoreManaged ? null : isConfirmingRestart ? (
                         <div className="flex items-center gap-2 shrink-0">
                           <button
                             type="button"
@@ -651,7 +686,6 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                       )}
                     </div>
 
-                    {/* Progress Bar when downloading */}
                     {currentState === 'downloading' && (
                       <div className="w-full bg-[var(--on-surface)]/[0.08] h-1.5 rounded-full overflow-hidden">
                         <div
@@ -662,8 +696,11 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     )}
                   </div>
 
+                  <AboutRow />
                 </div>
               </div>
+              </>
+              )}
 
             </div>
           </motion.div>

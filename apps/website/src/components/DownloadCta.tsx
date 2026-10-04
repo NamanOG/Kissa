@@ -1,65 +1,59 @@
+import { useRef } from 'react'
+import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react'
 import styles from './DownloadCta.module.css'
-import { MagneticButton } from './ui/MagneticButton'
-
-const RELEASES_URL = 'https://github.com/NamanOG/Kissa/releases/latest'
-const GITHUB_URL = 'https://github.com/NamanOG/Kissa'
-const PRODUCT_VERSION = '4.1.1'
+import { RevealHeading } from './ui/Reveal'
+import { DownloadButton } from './ui/DownloadButton'
+import { Vinyl } from './ui/Vinyl'
+import { ArrowOut } from './ui/Marks'
+import { GITHUB_URL, useLatestRelease } from '../hooks/useLatestRelease'
 
 export function DownloadCta() {
+  const ref = useRef<HTMLElement>(null)
+  const reduced = useReducedMotion()
+  const release = useLatestRelease()
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end end'] })
+  const y = useTransform(scrollYProgress, [0, 1], ['34%', '0%'])
+
   return (
-    <section id="download" className={styles.section} aria-labelledby="download-heading">
-      <div className={styles.vinylBackdrop} aria-hidden="true">
-        <div className={styles.grooveCircle1} />
-        <div className={styles.grooveCircle2} />
-        <div className={styles.grooveCircle3} />
-        <div className={styles.grooveGlow} />
-      </div>
+    <section ref={ref} id="download" className={styles.section} aria-labelledby="download-heading">
+      <motion.div className={styles.record} style={reduced ? undefined : { y }}>
+        <Vinyl spinning platter />
+      </motion.div>
 
-      <div className="container">
-        <div className={styles.content}>
-          <span className={styles.eyebrow}>GET KISSA &bull; V{PRODUCT_VERSION}</span>
-          <h2 id="download-heading" className={styles.title}>
-            Bring your records to your desktop.
-          </h2>
-          <p className={styles.desc}>
-            Download Kissa for Windows 10 &amp; 11. Free, open source, and designed to turn every listening session
-            into a deliberate ritual.
-          </p>
+      <div className={`container ${styles.content}`}>
+        <span className="label">Get Kissa</span>
+        <RevealHeading id="download-heading" className={styles.title} lines={['Put a record on.']} />
+        <p className={styles.lead}>
+          Free, for Windows 10 &amp; 11. Install it, press play in your music app, and let it spin.
+        </p>
 
-          <div className={styles.actions}>
-            <MagneticButton
-              href={RELEASES_URL}
-              className={styles.btnPrimary}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Download Kissa for Windows — opens latest GitHub release in new tab"
-            >
-              <svg
-                className={styles.winIcon}
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
-              </svg>
-              Download for Windows
-            </MagneticButton>
+        <DownloadButton showMeta className={styles.button} />
 
-            <a
-              href={GITHUB_URL}
-              className={styles.btnSecondary}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="View Kissa on GitHub (opens in new tab)"
-            >
-              View on GitHub ↗
+        <ul className={styles.alt} role="list">
+          {release.portable && (
+            <li>
+              <a href={release.portable.url} download={release.portable.name}>
+                Portable .exe ({release.portable.sizeMb} MB)
+              </a>
+            </li>
+          )}
+          <li>
+            <a href={release.notesUrl} target="_blank" rel="noopener noreferrer">
+              Release notes
+              <ArrowOut />
             </a>
-          </div>
+          </li>
+          <li>
+            <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+              Source code
+              <ArrowOut />
+            </a>
+          </li>
+        </ul>
 
-          <p className={styles.note}>
-            Windows 10 &amp; 11 &bull; Connects with Spotify, Apple Music, TIDAL, and local files
-          </p>
-        </div>
+        <p className={styles.smartscreen}>
+          Windows may show a SmartScreen prompt for new releases. Choose More info, then Run anyway.
+        </p>
       </div>
     </section>
   )

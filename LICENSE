@@ -1,0 +1,55 @@
+Kissa Licence
+
+Copyright (c) 2026 Naman Bagdiya (GlyphCode). All rights reserved.
+
+Kissa is free to use. It is not open source.
+
+1. Using the app
+
+   You may download, install and use the official builds of Kissa, published by
+   the copyright holder through the Microsoft Store, the Kissa website and the
+   releases page of this repository, free of charge, on any number of devices,
+   for personal or commercial purposes.
+
+2. The source code
+
+   The source code in this repository is published so that anyone can see how
+   Kissa works and check what it does. You may read it, and you may build it on
+   your own machine for your own private use.
+
+   Without prior written permission from the copyright holder you may not:
+
+   a. copy, publish or redistribute the source code or any substantial part of it;
+   b. modify it and distribute the result, or distribute builds made from it;
+   c. use it, or its artwork, design, name or logo, in another product;
+   d. sell, sublicense or rent Kissa or anything derived from it.
+
+   Forking the repository on GitHub, as GitHub's terms of service allow, does not
+   grant any of the rights withheld above.
+
+3. Contributions
+
+   If you submit a change to this repository (for example a pull request), you
+   agree that the copyright holder may use, modify and distribute it as part of
+   Kissa under this licence, without owing you anything.
+
+4. Third-party components
+
+   Kissa includes third-party software and fonts, which remain under their own
+   licences. Nothing here limits the rights those licences give you.
+
+5. Earlier versions
+
+   Versions of Kissa up to and including 4.1.0 were published under the MIT
+   licence, and copies of those versions stay under it. This licence applies to
+   every later version.
+
+6. No warranty
+
+   KISSA IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+   INCLUDING THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+   AND NON-INFRINGEMENT. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY
+   CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM, OUT OF OR IN CONNECTION WITH
+   KISSA OR ITS USE.
+
+Permission requests: https://github.com/NamanOG/Kissa/issues

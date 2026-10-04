@@ -49,12 +49,10 @@ describe('Manual Listening Display Launch', () => {
   it('renders ListeningDisplay when isListeningDisplay is activated', async () => {
     render(<App />)
 
-    // Wait for App to mount and resolve isScreensaver
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Start Listening Display' })).toBeInTheDocument()
     })
 
-    // Click the button in ControlDock
     const startBtn = screen.getByRole('button', { name: 'Start Listening Display' })
     fireEvent.click(startBtn)
 
@@ -72,10 +70,8 @@ describe('Manual Listening Display Launch', () => {
       expect(screen.getByRole('main', { name: 'Listening Display' })).toBeInTheDocument()
     })
 
-    // Wait for wake detection attach debounce (500ms)
     await new Promise((resolve) => setTimeout(resolve, 550))
 
-    // Fire wake keypress
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     })
@@ -116,22 +112,18 @@ describe('Manual Listening Display Launch', () => {
       expect(screen.getByRole('main', { name: 'Listening Display' })).toBeInTheDocument()
     })
 
-    // Album cover image should be present with alt text
     expect(screen.getByAltText('Manual Launch Track')).toBeInTheDocument()
     expect(screen.getByText(/\[ L \] Live Lyrics/)).toBeInTheDocument()
 
-    // Press L to toggle lyrics mode
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l' }))
     })
 
     await waitFor(() => {
       expect(usePlayerStore.getState().screensaverLyrics).toBe(true)
-      // Mode hint switches to Album Art
       expect(screen.getByText(/\[ L \] Album Art/)).toBeInTheDocument()
     })
 
-    // Crucially, it did NOT exit Listening Display
     expect(usePlayerStore.getState().isListeningDisplay).toBe(true)
     expect(exitScreensaverMock).not.toHaveBeenCalled()
   })
