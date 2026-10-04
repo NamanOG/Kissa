@@ -27,7 +27,6 @@ export const HiFiVisualizer = memo(
     const animFrameRef = useRef<number | null>(null)
     const timeRef = useRef(0)
     
-    // Stable state for math
     const barsDataRef = useRef<BarState[]>([])
 
     useEffect(() => {
@@ -68,7 +67,6 @@ export const HiFiVisualizer = memo(
             
             rawAmp = Math.max(0, rawAmp * 0.8 + noise)
             
-            // Map to [0.1, 1.0] to prevent disappearing entirely
             bar.targetHeight = 0.1 + (Math.min(1.0, rawAmp) * 0.9)
           } else {
             bar.targetHeight = 0.1
@@ -79,7 +77,6 @@ export const HiFiVisualizer = memo(
           
           bar.currentHeight += (bar.targetHeight - bar.currentHeight) * 0.25
           
-          // Apply to DOM directly via scaleY for maximum performance
           const el = barsRef.current[i]
           if (el) {
             el.style.transform = `scaleY(${bar.currentHeight})`

@@ -1,0 +1,135 @@
+.section {
+  padding-top: var(--section-pad);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  gap: clamp(2rem, 1rem + 5vw, 6rem);
+  align-items: start;
+}
+
+/* ─── List ─────────────────────────────────────── */
+
+.list {
+  list-style: none;
+  /* lets the first and last items reach the middle of the viewport */
+  padding-block: 18vh 30vh;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: 46vh;
+  opacity: 0.28;
+  transition: opacity var(--dur-content) var(--ease-out);
+}
+
+.itemActive {
+  opacity: 1;
+}
+
+.name {
+  font-size: var(--text-heading);
+}
+
+.desc {
+  max-width: 34ch;
+}
+
+/* ─── Pinned screen ────────────────────────────── */
+
+.screen {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-4);
+}
+
+.frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-raised);
+  overflow: hidden;
+}
+
+.shot {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transform: scale(1.02);
+  transition:
+    opacity var(--dur-content) var(--ease-out),
+    transform 1.2s var(--ease-out);
+}
+
+.shotActive {
+  opacity: 1;
+  transform: none;
+}
+
+.caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ticks {
+  display: flex;
+  gap: 6px;
+}
+
+.ticks span {
+  width: 18px;
+  height: 1px;
+  background: var(--color-border-strong);
+  transition: background-color var(--dur-ui) var(--ease-out);
+}
+
+.ticks .tickOn {
+  background: var(--color-accent);
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  /* Screen pins under the nav; the list scrolls beneath it */
+  .screen {
+    order: -1;
+    top: calc(var(--nav-height) + var(--space-4));
+    height: auto;
+    z-index: 1;
+    margin-top: var(--space-10);
+    padding-bottom: var(--space-4);
+    background: var(--color-bg);
+  }
+
+  .list {
+    padding-block: 4vh 12vh;
+  }
+
+  .item {
+    justify-content: flex-start;
+    min-height: 34vh;
+  }
+}

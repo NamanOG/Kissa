@@ -1,0 +1,28 @@
+/* Zero-height wrapper: the string sits exactly on the section boundary and
+   its hit area overlaps both neighbours without taking up layout space. */
+.wrap {
+  position: relative;
+  z-index: 2;
+  height: 0;
+}
+
+/* A 56px band around the hairline listens for the pointer; sections have
+   padding at their edges, so nothing clickable sits underneath it. */
+.svg {
+  position: absolute;
+  left: 0;
+  top: -28px;
+  width: 100%;
+  overflow: visible;
+}
+
+.line {
+  fill: none;
+  stroke: var(--color-border-strong);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.ink .line {
+  stroke: var(--color-accent-ink);
+}

@@ -195,7 +195,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
         className
       )}
     >
-      {/* Absolute Backdrop Layer */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -205,7 +204,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
         onClick={close}
       />
 
-      {/* Editorial Guide Container */}
       <motion.div
         initial={{ opacity: 0, scale: isReduced ? 1 : 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -213,7 +211,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
         transition={slideTransition}
         className="relative z-50 w-full max-w-4xl h-[84vh] min-h-[520px] max-h-[720px] rounded-2xl bg-[#14110e] border border-[#2a241e] shadow-[0_32px_64px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)] overflow-hidden pointer-events-auto flex flex-col"
       >
-        {/* Header Bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] shrink-0">
           <div className="flex items-center gap-2">
             <span className="font-serif italic text-[15px] text-[#f5efe6]/80 tracking-wide">
@@ -234,7 +231,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
           </button>
         </div>
 
-        {/* Dynamic Content Area */}
         <div className="flex-1 relative overflow-hidden flex flex-col">
           <AnimatePresence mode="wait">
             <motion.div
@@ -246,7 +242,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
               transition={slideTransition}
               className="absolute inset-0 flex flex-col min-[900px]:flex-row gap-6 p-6 min-[900px]:p-10 overflow-y-auto no-scrollbar"
             >
-              {/* Standardized Outer Frame for Feature Visuals */}
               <div className="w-full min-[900px]:w-[48%] h-48 min-[900px]:h-full rounded-2xl bg-[#0a0807] border border-white/[0.08] shadow-[0_12px_28px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.04)] overflow-hidden relative shrink-0 flex items-center justify-center p-1">
                 <img
                   src={stepImage}
@@ -260,7 +255,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
               </div>
 
-              {/* Text & Content Column */}
               <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
                 <div className="space-y-4">
                   <div>
@@ -280,7 +274,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
                     {currentStep.description}
                   </p>
 
-                  {/* Feature highlights if present */}
                   {currentStep.details && (
                     <div className="pt-2 border-t border-white/[0.06] grid grid-cols-1 gap-2.5">
                       {currentStep.details.map((detail, idx) => (
@@ -296,7 +289,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
                     </div>
                   )}
 
-                  {/* ── Step 2 Personalization: Turntable Platter Speed ── */}
                   {step === 1 && (
                     <div className="pt-3 border-t border-white/[0.06]">
                       <span className="text-[11px] font-mono text-[#d7a76c]/90 font-medium block mb-2">
@@ -337,7 +329,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
                     </div>
                   )}
 
-                  {/* ── Step 4 Personalization: Interactive Room Environment Switcher ── */}
                   {step === 3 && (
                     <div className="pt-3 border-t border-white/[0.06]">
                       <span className="text-[11px] font-mono text-[#d7a76c]/90 font-medium block mb-2">
@@ -377,7 +368,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
                     </div>
                   )}
 
-                  {/* ── Step 6 Personalization: Screensaver Lyric Preference ── */}
                   {step === 5 && (
                     <div className="pt-3 border-t border-white/[0.06]">
                       <span className="text-[11px] font-mono text-[#d7a76c]/90 font-medium block mb-2">
@@ -416,9 +406,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
           </AnimatePresence>
         </div>
 
-        {/* Footer Navigation Controls */}
         <div className="px-6 py-4 border-t border-white/[0.06] bg-[#100d0a] flex items-center justify-between shrink-0">
-          {/* Step Indicators */}
           <div className="flex items-center gap-1.5">
             {GUIDE_STEPS.map((_, i) => (
               <button
@@ -436,7 +424,6 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
             ))}
           </div>
 
-          {/* Navigation Buttons */}
           <div className="flex items-center gap-3">
             {step > 0 && (
               <button

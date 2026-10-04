@@ -41,7 +41,6 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/[0.08]">
               <h2 className="text-[12px] text-[var(--muted)] uppercase tracking-[0.2em] font-kissa-chassis font-bold">
                 Quick Reference
@@ -56,7 +55,6 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
               </button>
             </div>
 
-            {/* Shortcuts List */}
             <div className="space-y-2.5">
               {shortcuts.map((sc, i) => (
                 <div 

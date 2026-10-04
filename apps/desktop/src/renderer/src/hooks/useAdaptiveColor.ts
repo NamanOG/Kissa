@@ -39,7 +39,6 @@ export const DEFAULT_ADAPTIVE_PALETTE: AdaptivePalette = {
 
 const colorCache = new Map<string, AdaptivePalette>()
 
-// Helper to convert RGB to HSL for easier manipulation
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   r /= 255
   g /= 255
@@ -61,7 +60,6 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   return [h * 360, s * 100, l * 100]
 }
 
-// Helper to convert HSL back to RGB string
 function hslToRgbString(h: number, s: number, l: number, alpha: number = 1): string {
   if (alpha < 1) {
     return `hsla(${h.toFixed(1)}, ${s.toFixed(1)}%, ${l.toFixed(1)}%, ${alpha})`
@@ -69,7 +67,6 @@ function hslToRgbString(h: number, s: number, l: number, alpha: number = 1): str
   return `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, ${l.toFixed(1)}%)`
 }
 
-// Distance in 3D RGB space
 function colorDist(r1: number, g1: number, b1: number, r2: number, g2: number, b2: number) {
   return Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2)
 }
@@ -102,7 +99,6 @@ export function extractColorsFromImage(artworkUrl: string): Promise<AdaptivePale
 
         const imageData = ctx.getImageData(0, 0, 64, 64).data
         
-        // Lightweight distance-based clustering
         const clusters: { r: number, g: number, b: number, count: number, weight: number, sumX: number, sumY: number }[] = []
         const DIST_THRESH = 35
         

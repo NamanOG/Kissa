@@ -1,8 +1,25 @@
 import React, { memo } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { VinylLayerProps } from './types'
+import { usePlayerStore, type VinylColor } from '@renderer/stores/playerStore'
+
+/** Centre and rim colour of each pressing. Grooves and reflections sit on top of these. */
+export const VINYL_PRESSINGS: Record<VinylColor, { name: string; inner: string; outer: string }> = {
+  black: { name: 'Classic Black', inner: '#1e1e1e', outer: '#0a0a0a' },
+  oxblood: { name: 'Oxblood', inner: '#641a1f', outer: '#2a090c' },
+  amber: { name: 'Amber', inner: '#a85c16', outer: '#4a2506' },
+  forest: { name: 'Bottle Green', inner: '#22523a', outer: '#0c2217' },
+  cobalt: { name: 'Cobalt', inner: '#20468a', outer: '#0b1c3d' },
+  smoke: { name: 'Smoke', inner: '#55555a', outer: '#262628' },
+  match: {
+    name: 'Match the Room',
+    inner: 'color-mix(in srgb, var(--accent) 64%, #000)',
+    outer: 'color-mix(in srgb, var(--accent) 26%, #000)'
+  }
+}
 
 export const VinylBase = memo(({ className, style, size = '100%', ...props }: VinylLayerProps) => {
+  const pressing = VINYL_PRESSINGS[usePlayerStore((s) => s.vinylColor)] ?? VINYL_PRESSINGS.black
   return (
     <div
       className={cn('absolute', className)}
@@ -16,12 +33,11 @@ export const VinylBase = memo(({ className, style, size = '100%', ...props }: Vi
       >
         <defs>
           <radialGradient id="vinyl-base" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#1e1e1e" />
-            <stop offset="100%" stopColor="#0a0a0a" />
+            <stop offset="0%" style={{ stopColor: pressing.inner }} />
+            <stop offset="100%" style={{ stopColor: pressing.outer }} />
           </radialGradient>
         </defs>
 
-        {/* Main Record Body */}
         <circle
           cx="50"
           cy="50"

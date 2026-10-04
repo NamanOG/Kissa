@@ -87,12 +87,10 @@ describe('TonearmAssembly component', () => {
       })
     })
 
-    // Pointer down and drag to a new angle
     fireEvent.pointerDown(motionDiv, { clientX: 540, clientY: 300 })
     fireEvent.pointerMove(motionDiv, { clientX: 580, clientY: 340 })
     fireEvent(window, new Event('pointerup'))
     
-    // Progress should remain untouched for external media (was 50)
     expect(usePlayerStore.getState().progress).toBe(50)
   })
 })

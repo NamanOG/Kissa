@@ -42,7 +42,6 @@ describe('App Integration', () => {
   it('renders the complete application shell with layout and active features', async () => {
     render(<App />)
 
-    // Check Metadata Panel elements
     const headings = await screen.findAllByRole('heading', { name: 'Starboy' })
     expect(headings.length).toBeGreaterThan(0)
     expect(screen.getAllByText('The Weeknd').length).toBeGreaterThan(0)

@@ -9,12 +9,12 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-4.1.0-blue?style=flat-square" alt="Version 4.1.0" />
+  <img src="https://img.shields.io/badge/Version-4.2.0-blue?style=flat-square" alt="Version 4.2.0" />
   <img src="https://img.shields.io/badge/Electron-39-blue?style=flat-square&logo=electron" alt="Electron 39" />
   <img src="https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-Strict-blue?style=flat-square&logo=typescript" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078d4?style=flat-square&logo=windows" alt="Windows" />
-  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License" />
+  <img src="https://img.shields.io/badge/License-Free%20to%20use-green?style=flat-square" alt="License" />
 </p>
 
 <p align="center">
@@ -41,8 +41,8 @@ Binaries for **Windows 10 and Windows 11 (64-bit)** are available on the [**Rele
 
 ### Release Packages
 
-- **`Kissa-Setup-4.1.0.exe`** — Standard Windows installer (NSIS) with Start Menu integration, desktop shortcut, and native screensaver (`Kissa.scr`) packaging.
-- **`Kissa-Portable-4.1.0.exe`** — Self-contained standalone executable requiring no installation or registry changes.
+- **`Kissa-Setup-4.2.0.exe`** — Standard Windows installer (NSIS) with Start Menu integration, desktop shortcut, and native screensaver (`Kissa.scr`) packaging.
+- **`Kissa-Portable-4.2.0.exe`** — Self-contained standalone executable requiring no installation or registry changes.
 
 > **Windows SmartScreen Notice:** Kissa is distributed independently and is not code-signed with an expensive commercial EV certificate. When installing for the first time, Windows Defender SmartScreen may present an informational prompt. Click **More info → Run anyway** to proceed.
 
@@ -260,12 +260,29 @@ npm run build:win
 
 Production artifacts are output to `apps/desktop/dist/`:
 
-- `Kissa-Setup-4.1.0.exe`
-- `Kissa-Portable-4.1.0.exe`
+- `Kissa-Setup-4.2.0.exe`
+- `Kissa-Portable-4.2.0.exe`
 
 ---
 
 ## Version History
+
+### v4.2.0 — The Front Door
+
+- **Microsoft Store Build:** Kissa can now be packaged for the Microsoft Store (`npm run build:store`) alongside the existing installer and portable builds. The Store build registers its screensaver from a stable per-app location, starts at sign-in through a Windows startup task, and leaves updates to the Store.
+- **Start with Windows & Keep Running in Tray:** Both preferences now have switches in Settings. They were stored and honoured before, but nothing exposed them.
+- **Far Smaller Download:** The app archive no longer ships .NET build output or build-only tooling, cutting it from about 546 MB to about 16 MB.
+- **Honest Record Shelf:** The idle "Kissa — Listening Room" placeholder is no longer saved as an album, and is removed from existing shelves.
+- **Lyrics When Idle:** With nothing playing, the lyrics view shows "Waiting for Music" instead of searching for lyrics to the placeholder.
+- **Lyrics That Stay in Time:** The clock the lyrics follow was being rounded to the nearest second once a second, leaving them up to half a second out for a whole track. It now runs free between reports from the music app and eases out drift. Word-by-word highlighting was also reading the wrong word's timing; that is fixed.
+- **The Right Lyrics for the Recording:** Timed lyrics are only used when they belong to the same cut of the song. When only another version's lyrics exist, the words are shown without timing instead of drifting. Results for a different song are ignored.
+- **Lighter on the Machine:** The media helper sent the full album cover five times a second. It now sends the cover once and a small heartbeat after that, and the lyrics view no longer redraws every line on every line change.
+- **Make It Yours:** Choose the colour of the record (seven pressings), tell Kissa your name for a greeting and your shelf's title, and set the lyrics' size and typeface.
+- **Tidier Deck and Settings:** The deck shows the album, and no longer repeats the time three times. Settings are split into Room, Playback and System. Timing can be nudged from the lyrics view itself.
+- **Works Offline:** Every typeface now ships inside the app; nothing is fetched from a font server.
+- **Adaptive Atmosphere Tile:** The ninth atmosphere has its own artwork instead of repeating the Warm Walnut Studio photograph.
+- **Minimum Window Size:** Raised to 900 × 640, the smallest size at which the deck layout fits without overlap.
+- **Licence & Privacy:** Kissa stays free to use, and from this version the source is published for reading rather than reuse (see `LICENSE`). Added `PRIVACY.md`.
 
 ### v4.1.0 — The Deliberate Listening Update
 
@@ -311,4 +328,10 @@ Production artifacts are output to `apps/desktop/dist/`:
 
 ## License
 
-MIT © [NamanOG](https://github.com/NamanOG)
+Kissa is free to use. The source is published so you can see how it works; it is not open source and may not be copied or redistributed. See [LICENSE](LICENSE).
+
+© 2026 Naman Bagdiya ([GlyphCode](https://www.glyphcode.studio/))
+
+## Privacy
+
+Kissa has no accounts, analytics or telemetry. It looks up lyrics and cover artwork from public services and checks GitHub for updates; [PRIVACY.md](PRIVACY.md) lists exactly what is sent.

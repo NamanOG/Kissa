@@ -68,11 +68,9 @@ describe('ListeningRoom', () => {
     render(<ListeningRoom />)
     const main = screen.getByRole('main', { name: 'Listening Room' })
     
-    // Simulate pointer move
     import('@testing-library/react').then(({ fireEvent }) => {
       fireEvent.pointerMove(main)
       expect(main).not.toHaveClass('cursor-none')
-      // FullscreenControls wrapper becomes visible
       const exitBtn = screen.getByRole('button', { name: /exit fullscreen/i })
       const wrapper = exitBtn.parentElement?.parentElement
       expect(wrapper).toHaveClass('opacity-100')

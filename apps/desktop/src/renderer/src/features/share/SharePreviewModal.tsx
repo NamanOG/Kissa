@@ -17,7 +17,6 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
 
   if (!payload) return null
 
-  // Ensure payload uses current aspect ratio
   const activePayload: SharePayload = { ...payload, aspectRatio }
 
   const handleExport = async (action: 'copy' | 'save') => {
@@ -29,7 +28,6 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
         action
       })
       if (success) {
-        // Automatically close on success
         onClose()
       }
     } catch (e) {
@@ -44,7 +42,6 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
   const targetWidth = 1080
   const targetHeight = isSquare ? 1080 : 1350
   
-  // Calculate scale for a max height of 60vh
   const scale = typeof window !== 'undefined' ? Math.min((window.innerHeight * 0.6) / targetHeight, 0.4) : 0.35
 
   return (
@@ -62,7 +59,6 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
           transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
           className="relative flex flex-col w-full max-w-3xl max-h-[90vh] bg-[#111] rounded-lg shadow-2xl overflow-hidden border border-white/10"
         >
-          {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-white/10">
             <h2 className="font-serif text-2xl tracking-tight text-white/90">Preview Export</h2>
             <button
@@ -73,7 +69,6 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
             </button>
           </div>
 
-          {/* Preview Area */}
           <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center justify-center bg-black/40 min-h-[50vh]">
             <div 
               className="relative shadow-2xl overflow-hidden rounded-md transition-[transform,margin,width,height] duration-content ease-primary"
@@ -89,9 +84,7 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
             </div>
           </div>
 
-          {/* Footer Controls */}
           <div className="p-6 border-t border-white/10 bg-[#161616] flex items-center justify-between">
-            {/* Aspect Ratio Toggle */}
             <div className="flex bg-black/50 p-1 rounded-md border border-white/5">
               <button
                 onClick={() => setAspectRatio('4:5')}
@@ -113,7 +106,6 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
               </button>
             </div>
 
-            {/* Actions */}
             <div className="flex gap-4">
               <Button
                 variant="secondary"

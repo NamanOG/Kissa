@@ -83,7 +83,6 @@ describe('SyncedLyrics Component & Parser', () => {
 
   it('seeks to line timestamp when clicked', async () => {
     render(<SyncedLyrics />)
-    // Find the container div for a lyric line by clicking a word in it
     const wordEl = await waitFor(() => screen.getByText('Ooh'))
     const lineEl = wordEl.closest('.group')!
     await act(async () => fireEvent.click(lineEl))
@@ -105,12 +104,9 @@ describe('SyncedLyrics Component & Parser', () => {
     const tokens = line.tokens!
     expect(tokens.length).toBeGreaterThan(0)
     
-    // First token should start at line.time
     expect(tokens[0].startTime).toBeCloseTo(3.50)
-    // Last token should end at line.endTime
     expect(tokens[tokens.length - 1].endTime).toBeCloseTo(6.50)
 
-    // Token times must be contiguous and bounded
     let previousEnd = tokens[0].startTime
     for (const t of tokens) {
       expect(t.startTime).toBeGreaterThanOrEqual(3.50)
@@ -138,7 +134,6 @@ describe('SyncedLyrics Component & Parser', () => {
     expect(parsed[0].text).toBe('¿Dónde está mi corazón y mi canción?')
     expect(parsed[1].text).toBe('Viví días felices ahí')
 
-    // Ensure tokens retain exact accented strings
     const words = parsed[0].tokens?.filter((t) => !t.isWhitespace).map((t) => t.text)
     expect(words).toContain('¿Dónde')
     expect(words).toContain('está')

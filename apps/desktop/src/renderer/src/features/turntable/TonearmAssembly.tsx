@@ -71,7 +71,6 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       const ratio = Math.min(1, Math.max(0, time / dur))
       const targetGrooveAngle = OUTER_GROOVE_ANGLE + ratio * (INNER_GROOVE_ANGLE - OUTER_GROOVE_ANGLE)
 
-      // ─── STATE MACHINE TRANSITIONS ───
       if (isPlayingActive && (armStateRef.current === 'RESTING' || armStateRef.current === 'RETURNING')) {
         armStateRef.current = 'MOVING_TO_RECORD'
         transitionStartRef.current = timestamp
@@ -88,7 +87,6 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
         startScaleRef.current = armScaleRef.current
       }
 
-      // ─── STATE LOGIC ───
       let nextAngle = armAngleRef.current
       let nextScale = armScaleRef.current
 
@@ -114,14 +112,12 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       } else if (armStateRef.current === 'LIFTING') {
         const progress = Math.min(1, (timestamp - transitionStartRef.current) / 250)
         nextScale = startScaleRef.current + (1.015 - startScaleRef.current) * progress
-        // Stay over the groove
       } else if (armStateRef.current === 'RETURNING') {
         const progress = Math.min(1, (timestamp - transitionStartRef.current) / 1100)
         // Authentic physical mechanical deceleration: smooth start, graceful traversal, and gentle rest settle
         const easeDecel = 1 - Math.pow(1 - progress, 3)
         nextAngle = startAngleRef.current + (REST_ANGLE - startAngleRef.current) * easeDecel
         
-        // Lift gracefully during initial return motion
         const scaleProgress = Math.min(1, (timestamp - transitionStartRef.current) / 320)
         nextScale = startScaleRef.current + (1.015 - startScaleRef.current) * scaleProgress
 
@@ -264,7 +260,6 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       className={cn('absolute z-30 pointer-events-none select-none onboarding-tonearm', className)}
       style={style}
     >
-      {/* ── Fixed Plinth Arm-Rest & Cue Base ── */}
       <svg
         viewBox="0 0 160 420"
         className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
@@ -283,17 +278,14 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
           </linearGradient>
         </defs>
 
-        {/* Outer Plinth Pivot Well */}
         <circle cx="115" cy="36" r="28" fill="url(#base-gimbal-well)" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
         <circle cx="115" cy="36" r="27" fill="none" stroke="rgba(0,0,0,0.85)" strokeWidth="2" />
 
-        {/* Minimalist Tonearm Rest Post & Cradle (Rest position at ~x:115, y:230) */}
         <rect x="111" y="210" width="8" height="24" rx="2" fill="url(#rest-clip-metal)" stroke="rgba(0,0,0,0.6)" strokeWidth="0.8" />
         <path d="M 107 220 L 123 220 L 123 224 L 107 224 Z" fill="#120e0c" />
         <circle cx="115" cy="222" r="1.5" fill="#d7a76c" opacity={activePlayback ? 0.3 : 0.8} />
       </svg>
 
-      {/* ── Rotating Tonearm Assembly (Pivot at 72% X, 8.5% Y) ── */}
       <div ref={tonearmContainerRef} className="absolute inset-0 pointer-events-none">
         <div
           ref={tonearmRef}
@@ -319,7 +311,6 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
               aria-hidden="true"
             >
               <defs>
-                {/* Polished aerospace-grade titanium-chrome arm tube */}
                 <linearGradient id="tonearm-tube-metal" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#241d18" />
                   <stop offset="10%" stopColor="#7a6c5f" />
@@ -331,7 +322,6 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
                   <stop offset="100%" stopColor="#1a1411" />
                 </linearGradient>
 
-                {/* Gimbal bearing ring */}
                 <radialGradient id="gimbal-ring" cx="35%" cy="30%" r="70%">
                   <stop offset="0%" stopColor="#78685c" />
                   <stop offset="45%" stopColor="#362c26" />
@@ -339,7 +329,6 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
                   <stop offset="100%" stopColor="#0e0b09" />
                 </radialGradient>
 
-                {/* Machined brass / champagne gold counterweight with high-gloss luster */}
                 <linearGradient id="counterweight-metal" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" stopColor="#543e2a" />
                   <stop offset="25%" stopColor="#caa474" />
@@ -350,36 +339,23 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
                 </linearGradient>
               </defs>
 
-              {/* ── 1. Rear Counterweight & Stub ── */}
-              {/* Rear stub extending backward */}
               <rect x="112.5" y="8" width="5" height="18" rx="2" fill="url(#tonearm-tube-metal)" />
-              {/* Main cylindrical knurled counterweight */}
               <rect x="104" y="6" width="22" height="14" rx="3.5" fill="url(#counterweight-metal)" stroke="rgba(0,0,0,0.6)" strokeWidth="0.8" />
-              {/* Weight calibration ring lines */}
               <line x1="104" y1="11" x2="126" y2="11" stroke="rgba(0,0,0,0.5)" strokeWidth="0.75" />
               <line x1="104" y1="15" x2="126" y2="15" stroke="rgba(255,255,255,0.25)" strokeWidth="0.6" />
               
-              {/* Anti-skate hanging weight mechanism */}
               <line x1="126" y1="14" x2="134" y2="14" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />
               <line x1="134" y1="14" x2="134" y2="18" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />
               <rect x="132" y="18" width="4" height="7" rx="1.5" fill="url(#counterweight-metal)" stroke="rgba(0,0,0,0.5)" strokeWidth="0.5" />
 
-              {/* ── 2. Gimbal Bearing Pivot Center (cx: 115, cy: 36) ── */}
-              {/* Base Contact Shadow */}
               <circle cx="115" cy="36.5" r="23" fill="rgba(0,0,0,0.6)" filter="blur(2px)" />
-              {/* Outer Mounting Surface */}
               <circle cx="115" cy="36" r="22" fill="#140f0c" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" />
               <circle cx="115" cy="36" r="21" fill="none" stroke="rgba(0,0,0,0.8)" strokeWidth="1" />
               
-              {/* Main Gimbal Housing */}
               <circle cx="115" cy="36" r="18" fill="url(#gimbal-ring)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.8" />
-              {/* Pivot Ring */}
               <circle cx="115" cy="36" r="11" fill="#1b1512" stroke="url(#tonearm-tube-metal)" strokeWidth="2.5" />
-              {/* Top Bearing Cap */}
               <circle cx="115" cy="36" r="4.5" fill="#e8dfd5" stroke="#120e0b" strokeWidth="1.2" />
 
-              {/* ── 3. Precision Tapered Satin Arm Tube ── */}
-              {/* Outer shadow core */}
               <path
                 d="M 115 52 L 115 178 C 114 260 110 286 64 336 L 46 358"
                 fill="none"
@@ -387,7 +363,6 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
                 strokeWidth="8.5"
                 strokeLinecap="round"
               />
-              {/* Satin metal tube body */}
               <path
                 d="M 115 52 L 115 178 C 114 260 110 286 64 336 L 46 358"
                 fill="none"
@@ -395,7 +370,6 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
                 strokeWidth="6.5"
                 strokeLinecap="round"
               />
-              {/* Top specular reflection line */}
               <path
                 d="M 113.8 54 L 113.8 176 C 112.8 256 108.8 282 63 333"
                 fill="none"
@@ -403,7 +377,6 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
                 strokeWidth="0.85"
                 strokeLinecap="round"
               />
-              {/* Secondary ambient catchlight (right edge) */}
               <path
                 d="M 116.5 54 L 116.5 176 C 115.5 256 111.5 282 66 333"
                 fill="none"
@@ -412,16 +385,13 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
                 strokeLinecap="round"
               />
 
-              {/* ── 4. Minimalist Headshell & Cartridge ── */}
               <g transform="rotate(22 46 360)">
-                {/* Anodized Headshell Mounting Block */}
                 <path
                   d="M 38 354 L 54 354 L 51 382 L 35 382 Z"
                   fill="#261f1b"
                   stroke="rgba(255,255,255,0.1)"
                   strokeWidth="0.8"
                 />
-                {/* Precision Cartridge Body (e.g., Audio-Technica / Ortofon style) */}
                 <rect
                   x="36"
                   y="377"
@@ -432,21 +402,16 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
                   stroke="rgba(255,255,255,0.12)"
                   strokeWidth="0.75"
                 />
-                {/* 4 physical mounting screws */}
                 <circle cx="39" cy="380" r="0.8" fill="#a5978a" stroke="#000" strokeWidth="0.3" />
                 <circle cx="49" cy="380" r="0.8" fill="#a5978a" stroke="#000" strokeWidth="0.3" />
                 <circle cx="39" cy="391" r="0.8" fill="#a5978a" stroke="#000" strokeWidth="0.3" />
                 <circle cx="49" cy="391" r="0.8" fill="#a5978a" stroke="#000" strokeWidth="0.3" />
 
-                {/* Champagne accent strip */}
                 <rect x="36" y="388" width="16" height="3" rx="0.75" fill="#d7a76c" />
                 
-                {/* Stylus Cantilever & Diamond Tip */}
                 <line x1="44" y1="394" x2="44.5" y2="402" stroke="#e5dfd6" strokeWidth="1.2" strokeLinecap="round" />
-                {/* Diamond tip with micro-shadow instead of glow */}
                 <circle cx="44.5" cy="402.5" r="1.1" fill="#ffffff" filter="drop-shadow(0px 1px 1.5px rgba(0,0,0,0.8))" />
 
-                {/* Finger Cue Lift Lever (extends right for intuitive grabbing) */}
                 <path
                   d="M 52 360 C 58 358 64 362 66 368"
                   fill="none"
@@ -457,7 +422,6 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
               </g>
             </svg>
 
-            {/* ── Interactive Draggable Hitbox (Constrained to the arm & headshell area only) ── */}
             <div
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}

@@ -60,7 +60,6 @@ export const HardwareSwitch = memo(
           className
         )}
       >
-        {/* Recessed well track highlight */}
         <div
           className="absolute inset-[2px] rounded-[3px] pointer-events-none transition-colors duration-micro"
           style={{
@@ -68,7 +67,6 @@ export const HardwareSwitch = memo(
           }}
         />
 
-        {/* Sliding Actuator */}
         <motion.div
           animate={{
             x: checked ? 18 : 0
@@ -86,7 +84,6 @@ export const HardwareSwitch = memo(
             'group-active:scale-[0.97] transition-transform duration-instant'
           )}
         >
-          {/* Micro Pinhole Jewel LED */}
           <div
             className="w-1.5 h-1.5 rounded-full border border-black/80 transition-colors duration-micro ease-primary"
             style={{

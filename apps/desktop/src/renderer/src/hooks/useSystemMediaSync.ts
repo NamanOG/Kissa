@@ -13,12 +13,10 @@ const isKissaSMTCSession = (payload: SystemMediaPayload, currentStoreTrack: any)
   
   const lowerId = payload.sourceAppId.toLowerCase()
   
-  // Production AUMID or executable
   if (lowerId.includes('com.namanog.kissa') || lowerId.includes('kissa')) {
     return true
   }
   
-  // Development Electron executable
   if (lowerId.includes('electron')) {
     // In dev, multiple Electron apps might run. We use title as an additional sanity check.
     return payload.title === currentStoreTrack?.title
@@ -56,7 +54,6 @@ export function useSystemMediaSync(): void {
       if (!payload || !payload.title) {
         if (isInternalAudio) return // Leave internal audio alone
 
-        // If no internal audio and SMTC cleared, set idle state
         setTrack({
           title: 'Kissa',
           artist: 'Listening Room',
@@ -69,6 +66,7 @@ export function useSystemMediaSync(): void {
         setIsPlaying(false)
         setProgress(0)
         PlaybackClock.setMode(true)
+        PlaybackClock.setSmtcState(0, false)
         lastTrackKeyRef.current = 'Kissa|Listening Room|kissa-idle'
         return
       }
@@ -118,7 +116,6 @@ export function useSystemMediaSync(): void {
         setIsPlaying(payload.isPlaying)
         setProgress(payload.progress || 0)
       } else {
-        // Same track - check for metadata and thumbnail updates
         const isCurrentPlaceholder = !currentStoreTrack?.artworkUrl || currentStoreTrack.artworkUrl === albumPlaceholder
         const isCurrentSameAsNew = currentStoreTrack?.artworkUrl === payload.artworkDataUrl
         const isUpgradingFromDataToHttp = Boolean(currentStoreTrack?.artworkUrl?.startsWith('data:') && payload.artworkDataUrl?.startsWith('http'))
@@ -143,7 +140,6 @@ export function useSystemMediaSync(): void {
           }))
         }
 
-        // Defensively update duration if it changes for the current track
         if (payload.duration > 0 && payload.duration !== currentStoreTrack?.duration) {
           // If the new duration exactly matches the PREVIOUS track's duration, 
           // and we already have a valid (>0) duration for the CURRENT track,
@@ -161,16 +157,13 @@ export function useSystemMediaSync(): void {
           }
         }
 
-        // Sync playback state (Playing vs Paused)
+        // Sync playback state (Playing vs Paused). The store is the single source of
+        // truth for the clock's running state (see the store subscription below).
         const currentIsPlaying = usePlayerStore.getState().isPlaying
         if (!commandCooldownRef.current && currentIsPlaying !== payload.isPlaying) {
           setIsPlaying(payload.isPlaying)
-          PlaybackClock.setSmtcState(payload.progress, payload.isPlaying)
         }
-
-        // Sync timeline progress with monotonic filter via PlaybackClock
-        const localEstimate = PlaybackClock.getCurrentTime()
-        const diff = payload.progress - localEstimate
+        PlaybackClock.setSmtcPlaying(usePlayerStore.getState().isPlaying)
 
         // Seek cooldown check to prevent rubberbanding during external SMTC command processing
         const seekCooldown = typeof window !== 'undefined' ? (window as any).__kissaSeekCooldown : null
@@ -186,26 +179,27 @@ export function useSystemMediaSync(): void {
           }
         }
 
-        // If difference is large (> 2.0s) or a distinct seek/loop restart, accept SMTC position immediately
-        if (Math.abs(diff) > 2.0 || (payload.progress < 1.0 && localEstimate > 5.0)) {
-          PlaybackClock.setSmtcState(payload.progress, payload.isPlaying)
+        // While a play/pause sent from Kissa is still in flight, the source's reports
+        // describe the old state; do not let them move the clock.
+        if (commandCooldownRef.current && payload.isPlaying !== usePlayerStore.getState().isPlaying) {
+          return
+        }
+
+        // Reconcile position: seeks and restarts jump, small drift is eased out.
+        const sampleAgeMs = payload.lastUpdatedTime ? Date.now() - payload.lastUpdatedTime : 0
+        if (PlaybackClock.syncSmtc(payload.progress, sampleAgeMs) === 'hard') {
           setProgress(payload.progress)
-        } else if (!payload.isPlaying) {
-          PlaybackClock.setSmtcState(payload.progress, false)
         }
       }
 
     }
 
-    // Initial check for media & system volume
     window.electron.getSystemMedia().then((initial) => {
       handleMediaPayload(initial || null)
     })
 
-    // Listen for SMTC updates
     const cleanup = window.electron.onSystemMediaUpdate(handleMediaPayload)
 
-    // Coarse timer for text UI updates (e.g. 1Hz)
     const ticker = setInterval(() => {
       const state = usePlayerStore.getState()
       if (!state.isPlaying || !state.currentTrack || state.currentTrack.audioUrl) return
@@ -220,12 +214,16 @@ export function useSystemMediaSync(): void {
       }
     }, 1000)
 
-    // Listen for manual seeks from React UI
+    // Keep the clock's running state in step with the store, so play/pause from any
+    // control takes effect on the lyrics and scrubber at once.
+    // `progress` is deliberately NOT mirrored into the clock: it is a whole-second
+    // readout written by the ticker above, and feeding it back rounded the clock to
+    // the nearest second (lyrics up to half a second out). Seeks go through `seek()`,
+    // which moves the clock itself.
     const unsubscribe = usePlayerStore.subscribe((state, prevState) => {
       if (state.currentTrack?.audioUrl) return
-      // Use monotonic timestamp delta to ensure we don't duplicate seeks
-      if (state.progress !== prevState.progress) {
-        PlaybackClock.setSeekPosition(state.progress)
+      if (state.isPlaying !== prevState.isPlaying) {
+        PlaybackClock.setSmtcPlaying(state.isPlaying)
       }
     })
 

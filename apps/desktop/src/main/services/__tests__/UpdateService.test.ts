@@ -8,7 +8,6 @@ import {
   isSafeDownloadUrl
 } from '../UpdateService'
 
-// Mock Electron APIs
 vi.mock('electron', () => {
   return {
     app: {
@@ -29,7 +28,6 @@ vi.mock('electron', () => {
   }
 })
 
-// Mock fs
 vi.mock('fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('fs')>()
   return {
@@ -48,7 +46,6 @@ const { mockSpawn } = vi.hoisted(() => ({
   })
 }))
 
-// Mock child_process spawn
 vi.mock('child_process', () => ({
   default: {
     spawn: mockSpawn
@@ -56,7 +53,6 @@ vi.mock('child_process', () => ({
   spawn: mockSpawn
 }))
 
-// Mock WindowManager
 vi.mock('../../window/WindowManager', () => {
   return {
     WindowManager: {
@@ -128,7 +124,6 @@ describe('UpdateService', () => {
       originalFetch = global.fetch
       global.fetch = vi.fn()
       service = UpdateService.getInstance()
-      // Reset private fields
       ;(service as any).state = 'idle'
       ;(service as any).updateInfo = null
       ;(service as any).errorMessage = null

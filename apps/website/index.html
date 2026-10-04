@@ -4,101 +4,93 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Primary Meta -->
-    <title>Kissa — Tactile Desktop Vinyl Player &amp; Music Companion for Windows</title>
+    <!-- Values in %PERCENT% are filled in at build time by vite.config.ts -->
+
+    <!-- Primary -->
+    <title>Kissa — Free Vinyl Player for Windows 10 &amp; 11</title>
     <meta
       name="description"
-      content="Kissa is a contemplative desktop vinyl player and music companion for Windows 10 & 11. It transforms music playing on Spotify, Apple Music, and TIDAL into an interactive vinyl listening experience with real-time tonearm physics, synchronized lyrics, and curated ambient rooms."
-    />
-    <meta
-      name="keywords"
-      content="Vinyl player for Windows, Vinyl player app for Windows, Vinyl player for Windows 11, Vinyl music player for Windows, Desktop vinyl player, Windows vinyl player, Vinyl-inspired music player, Music companion for Windows, Skeuomorphic music player, Windows desktop music player, Music visualization for Windows, Interactive vinyl player, Kissa music player, Kissa Windows app, Kissa by Naman Bagdiya, Naman Bagdiya developer, NamanOG, GlyphCode, Open-source Windows music player"
+      content="Kissa is a free vinyl player for Windows. It turns whatever you play in Spotify, Apple Music or TIDAL into a record on a desktop turntable, with a draggable tonearm, synced lyrics and eight listening rooms."
     />
     <meta name="author" content="Naman Bagdiya (GlyphCode)" />
-    <link rel="canonical" href="https://namanog.github.io/Kissa/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="%SITE_URL%" />
 
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Kissa" />
-    <meta property="og:title" content="Kissa — Tactile Desktop Vinyl Player &amp; Music Companion for Windows" />
+    <meta property="og:title" content="Kissa — Free Vinyl Player for Windows" />
     <meta
       property="og:description"
-      content="A contemplative desktop vinyl player for Windows 10 & 11. Physical turntable interaction, tonearm tracking, synchronized lyrics, and eight curated listening environments."
+      content="Whatever you're playing, as a record on your desktop. A turntable with a tonearm you can drag, synced lyrics and eight listening rooms. Free, for Windows 10 &amp; 11."
     />
-    <meta property="og:url" content="https://namanog.github.io/Kissa/" />
-    <meta property="og:image" content="/kissa_welcome_hero.jpg" />
-    <meta property="og:image:alt" content="Kissa desktop vinyl player listening environment" />
+    <meta property="og:url" content="%SITE_URL%" />
+    <meta property="og:image" content="%SITE_URL%og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Kissa playing a record on its desktop turntable, with the album cover and track details beside it" />
 
-    <!-- Twitter / X Cards -->
+    <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Kissa — Tactile Desktop Vinyl Player for Windows" />
+    <meta name="twitter:title" content="Kissa — Free Vinyl Player for Windows" />
     <meta
       name="twitter:description"
-      content="Transform music playing on Spotify, Apple Music, and TIDAL into a tactile desktop vinyl experience with tonearm seeking and synchronized lyrics on Windows."
+      content="Whatever you're playing in Spotify, Apple Music or TIDAL, as a record on your desktop. Free, for Windows 10 &amp; 11."
     />
-    <meta name="twitter:image" content="/kissa_welcome_hero.jpg" />
-    <meta name="twitter:creator" content="@NamanOG" />
+    <meta name="twitter:image" content="%SITE_URL%og.jpg" />
 
-    <!-- Favicon -->
+    <!-- Icons -->
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
+    <meta name="theme-color" content="#0d0c0b" />
+    <style>
+      html {
+        background: #0d0c0b;
+      }
+    </style>
 
-    <!-- Preconnect for Google Fonts -->
+    <!-- Fonts: Mona Sans (variable width + weight), Martian Mono, Zen Kaku Gothic New (喫茶 only) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Mona+Sans:wdth,wght@75..125,300..700&family=Martian+Mono:wght@400;500&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500&text=%E5%96%AB%E8%8C%B6&display=swap"
+    />
 
-    <!-- JSON-LD Structured Data: SoftwareApplication + Person + WebSite -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "SoftwareApplication",
-            "@id": "https://namanog.github.io/Kissa/#software",
-            "name": "Kissa",
-            "operatingSystem": "Windows 10, Windows 11",
-            "applicationCategory": "MultimediaApplication",
-            "applicationSubCategory": "Music Player Companion",
-            "softwareVersion": "4.1.1",
-            "description": "A contemplative desktop vinyl player and listening companion for Windows that connects to system media sessions from Spotify, Apple Music, and TIDAL to provide tactile turntable interaction, synchronized lyrics, and ambient listening environments.",
-            "url": "https://namanog.github.io/Kissa/",
-            "downloadUrl": "https://github.com/NamanOG/Kissa/releases/latest",
-            "license": "https://opensource.org/licenses/MIT",
-            "offers": {
-              "@type": "Offer",
-              "price": "0.00",
-              "priceCurrency": "USD"
-            },
-            "author": {
-              "@id": "https://namanog.github.io/Kissa/#author"
-            }
-          },
-          {
-            "@type": "Person",
-            "@id": "https://namanog.github.io/Kissa/#author",
-            "name": "Naman Bagdiya",
-            "alternateName": ["NamanOG", "GlyphCode"],
-            "url": "https://github.com/NamanOG",
-            "sameAs": [
-              "https://github.com/NamanOG",
-              "https://github.com/NamanOG/Kissa"
-            ]
-          },
-          {
-            "@type": "WebSite",
-            "@id": "https://namanog.github.io/Kissa/#website",
-            "url": "https://namanog.github.io/Kissa/",
-            "name": "Kissa — Official Website",
-            "publisher": {
-              "@id": "https://namanog.github.io/Kissa/#author"
-            }
-          }
-        ]
-      }
-    </script>
+    <!-- Structured data (SoftwareApplication, FAQPage, WebSite, Person) is injected here at build time -->
+    %STRUCTURED_DATA%
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      For readers and crawlers without JavaScript. It says the same things as
+      the page React renders above.
+    -->
+    <noscript>
+      <main style="max-width: 44rem; margin: 0 auto; padding: 4rem 1.5rem; font-family: system-ui, sans-serif; color: #edeae3">
+        <h1>Kissa — a free vinyl player for Windows</h1>
+        <p>
+          Kissa is a desktop music player for Windows 10 and 11 that turns whatever you are already playing into a
+          record on a turntable. It follows Spotify, Apple Music, TIDAL, local media players and music in your
+          browser through the Windows media session, so there is nothing to connect and no account to sign in to.
+        </p>
+        <p><a href="%DOWNLOAD_URL%" style="color: #d98a4a">Download Kissa %VERSION% for Windows</a> — free.</p>
+        <h2>What it does</h2>
+        <ul>
+          <li>A turntable with real platter inertia, at 33⅓ or 45 RPM</li>
+          <li>A tonearm you can drag across the record to seek through the track</li>
+          <li>Synced lyrics, line by line and word by word</li>
+          <li>Eight listening rooms that re-light the deck, plus lighting matched to the album cover</li>
+          <li>Fullscreen listening display and a native Windows screensaver</li>
+          <li>A record shelf of what you have listened to</li>
+        </ul>
+        <p><a href="https://github.com/NamanOG/Kissa" style="color: #d98a4a">Source code on GitHub</a></p>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

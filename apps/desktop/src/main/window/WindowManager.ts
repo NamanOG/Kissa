@@ -1,12 +1,13 @@
 import { BrowserWindow } from 'electron'
 import { join } from 'path'
-import { getWindowConfig } from './windowConfig'
+import { getWindowConfig, MAIN_WINDOW_MIN_SIZE } from './windowConfig'
 import { setupWindowEvents } from './windowEvents'
 import { getPlayIcon, getPauseIcon, getPrevIcon, getNextIcon } from './icons'
 import { ScreensaverRegistryService } from '../services/ScreensaverRegistryService'
 import { UpdateService } from '../services/UpdateService'
 import { ScreensaverSessionService } from '../services/ScreensaverSessionService'
 import { MediaDetectionService } from '../services/MediaDetectionService'
+import { StorePackageService } from '../services/StorePackageService'
 
 export interface SavedWindowState {
   bounds: Electron.Rectangle
@@ -103,14 +104,12 @@ export class WindowManager {
 
     this.mainWindow.webContents.send('kissa:screensaver-mode-changed', true)
 
-    // Hardware-level global escape registration as fail-safe fallback
     import('electron').then(({ globalShortcut }) => {
       try {
         globalShortcut.register('Escape', () => {
           ScreensaverSessionService.getInstance().notifyWake()
         })
       } catch {
-        // Fallback gracefully if shortcut cannot be registered
       }
     })
     return true
@@ -130,14 +129,12 @@ export class WindowManager {
     const saved = this.savedWindowState
     this.savedWindowState = null
 
-    // Unregister global shortcut fail-safe
     import('electron').then(({ globalShortcut }) => {
       try {
         if (globalShortcut.isRegistered('Escape')) {
           globalShortcut.unregister('Escape')
         }
       } catch {
-        // ignore
       }
     })
 
@@ -179,7 +176,6 @@ export class WindowManager {
 
   public setupIpcHandlers(): void {
     import('electron').then(({ ipcMain, app }) => {
-      // Screensaver specific scoped IPCs
       ipcMain.handle('kissa:is-screensaver', () => this.isScreensaver)
       
       ipcMain.handle('kissa:exit-screensaver', () => {
@@ -213,7 +209,7 @@ export class WindowManager {
           this.mainWindow.setSize(360, 420, true)
           this.mainWindow.setAlwaysOnTop(alwaysOnTop)
         } else {
-          this.mainWindow.setMinimumSize(800, 600)
+          this.mainWindow.setMinimumSize(MAIN_WINDOW_MIN_SIZE.width, MAIN_WINDOW_MIN_SIZE.height)
           this.mainWindow.setSize(900, 670, true)
           this.mainWindow.setAlwaysOnTop(false)
         }
@@ -263,7 +259,16 @@ export class WindowManager {
         ])
       })
       
-      ipcMain.handle('kissa:set-startup', (_event, enabled: boolean) => {
+      ipcMain.handle('kissa:set-startup', async (_event, enabled: boolean) => {
+        const store = StorePackageService.getInstance()
+        if (store.isStorePackage()) {
+          // A Store package starts at sign-in through the StartupTask declared in
+          // its manifest; the Run registry key Electron writes is redirected and
+          // would have no effect.
+          await store.setStartupTask(Boolean(enabled))
+          return
+        }
+
         app.setLoginItemSettings({
           openAtLogin: enabled,
           args: ['--hidden']

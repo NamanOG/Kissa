@@ -1,10 +1,9 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
-import { Quote, Disc } from 'lucide-react'
+import { Quote, Disc, AudioLines } from 'lucide-react'
 import { SleepTimer } from './SleepTimer'
 import { RoomDimmer } from './RoomDimmer'
-
 
 /** Format seconds as m:ss */
 function formatTime(seconds: number): string {
@@ -57,7 +56,6 @@ const Scrubber = memo(() => {
           fillRef.current.style.transform = `scaleX(${percent})`
         }
         if (thumbRef.current) {
-          // Move thumb exactly, centering its 10px width (-5px)
           const px = percent * railWidthRef.current - 5
           thumbRef.current.style.transform = `translate3d(${px}px, -50%, 0)`
         }
@@ -115,10 +113,12 @@ const Scrubber = memo(() => {
     }
   }
 
-
-
   return (
-    <div className="flex items-center gap-2 min-[900px]:gap-3 flex-1 min-w-[50px] min-[800px]:min-w-[100px] min-[1100px]:min-w-[160px]">
+    <div
+      className="flex items-center gap-2 min-[900px]:gap-3 flex-1 min-w-[50px] min-[800px]:min-w-[100px] min-[1100px]:min-w-[160px]"
+      role="group"
+      aria-label="Track position"
+    >
       <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0 text-[var(--muted)]">
         {formatTime(displayTime)}
       </span>
@@ -131,7 +131,7 @@ const Scrubber = memo(() => {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        <div className="w-full h-[3px] rounded-full relative overflow-hidden bg-[var(--on-surface)]/20">
+        <div className="w-full h-[3px] rounded-full relative overflow-hidden bg-[var(--on-surface)]/25 transition-[height] duration-micro group-hover:h-[5px]">
           <div
             ref={fillRef}
             className="h-full w-full rounded-full origin-left bg-[var(--accent)]"
@@ -139,12 +139,18 @@ const Scrubber = memo(() => {
           />
         </div>
 
-        {/* Thumb outside overflow-hidden rail to show shadow */}
         <div
           ref={thumbRef}
-          className="absolute top-1/2 left-0 w-2.5 h-2.5 rounded-full shadow-[0_1px_4px_rgba(20,12,8,0.35)] transition-transform bg-[var(--accent)]"
+          className="absolute top-1/2 left-0 w-2.5 h-2.5"
           style={{ transform: 'translate3d(-5px, -50%, 0)' }}
-        />
+        >
+          <div
+            className={cn(
+              'h-full w-full rounded-full bg-[var(--on-surface)] shadow-[0_1px_4px_rgba(20,12,8,0.45)] transition-[transform,opacity] duration-micro',
+              isDragging ? 'scale-125 opacity-100' : 'scale-50 opacity-0 group-hover:scale-100 group-hover:opacity-100'
+            )}
+          />
+        </div>
       </div>
 
       <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0 text-[var(--muted)]">
@@ -185,7 +191,6 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
         boxShadow: 'var(--dock-shadow)'
       }}
     >
-      {/* ── Dock Ambient Illumination ── */}
       <div
         className="absolute inset-0 rounded-[36px] pointer-events-none transition-opacity duration-ambient ease-primary"
         style={{
@@ -193,17 +198,14 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
         }}
       />
 
-      {/* ── Left: Room Dial ─────────────────────────── */}
       <div className="relative z-10 flex items-center gap-2 min-[900px]:gap-3 w-[80px] min-[900px]:w-[120px] min-[1200px]:w-[150px] shrink-0">
         <RoomDimmer />
       </div>
 
-      {/* ── Center: Transport Controls & Scrubber ─────────── */}
       <div
         className="relative z-10 flex items-center gap-2 min-[800px]:gap-4 min-[1100px]:gap-6 flex-1 max-w-[620px] justify-center mx-1.5 min-[900px]:mx-4 min-[1200px]:mx-6 transition-opacity duration-instant ease-primary"
         style={{ opacity: 'calc(0.4 + 0.6 * var(--room-illumination, 1))' }}
       >
-        {/* Skip Back Button */}
         <button
           type="button"
           onClick={() => {
@@ -222,7 +224,6 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           </svg>
         </button>
 
-        {/* Play/Pause Button with Thin Golden Ring Outline */}
         <button
           type="button"
           onClick={() => {
@@ -259,7 +260,6 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           </div>
         </button>
 
-        {/* Skip Forward Button */}
         <button
           type="button"
           onClick={() => {
@@ -278,19 +278,15 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           </svg>
         </button>
 
-        {/* Scrubber Bar Area */}
         <Scrubber />
       </div>
 
-      {/* ── Right: Lyrics Toggle, Source Pill & Dynamic Equalizer ── */}
       <div
         className="relative z-10 flex items-center gap-1.5 min-[900px]:gap-2.5 shrink-0 justify-end transition-opacity duration-instant ease-primary"
         style={{ opacity: 'calc(0.4 + 0.6 * var(--room-illumination, 1))' }}
       >
-        {/* Sleep Timer Popover */}
         <SleepTimer />
 
-        {/* Apple Music Style Live Lyrics Toggle */}
         <button
           type="button"
           onClick={() => {
@@ -321,7 +317,6 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           </span>
         </button>
 
-        {/* Dynamic Source Pill */}
         <div
           className={cn(
             'flex items-center gap-1.5 px-2 min-[900px]:px-2.5 py-1 rounded-full border transition-colors',
@@ -337,6 +332,12 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
                 <path d="M150.37 130.25c-2.45 5.66-5.35 10.87-8.71 15.66-4.58 6.53-8.33 11.05-11.22 13.56-4.48 4.12-9.28 6.23-14.42 6.35-3.69 0-8.14-1.05-13.32-3.18-5.19-2.12-9.97-3.17-14.34-3.17-4.58 0-9.49 1.05-14.75 3.17-5.26 2.13-9.5 3.24-12.74 3.35-4.35.13-9.16-1.9-14.42-6.08-3.7-3.04-7.58-7.7-11.63-13.98-5.99-9.35-10.6-19.78-13.82-31.31-3.23-11.53-4.84-22.39-4.84-32.58 0-14.58 3.63-26.68 10.9-36.28 7.27-9.61 16.5-14.54 27.69-14.81 4.9 0 10.45 1.25 16.65 3.76 6.21 2.51 10.14 3.84 11.8 4 1.77-.16 5.86-1.54 12.28-4.14 6.42-2.6 11.95-3.79 16.59-3.56 12.44.68 22.32 5.37 29.62 14.07-10.89 6.67-16.22 15.82-16 27.46.22 9.08 3.78 16.71 10.68 22.89 6.9 6.18 15.13 9.77 24.69 10.77-2.12 6.55-4.7 13.04-7.75 19.46zM119.22 33.79c-.06-5.8 2.05-11.45 6.32-16.94 4.27-5.49 9.61-9.37 16.03-11.65.65 5.56-1.42 11.23-6.2 17.02-4.78 5.79-10.15 9.65-16.15 11.57z" />
               </svg>
             </div>
+          ) : !currentTrack?.source?.toLowerCase().includes('spotify') ? (
+            <AudioLines
+              aria-hidden="true"
+              className="w-3 h-3 min-[900px]:w-3.5 min-[900px]:h-3.5 shrink-0 text-[var(--accent)]"
+              strokeWidth={2}
+            />
           ) : (
             <div className="w-3 h-3 min-[900px]:w-3.5 min-[900px]:h-3.5 rounded-full bg-[#1db954] flex items-center justify-center shrink-0">
               <svg
@@ -356,7 +357,6 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           </span>
         </div>
 
-        {/* Start Listening Display */}
         <button
           type="button"
           onClick={() => usePlayerStore.getState().setIsListeningDisplay(true)}
@@ -370,7 +370,6 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           <Disc className="w-3.5 h-3.5 stroke-[1.75]" />
         </button>
 
-        {/* Fullscreen Toggle */}
         <button
           type="button"
           onClick={() => usePlayerStore.getState().toggleFullscreen()}
@@ -393,7 +392,6 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             </svg>
           )}
         </button>
-
 
       </div>
     </div>

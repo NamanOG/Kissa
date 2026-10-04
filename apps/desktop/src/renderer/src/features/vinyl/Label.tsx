@@ -34,7 +34,6 @@ export const Label = memo(({ className, style, size = '28%', albumArt, ...props 
       }}
       {...props}
     >
-      {/* Album artwork image background */}
       <AnimatePresence>
         {albumArt ? (
           <motion.img
@@ -70,7 +69,6 @@ export const Label = memo(({ className, style, size = '28%', albumArt, ...props 
         )}
       </AnimatePresence>
 
-      {/* Subtle realistic paper texture overlay */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/[0.05] mix-blend-overlay" />
     </div>
   )

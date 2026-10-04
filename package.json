@@ -1,7 +1,8 @@
 {
   "name": "kissa",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "description": "A contemplative desktop vinyl player & listening environment for Windows.",
+  "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "workspaces": [
     "apps/*"

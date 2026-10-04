@@ -1,72 +1,75 @@
-import React, { useRef } from 'react'
-import { motion, useMotionValue, useSpring } from 'motion/react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { motion, useReducedMotion } from 'motion/react'
 
 export interface MagneticButtonProps
   extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'onAnimationStart' | 'onDragStart' | 'onDragEnd' | 'onDrag'> {
   children: React.ReactNode
-  className?: string
+  /** Percentage of cursor offset the button follows (0–100). */
   strength?: number
-  radius?: number
 }
 
+/**
+ * MagneticButton — adapted from UI-Reference-System/components/buttons/magnetic-button.
+ * Pulls gently toward the cursor. Caches the rect on enter (no per-frame layout
+ * reads), and is inert on touch devices and under reduced motion.
+ */
 export function MagneticButton({
   children,
-  className = '',
-  strength = 0.35,
-  radius = 140,
-  style,
+  strength = 22,
+  onMouseEnter,
+  onMouseLeave,
+  onBlur,
   ...props
 }: MagneticButtonProps) {
   const ref = useRef<HTMLAnchorElement>(null)
+  const rectRef = useRef<DOMRect | null>(null)
+  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const [isCoarse, setIsCoarse] = useState(false)
+  const reduced = useReducedMotion()
 
-  const rawX = useMotionValue(0)
-  const rawY = useMotionValue(0)
+  useEffect(() => {
+    setIsCoarse(window.matchMedia('(pointer: coarse)').matches)
+  }, [])
 
-  // Sona UI spring physics configuration
-  const springConfig = { stiffness: 200, damping: 14, mass: 0.4 }
-  const x = useSpring(rawX, springConfig)
-  const y = useSpring(rawY, springConfig)
+  const inert = reduced || isCoarse
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return
-    }
-    if (!ref.current) return
+  const handleEnter = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>) => {
+      rectRef.current = ref.current?.getBoundingClientRect() ?? null
+      onMouseEnter?.(e)
+    },
+    [onMouseEnter]
+  )
 
-    const { left, top, width, height } = ref.current.getBoundingClientRect()
-    const centerX = left + width / 2
-    const centerY = top + height / 2
-
-    const deltaX = e.clientX - centerX
-    const deltaY = e.clientY - centerY
-    const distance = Math.hypot(deltaX, deltaY)
-
-    if (distance < radius) {
-      rawX.set(deltaX * strength)
-      rawY.set(deltaY * strength)
-    } else {
-      rawX.set(0)
-      rawY.set(0)
-    }
+  const handleMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const rect = rectRef.current
+    if (inert || !rect) return
+    setOffset({
+      x: (e.clientX - (rect.left + rect.width / 2)) * (strength / 100),
+      y: (e.clientY - (rect.top + rect.height / 2)) * (strength / 100)
+    })
   }
 
-  const handleMouseLeave = () => {
-    rawX.set(0)
-    rawY.set(0)
+  const reset = () => {
+    setOffset({ x: 0, y: 0 })
+    rectRef.current = null
   }
 
   return (
     <motion.a
       ref={ref}
-      className={className}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        ...style,
-        x,
-        y,
-        display: 'inline-flex'
+      onMouseEnter={handleEnter}
+      onMouseMove={handleMove}
+      onMouseLeave={(e) => {
+        reset()
+        onMouseLeave?.(e)
       }}
+      onBlur={(e) => {
+        reset()
+        onBlur?.(e)
+      }}
+      animate={{ x: inert ? 0 : offset.x, y: inert ? 0 : offset.y }}
+      transition={{ type: 'spring', stiffness: 220, damping: 16, mass: 0.2 }}
       {...props}
     >
       {children}

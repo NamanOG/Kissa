@@ -15,7 +15,6 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
 
   const { type, data, aspectRatio } = payload
 
-  // 1. Determine primary artwork to extract colors from
   let primaryArtwork = ''
   if (type === 'album') {
     primaryArtwork = (data as AlbumShareData).artworkUrl || ''
@@ -26,7 +25,6 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
     primaryArtwork = (data as StatsShareData).mostPlayedAlbum?.artworkUrl || ''
   }
 
-  // 2. Extract colors and wait for images to load
   useEffect(() => {
     let mounted = true
     let colorsExtracted = false
@@ -42,7 +40,6 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
           } catch (e) {
             console.warn('[Share] Fonts ready check failed', e)
           }
-          // Add a tiny delay to ensure paint
           setTimeout(() => {
             if (mounted) window.electron?.sendShareReady(true)
           }, 300)
@@ -68,7 +65,6 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
       colorsExtracted = true
     }
 
-    // Wait for DOM images
     if (containerRef.current) {
       const imgs = Array.from(containerRef.current.querySelectorAll('img'))
       if (imgs.length === 0) {
@@ -106,7 +102,6 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
     return () => { mounted = false }
   }, [primaryArtwork, type, data, isExport])
 
-  // Physical aesthetic styles using the extracted palette
   const wrapperStyle = palette ? {
     backgroundColor: palette.deckBg,
     color: palette.onSurface,
@@ -125,7 +120,6 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
       {palette && (
         <>
-          {/* Subtle radial illumination behind artwork, no noise */}
           <div 
             className="absolute w-[150%] h-[150%] rounded-full opacity-[0.15]" 
             style={{ 
@@ -146,9 +140,7 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
           />
         </>
       )}
-      {/* Subtle vignette for contrast */}
       <div className="absolute inset-0 bg-radial-gradient from-transparent to-black/40 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.4) 100%)' }} />
-      {/* Archival borders */}
       <div className="absolute inset-6 border border-white/5 rounded-sm pointer-events-none" />
       <div className="absolute inset-8 border border-white/[0.02] rounded-sm pointer-events-none" />
     </div>
@@ -190,7 +182,6 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
     const albums = data as AlbumShareData[]
     const count = albums.length
     
-    // Editorial layout logic
     let gridClass = 'grid-cols-2 gap-8'
     let imageSize = 'w-[320px] h-[320px]'
     if (count === 1) {

@@ -19,7 +19,6 @@ export function useKeyboardShortcuts(): void {
     const handleKeyDown = (e: KeyboardEvent): void => {
       const store = usePlayerStore.getState()
 
-      // F11: Fullscreen always available
       if (e.key === 'F11' || e.code === 'F11') {
         e.preventDefault()
         e.stopPropagation()
@@ -27,7 +26,6 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
-      // Ignore if user is typing in an input field
       const target = e.target as HTMLElement | null
       if (
         target?.tagName === 'INPUT' ||
@@ -62,12 +60,10 @@ export function useKeyboardShortcuts(): void {
         }
       }
 
-      // D: Toggle Listening Display
       if ((e.key === 'd' || e.key === 'D' || e.code === 'KeyD') && !e.ctrlKey && !e.altKey && !e.metaKey) {
         if (e.repeat) return
         e.preventDefault()
         e.stopPropagation()
-        // Close open modals if activating
         if (store.isSettingsOpen) store.setIsSettingsOpen(false)
         if (store.isOnboardingOpen) store.setIsOnboardingOpen(false)
         if (store.isKeyboardHelpOpen) store.toggleKeyboardHelp()
@@ -95,7 +91,6 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
-      // Space / Play-Pause
       if (e.key === ' ' || e.code === 'Space' || e.key === 'Spacebar') {
         e.preventDefault()
         store.togglePlayPause()
@@ -154,7 +149,6 @@ export function useKeyboardShortcuts(): void {
       }
 
       switch (e.key) {
-
         case 'ArrowLeft': {
           e.preventDefault()
           const isExternal = !!store.currentTrack?.sourceAppId

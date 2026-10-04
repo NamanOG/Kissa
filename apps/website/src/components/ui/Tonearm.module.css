@@ -1,0 +1,25 @@
+/* Fills its box; the SVG is 160 × 420 with the pivot at (115, 36). */
+.tonearm {
+  position: absolute;
+  aspect-ratio: 160 / 420;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.arm {
+  position: absolute;
+  inset: 0;
+  transform-origin: 71.875% 8.571%; /* 115 / 160, 36 / 420 */
+  will-change: transform;
+  /* The arm floats above the record and casts onto it */
+  filter: drop-shadow(5px 9px 6px rgba(0, 0, 0, 0.55));
+}

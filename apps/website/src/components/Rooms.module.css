@@ -1,0 +1,250 @@
+.section {
+  padding-block: var(--section-pad);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+  align-items: end;
+  gap: var(--space-8) var(--space-16);
+  margin-bottom: clamp(3rem, 2rem + 3vw, 5rem);
+}
+
+.headerMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(2rem, 1rem + 4vw, 5rem);
+  align-items: start;
+}
+
+/* ─── Index ────────────────────────────────────── */
+
+.index {
+  list-style: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-5) 0;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-fg-subtle);
+  cursor: pointer;
+  transition:
+    color var(--dur-ui) var(--ease-out),
+    padding-left var(--dur-ui) var(--ease-out);
+}
+
+.rowActive {
+  color: var(--color-fg);
+  padding-left: var(--space-3);
+}
+
+.number {
+  color: inherit;
+}
+
+.name {
+  font-size: clamp(1.25rem, 1rem + 0.9vw, 1.75rem);
+  font-stretch: var(--width-display);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+
+.mood {
+  display: none;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+/* ─── Live room ────────────────────────────────── */
+
+.viewer {
+  position: sticky;
+  top: calc(var(--nav-height) + var(--space-8));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Everything inside is coloured by the room, with the app's slow fade */
+.room {
+  --fade: 1.4s var(--ease-out);
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  isolation: isolate;
+  container-type: inline-size;
+}
+
+.wall,
+.vignette {
+  position: absolute;
+  inset: 0;
+}
+
+.wall {
+  opacity: 0;
+  transition: opacity var(--fade);
+}
+
+.wallActive {
+  opacity: 1;
+}
+
+/* The app darkens the edges of dark rooms; daylight rooms get a much lighter one */
+.vignette {
+  background: radial-gradient(ellipse 85% 80% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+  transition: opacity var(--fade);
+}
+
+.vignetteLight {
+  opacity: 0.25;
+}
+
+/* The deck's faceplate */
+.plinth {
+  position: absolute;
+  left: 7%;
+  top: 12%;
+  width: 62%;
+  aspect-ratio: 1.46;
+  border-radius: 2.2cqw;
+  background: var(--room-plinth);
+  border: 1px solid var(--room-plinth-border);
+  box-shadow: 0 3cqw 6cqw -2cqw rgba(0, 0, 0, 0.55);
+  transition:
+    background-color var(--fade),
+    border-color var(--fade);
+}
+
+/* Record at 84% of the faceplate's height; the arm keeps the app's geometry */
+.record {
+  position: absolute;
+  left: 6%;
+  top: 8%;
+  height: 84%;
+  aspect-ratio: 1;
+}
+
+.tonearm {
+  left: 101.6%;
+  top: -4.3%;
+  height: 110.9%;
+}
+
+.readout {
+  position: absolute;
+  right: 5%;
+  top: 12%;
+  width: 22%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6cqw;
+}
+
+.nowPlaying {
+  font-family: var(--font-mono);
+  font-size: max(0.5rem, 1.25cqw);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--room-accent);
+  transition: color var(--fade);
+}
+
+.roomTitle {
+  font-size: max(0.8rem, 2.5cqw);
+  font-stretch: var(--width-display);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--room-ink);
+  transition: color var(--fade);
+}
+
+/* Inset photograph of the room */
+.photoFrame {
+  position: absolute;
+  right: 5%;
+  bottom: 9%;
+  width: 22%;
+  aspect-ratio: 4 / 3;
+  border-radius: 1cqw;
+  overflow: hidden;
+  box-shadow: 0 1.5cqw 3cqw -1cqw rgba(0, 0, 0, 0.6);
+}
+
+.photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--fade);
+}
+
+.photoActive {
+  opacity: 1;
+}
+
+.caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-6);
+  font-size: var(--text-small);
+  color: var(--color-fg-muted);
+}
+
+@media (min-width: 1181px) {
+  .mood {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    opacity: 0;
+    transition: opacity var(--dur-ui) var(--ease-out);
+  }
+
+  .rowActive .mood {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 860px) {
+  .header,
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .viewer {
+    order: -1;
+    top: calc(var(--nav-height) + var(--space-4));
+    z-index: 1;
+    padding-bottom: var(--space-3);
+    background: var(--color-bg);
+  }
+
+  .row {
+    padding: var(--space-4) 0;
+  }
+}

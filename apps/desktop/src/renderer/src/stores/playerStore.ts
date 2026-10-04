@@ -17,6 +17,23 @@ export type AppTheme =
   | 'sunday-morning'
   | 'adaptive'
 
+/** The colour of the record on the platter. 'match' follows the room's accent. */
+export type VinylColor = 'black' | 'oxblood' | 'amber' | 'forest' | 'cobalt' | 'smoke' | 'match'
+export const VINYL_COLORS: VinylColor[] = ['black', 'oxblood', 'amber', 'forest', 'cobalt', 'smoke', 'match']
+export type SettingsTab = 'room' | 'playback' | 'system'
+export type LyricsSize = 's' | 'm' | 'l'
+export type LyricsFace = 'sans' | 'serif'
+
+function readChoice<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  if (typeof localStorage === 'undefined') return fallback
+  const saved = localStorage.getItem(key)
+  return saved && (allowed as readonly string[]).includes(saved) ? (saved as T) : fallback
+}
+
+function save(key: string, value: string): void {
+  if (typeof localStorage !== 'undefined') localStorage.setItem(key, value)
+}
+
 export interface TrackInfo {
   title: string
   artist: string
@@ -47,11 +64,17 @@ export interface PlayerState {
   theme: AppTheme
   previousManualTheme: AppTheme | null
   isSettingsOpen: boolean
+  settingsTab: SettingsTab
   isOnboardingOpen: boolean
   needleSound: boolean
   physicalFeedback: boolean
   autoScrollLyrics: boolean
   lyricsOffset: number
+  lyricsSize: LyricsSize
+  lyricsFace: LyricsFace
+  /** What the listener likes to be called. Empty until they say. */
+  listenerName: string
+  vinylColor: VinylColor
   isKeyboardHelpOpen: boolean
   runInBackground: boolean
   startWithWindows: boolean
@@ -85,6 +108,7 @@ export interface PlayerState {
   toggleMiniPlayer: () => void
   setMiniPlayerAlwaysOnTop: (alwaysOnTop: boolean) => void
   setIsSettingsOpen: (open: boolean) => void
+  setSettingsTab: (tab: SettingsTab) => void
   toggleSettings: () => void
   setIsOnboardingOpen: (open: boolean) => void
   toggleOnboarding: () => void
@@ -92,6 +116,10 @@ export interface PlayerState {
   setPhysicalFeedback: (enabled: boolean) => void
   setAutoScrollLyrics: (enabled: boolean) => void
   setLyricsOffset: (offset: number) => void
+  setLyricsSize: (size: LyricsSize) => void
+  setLyricsFace: (face: LyricsFace) => void
+  setListenerName: (name: string) => void
+  setVinylColor: (color: VinylColor) => void
   toggleKeyboardHelp: () => void
   setRunInBackground: (enabled: boolean) => void
   setStartWithWindows: (enabled: boolean) => void
@@ -175,7 +203,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   progress: 0,
   volume: 78,
   illuminationLevel: getInitialIllumination(),
-  rpm: '33',
+  rpm: readChoice('kissa_rpm', ['33', '45'] as const, '33'),
   isPowered: true,
   activeView: 'deck',
   showSideLyrics: false,
@@ -188,10 +216,15 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   theme: getInitialTheme(),
   previousManualTheme: getInitialTheme() === 'adaptive' ? 'quiet-room' : getInitialTheme(),
   isSettingsOpen: false,
+  settingsTab: 'room',
   isOnboardingOpen: getInitialOnboarding(),
   needleSound: true,
   physicalFeedback: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_physical_feedback') !== 'false' : true,
-  autoScrollLyrics: true,
+  autoScrollLyrics: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_auto_scroll_lyrics') !== 'false' : true,
+  lyricsSize: readChoice('kissa_lyrics_size', ['s', 'm', 'l'] as const, 'm'),
+  lyricsFace: readChoice('kissa_lyrics_face', ['sans', 'serif'] as const, 'sans'),
+  listenerName: typeof localStorage !== 'undefined' ? (localStorage.getItem('kissa_listener_name') || '').slice(0, 24) : '',
+  vinylColor: readChoice('kissa_vinyl_color', VINYL_COLORS, 'black'),
   lyricsOffset: typeof localStorage !== 'undefined' ? parseFloat(localStorage.getItem('kissa_lyrics_offset') || '0') || 0 : 0,
   isKeyboardHelpOpen: false,
   runInBackground: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_run_in_background') === 'true' : false,
@@ -224,7 +257,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       target = Math.min(target, duration)
     }
 
-    // 1. Authoritative visual clock update
     PlaybackClock.setSeekPosition(target)
     set({ progress: target })
 
@@ -236,10 +268,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       }
     }
 
-    // 3. Dispatch to external SMTC via Electron IPC
     if (typeof window !== 'undefined' && window.electron?.mediaSeek) {
       window.electron.mediaSeek(target).catch(() => {
-        // Handled gracefully if unsupported by active app
       })
     }
   },
@@ -251,8 +281,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       localStorage.setItem('kissa_illumination', clamped.toString())
     }
   },
-  setRpm: (rpm) => set({ rpm }),
-  toggleRpm: () => set((state) => ({ rpm: state.rpm === '33' ? '45' : '33' })),
+  setRpm: (rpm) => {
+    save('kissa_rpm', rpm)
+    set({ rpm })
+  },
+  toggleRpm: () => get().setRpm(get().rpm === '33' ? '45' : '33'),
   setIsPowered: (isPowered) => set((state) => ({ isPowered, isPlaying: isPowered ? state.isPlaying : false })),
   togglePower: () =>
     set((state) => {
@@ -314,6 +347,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     set({ theme })
   },
   setIsSettingsOpen: (isSettingsOpen) => set({ isSettingsOpen }),
+  setSettingsTab: (settingsTab) => set({ settingsTab }),
   toggleSettings: () => set((state) => ({ isSettingsOpen: !state.isSettingsOpen })),
   setIsOnboardingOpen: (isOnboardingOpen) => {
     if (!isOnboardingOpen && typeof localStorage !== 'undefined') {
@@ -336,7 +370,27 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
     set({ physicalFeedback })
   },
-  setAutoScrollLyrics: (autoScrollLyrics) => set({ autoScrollLyrics }),
+  setAutoScrollLyrics: (autoScrollLyrics) => {
+    save('kissa_auto_scroll_lyrics', autoScrollLyrics.toString())
+    set({ autoScrollLyrics })
+  },
+  setLyricsSize: (lyricsSize) => {
+    save('kissa_lyrics_size', lyricsSize)
+    set({ lyricsSize })
+  },
+  setLyricsFace: (lyricsFace) => {
+    save('kissa_lyrics_face', lyricsFace)
+    set({ lyricsFace })
+  },
+  setListenerName: (name) => {
+    const listenerName = name.replace(/\s+/g, ' ').trimStart().slice(0, 24)
+    save('kissa_listener_name', listenerName.trim())
+    set({ listenerName })
+  },
+  setVinylColor: (vinylColor) => {
+    save('kissa_vinyl_color', vinylColor)
+    set({ vinylColor })
+  },
   setLyricsOffset: (lyricsOffset) => {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('kissa_lyrics_offset', lyricsOffset.toString())

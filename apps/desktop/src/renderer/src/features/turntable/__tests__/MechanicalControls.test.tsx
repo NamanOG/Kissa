@@ -19,7 +19,6 @@ describe('MechanicalControls', () => {
       }
     })
 
-    // Mock electron media play pause
     window.electron = {
       ...window.electron,
       mediaPlayPause: vi.fn().mockResolvedValue(undefined),
@@ -55,7 +54,6 @@ describe('MechanicalControls', () => {
 
     expect(usePlayerStore.getState().rpm).toBe('33')
 
-    // Clicking 45 changes to 45
     fireEvent.pointerDown(btn45, { button: 0 })
     expect(usePlayerStore.getState().rpm).toBe('45')
 
@@ -63,7 +61,6 @@ describe('MechanicalControls', () => {
     fireEvent.pointerDown(btn45, { button: 0 })
     expect(usePlayerStore.getState().rpm).toBe('45')
 
-    // Clicking 33 changes to 33
     fireEvent.pointerDown(btn33, { button: 0 })
     expect(usePlayerStore.getState().rpm).toBe('33')
   })

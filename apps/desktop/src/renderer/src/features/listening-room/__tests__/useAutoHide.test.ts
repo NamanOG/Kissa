@@ -44,25 +44,20 @@ describe('useAutoHide', () => {
       result.current.handlePointerMove()
     })
     
-    // Advance halfway
     act(() => {
       vi.advanceTimersByTime(1500)
     })
     expect(result.current.isVisible).toBe(true)
 
-    // Move again, resetting the timer
     act(() => {
       result.current.handlePointerMove()
     })
     
-    // Advance another 1500ms (total 3000ms since first move)
     act(() => {
       vi.advanceTimersByTime(1500)
     })
-    // Still visible because it was reset
     expect(result.current.isVisible).toBe(true)
 
-    // Complete the second 3000ms timer
     act(() => {
       vi.advanceTimersByTime(1500)
     })

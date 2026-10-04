@@ -1,15 +1,18 @@
-import React, { memo } from 'react'
+import { memo } from 'react'
 import { BackgroundLayer } from './BackgroundLayer'
-export const NoiseLayer = memo(() => {
-  return (
-    <BackgroundLayer
-      className="opacity-[0.02] pointer-events-none transform-gpu"
-      style={{
-        backgroundImage:
-          'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAQAAAAAYLlVAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAAmJLR0QA/4ePzL8AAAFXSURBVGje7ZqxcYMwEEXf5c8U5B/K1ClSJU2UKZIm4w7sIjW88iXbCIn96HQ69950Ot096Ojo6Ojo6Ojo6PjXxBi/3nU5xhhj/PrV5Vhj9L53X4Y1Ru9752XwPnjfOy6F98H73nEpfB68712WwefB+95lGVofvO8dl6L1wfvecSlaH7zvHZei9cH73nEpWh+87x2XovXB+95xKVofvO8dl6L1wfvecSlaH7zvHZei9cH73nEpWh+87x2XovXB+95xKVofvO8dl6L1wfvecSlaH7zvHZei9cH73nEpWh+87x2XovXB+95xKVofvO8dl6L1wfvecSlaH7zvHZei9cH73nEpWh+87x2XovXB+95xKVofvO8dl6L1wfvecSlaH7zvHZei9cH73nEpWh+87x2XovXB+95xKVofvO8dl6L1wfvecSlaH7zvHZei9cH73nEpWh+87x2XovXB+95xKX4Ac+318QAAAEsAAAAASUVORK5CYII=")',
-        backgroundRepeat: 'repeat'
-      }}
-    />
-  )
-})
+
+const GRAIN =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E\")"
+
+/**
+ * Dark gradients band on 8-bit displays. A very faint, even grain breaks the bands
+ * up without reading as texture.
+ */
+export const NoiseLayer = memo(() => (
+  <BackgroundLayer
+    className="opacity-[0.035] mix-blend-overlay"
+    style={{ backgroundImage: GRAIN, backgroundSize: '240px 240px' }}
+  />
+))
+
 NoiseLayer.displayName = 'NoiseLayer'

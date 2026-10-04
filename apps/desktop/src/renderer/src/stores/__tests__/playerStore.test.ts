@@ -77,11 +77,9 @@ describe('usePlayerStore', () => {
     usePlayerStore.getState().setProgress(100)
     expect(usePlayerStore.getState().progress).toBe(100)
 
-    // Clamps to duration maximum (300)
     usePlayerStore.getState().setProgress(500)
     expect(usePlayerStore.getState().progress).toBe(300)
 
-    // Clamps to 0 minimum
     usePlayerStore.getState().setProgress(-50)
     expect(usePlayerStore.getState().progress).toBe(0)
   })

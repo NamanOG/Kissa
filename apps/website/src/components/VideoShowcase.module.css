@@ -1,307 +1,209 @@
-/**
- * VideoShowcase — Near-full-width cinematic media stage
- */
-
 .section {
-  padding-block: var(--section-gap);
-  border-top: 1px solid var(--color-border-rule);
-  background-color: var(--color-bg);
-  position: relative;
-  overflow: hidden;
+  padding-block: var(--section-pad);
 }
-
-/* ── Section Header ──────────────────────────── */
 
 .header {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+  align-items: end;
+  gap: var(--space-8) var(--space-16);
+  margin-bottom: clamp(2.5rem, 2rem + 2vw, 4rem);
+}
+
+.headerMain {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  margin-block-end: var(--space-8);
-  max-width: 720px;
+  gap: var(--space-5);
 }
 
-.eyebrow {
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: var(--tracking-wider);
-  color: var(--color-accent);
-  text-transform: uppercase;
+@media (max-width: 860px) {
+  .header {
+    grid-template-columns: 1fr;
+  }
 }
 
-.title {
-  font-family: var(--font-serif);
-  font-size: var(--text-title);
-  font-weight: 400;
-  line-height: var(--leading-heading);
-  letter-spacing: var(--tracking-tight);
-  color: var(--color-fg);
-  margin-block-end: var(--space-2);
-}
-
-.lead {
-  font-size: var(--text-body);
-  line-height: var(--leading-body);
-  color: var(--color-fg-muted);
-  margin: 0;
-}
-
-/* ── Player Frame ────────────────────────────── */
-
-.playerWrap {
+.frame {
   position: relative;
-  width: 100%;
-}
-
-.ambientBacklight {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 90%;
-  height: 90%;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(224, 142, 69, 0.12) 0%,
-    rgba(224, 142, 69, 0.02) 60%,
-    transparent 80%
-  );
-  filter: blur(80px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.playerFrame {
-  position: relative;
-  z-index: 1;
-  width: 100%;
   aspect-ratio: 16 / 9;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   overflow: hidden;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+  background: var(--color-bg-raised);
   border: 1px solid var(--color-border);
-  background-color: var(--color-bg-raised);
+}
+
+.hideCursor {
+  cursor: none;
 }
 
 .video {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
+  cursor: pointer;
 }
 
-.staticFrame {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* ─── Poster overlay ──────────────────────────── */
 
-.staticPoster {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.placeholderStage {
+.poster {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.schematicSvg {
-  width: 75%;
-  height: 75%;
-  opacity: 0.6;
-}
-
-.staticOverlay {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(13, 13, 15, 0.3) 0%,
-    rgba(13, 13, 15, 0.85) 100%
-  );
-}
-
-.videoSlotNotice {
-  position: relative;
-  z-index: 2;
-  text-align: center;
-  max-width: 480px;
-  padding: var(--space-6);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.slotTag {
-  font-family: var(--font-sans);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: var(--tracking-wider);
-  color: var(--color-accent);
-  text-transform: uppercase;
-}
-
-.slotTitle {
-  font-family: var(--font-serif);
-  font-size: clamp(1.4rem, 2.2vw, 2rem);
-  font-weight: 400;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: var(--space-5);
+  padding: clamp(1.25rem, 1rem + 2vw, 2.5rem);
+  border: none;
+  cursor: pointer;
   color: var(--color-fg);
-  margin: 0;
+  text-align: left;
+  background: rgba(13, 12, 11, 0.35);
+  transition: background-color var(--dur-ui) var(--ease-out);
 }
 
-.slotText {
-  font-size: var(--text-small);
-  color: var(--color-fg-muted);
-  line-height: var(--leading-body);
-  margin: 0;
+.playDisc {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(3.75rem, 3rem + 2vw, 4.75rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  color: var(--color-bg);
+  background: var(--color-fg);
+  transition:
+    transform var(--dur-ui) var(--ease-out),
+    box-shadow var(--dur-ui) var(--ease-out);
 }
 
-/* ── Video Controls Bar ──────────────────────── */
+.playDisc svg {
+  width: 38%;
+  height: 38%;
+  margin-left: 6%;
+}
 
-.controlsBar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+.poster:hover .playDisc {
+  transform: scale(1.06);
+  background: var(--color-accent);
+}
+
+.posterMeta {
   display: flex;
   flex-direction: column;
-  padding: var(--space-3) var(--space-4) var(--space-3);
-  background: linear-gradient(to top, rgba(10, 10, 12, 0.96) 0%, transparent 100%);
-  z-index: 10;
-  gap: var(--space-2);
+  gap: var(--space-1);
+  padding-bottom: var(--space-2);
+}
+
+.posterTitle {
+  font-stretch: var(--width-display);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  font-size: clamp(1.35rem, 1.1rem + 1vw, 1.9rem);
+  line-height: 1.1;
+}
+
+/* ─── Control bar ─────────────────────────────── */
+
+.controls {
+  position: absolute;
+  left: var(--space-4);
+  right: var(--space-4);
+  bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 3rem;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  background: rgba(13, 12, 11, 0.72);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
   opacity: 0;
-  transition: opacity 0.25s ease;
+  transform: translateY(8px);
+  transition:
+    opacity var(--dur-ui) var(--ease-out),
+    transform var(--dur-ui) var(--ease-out);
   pointer-events: none;
 }
 
-.controlsBar.controlsVisible {
+.controlsOn {
   opacity: 1;
-  pointer-events: all;
-}
-
-/* ── Seek / Progress Row ─────────────────────── */
-
-.progressRow {
-  width: 100%;
-}
-
-/* shared range reset */
-.seekBar,
-.volumeBar {
-  -webkit-appearance: none;
-  appearance: none;
-  outline: none;
-  background: transparent;
-  cursor: pointer;
-  border-radius: 2px;
-  height: 3px;
-  background-image: linear-gradient(
-    to right,
-    var(--color-accent) var(--progress, 0%),
-    rgba(247, 246, 242, 0.18) var(--progress, 0%)
-  );
-}
-
-.seekBar {
-  width: 100%;
-  height: 3px;
-  transition: height 0.15s ease;
-}
-
-.seekBar:hover {
-  height: 5px;
-}
-
-.seekBar::-webkit-slider-thumb,
-.volumeBar::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--color-fg);
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
-  transition: transform 0.1s ease;
-}
-
-.seekBar:hover::-webkit-slider-thumb,
-.volumeBar:hover::-webkit-slider-thumb {
-  transform: scale(1.25);
-}
-
-.seekBar::-moz-range-thumb,
-.volumeBar::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--color-fg);
-  border: none;
-  cursor: pointer;
-}
-
-/* ── Bottom Controls Row ─────────────────────── */
-
-.controlsRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-
-.controlsLeft,
-.controlsRight {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  transform: none;
+  pointer-events: auto;
 }
 
 .iconBtn {
-  background: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
   border: none;
+  border-radius: 50%;
+  background: none;
   color: var(--color-fg);
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-sm);
-  transition: color var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out);
-  flex-shrink: 0;
+  transition: background-color var(--dur-micro) var(--ease-out);
 }
 
 .iconBtn:hover {
-  color: var(--color-accent);
-  background-color: rgba(247, 246, 242, 0.08);
+  background: rgba(237, 234, 227, 0.08);
 }
 
-.timeDisplay {
+.iconBtn svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.time {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-label);
   color: var(--color-fg-muted);
-  white-space: nowrap;
-  padding-inline-start: var(--space-1);
+  font-variant-numeric: tabular-nums;
+  min-width: 2.6em;
+  text-align: center;
 }
 
-.volumeBar {
-  width: 72px;
+.seek {
+  flex: 1;
+  min-width: 0;
+  height: 1.25rem;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.seek::-webkit-slider-runnable-track {
   height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--color-accent) var(--progress), rgba(237, 234, 227, 0.18) var(--progress));
 }
 
-@media (max-width: 480px) {
-  .volumeBar {
+.seek::-moz-range-track {
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--color-accent) var(--progress), rgba(237, 234, 227, 0.18) var(--progress));
+}
+
+.seek::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px;
+  border-radius: 50%;
+  background: var(--color-fg);
+}
+
+.seek::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-fg);
+}
+
+@media (max-width: 560px) {
+  .time:last-of-type {
     display: none;
   }
 }

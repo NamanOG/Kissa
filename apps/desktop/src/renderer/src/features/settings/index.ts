@@ -1,5 +1,4 @@
 export { SettingsModal } from './SettingsModal'
 export { ThemeCard } from './ThemeCard'
-export { ThemeAtmospherePreview } from './ThemeAtmospherePreview'
 export { LISTENING_ENVIRONMENTS } from './themes'
 export type { ThemeDefinition } from './themes'

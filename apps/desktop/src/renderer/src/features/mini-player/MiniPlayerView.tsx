@@ -50,7 +50,6 @@ export const MiniPlayerView = (): React.JSX.Element => {
       "relative flex flex-col w-full h-full p-4 overflow-hidden select-none transition-colors duration-ambient ease-ambient bg-[var(--panel-bg)] text-[var(--on-surface)]",
       isMiniPlayer && "app-region-drag"
     )}>
-      {/* ── Top Bar ── */}
       <div className="relative z-10 flex items-center justify-between mt-2 shrink-0 px-2 pointer-events-auto">
         <div className="flex-1 min-w-0 app-region-no-drag">
           <AnimatePresence mode="wait">
@@ -82,7 +81,6 @@ export const MiniPlayerView = (): React.JSX.Element => {
         </button>
       </div>
 
-      {/* ── Main Visual (Vinyl) ── */}
       <div className="relative flex-1 min-h-0 flex items-center justify-center pointer-events-none mt-2">
         <div className="w-[180px] h-[180px] relative">
           <div
@@ -95,9 +93,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
         </div>
       </div>
 
-      {/* ── Bottom Controls ── */}
       <div className="relative z-10 flex flex-col gap-4 shrink-0 pb-2 px-2 mt-2 app-region-no-drag">
-        {/* Progress Bar */}
         <div className="h-1.5 w-full bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
           <div 
             ref={fillRef}
@@ -106,7 +102,6 @@ export const MiniPlayerView = (): React.JSX.Element => {
           />
         </div>
 
-        {/* Playback Buttons */}
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -152,7 +147,6 @@ export const MiniPlayerView = (): React.JSX.Element => {
         </div>
       </div>
 
-      {/* Queue Overlay */}
       <AnimatePresence>
         {showQueue && (
           <motion.div

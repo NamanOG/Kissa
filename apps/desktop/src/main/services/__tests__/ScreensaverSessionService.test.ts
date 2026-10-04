@@ -198,7 +198,6 @@ describe('ScreensaverSessionService', () => {
       service.enterScreensaverMode(fakeSocket)
       expect(service.isScreensaverActive()).toBe(true)
 
-      // Playback stops
       service.onPlaybackStateChanged(false, 'not_detected')
 
       expect(service.isScreensaverActive()).toBe(false)
@@ -210,7 +209,6 @@ describe('ScreensaverSessionService', () => {
       service.enterScreensaverMode(fakeSocket)
       expect(service.isScreensaverActive()).toBe(true)
 
-      // Video starts
       service.onPlaybackStateChanged(true, 'detected')
 
       expect(service.isScreensaverActive()).toBe(false)
@@ -222,7 +220,6 @@ describe('ScreensaverSessionService', () => {
       service.enterScreensaverMode(fakeSocket)
       expect(service.isScreensaverActive()).toBe(true)
 
-      // Media state becomes unknown
       service.onPlaybackStateChanged(true, 'unknown')
 
       expect(service.isScreensaverActive()).toBe(false)
@@ -248,7 +245,6 @@ describe('ScreensaverSessionService', () => {
       expect(primarySocket.write).toHaveBeenCalledWith(expect.stringContaining('"status":"activated"'))
       expect(primarySocket.end).toHaveBeenCalledTimes(1)
 
-      // Secondary activate request while active
       ;(service as any).handleClientMessage(secondarySocket, JSON.stringify({ action: 'activate' }))
       expect(secondarySocket.write).toHaveBeenCalledWith(expect.stringContaining('"status":"already_active"'))
       expect(secondarySocket.end).toHaveBeenCalledTimes(1)
@@ -262,7 +258,6 @@ describe('ScreensaverSessionService', () => {
       service.notifyWake()
       expect(service.isScreensaverActive()).toBe(false)
 
-      // Second wake call should be completely safe and no-op
       expect(() => service.notifyWake()).not.toThrow()
     })
 

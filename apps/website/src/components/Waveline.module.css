@@ -1,0 +1,22 @@
+.band {
+  overflow: hidden;
+  padding-block: clamp(1.5rem, 1rem + 2vw, 3rem);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: clamp(7rem, 4rem + 9vw, 12rem);
+  overflow: visible;
+}
+
+.text {
+  font-family: var(--font-sans);
+  font-stretch: var(--width-display);
+  font-weight: 500;
+  font-size: 46px; /* SVG units */
+  letter-spacing: -1.5px;
+  fill: var(--color-fg);
+}

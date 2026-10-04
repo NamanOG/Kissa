@@ -1,0 +1,308 @@
+/* One screen for the hero plus one per step; the sticky child pins for the rest. */
+.stage {
+  position: relative;
+  height: 520vh;
+}
+
+.sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: clip;
+}
+
+/* ─── Deck ─────────────────────────────────────── */
+
+.deckSlot {
+  position: absolute;
+  inset: 0 0 0 50%;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+/* The box is the record; the tonearm hangs off its right edge, so the whole
+   composition is nudged left to sit centred in the slot. */
+.deck {
+  --d: min(58vh, 31vw);
+  position: relative;
+  width: var(--d);
+  aspect-ratio: 1;
+  margin-right: calc(var(--d) * 0.42);
+  will-change: transform;
+}
+
+/* Placement taken from the app's turntable: arm box relative to the record. */
+.tonearm {
+  left: 101.6%;
+  top: -4.3%;
+  height: 110.9%;
+}
+
+/* Grab area over the headshell — same region the app uses */
+.grip {
+  position: absolute;
+  left: 8%;
+  top: 68%;
+  width: 52%;
+  height: 31%;
+  border-radius: 50%;
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.gripHeld {
+  cursor: grabbing;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.listen {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Status line under the platter — the app's "now playing" row */
+.status {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + var(--d) * 0.09);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75em;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-fg-muted);
+}
+
+.status i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--color-fg-subtle);
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.roll {
+  display: inline-flex;
+  overflow: hidden;
+  color: var(--color-fg);
+}
+
+.roll > span {
+  display: block;
+}
+
+.time {
+  color: var(--color-fg);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Chapters ─────────────────────────────────── */
+
+.chapter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  will-change: transform, opacity;
+  /* Chapters cover the whole scene; only their own content takes the pointer,
+     so the tonearm underneath can be picked up. */
+  pointer-events: none;
+}
+
+.chapter[data-active='true'] .chapterInner > * {
+  pointer-events: auto;
+}
+
+.chapterInner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+
+/* Steps keep to the left half so the deck has the right */
+.chapter:not(.hero) .chapterInner > * {
+  max-width: min(34rem, 42vw);
+}
+
+.kicker {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-fg-muted);
+}
+
+.jp {
+  font-family: var(--font-jp);
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  color: var(--color-accent);
+}
+
+.dash {
+  width: 1.75rem;
+  height: 1px;
+  background: var(--color-border-strong);
+}
+
+.heroTitle {
+  font-size: var(--text-hero);
+  line-height: 0.92;
+}
+
+.heroBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  margin-top: var(--space-2);
+}
+
+.heroBody :global(.lead) {
+  max-width: 34ch;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-4) var(--space-8);
+}
+
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  height: 3.25rem;
+  font-weight: 500;
+  background: linear-gradient(currentColor, currentColor) no-repeat 0 calc(50% + 0.75em) / 100% 1px;
+  transition: background-size var(--dur-ui) var(--ease-out);
+}
+
+.textLink:hover {
+  background-size: 0% 1px;
+  background-position-x: 100%;
+}
+
+.stepTitle {
+  font-size: var(--text-title);
+}
+
+.stepTitle em {
+  font-style: normal;
+  color: var(--color-fg-subtle);
+}
+
+.stepBody {
+  font-size: var(--text-lead);
+}
+
+/* ─── Lyrics ───────────────────────────────────── */
+
+.lyricsWindow {
+  --lh: calc(var(--text-heading) * 1.5);
+  width: 100%;
+  height: calc(var(--lh) * 4);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 70%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 70%, transparent);
+}
+
+.lyrics {
+  list-style: none;
+  /* the sung line sits on the second row of the window */
+  transform: translateY(calc(var(--lh) * (1 - var(--line))));
+  transition: transform 0.7s var(--ease-out);
+}
+
+.lyrics li {
+  height: var(--lh);
+  font-size: var(--text-heading);
+  font-stretch: var(--width-display);
+  letter-spacing: -0.03em;
+  line-height: var(--lh);
+  white-space: nowrap;
+  color: var(--color-fg);
+  transform-origin: left center;
+  transition:
+    opacity 0.5s var(--ease-out),
+    transform 0.5s var(--ease-out),
+    filter 0.5s var(--ease-out);
+}
+
+.lyrics li[data-distance='0'] {
+  font-weight: 600;
+  opacity: 1;
+  transform: scale(1.01);
+}
+
+.lyrics li[data-distance='1'] {
+  opacity: 0.3;
+  transform: scale(0.99);
+}
+
+.lyrics li[data-distance='2'] {
+  opacity: 0.2;
+  transform: scale(0.98);
+  filter: blur(0.5px);
+}
+
+.lyrics li[data-distance='3'] {
+  opacity: 0.15;
+  transform: scale(0.96);
+  filter: blur(1px);
+}
+
+/* ─── Small screens: deck above, copy below ────── */
+
+@media (max-width: 860px) {
+  .deckSlot {
+    inset: calc(var(--nav-height) + 1.5rem) 0 auto 0;
+    height: 40svh;
+  }
+
+  .deck {
+    --d: min(31svh, 58vw);
+    margin-right: calc(var(--d) * 0.36);
+  }
+
+  .chapter {
+    align-items: flex-end;
+    padding-bottom: 3.5rem;
+  }
+
+  .chapter.hero {
+    align-items: flex-start;
+    padding-top: calc(var(--nav-height) + 2.5rem);
+  }
+
+  .chapter:not(.hero) .chapterInner > * {
+    max-width: none;
+  }
+
+  .chapterInner {
+    gap: var(--space-4);
+  }
+}

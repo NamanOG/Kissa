@@ -1,7 +1,6 @@
 import '@testing-library/jest-dom/vitest'
 import { vi } from 'vitest'
 
-// Mock Web Animations API
 if (!Element.prototype.animate) {
   Element.prototype.animate = vi.fn().mockImplementation(() => ({
     pause: vi.fn(),
@@ -15,7 +14,6 @@ if (!Element.prototype.animate) {
   })) as any
 }
 
-// Mock Pointer Events
 if (!Element.prototype.setPointerCapture) {
   Element.prototype.setPointerCapture = vi.fn()
 }
@@ -23,7 +21,6 @@ if (!Element.prototype.releasePointerCapture) {
   Element.prototype.releasePointerCapture = vi.fn()
 }
 
-// Mock ResizeObserver
 if (typeof global.ResizeObserver === 'undefined') {
   global.ResizeObserver = class {
     observe() {}
@@ -32,7 +29,6 @@ if (typeof global.ResizeObserver === 'undefined') {
   } as any
 }
 
-// Mock HTMLMediaElement
 if (typeof window.HTMLMediaElement !== 'undefined') {
   window.HTMLMediaElement.prototype.play = vi.fn()
   window.HTMLMediaElement.prototype.pause = vi.fn()

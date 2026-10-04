@@ -33,7 +33,6 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
   const rafRef = useRef<number | null>(null)
   const currentPlaybackRateRef = useRef(0)
 
-  // Initialize Web Animations API rotation
   useEffect(() => {
     if (!vinylRef.current) return
     
@@ -55,7 +54,6 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
 
     return () => {
       if (animationRef.current) {
-        // Save the exact rotational phase before cancelling
         savedVinylPhase = (animationRef.current.currentTime as number) || 0
         animationRef.current.cancel()
         animationRef.current = null
@@ -64,7 +62,6 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
     }
   }, [])
 
-  // Handle RPM changes by updating animation duration smoothly
   useEffect(() => {
     if (!animationRef.current) return
     const targetDuration = rpm === '45' ? 1333.33 : 1800
@@ -74,7 +71,6 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
     }
   }, [rpm])
 
-  // Handle play/pause physics via playbackRate interpolation
   useEffect(() => {
     if (!animationRef.current) return
     
@@ -117,7 +113,6 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
       )}
       {...props}
     >
-      {/* Vinyl drop shadow — creates "sitting on platter" depth */}
       <div
         className="absolute inset-[2%] rounded-full pointer-events-none"
         style={{
@@ -135,7 +130,6 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
         <Label albumArt={artwork} />
       </div>
 
-      {/* Reflection stays static (doesn't rotate with vinyl) */}
       <ReflectionLayer />
       <Spindle />
     </div>

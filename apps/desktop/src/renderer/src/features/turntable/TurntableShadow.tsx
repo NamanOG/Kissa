@@ -7,7 +7,6 @@ export const TurntableShadow = memo(
       <div
         className={cn('absolute inset-0 pointer-events-none -z-10', className)}
       >
-        {/* Soft natural floor grounding shadow (directional downwards beneath bottom edge) */}
         <div
           className="absolute"
           style={{
@@ -21,7 +20,6 @@ export const TurntableShadow = memo(
           }}
         />
 
-        {/* Directional contact shadow directly beneath plinth front face */}
         <div
           className="absolute"
           style={{

@@ -135,6 +135,18 @@
     @apply overflow-hidden bg-transparent text-foreground;
   }
 }
+/* The line being sung fills word by word. --word-progress is written from the playback clock. */
+.lyric-word-active {
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-image: linear-gradient(
+    to right,
+    var(--on-surface) var(--word-progress, 0%),
+    color-mix(in srgb, var(--on-surface) 38%, transparent) var(--word-progress, 0%)
+  );
+}
+
 @layer utilities {
   /* -webkit-app-region is intentional: required for Electron frameless window dragging on Windows/macOS.
      CSS validator warnings for browser compatibility can be safely ignored for this Electron-only property. */

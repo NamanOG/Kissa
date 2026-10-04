@@ -58,14 +58,12 @@ function getCleanAppName(sourceAppId: string): string {
   if (lower.includes('foobar')) {
     return 'foobar2000'
   }
-  // Strip file extension / path
   const filename = sourceAppId.split(/[\\/]/).pop() || sourceAppId
   return filename.replace(/\.(exe|appx)$/i, '')
 }
 
 function normalizeTime(raw: number | undefined | null): number {
   if (!raw || raw <= 0 || !Number.isFinite(raw)) return 0
-  // If > 10 million, value is in 100ns ticks (Windows TimeSpan)
   if (raw >= 10_000_000) {
     return raw / 10_000_000
   }
@@ -78,9 +76,13 @@ function normalizeTime(raw: number | undefined | null): number {
 
 import { ArtworkService } from './ArtworkService'
 
+/** The last cover the helper sent. It only resends the image when it changes. */
+let lastThumbnailDataUrl: string | undefined
+
 function formatSession(
   session: any,
-  volumeInfo?: { master?: number; isMuted?: boolean }
+  volumeInfo?: { master?: number; isMuted?: boolean },
+  sampledAt?: number
 ): SystemMediaPayload | null {
   const masterVol = volumeInfo?.master !== undefined ? volumeInfo.master : 100
   const isMuted = volumeInfo?.isMuted ?? false
@@ -100,6 +102,9 @@ function formatSession(
     const isPng = thumbBase64.startsWith('iVBORw0KGgo')
     const mime = isPng ? 'image/png' : 'image/jpeg'
     artworkDataUrl = `data:${mime};base64,${thumbBase64}`
+    lastThumbnailDataUrl = artworkDataUrl
+  } else if (session.media.thumbnailUnchanged === true && lastThumbnailDataUrl) {
+    artworkDataUrl = lastThumbnailDataUrl
   } else if (session.media.thumbnail) {
     try {
       const buf = Buffer.isBuffer(session.media.thumbnail)
@@ -124,7 +129,6 @@ function formatSession(
   let artist = (session.media.artist || '').trim() || 'Unknown Artist'
   let album = (session.media.albumTitle || '').trim()
 
-  // Clean Apple Music format: "Artist - Album" in artist field
   if (artist.includes(' — ')) {
     const parts = artist.split(' — ')
     artist = parts[0].trim()
@@ -162,7 +166,9 @@ function formatSession(
     isPlaying,
     progress: Math.max(0, normalizeTime(session.timeline?.position || 0)),
     duration: Math.max(0, normalizeTime(session.timeline?.duration || 0)),
-    lastUpdatedTime: session.lastUpdatedTime || Date.now(),
+    // When the position was sampled (helper clock, same machine). The renderer uses it
+    // to account for the time the message spent in transit.
+    lastUpdatedTime: sampledAt || session.lastUpdatedTime || Date.now(),
     volume: masterVol,
     isMuted
   }
@@ -176,6 +182,8 @@ export class MediaDetectionService {
   private worker: Worker | null = null
   private latestPayload: SystemMediaPayload | null = null
   private lastPayloadJson: string | null = null
+  /** Embedded cover last sent to each window, so position updates do not carry it again. */
+  private readonly artworkSentTo = new Map<number, string>()
   private latestVolume: { master: number; isMuted: boolean } = { master: 100, isMuted: false }
   private videoPlaybackState: VideoPlaybackState = 'unknown'
   private lastUpdateTimestamp: number = 0
@@ -267,8 +275,9 @@ export class MediaDetectionService {
   public start(): void {
     if (this.worker) return
 
-    // Register IPC handler for one-time fetch
-    ipcMain.handle('kissa:get-system-media', () => {
+    ipcMain.handle('kissa:get-system-media', (event) => {
+      const artwork = this.latestPayload?.artworkDataUrl
+      if (artwork && artwork.startsWith('data:')) this.artworkSentTo.set(event.sender.id, artwork)
       return this.latestPayload
     })
 
@@ -276,7 +285,6 @@ export class MediaDetectionService {
       return LyricsService.getInstance().getLyrics(request)
     })
 
-    // Register volume control IPC handlers
     ipcMain.handle('kissa:set-volume', (_event, vol: number) => {
       this.setVolume(vol)
     })
@@ -285,7 +293,6 @@ export class MediaDetectionService {
       return this.latestVolume
     })
 
-    // Register transport control IPC handlers
     ipcMain.handle('kissa:media-play-pause', () => {
       if (this.worker && this.latestPayload) {
         this.worker.postMessage({ action: 'playPause' })
@@ -366,7 +373,7 @@ export class MediaDetectionService {
               isMuted: msg.volume.isMuted ?? false
             }
           }
-          this.processSessionUpdate(msg.session, msg.volume)
+          this.processSessionUpdate(msg.session, msg.volume, msg.timestamp)
           ScreensaverSessionService.getInstance().onPlaybackStateChanged(
             this.isMusicPlaying(),
             this.getVideoPlaybackState()
@@ -409,8 +416,12 @@ export class MediaDetectionService {
     }
   }
 
-  private processSessionUpdate(session: MediaInfo | null, volumeInfo?: { master?: number; isMuted?: boolean }): void {
-    const payload = formatSession(session, volumeInfo || this.latestVolume)
+  private processSessionUpdate(
+    session: MediaInfo | null,
+    volumeInfo?: { master?: number; isMuted?: boolean },
+    sampledAt?: number
+  ): void {
+    const payload = formatSession(session, volumeInfo || this.latestVolume, sampledAt)
 
     // Preserve high-res web artwork if it's the exact same track and we already fetched it
     if (
@@ -465,9 +476,26 @@ export class MediaDetectionService {
   private broadcast(payload: SystemMediaPayload | null): void {
     const windows = BrowserWindow.getAllWindows()
     for (const win of windows) {
-      if (!win.isDestroyed() && win.webContents) {
-        win.webContents.send('kissa:system-media-update', payload)
+      if (win.isDestroyed() || !win.webContents) continue
+      const id = win.webContents.id
+      const artwork = payload?.artworkDataUrl
+
+      // An embedded cover can be hundreds of kilobytes. Send it once per window and
+      // mark later updates "unchanged"; the preload bridge puts it back.
+      if (payload && artwork && artwork.startsWith('data:')) {
+        if (this.artworkSentTo.get(id) === artwork) {
+          win.webContents.send('kissa:system-media-update', {
+            ...payload,
+            artworkDataUrl: undefined,
+            artworkUnchanged: true
+          })
+          continue
+        }
+        this.artworkSentTo.set(id, artwork)
+      } else {
+        this.artworkSentTo.delete(id)
       }
+      win.webContents.send('kissa:system-media-update', payload)
     }
   }
 

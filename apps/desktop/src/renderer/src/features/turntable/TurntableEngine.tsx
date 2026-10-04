@@ -26,10 +26,8 @@ export const TurntableEngine = memo(
         style={{ perspective: '1400px' }}
         {...props}
       >
-        {/* Floor and contact shadow */}
         <TurntableShadow />
 
-        {/* 3D-perspective tilted turntable plinth */}
         <div
           className="relative w-full aspect-[10/6.8] pointer-events-none"
           style={{
@@ -38,7 +36,6 @@ export const TurntableEngine = memo(
           }}
         >
           <TurntableBase className="absolute inset-0 overflow-visible">
-            {/* ── Platter + Vinyl assembly (Aligned with recessed well) ── */}
             <div
               className="absolute flex items-center justify-center pointer-events-none"
               style={{
@@ -50,11 +47,8 @@ export const TurntableEngine = memo(
             >
               <div className="relative w-full h-0 pb-[100%]">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  {/* Heavy Machined Metal Platter Cylinder */}
                   <Platter size="100%" />
-                  {/* Anti-static Felt Slipmat */}
                   <Slipmat size="98%" />
-                  {/* Audiophile Vinyl Record */}
                   <VinylEngine
                     albumArt={albumArt}
                     isActive={isActive}
@@ -64,7 +58,6 @@ export const TurntableEngine = memo(
               </div>
             </div>
 
-            {/* ── Tonearm Assembly ── */}
             <TonearmAssembly
               className="absolute"
               style={{
@@ -75,7 +68,6 @@ export const TurntableEngine = memo(
               }}
             />
 
-            {/* ── On-plinth tactile mechanical controls ── */}
             <MechanicalControls />
           </TurntableBase>
         </div>

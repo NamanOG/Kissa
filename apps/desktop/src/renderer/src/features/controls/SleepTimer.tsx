@@ -12,7 +12,6 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
   const pause = usePlayerStore((s) => s.pause)
   const setIsPowered = usePlayerStore((s) => s.setIsPowered)
 
-  // Click-outside and Escape dismiss
   useEffect(() => {
     if (!isOpen) return
 
@@ -39,7 +38,6 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
     }
   }, [isOpen])
 
-  // Countdown effect
   useEffect(() => {
     if (timeLeft === null) return
 
@@ -47,7 +45,6 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
       pause()
       setIsPowered(false)
       setTimeLeft(null)
-      // Attempt to stop OS media
       if (typeof window !== 'undefined' && window.electron?.mediaPlayPause) {
         void window.electron.mediaPlayPause()
       }

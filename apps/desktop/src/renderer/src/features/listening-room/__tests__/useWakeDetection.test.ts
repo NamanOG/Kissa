@@ -16,11 +16,9 @@ describe('useWakeDetection', () => {
     const onWake = vi.fn()
     renderHook(() => useWakeDetection(onWake))
 
-    // Fire keydown immediately
     window.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }))
     expect(onWake).not.toHaveBeenCalled()
 
-    // Advance by 300ms (still within 500ms window)
     act(() => {
       vi.advanceTimersByTime(300)
     })
@@ -60,15 +58,12 @@ describe('useWakeDetection', () => {
       vi.advanceTimersByTime(500)
     })
 
-    // Initial position
     window.dispatchEvent(new MouseEvent('mousemove', { clientX: 100, clientY: 100 }))
     expect(onWake).not.toHaveBeenCalled()
 
-    // Micro-jitter: 2px movement
     window.dispatchEvent(new MouseEvent('mousemove', { clientX: 102, clientY: 101 }))
     expect(onWake).not.toHaveBeenCalled()
 
-    // Micro-jitter: 5px movement
     window.dispatchEvent(new MouseEvent('mousemove', { clientX: 105, clientY: 100 }))
     expect(onWake).not.toHaveBeenCalled()
   })
@@ -81,11 +76,9 @@ describe('useWakeDetection', () => {
       vi.advanceTimersByTime(500)
     })
 
-    // Initial position
     window.dispatchEvent(new MouseEvent('mousemove', { clientX: 100, clientY: 100 }))
     expect(onWake).not.toHaveBeenCalled()
 
-    // Significant move: 20px movement
     window.dispatchEvent(new MouseEvent('mousemove', { clientX: 120, clientY: 100 }))
     expect(onWake).toHaveBeenCalledTimes(1)
   })

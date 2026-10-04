@@ -29,7 +29,6 @@ describe('WindowManager screensaver transitions', () => {
       }
     }
 
-    // Set private mainWindow for testing
     ;(wm as any).mainWindow = mockWindow
     ;(wm as any).savedWindowState = null
   })
@@ -49,7 +48,6 @@ describe('WindowManager screensaver transitions', () => {
     mockWindow.isFullScreen.mockReturnValue(false)
 
     wm.enterScreensaverMode()
-    // Now window is in fullscreen screensaver mode
     mockWindow.isFullScreen.mockReturnValue(true)
 
     wm.exitScreensaverMode()
@@ -99,13 +97,11 @@ describe('WindowManager screensaver transitions', () => {
     mockWindow.getBounds.mockReturnValue({ x: 100, y: 100, width: 800, height: 600 })
     wm.enterScreensaverMode()
 
-    // Simulate window bounds changing while in screensaver
     mockWindow.getBounds.mockReturnValue({ x: 0, y: 0, width: 1920, height: 1080 })
     const secondCall = wm.enterScreensaverMode()
     expect(secondCall).toBe(true)
 
     wm.exitScreensaverMode()
-    // Original bounds must be restored, not the intermediate bounds
     expect(mockWindow.setBounds).toHaveBeenCalledWith({ x: 100, y: 100, width: 800, height: 600 })
   })
 

@@ -146,7 +146,6 @@ HKEY_CURRENT_USER\\Control Panel\\Desktop
     })
 
     it('REFUSES to unregister if SCRNSAVE.EXE points to another screensaver', async () => {
-      // Query returns a different screensaver (e.g. Mystify.scr)
       mockExecFile.mockResolvedValueOnce({
         stdout: 'SCRNSAVE.EXE    REG_SZ    C:\\Windows\\System32\\Mystify.scr',
         stderr: ''
@@ -158,7 +157,6 @@ HKEY_CURRENT_USER\\Control Panel\\Desktop
       expect(res.reason).toBe('points_to_other_screensaver')
       expect(res.currentPath).toBe('C:\\Windows\\System32\\Mystify.scr')
 
-      // reg delete MUST NOT have been called!
       expect(mockExecFile).toHaveBeenCalledTimes(1)
       const [cmd, queryArgs] = mockExecFile.mock.calls[0]
       expect(cmd).toBe('reg.exe')
@@ -166,7 +164,6 @@ HKEY_CURRENT_USER\\Control Panel\\Desktop
     })
 
     it('safely handles unregister when no screensaver is registered', async () => {
-      // Query rejects because value is not found
       mockExecFile.mockRejectedValueOnce(
         new Error('ERROR: The system was unable to find the specified registry key or value.')
       )
@@ -175,7 +172,6 @@ HKEY_CURRENT_USER\\Control Panel\\Desktop
       expect(res.success).toBe(true)
       expect(res.removed).toBe(false)
       expect(res.reason).toBe('not_registered')
-      // reg delete was not invoked
       expect(mockExecFile).toHaveBeenCalledTimes(1)
     })
 
