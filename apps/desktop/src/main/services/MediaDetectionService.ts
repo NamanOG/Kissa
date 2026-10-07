@@ -55,8 +55,20 @@ function getCleanAppName(sourceAppId: string): string {
   if (lower.includes('youtube')) {
     return 'YouTube'
   }
+  if (lower.includes('zunemusic')) {
+    return 'Media Player'
+  }
+  if (lower.includes('zunevideo')) {
+    return 'Films & TV'
+  }
   if (lower.includes('foobar')) {
     return 'foobar2000'
+  }
+  // Packaged apps identify themselves as "Publisher.AppName_hash!Id".
+  if (sourceAppId.includes('!')) {
+    const family = sourceAppId.split('!')[0].replace(/_[a-z0-9]{10,}$/i, '')
+    const name = family.split('.').pop() || family
+    return name.replace(/([a-z])([A-Z])/g, '$1 $2')
   }
   const filename = sourceAppId.split(/[\\/]/).pop() || sourceAppId
   return filename.replace(/\.(exe|appx)$/i, '')
@@ -145,11 +157,11 @@ function formatSession(
     }
   }
 
-  const cachedArtwork = ArtworkService.getInstance().getCachedArtwork(title, artist)
+  const cachedArtwork = ArtworkService.getInstance().getCachedArtwork(title, artist, album)
   if (cachedArtwork && (cachedArtwork.startsWith('http://') || cachedArtwork.startsWith('https://'))) {
     artworkDataUrl = cachedArtwork
   } else if (artworkDataUrl) {
-    ArtworkService.getInstance().setCachedArtwork(title, artist, artworkDataUrl)
+    ArtworkService.getInstance().setCachedArtwork(title, artist, artworkDataUrl, album)
   } else if (cachedArtwork) {
     artworkDataUrl = cachedArtwork
   }
@@ -164,6 +176,7 @@ function formatSession(
     album,
     artworkDataUrl,
     isPlaying,
+    canSeek: session.playback?.canSeek !== false,
     progress: Math.max(0, normalizeTime(session.timeline?.position || 0)),
     duration: Math.max(0, normalizeTime(session.timeline?.duration || 0)),
     // When the position was sampled (helper clock, same machine). The renderer uses it
@@ -429,11 +442,12 @@ export class MediaDetectionService {
       payload &&
       this.latestPayload.title?.trim().toLowerCase() === payload.title?.trim().toLowerCase() &&
       this.latestPayload.artist?.trim().toLowerCase() === payload.artist?.trim().toLowerCase() &&
+      (this.latestPayload.album || '').trim().toLowerCase() === (payload.album || '').trim().toLowerCase() &&
       this.latestPayload.artworkDataUrl?.startsWith('http')
     ) {
       payload.artworkDataUrl = this.latestPayload.artworkDataUrl
     } else if (payload && (!payload.artworkDataUrl || payload.artworkDataUrl.startsWith('data:'))) {
-      const cached = ArtworkService.getInstance().getCachedArtwork(payload.title, payload.artist)
+      const cached = ArtworkService.getInstance().getCachedArtwork(payload.title, payload.artist, payload.album)
       if (cached && cached.startsWith('http')) {
         payload.artworkDataUrl = cached
       }
@@ -451,7 +465,7 @@ export class MediaDetectionService {
       const currentTitle = payload.title
       const currentArtist = payload.artist
       ArtworkService.getInstance()
-        .fetchArtwork(payload.title, payload.artist, payload.album)
+        .fetchArtwork(payload.title, payload.artist, payload.album, !payload.artworkDataUrl)
         .then((fetchedUrl) => {
           if (fetchedUrl && this.latestPayload) {
             if (

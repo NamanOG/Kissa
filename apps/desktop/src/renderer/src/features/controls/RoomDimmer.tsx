@@ -135,7 +135,7 @@ export const RoomDimmer = memo(() => {
       title="Room Illumination"
       aria-label="Room Illumination"
     >
-      <span className="font-mono text-[9px] uppercase tracking-widest text-[var(--muted)] font-bold select-none hidden min-[1000px]:block shrink-0">
+      <span className="font-mono text-[9px] uppercase tracking-widest text-dim font-bold select-none hidden min-[1000px]:block shrink-0">
         Room
       </span>
       
@@ -143,7 +143,7 @@ export const RoomDimmer = memo(() => {
         ref={trackRef}
         className={cn(
           'relative flex-1 h-6 flex items-center cursor-pointer touch-none select-none',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] rounded-full'
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tone rounded-full'
         )}
         onPointerDown={handlePointerDown}
         onWheel={handleWheel}

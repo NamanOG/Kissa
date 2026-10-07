@@ -202,16 +202,30 @@ export class WindowManager {
 
       UpdateService.getInstance().setupIpcHandlers()
 
+      // Where the full window was before it shrank to the mini player.
+      let beforeMini: { maximized: boolean; bounds: Electron.Rectangle } | null = null
+
       ipcMain.handle('kissa:toggle-mini-player', (_event, isMini: boolean, alwaysOnTop: boolean = true) => {
-        if (!this.mainWindow) return
+        const win = this.mainWindow
+        if (!win) return
         if (isMini) {
-          this.mainWindow.setMinimumSize(320, 320)
-          this.mainWindow.setSize(360, 420, true)
-          this.mainWindow.setAlwaysOnTop(alwaysOnTop)
+          if (win.isFullScreen()) win.setFullScreen(false)
+          // A maximized window ignores setSize, so remember the state and un-maximize first.
+          if (!beforeMini) beforeMini = { maximized: win.isMaximized(), bounds: win.getNormalBounds() }
+          if (win.isMaximized()) win.unmaximize()
+          win.setMinimumSize(320, 320)
+          win.setSize(360, 420, true)
+          win.setAlwaysOnTop(alwaysOnTop)
         } else {
-          this.mainWindow.setMinimumSize(MAIN_WINDOW_MIN_SIZE.width, MAIN_WINDOW_MIN_SIZE.height)
-          this.mainWindow.setSize(900, 670, true)
-          this.mainWindow.setAlwaysOnTop(false)
+          win.setAlwaysOnTop(false)
+          win.setMinimumSize(MAIN_WINDOW_MIN_SIZE.width, MAIN_WINDOW_MIN_SIZE.height)
+          if (beforeMini) {
+            win.setBounds(beforeMini.bounds)
+            if (beforeMini.maximized) win.maximize()
+          } else {
+            win.setSize(900, 670, true)
+          }
+          beforeMini = null
         }
       })
 

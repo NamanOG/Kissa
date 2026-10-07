@@ -47,7 +47,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
 
   return (
     <div className={cn(
-      "relative flex flex-col w-full h-full p-4 overflow-hidden select-none transition-colors duration-ambient ease-ambient bg-[var(--panel-bg)] text-[var(--on-surface)]",
+      "relative flex flex-col w-full h-full p-4 overflow-hidden select-none transition-colors duration-ambient ease-ambient bg-[var(--panel-bg)] text-ink",
       isMiniPlayer && "app-region-drag"
     )}>
       <div className="relative z-10 flex items-center justify-between mt-2 shrink-0 px-2 pointer-events-auto">
@@ -61,10 +61,10 @@ export const MiniPlayerView = (): React.JSX.Element => {
               transition={{ duration: 0.3 }}
               className="flex flex-col"
             >
-              <h3 className="font-serif text-lg font-medium line-clamp-1 tracking-tight text-[var(--on-surface)]">
+              <h3 className="font-serif text-lg font-medium line-clamp-1 tracking-tight text-ink">
                 {currentTrack?.title ?? 'Kissa'}
               </h3>
-              <p className="text-xs line-clamp-1 text-[var(--muted)]">
+              <p className="text-xs line-clamp-1 text-dim">
                 {currentTrack?.artist ?? 'Waiting for music'}
               </p>
             </motion.div>
@@ -74,7 +74,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
         <button
           type="button"
           onClick={() => toggleMiniPlayer()}
-          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors duration-ui ease-primary cursor-pointer app-region-no-drag text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.05]"
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors duration-ui ease-primary cursor-pointer app-region-no-drag text-dim hover:text-ink hover:bg-ink/[0.05]"
           title="Restore Window"
         >
           <Maximize2 className="w-4 h-4" />
@@ -84,7 +84,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
       <div className="relative flex-1 min-h-0 flex items-center justify-center pointer-events-none mt-2">
         <div className="w-[180px] h-[180px] relative">
           <div
-            className="absolute inset-4 rounded-full blur-2xl bg-[var(--accent)]/15"
+            className="absolute inset-4 rounded-full blur-2xl bg-tone/15"
           />
           <VinylEngine
             albumArt={currentTrack?.artworkUrl ?? albumPlaceholder}
@@ -97,7 +97,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
         <div className="h-1.5 w-full bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
           <div 
             ref={fillRef}
-            className="h-full origin-left will-change-transform bg-[var(--accent)]"
+            className="h-full origin-left will-change-transform bg-tone"
             style={{ transform: 'scaleX(0)' }}
           />
         </div>
@@ -109,8 +109,8 @@ export const MiniPlayerView = (): React.JSX.Element => {
             className={cn(
               'w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-ui ease-primary cursor-pointer',
               showQueue
-                ? 'text-[var(--accent)] bg-[var(--accent)]/15'
-                : 'text-[var(--muted)] hover:bg-[var(--on-surface)]/5'
+                ? 'text-tone bg-tone/15'
+                : 'text-dim hover:bg-ink/5'
             )}
           >
             <ListMusic className="w-4 h-4" />
@@ -119,14 +119,14 @@ export const MiniPlayerView = (): React.JSX.Element => {
           <div className="flex items-center justify-center gap-4">
             <button
               onClick={() => playPrev()}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-[color,background-color,transform] duration-ui ease-primary cursor-pointer active:scale-95 text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.06]"
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-[color,background-color,transform] duration-ui ease-primary cursor-pointer active:scale-95 text-ink hover:bg-ink/[0.06]"
             >
               <SkipBack className="w-4 h-4 fill-current" />
             </button>
 
             <button
               onClick={() => togglePlayPause()}
-              className="w-12 h-12 rounded-full flex items-center justify-center transition-transform duration-ui ease-primary cursor-pointer active:scale-95 bg-[var(--on-surface)] text-[var(--surface)] shadow-md"
+              className="w-12 h-12 rounded-full flex items-center justify-center transition-transform duration-ui ease-primary cursor-pointer active:scale-95 bg-ink text-[var(--surface)] shadow-md"
             >
               {isPlaying ? (
                 <Pause className="w-5 h-5 fill-current" />
@@ -137,7 +137,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
 
             <button
               onClick={() => playNext()}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-[color,background-color,transform] duration-ui ease-primary cursor-pointer active:scale-95 text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.06]"
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-[color,background-color,transform] duration-ui ease-primary cursor-pointer active:scale-95 text-ink hover:bg-ink/[0.06]"
             >
               <SkipForward className="w-4 h-4 fill-current" />
             </button>
@@ -157,7 +157,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
             className="absolute inset-0 z-20 flex flex-col p-4 app-region-no-drag bg-[var(--panel-bg)]"
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-kissa-editorial text-lg text-[var(--on-surface)]">Up Next</h3>
+              <h3 className="font-kissa-editorial text-lg text-ink">Up Next</h3>
               <button
                 onClick={() => setShowQueue(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/10 dark:hover:bg-white/10"

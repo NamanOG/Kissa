@@ -76,9 +76,10 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
         transitionStartRef.current = timestamp
         startAngleRef.current = armAngleRef.current
         startScaleRef.current = armScaleRef.current
-      } else if (isPlayingActive && armStateRef.current === 'LIFTING') { 
+      } else if (isPlayingActive && armStateRef.current === 'LIFTING') {
         armStateRef.current = 'LOWERING'
         transitionStartRef.current = timestamp
+        startAngleRef.current = armAngleRef.current
         startScaleRef.current = armScaleRef.current
       } else if ((isPaused || isStopped) && ['PLAYING', 'LOWERING', 'MOVING_TO_RECORD', 'LIFTING', 'SWEEPING'].includes(armStateRef.current)) {
         armStateRef.current = 'RETURNING'
@@ -97,11 +98,12 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
         if (progress >= 1) {
           armStateRef.current = 'LOWERING'
           transitionStartRef.current = timestamp
+          startAngleRef.current = nextAngle
           startScaleRef.current = nextScale
         }
       } else if (armStateRef.current === 'LOWERING') {
         const progress = Math.min(1, (timestamp - transitionStartRef.current) / 250)
-        nextAngle = targetGrooveAngle
+        nextAngle = startAngleRef.current + (targetGrooveAngle - startAngleRef.current) * easeInOutCubic(progress)
         nextScale = startScaleRef.current + (1.0 - startScaleRef.current) * progress
         if (progress >= 1) {
           armStateRef.current = 'PLAYING'
@@ -183,6 +185,7 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
   }, [isDragging])
 
   const dragContextRef = useRef<{ startMouseAngle: number; startArmAngle: number } | null>(null)
+  const movedRef = useRef(false)
 
   const getMouseAngle = (clientX: number, clientY: number): number | null => {
     if (!tonearmContainerRef.current) return null
@@ -196,12 +199,16 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
     event.preventDefault()
     event.stopPropagation()
     event.currentTarget.setPointerCapture(event.pointerId)
+    // Start from where the arm is now. (It used to start from wherever it was last
+    // dropped, so it jumped on pick-up and a plain click could stop the music.)
+    dragAngleRef.current = armAngleRef.current
+    movedRef.current = false
     setIsDragging(true)
-    
+
     const mouseAngle = getMouseAngle(event.clientX, event.clientY) ?? 0
     dragContextRef.current = {
       startMouseAngle: mouseAngle,
-      startArmAngle: dragAngleRef.current
+      startArmAngle: armAngleRef.current
     }
   }
 
@@ -214,12 +221,13 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
     while (angleDelta > 180) angleDelta -= 360
     while (angleDelta < -180) angleDelta += 360
     
+    if (Math.abs(angleDelta) > 0.6) movedRef.current = true
     const newAngle = dragContextRef.current.startArmAngle + angleDelta
     const clampedAngle = Math.max(-2, Math.min(42, newAngle))
     dragAngleRef.current = clampedAngle
     
     tonearmRef.current.style.transition = 'none'
-    tonearmRef.current.style.transform = `rotate(${clampedAngle}deg)`
+    tonearmRef.current.style.transform = `rotate(${clampedAngle}deg) scale(1.015)`
   }
 
   const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>): void => {
@@ -228,30 +236,38 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
     dragContextRef.current = null
     setIsDragging(false)
 
+    // A click without a drag does nothing: the arm settles back where it was.
+    if (!movedRef.current) return
+
     const angle = dragAngleRef.current
     const state = usePlayerStore.getState()
     const isExternal = !!state.currentTrack?.sourceAppId
-    
-    if (angle < 9) {
-      state.seek(0)
-      state.pause()
-      if (isExternal && window.electron?.mediaPlayPause && isPlaying) {
+    const toggleSource = (): void => {
+      if (isExternal && window.electron?.mediaPlayPause) {
+        window.__kissaMediaCommandCooldown?.()
         void window.electron.mediaPlayPause()
       }
-    } else {
-      const clamped = Math.max(OUTER_GROOVE_ANGLE, Math.min(INNER_GROOVE_ANGLE, angle))
-      const ratio = (clamped - OUTER_GROOVE_ANGLE) / (INNER_GROOVE_ANGLE - OUTER_GROOVE_ANGLE)
-      const activeDur = state.currentTrack?.duration && state.currentTrack.duration > 0 ? state.currentTrack.duration : 210
-      const seekTime = Math.round(ratio * activeDur)
-      
-      state.seek(seekTime)
-      
-      if (!state.isPlaying) {
-        state.play()
-        if (isExternal && window.electron?.mediaPlayPause) {
-          void window.electron.mediaPlayPause()
-        }
+    }
+
+    if (angle < 9) {
+      // Back on the rest: stop, and keep the place in the song.
+      if (state.isPlaying) {
+        state.pause()
+        toggleSource()
       }
+      return
+    }
+
+    // Dropped on the record: play from that groove (when the source allows seeking).
+    const clamped = Math.max(OUTER_GROOVE_ANGLE, Math.min(INNER_GROOVE_ANGLE, angle))
+    const ratio = (clamped - OUTER_GROOVE_ANGLE) / (INNER_GROOVE_ANGLE - OUTER_GROOVE_ANGLE)
+    const activeDur =
+      state.currentTrack?.duration && state.currentTrack.duration > 0 ? state.currentTrack.duration : 210
+    state.seek(ratio * activeDur)
+
+    if (!state.isPlaying) {
+      state.play()
+      toggleSource()
     }
   }
 

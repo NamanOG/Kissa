@@ -50,6 +50,8 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
   const [isConfirmingRestart, setIsConfirmingRestart] = useState<boolean>(false)
   const [isScreensaverRegistered, setIsScreensaverRegistered] = useState<boolean>(false)
   const [isScreensaverWorking, setIsScreensaverWorking] = useState<boolean>(false)
+  // Store build: Windows has to make the change, so Kissa shows the file and says what to do.
+  const [showScreensaverSteps, setShowScreensaverSteps] = useState<boolean>(false)
 
   const currentState = updatePayload?.state || 'idle'
   // Microsoft Store build: the Store delivers updates, so there is nothing to check here.
@@ -243,6 +245,8 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
       const res = await window.electron?.registerScreensaver?.()
       if (res?.success) {
         setIsScreensaverRegistered(true)
+      } else if (res?.manual) {
+        setShowScreensaverSteps(true)
       }
     } catch (err) {
       console.error(err)
@@ -250,6 +254,22 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
       setIsScreensaverWorking(false)
     }
   }
+
+  // The listener finishes the Store build's setup in Windows, so look again when they come back.
+  useEffect(() => {
+    if (!isSettingsOpen) return
+    const recheck = (): void => {
+      window.electron
+        ?.isScreensaverRegistered?.()
+        .then((registered) => {
+          setIsScreensaverRegistered(Boolean(registered))
+          if (registered) setShowScreensaverSteps(false)
+        })
+        .catch(() => {})
+    }
+    window.addEventListener('focus', recheck)
+    return () => window.removeEventListener('focus', recheck)
+  }, [isSettingsOpen])
 
   const handleUnregisterScreensaver = async () => {
     if (isScreensaverWorking) return
@@ -295,12 +315,12 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             className={cn(
-              'relative z-50 w-full max-w-[700px] max-h-[85vh] flex flex-col rounded-2xl overflow-hidden select-none border border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-[var(--panel-shadow)] [transform:translateZ(0)]',
+              'relative z-50 w-full max-w-[700px] max-h-[85vh] flex flex-col rounded-2xl overflow-hidden select-none border border-panel-line bg-[var(--deck-bg)] shadow-[var(--panel-shadow)] [transform:translateZ(0)]',
               className
             )}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-8 py-5 border-b border-[var(--panel-border)] shrink-0 bg-[var(--panel-bg)]">
+            <div className="flex items-center justify-between px-8 py-5 border-b border-panel-line shrink-0 bg-[var(--deck-bg)]">
               <h2 className="sr-only">Settings</h2>
               <SegmentedTabs
                 label="Settings sections"
@@ -315,7 +335,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
               <button
                 type="button"
                 onClick={toggleSettings}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-white/10 transition-colors cursor-pointer active:scale-95 border border-[var(--panel-border)]"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-dim hover:text-ink hover:bg-white/10 transition-colors cursor-pointer active:scale-95 border border-panel-line"
                 aria-label="Close preferences"
               >
                 <X className="w-4 h-4" />
@@ -327,7 +347,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
               {settingsTab === 'room' && (
               <>
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-3 tracking-[0.2em] uppercase">Listening Room</h4>
+                <h4 className="text-[11px] font-mono font-bold text-dim mb-3 tracking-[0.2em] uppercase">Listening Room</h4>
                 <div className="grid grid-cols-4 gap-x-4 gap-y-5">
                   {LISTENING_ENVIRONMENTS.map((env) => (
                     <ThemeCard
@@ -347,20 +367,20 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
               {settingsTab === 'playback' && (
               <>
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-2.5 tracking-[0.2em] uppercase">The Deck</h4>
-                <div className="rounded-2xl bg-[var(--on-surface)]/[0.03] border border-[var(--on-surface)]/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]">
+                <h4 className="text-[11px] font-mono font-bold text-dim mb-2.5 tracking-[0.2em] uppercase">The Deck</h4>
+                <div className="rounded-2xl bg-ink/[0.03] border border-ink/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]">
                   
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
-                    <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Platter Speed</span>
-                    <div className="flex items-center rounded-xl bg-[var(--on-surface)]/[0.05] p-1 border border-[var(--on-surface)]/10 shadow-inner gap-1">
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
+                    <span className="text-[13.5px] font-medium text-ink">Platter Speed</span>
+                    <div className="flex items-center rounded-xl bg-ink/[0.05] p-1 border border-ink/10 shadow-inner gap-1">
                       <button
                         type="button"
                         onClick={() => setRpm('33')}
                         className={cn(
                           'px-4 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition-[color,background-color,box-shadow] cursor-pointer flex items-center justify-center min-w-[70px]',
                           rpm === '33' 
-                            ? 'bg-[var(--accent)] text-[var(--panel-bg)] shadow-[0_0_14px_var(--accent)]' 
-                            : 'text-[var(--muted)] hover:text-[var(--on-surface)] bg-transparent'
+                            ? 'bg-tone text-[var(--surface)] shadow-[0_0_14px_var(--accent)]' 
+                            : 'text-dim hover:text-ink bg-transparent'
                         )}
                       >
                         33 RPM
@@ -371,8 +391,8 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                         className={cn(
                           'px-4 py-1.5 rounded-lg text-[11px] font-bold tracking-wider transition-[color,background-color,box-shadow] cursor-pointer flex items-center justify-center min-w-[70px]',
                           rpm === '45' 
-                            ? 'bg-[var(--accent)] text-[var(--panel-bg)] shadow-[0_0_14px_var(--accent)]' 
-                            : 'text-[var(--muted)] hover:text-[var(--on-surface)] bg-transparent'
+                            ? 'bg-tone text-[var(--surface)] shadow-[0_0_14px_var(--accent)]' 
+                            : 'text-dim hover:text-ink bg-transparent'
                         )}
                       >
                         45 RPM
@@ -380,10 +400,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Physical Feedback</span>
-                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Physical needle thud and visual tonearm weight</span>
+                      <span className="text-[13.5px] font-medium text-ink">Physical Feedback</span>
+                      <span className="text-[11.5px] text-dim mt-0.5">Physical needle thud and visual tonearm weight</span>
                     </div>
                     <HardwareSwitch
                       checked={physicalFeedback}
@@ -396,14 +416,14 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
               </div>
 
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-2.5 tracking-[0.2em] uppercase">Lyrics</h4>
-                <div className="rounded-2xl bg-[var(--on-surface)]/[0.03] border border-[var(--on-surface)]/[0.08] overflow-hidden flex flex-col">
+                <h4 className="text-[11px] font-mono font-bold text-dim mb-2.5 tracking-[0.2em] uppercase">Lyrics</h4>
+                <div className="rounded-2xl bg-ink/[0.03] border border-ink/[0.08] overflow-hidden flex flex-col">
                   <LyricsAppearanceRows />
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Follow the Song</span>
-                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Keep the line being sung in view</span>
+                      <span className="text-[13.5px] font-medium text-ink">Follow the Song</span>
+                      <span className="text-[11.5px] text-dim mt-0.5">Keep the line being sung in view</span>
                     </div>
                     <HardwareSwitch
                       checked={autoScrollLyrics}
@@ -412,16 +432,16 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Timing</span>
-                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Nudge lyrics that run early or late (also in the lyrics view)</span>
+                      <span className="text-[13.5px] font-medium text-ink">Timing</span>
+                      <span className="text-[11.5px] text-dim mt-0.5">Nudge lyrics that run early or late (also in the lyrics view)</span>
                     </div>
-                    <div className="flex items-center rounded-xl bg-[var(--on-surface)]/[0.05] p-1 border border-[var(--on-surface)]/10 shadow-inner gap-1.5">
+                    <div className="flex items-center rounded-xl bg-ink/[0.05] p-1 border border-ink/10 shadow-inner gap-1.5">
                       <button
                         type="button"
                         onClick={() => setLyricsOffset(Math.max(-2.0, Math.round((lyricsOffset - 0.1) * 10) / 10))}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--muted)] hover:text-[var(--on-surface)] bg-[var(--on-surface)]/[0.04] hover:bg-[var(--on-surface)]/[0.08] transition-colors text-sm font-bold active:scale-95 cursor-pointer"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-dim hover:text-ink bg-ink/[0.04] hover:bg-ink/[0.08] transition-colors text-sm font-bold active:scale-95 cursor-pointer"
                         title="Earlier (-0.1s)"
                       >
                         -
@@ -429,7 +449,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                       <button
                         type="button"
                         onClick={() => setLyricsOffset(0)}
-                        className="font-mono text-[11px] font-bold text-[var(--accent)] min-w-[52px] text-center hover:underline cursor-pointer"
+                        className="font-mono text-[11px] font-bold text-tone min-w-[52px] text-center hover:underline cursor-pointer"
                         title="Click to reset to default"
                       >
                         {lyricsOffset > 0 ? `+${lyricsOffset.toFixed(1)}s` : `${lyricsOffset.toFixed(1)}s`}
@@ -437,7 +457,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                       <button
                         type="button"
                         onClick={() => setLyricsOffset(Math.min(2.0, Math.round((lyricsOffset + 0.1) * 10) / 10))}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--muted)] hover:text-[var(--on-surface)] bg-[var(--on-surface)]/[0.04] hover:bg-[var(--on-surface)]/[0.08] transition-colors text-sm font-bold active:scale-95 cursor-pointer"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-dim hover:text-ink bg-ink/[0.04] hover:bg-ink/[0.08] transition-colors text-sm font-bold active:scale-95 cursor-pointer"
                         title="Later (+0.1s)"
                       >
                         +
@@ -454,13 +474,13 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
               {settingsTab === 'system' && (
               <>
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-2.5 tracking-[0.2em] uppercase">Windows</h4>
-                <div className="rounded-2xl bg-[var(--on-surface)]/[0.03] border border-[var(--on-surface)]/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)]">
+                <h4 className="text-[11px] font-mono font-bold text-dim mb-2.5 tracking-[0.2em] uppercase">Windows</h4>
+                <div className="rounded-2xl bg-ink/[0.03] border border-ink/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)]">
                   
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Always on Top (Mini Player)</span>
-                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Keep the Mini Player visible above other windows</span>
+                      <span className="text-[13.5px] font-medium text-ink">Always on Top (Mini Player)</span>
+                      <span className="text-[11.5px] text-dim mt-0.5">Keep the Mini Player visible above other windows</span>
                     </div>
                     <HardwareSwitch
                       checked={miniPlayerAlwaysOnTop}
@@ -469,10 +489,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Start with Windows</span>
-                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Open Kissa in the tray when you sign in</span>
+                      <span className="text-[13.5px] font-medium text-ink">Start with Windows</span>
+                      <span className="text-[11.5px] text-dim mt-0.5">Open Kissa in the tray when you sign in</span>
                     </div>
                     <HardwareSwitch
                       checked={startWithWindows}
@@ -481,10 +501,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col">
-                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Keep Running in Tray</span>
-                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">Closing the window keeps Kissa following your music</span>
+                      <span className="text-[13.5px] font-medium text-ink">Keep Running in Tray</span>
+                      <span className="text-[11.5px] text-dim mt-0.5">Closing the window keeps Kissa following your music</span>
                     </div>
                     <HardwareSwitch
                       checked={runInBackground}
@@ -493,13 +513,15 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col pr-4">
-                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Windows Screensaver</span>
-                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">
+                      <span className="text-[13.5px] font-medium text-ink">Windows Screensaver</span>
+                      <span className="text-[11.5px] text-dim mt-0.5">
                         {isScreensaverRegistered
                           ? '✓ Kissa is your Windows screensaver'
-                          : 'Kissa can run as your Windows screensaver, using the Listening Display experience.'}
+                          : showScreensaverSteps
+                            ? 'A folder has opened with Kissa.scr selected. Right-click it and choose Install.'
+                            : 'Kissa can run as your Windows screensaver, using the Listening Display experience.'}
                       </span>
                     </div>
                     {isScreensaverRegistered ? (
@@ -507,42 +529,42 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                         type="button"
                         onClick={handleUnregisterScreensaver}
                         disabled={isScreensaverWorking}
-                        className="px-4 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.08] hover:bg-red-500/20 hover:text-red-300 text-[var(--muted)] text-[12px] font-bold transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95 disabled:opacity-50 shrink-0"
+                        className="px-4 py-1.5 rounded-xl bg-ink/[0.08] hover:bg-red-500/20 hover:text-red-300 text-dim text-[12px] font-bold transition-colors cursor-pointer border border-ink/10 active:scale-95 disabled:opacity-50 shrink-0"
                       >
-                        {isScreensaverWorking ? 'Removing...' : 'Remove Kissa Screensaver'}
+                        {isScreensaverWorking ? 'Removing...' : isStoreManaged ? 'Change in Windows Settings' : 'Remove Kissa Screensaver'}
                       </button>
                     ) : (
                       <button
                         type="button"
                         onClick={handleRegisterScreensaver}
                         disabled={isScreensaverWorking}
-                        className="px-4 py-1.5 rounded-xl bg-[var(--accent)] text-[var(--panel-bg)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95 disabled:opacity-50 shrink-0"
+                        className="px-4 py-1.5 rounded-xl bg-tone text-[var(--surface)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95 disabled:opacity-50 shrink-0"
                       >
-                        {isScreensaverWorking ? 'Setting...' : 'Set as Windows Screensaver'}
+                        {isScreensaverWorking ? 'Setting...' : isStoreManaged ? 'Set Up Screensaver…' : 'Set as Windows Screensaver'}
                       </button>
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col pr-4">
-                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Windows Screensaver Settings</span>
-                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">
+                      <span className="text-[13.5px] font-medium text-ink">Windows Screensaver Settings</span>
+                      <span className="text-[11.5px] text-dim mt-0.5">
                         Configure Windows idle timeout, wait duration, and lock screen behavior
                       </span>
                     </div>
                     <button
                       type="button"
                       onClick={handleOpenScreensaverSettings}
-                      className="px-3.5 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.12] text-[var(--on-surface)] text-[12px] font-bold transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95 shrink-0"
+                      className="px-3.5 py-1.5 rounded-xl bg-ink/[0.06] hover:bg-ink/[0.12] text-ink text-[12px] font-bold transition-colors cursor-pointer border border-ink/10 active:scale-95 shrink-0"
                     >
                       Open Windows Screensaver Settings
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.02] transition-colors">
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col pr-4">
-                      <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Screensaver & Display Lyrics</span>
-                      <span className="text-[11.5px] text-[var(--muted)] mt-0.5">
+                      <span className="text-[13.5px] font-medium text-ink">Screensaver & Display Lyrics</span>
+                      <span className="text-[11.5px] text-dim mt-0.5">
                         Display synchronized lyrics alongside album art in Listening Display
                       </span>
                     </div>
@@ -553,15 +575,15 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-[var(--on-surface)]/[0.02] transition-colors">
-                    <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Interactive Guide</span>
+                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-ink/[0.02] transition-colors">
+                    <span className="text-[13.5px] font-medium text-ink">Interactive Guide</span>
                     <button
                       type="button"
                       onClick={() => {
                         toggleSettings()
                         usePlayerStore.getState().setIsOnboardingOpen(true)
                       }}
-                      className="px-4 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.08] hover:bg-[var(--on-surface)]/[0.14] text-[var(--on-surface)] text-[12px] font-bold transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95"
+                      className="px-4 py-1.5 rounded-xl bg-ink/[0.08] hover:bg-ink/[0.14] text-ink text-[12px] font-bold transition-colors cursor-pointer border border-ink/10 active:scale-95"
                     >
                       View Guide
                     </button>
@@ -571,17 +593,17 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
               </div>
 
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-[var(--muted)] mb-2.5 tracking-[0.2em] uppercase">Application</h4>
-                <div className="rounded-2xl bg-[var(--on-surface)]/[0.03] border border-[var(--on-surface)]/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)]">
+                <h4 className="text-[11px] font-mono font-bold text-dim mb-2.5 tracking-[0.2em] uppercase">Application</h4>
+                <div className="rounded-2xl bg-ink/[0.03] border border-ink/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)]">
                   
-                  <div className="flex flex-col p-4 min-[600px]:px-5 hover:bg-[var(--on-surface)]/[0.02] transition-colors gap-3">
+                  <div className="flex flex-col p-4 min-[600px]:px-5 hover:bg-ink/[0.02] transition-colors gap-3">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex flex-col">
-                        <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Software Version</span>
+                        <span className="text-[13.5px] font-medium text-ink">Software Version</span>
                         <span className={cn(
                           "text-[11.5px] mt-0.5 font-mono",
-                          currentState === 'available' || currentState === 'downloaded' ? 'text-[var(--accent)]' :
-                          currentState === 'error' ? 'text-red-400' : 'text-[var(--muted)]'
+                          currentState === 'available' || currentState === 'downloaded' ? 'text-tone' :
+                          currentState === 'error' ? 'text-red-400' : 'text-dim'
                         )}>
                           {isConfirmingRestart && 'Restart Kissa now to apply update? Active playback will stop.'}
                           {!isConfirmingRestart && (
@@ -608,14 +630,14 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                           <button
                             type="button"
                             onClick={() => setIsConfirmingRestart(false)}
-                            className="px-3 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.12] text-[var(--on-surface)] text-[12px] font-medium transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95"
+                            className="px-3 py-1.5 rounded-xl bg-ink/[0.06] hover:bg-ink/[0.12] text-ink text-[12px] font-medium transition-colors cursor-pointer border border-ink/10 active:scale-95"
                           >
                             Cancel
                           </button>
                           <button
                             type="button"
                             onClick={handleConfirmRestart}
-                            className="px-3.5 py-1.5 rounded-xl bg-[var(--accent)] text-[var(--panel-bg)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95"
+                            className="px-3.5 py-1.5 rounded-xl bg-tone text-[var(--surface)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95"
                           >
                             Restart Now
                           </button>
@@ -624,7 +646,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                         <button
                           type="button"
                           onClick={handleCancelDownload}
-                          className="px-3.5 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.08] hover:bg-red-500/20 hover:text-red-400 text-[var(--on-surface)] text-[12px] font-bold transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95 shrink-0"
+                          className="px-3.5 py-1.5 rounded-xl bg-ink/[0.08] hover:bg-red-500/20 hover:text-red-400 text-ink text-[12px] font-bold transition-colors cursor-pointer border border-ink/10 active:scale-95 shrink-0"
                         >
                           Cancel
                         </button>
@@ -632,7 +654,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                         <button
                           type="button"
                           onClick={handleInstallUpdate}
-                          className="px-4 py-1.5 rounded-xl bg-[var(--accent)] text-[var(--panel-bg)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95 shrink-0"
+                          className="px-4 py-1.5 rounded-xl bg-tone text-[var(--surface)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95 shrink-0"
                         >
                           {updatePayload?.isPortable ? 'Show in Folder' : 'Restart & Install'}
                         </button>
@@ -643,14 +665,14 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                             onClick={() => {
                               window.electron?.openExternal?.(KISSA_RELEASES_URL)
                             }}
-                            className="hidden sm:inline-flex px-3 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.12] text-[var(--muted)] hover:text-[var(--on-surface)] text-[12px] font-medium transition-colors cursor-pointer border border-[var(--on-surface)]/10"
+                            className="hidden sm:inline-flex px-3 py-1.5 rounded-xl bg-ink/[0.06] hover:bg-ink/[0.12] text-dim hover:text-ink text-[12px] font-medium transition-colors cursor-pointer border border-ink/10"
                           >
                             View Release
                           </button>
                           <button
                             type="button"
                             onClick={handleDownloadUpdate}
-                            className="px-4 py-1.5 rounded-xl bg-[var(--accent)] text-[var(--panel-bg)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95"
+                            className="px-4 py-1.5 rounded-xl bg-tone text-[var(--surface)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95"
                           >
                             Download Update
                           </button>
@@ -662,14 +684,14 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                             onClick={() => {
                               window.electron?.openExternal?.(KISSA_RELEASES_URL)
                             }}
-                            className="hidden sm:inline-flex px-3 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.06] hover:bg-[var(--on-surface)]/[0.12] text-[var(--muted)] hover:text-[var(--on-surface)] text-[12px] font-medium transition-colors cursor-pointer border border-[var(--on-surface)]/10"
+                            className="hidden sm:inline-flex px-3 py-1.5 rounded-xl bg-ink/[0.06] hover:bg-ink/[0.12] text-dim hover:text-ink text-[12px] font-medium transition-colors cursor-pointer border border-ink/10"
                           >
                             View Release
                           </button>
                           <button
                             type="button"
                             onClick={handleCheckUpdate}
-                            className="px-4 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.08] hover:bg-[var(--on-surface)]/[0.14] text-[var(--on-surface)] text-[12px] font-bold transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95"
+                            className="px-4 py-1.5 rounded-xl bg-ink/[0.08] hover:bg-ink/[0.14] text-ink text-[12px] font-bold transition-colors cursor-pointer border border-ink/10 active:scale-95"
                           >
                             Try Again
                           </button>
@@ -679,7 +701,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                           type="button"
                           onClick={handleCheckUpdate}
                           disabled={currentState === 'checking'}
-                          className="px-4 py-1.5 rounded-xl bg-[var(--on-surface)]/[0.08] hover:bg-[var(--on-surface)]/[0.14] text-[var(--on-surface)] text-[12px] font-bold transition-colors cursor-pointer border border-[var(--on-surface)]/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none shrink-0"
+                          className="px-4 py-1.5 rounded-xl bg-ink/[0.08] hover:bg-ink/[0.14] text-ink text-[12px] font-bold transition-colors cursor-pointer border border-ink/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none shrink-0"
                         >
                           {currentState === 'checking' ? 'Checking…' : 'Check for Updates'}
                         </button>
@@ -687,9 +709,9 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     </div>
 
                     {currentState === 'downloading' && (
-                      <div className="w-full bg-[var(--on-surface)]/[0.08] h-1.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-ink/[0.08] h-1.5 rounded-full overflow-hidden">
                         <div
-                          className="bg-[var(--accent)] h-full transition-all duration-150 rounded-full"
+                          className="bg-tone h-full transition-all duration-150 rounded-full"
                           style={{ width: `${updatePayload?.progress?.percent ?? 0}%` }}
                         />
                       </div>

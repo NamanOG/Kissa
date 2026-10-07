@@ -55,7 +55,7 @@ export const HardwareSwitch = memo(
           'group relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-[5px] p-[2px]',
           'bg-[#0e0a08] border border-black/70 shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.85),0_0.5px_0.5px_rgba(255,255,255,0.04)]',
           'transition-colors duration-micro ease-primary',
-          'focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--accent)]',
+          'focus:outline-none focus-visible:ring-1 focus-visible:ring-tone',
           disabled && 'opacity-40 cursor-not-allowed',
           className
         )}

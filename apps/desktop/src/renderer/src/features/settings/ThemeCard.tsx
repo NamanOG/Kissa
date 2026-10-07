@@ -25,8 +25,8 @@ export const ThemeCard = memo(({ theme, isSelected, onSelect }: ThemeCardProps):
         className={cn(
           "relative w-full aspect-[4/3] overflow-hidden rounded-xl transition-transform duration-ui ease-primary will-change-transform",
           isSelected 
-            ? "ring-[2.5px] ring-[var(--accent)] ring-offset-2 ring-offset-[#141216] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.6)]" 
-            : "opacity-70 group-hover:opacity-100 shadow-md border border-[var(--panel-border)]"
+            ? "ring-[2.5px] ring-tone ring-offset-2 ring-offset-[#141216] scale-[1.02] shadow-[0_8px_24px_rgba(0,0,0,0.6)]" 
+            : "opacity-70 group-hover:opacity-100 shadow-md border border-panel-line"
         )}
       >
         {theme.id === 'adaptive' ? (

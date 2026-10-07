@@ -82,14 +82,14 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
         className={cn(
           'w-8 h-8 min-[900px]:w-9 min-[900px]:h-9 flex items-center justify-center rounded-full transition-colors relative cursor-pointer active:scale-95',
           timeLeft !== null
-            ? 'text-[var(--accent)] bg-[var(--accent)]/15'
-            : 'text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.08]'
+            ? 'text-tone bg-tone/15'
+            : 'text-dim hover:text-ink hover:bg-ink/[0.08]'
         )}
         title="Sleep Timer"
       >
         <Timer className="w-4 h-4 min-[900px]:w-[18px] min-[900px]:h-[18px]" strokeWidth={1.75} />
         {timeLeft !== null && (
-          <span className="absolute -bottom-1 -right-1 bg-black/90 text-[var(--accent)] text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded border border-[var(--accent)]/40 shadow-md leading-none">
+          <span className="absolute -bottom-1 -right-1 bg-black/90 text-tone text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded border border-tone/40 shadow-md leading-none">
             {Math.ceil(timeLeft / 60)}m
           </span>
         )}
@@ -103,13 +103,13 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-            className="absolute bottom-[120%] right-0 w-64 rounded-2xl p-5 z-50 overflow-hidden bg-[var(--panel-bg)] border border-[var(--panel-border)] shadow-[var(--panel-shadow)]"
+            className="absolute bottom-[120%] right-0 w-64 rounded-2xl p-5 z-50 overflow-hidden bg-[var(--deck-bg)] border border-panel-line shadow-[var(--panel-shadow)]"
           >
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-70" />
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-tone to-transparent opacity-70" />
 
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-white">
-                <Clock className="w-4 h-4 text-[var(--accent)]" strokeWidth={1.5} />
+                <Clock className="w-4 h-4 text-tone" strokeWidth={1.5} />
                 <h3 className="font-serif text-sm font-medium">Sleep Timer</h3>
               </div>
               <button
@@ -152,7 +152,7 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
                       className={cn(
                         'py-1.5 text-xs font-mono rounded-lg transition-[color,background-color,transform] duration-ui ease-primary active:scale-95 cursor-pointer border',
                         targetMinutes === m
-                          ? 'bg-[var(--accent)]/20 text-[var(--accent)] border-[var(--accent)]/50 font-bold shadow-[0_0_8px_var(--accent)]/20'
+                          ? 'bg-tone/20 text-tone border-tone/50 font-bold shadow-[0_0_8px_var(--accent)]/20'
                           : 'bg-black/30 text-zinc-400 border-white/10 hover:text-white hover:bg-white/[0.08]'
                       )}
                     >
@@ -164,14 +164,14 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
                 <button
                   type="button"
                   onClick={handleStart}
-                  className="w-full py-2.5 bg-[var(--accent)] hover:opacity-90 active:scale-[0.98] text-black font-bold text-sm rounded-xl transition-[opacity,transform] duration-ui ease-primary cursor-pointer shadow-[0_4px_16px_var(--accent)] shadow-black/20"
+                  className="w-full py-2.5 bg-tone hover:opacity-90 active:scale-[0.98] text-black font-bold text-sm rounded-xl transition-[opacity,transform] duration-ui ease-primary cursor-pointer shadow-[0_4px_16px_var(--accent)] shadow-black/20"
                 >
                   Start Timer
                 </button>
               </div>
             ) : (
               <div className="text-center space-y-4">
-                <div className="font-mono text-3xl text-[var(--accent)] font-light tracking-wider drop-shadow-md">
+                <div className="font-mono text-3xl text-tone font-light tracking-wider drop-shadow-md">
                   {formatTime(timeLeft)}
                 </div>
                 <p className="text-xs text-zinc-400 uppercase tracking-widest font-mono">Remaining</p>

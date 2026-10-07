@@ -80,13 +80,13 @@ Kissa has no user-generated content, no communication between users, no purchase
 
 ## Submission options
 
-**Restricted capabilities → `unvirtualizedResources`.** Paste the justification from `MICROSOFT_STORE.md` ("The one thing that needs Microsoft's approval").
+**Restricted capabilities.** Only `runFullTrust` is declared; its justification is the one already entered. `unvirtualizedResources` was declined and has been removed.
 
 **Notes for certification** (helps the tester, who will not know the app needs music playing):
 
 > Kissa displays music that is playing in another app. To test: start playback in any media app or a browser (for example a YouTube video), then open Kissa — the record starts turning and shows that track. With nothing playing, Kissa shows an idle "Listening Room" record.
 >
-> Settings (the gear icon) contains: "Set as Windows Screensaver", which writes HKCU\Control Panel\Desktop\SCRNSAVE.EXE (the reason for the unvirtualizedResources capability); and "Start with Windows", which uses the package's StartupTask. Kissa does not update itself; updates come through the Store.
+> Settings (the gear icon) > System contains: "Set Up Screensaver…", which copies Kissa.scr to the app's own data folder and opens that folder so the user can right-click it and choose Install (Kissa itself does not write the screensaver registry value and declares no restricted capability other than runFullTrust); and "Start with Windows", which uses the package's StartupTask. Kissa does not update itself; updates come through the Store.
 >
 > Lyrics are fetched from lrclib.net and cover artwork from the iTunes and Deezer search APIs, using the title and artist of the current track. No account or sign-in is needed.
 

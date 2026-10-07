@@ -21,6 +21,8 @@ import { PlaybackClock } from '@renderer/utils/PlaybackClock'
 const Scrubber = memo(() => {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const duration = currentTrack?.duration ?? 0
+  const canSeek = currentTrack?.canSeek !== false
+  const source = currentTrack?.source || 'This app'
 
   const [displayTime, setDisplayTime] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
@@ -90,7 +92,7 @@ const Scrubber = memo(() => {
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault()
-    if (duration <= 0 || !railRef.current) return
+    if (!canSeek || duration <= 0 || !railRef.current) return
     e.currentTarget.setPointerCapture(e.pointerId)
     setIsDragging(true)
     isDraggingRef.current = true
@@ -119,22 +121,26 @@ const Scrubber = memo(() => {
       role="group"
       aria-label="Track position"
     >
-      <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0 text-[var(--muted)]">
+      <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0 text-dim">
         {formatTime(displayTime)}
       </span>
 
       <div
         ref={railRef}
-        className="relative flex-1 h-5 flex items-center cursor-pointer group touch-none select-none"
+        title={canSeek ? undefined : `${source} does not let other apps change the position`}
+        className={cn(
+          'relative flex-1 h-5 flex items-center touch-none select-none',
+          canSeek ? 'cursor-pointer group' : 'cursor-default'
+        )}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        <div className="w-full h-[3px] rounded-full relative overflow-hidden bg-[var(--on-surface)]/25 transition-[height] duration-micro group-hover:h-[5px]">
+        <div className="w-full h-[3px] rounded-full relative overflow-hidden bg-ink/25 transition-[height] duration-micro group-hover:h-[5px]">
           <div
             ref={fillRef}
-            className="h-full w-full rounded-full origin-left bg-[var(--accent)]"
+            className="h-full w-full rounded-full origin-left bg-tone"
             style={{ transform: 'scaleX(0)' }}
           />
         </div>
@@ -146,14 +152,14 @@ const Scrubber = memo(() => {
         >
           <div
             className={cn(
-              'h-full w-full rounded-full bg-[var(--on-surface)] shadow-[0_1px_4px_rgba(20,12,8,0.45)] transition-[transform,opacity] duration-micro',
+              'h-full w-full rounded-full bg-ink shadow-[0_1px_4px_rgba(20,12,8,0.45)] transition-[transform,opacity] duration-micro',
               isDragging ? 'scale-125 opacity-100' : 'scale-50 opacity-0 group-hover:scale-100 group-hover:opacity-100'
             )}
           />
         </div>
       </div>
 
-      <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0 text-[var(--muted)]">
+      <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0 text-dim">
         {formatTime(duration)}
       </span>
     </div>
@@ -216,7 +222,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             }
           }}
           aria-label="Previous track"
-          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-[var(--muted)] hover:text-[var(--on-surface)]"
+          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-dim hover:text-ink"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4 min-[900px]:h-[18px] min-[900px]:w-[18px] fill-current -translate-x-[1px]">
             <path d="M16 6.14v11.72c0 .77-.84 1.25-1.5.86l-9.8-5.86c-.64-.38-.64-1.34 0-1.72l9.8-5.86c.66-.39 1.5.09 1.5.86z" />
@@ -235,7 +241,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           }}
           aria-label={isPlaying ? 'Pause' : 'Play'}
           className={cn(
-            'relative h-10 w-10 min-[900px]:h-11 min-[900px]:w-11 rounded-full flex items-center justify-center cursor-pointer transition duration-ui ease-primary active:scale-[0.92] shrink-0 border hover:border-[var(--accent)] active:translate-y-px'
+            'relative h-10 w-10 min-[900px]:h-11 min-[900px]:w-11 rounded-full flex items-center justify-center cursor-pointer transition duration-ui ease-primary active:scale-[0.92] shrink-0 border hover:border-tone active:translate-y-px'
           )}
           style={{
             backgroundColor: 'var(--panel-bg)',
@@ -248,12 +254,12 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             className="flex items-center justify-center transition-transform duration-100 ease-out"
           >
             {isPlaying ? (
-              <svg viewBox="0 0 24 24" className="h-[14px] w-[14px] min-[900px]:h-[16px] min-[900px]:w-[16px] text-[var(--on-surface)] fill-current">
+              <svg viewBox="0 0 24 24" className="h-[14px] w-[14px] min-[900px]:h-[16px] min-[900px]:w-[16px] text-ink fill-current">
                 <rect x="6" y="4" width="4" height="16" rx="1.5" />
                 <rect x="14" y="4" width="4" height="16" rx="1.5" />
               </svg>
             ) : (
-              <svg viewBox="0 0 24 24" className="h-[14px] w-[14px] min-[900px]:h-[16px] min-[900px]:w-[16px] text-[var(--on-surface)] fill-current ml-[2px]">
+              <svg viewBox="0 0 24 24" className="h-[14px] w-[14px] min-[900px]:h-[16px] min-[900px]:w-[16px] text-ink fill-current ml-[2px]">
                 <path d="M8 5.14v13.72c0 .77.84 1.25 1.5.86l11.43-6.86c.64-.38.64-1.34 0-1.72L9.5 4.28C8.84 3.89 8 4.37 8 5.14z" />
               </svg>
             )}
@@ -270,7 +276,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             }
           }}
           aria-label="Next track"
-          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-[var(--muted)] hover:text-[var(--on-surface)]"
+          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-dim hover:text-ink"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4 min-[900px]:h-[18px] min-[900px]:w-[18px] fill-current translate-x-[1px]">
             <path d="M8 6.14v11.72c0 .77.84 1.25 1.5.86l9.8-5.86c.64-.38.64-1.34 0-1.72L9.5 5.28C8.84 4.89 8 5.37 8 6.14z" />
@@ -300,8 +306,8 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           className={cn(
             'onboarding-lyrics flex items-center gap-1 px-2 min-[900px]:px-3 py-1 rounded-full border transition duration-ui ease-primary cursor-pointer select-none active:scale-95',
             isLyricsActive
-              ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)] shadow-[0_0_12px_var(--accent)]'
-              : 'border-[var(--panel-border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--on-surface)] hover:border-[var(--accent)]/50'
+              ? 'border-tone bg-tone/15 text-tone shadow-[0_0_12px_var(--accent)]'
+              : 'border-panel-line bg-[var(--surface)] text-dim hover:text-ink hover:border-tone/50'
           )}
           title={isLyricsActive ? 'Hide Lyrics' : 'Show Synced Lyrics'}
           aria-label="Toggle Live Lyrics"
@@ -309,7 +315,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           <Quote
             className={cn(
               'w-3 h-3 min-[900px]:w-3.5 min-[900px]:h-3.5',
-              isLyricsActive ? 'text-[var(--accent)]' : 'currentColor'
+              isLyricsActive ? 'text-tone' : 'currentColor'
             )}
           />
           <span className="hidden min-[760px]:inline font-mono text-[8.5px] min-[900px]:text-[9px] font-bold tracking-[0.14em] uppercase">
@@ -320,7 +326,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
         <div
           className={cn(
             'flex items-center gap-1.5 px-2 min-[900px]:px-2.5 py-1 rounded-full border transition-colors',
-            'border-[var(--panel-border)] bg-[var(--surface)] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]'
+            'border-panel-line bg-[var(--surface)] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]'
           )}
         >
           {currentTrack?.source?.toLowerCase().includes('apple') ? (
@@ -335,7 +341,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           ) : !currentTrack?.source?.toLowerCase().includes('spotify') ? (
             <AudioLines
               aria-hidden="true"
-              className="w-3 h-3 min-[900px]:w-3.5 min-[900px]:h-3.5 shrink-0 text-[var(--accent)]"
+              className="w-3 h-3 min-[900px]:w-3.5 min-[900px]:h-3.5 shrink-0 text-tone"
               strokeWidth={2}
             />
           ) : (
@@ -350,7 +356,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           )}
           <span
             className={cn(
-              'font-mono text-[8.5px] min-[900px]:text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--on-surface)] opacity-80'
+              'font-mono text-[8.5px] min-[900px]:text-[9px] font-bold tracking-[0.14em] uppercase text-ink opacity-80'
             )}
           >
             {currentTrack?.source || 'System Audio'}
@@ -362,7 +368,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           onClick={() => usePlayerStore.getState().setIsListeningDisplay(true)}
           className={cn(
             'flex items-center justify-center w-[26px] h-[26px] min-[900px]:w-[28px] min-[900px]:h-[28px] rounded-full border transition duration-ui ease-primary cursor-pointer select-none active:scale-95',
-            'border-transparent hover:border-[var(--panel-border)] bg-transparent hover:bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--on-surface)]'
+            'border-transparent hover:border-panel-line bg-transparent hover:bg-[var(--surface)] text-dim hover:text-ink'
           )}
           title="Start Listening Display (D)"
           aria-label="Start Listening Display"
@@ -376,8 +382,8 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           className={cn(
             'flex items-center justify-center w-[26px] h-[26px] min-[900px]:w-[28px] min-[900px]:h-[28px] rounded-full border transition duration-ui ease-primary cursor-pointer select-none active:scale-95',
             isFullscreen
-              ? 'border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--accent)] shadow-[0_0_12px_var(--accent)]'
-              : 'border-transparent hover:border-[var(--panel-border)] bg-transparent hover:bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--on-surface)]'
+              ? 'border-tone bg-tone/15 text-tone shadow-[0_0_12px_var(--accent)]'
+              : 'border-transparent hover:border-panel-line bg-transparent hover:bg-[var(--surface)] text-dim hover:text-ink'
           )}
           title="Toggle Fullscreen (F11)"
           aria-label="Toggle Fullscreen"

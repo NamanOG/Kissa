@@ -27,8 +27,8 @@ export class PlaybackClock {
   private static readonly DRIFT_TOLERANCE_SECONDS = 0.06
   /** Reports that spread this widely come from a source that counts in whole seconds. */
   private static readonly COARSE_SPREAD_SECONDS = 0.5
-  /** A whole-second tick is noticed up to one poll (200ms) late; assume half of that. */
-  private static readonly COARSE_LATENCY_SECONDS = 0.1
+  /** A whole-second tick is noticed up to one fast poll (about 50ms) late; assume half of that. */
+  private static readonly COARSE_LATENCY_SECONDS = 0.03
 
   /**
    * Subscribe to playback-time updates from the shared animation frame loop.
@@ -147,7 +147,7 @@ export class PlaybackClock {
     const current = this.smtcTime - this.smtcAnchorTime / 1000
     const correction = target - current
     // A coarse source's best report wobbles by a fraction of a poll; do not chase that.
-    const tolerance = coarse ? this.COARSE_LATENCY_SECONDS * 1.5 : this.DRIFT_TOLERANCE_SECONDS
+    const tolerance = coarse ? 0.08 : this.DRIFT_TOLERANCE_SECONDS
     if (Math.abs(correction) < tolerance) return 'none'
 
     // Shift the anchor. A backwards correction is absorbed by the monotonic guard in

@@ -83,17 +83,17 @@ export const RecordShelfView = memo(() => {
     >
       <header className="flex flex-col min-[1000px]:flex-row min-[1000px]:items-end justify-between shrink-0 mb-6 px-10 min-[900px]:px-16 pt-10 gap-8">
         <div>
-          <h1 className="font-serif text-3xl min-[900px]:text-4xl font-medium tracking-tight text-[var(--on-surface)] flex items-center gap-3">
+          <h1 className="font-serif text-3xl min-[900px]:text-4xl font-medium tracking-tight text-ink flex items-center gap-3">
             <Disc3 className="w-8 h-8 opacity-40" />
             {listenerName.trim() ? `${possessive(listenerName)} Records` : 'My Records'}
           </h1>
-          <p className="font-kissa-chassis uppercase tracking-[0.2em] text-[10px] mt-3 text-[var(--muted)]/80">
+          <p className="font-kissa-chassis uppercase tracking-[0.2em] text-[10px] mt-3 text-dim/80">
             {records.length} {records.length === 1 ? 'RECORD' : 'RECORDS'}
           </p>
         </div>
         
         {records.length > 0 && (
-          <div className="flex flex-wrap items-center gap-8 border-b border-white/5 pb-2">
+          <div className="flex flex-wrap items-center gap-8 border-b border-ink/10 pb-2">
             {!selectionMode ? (
               <>
                 <div className="flex items-center gap-6">
@@ -102,18 +102,18 @@ export const RecordShelfView = memo(() => {
                   <SortTab active={sort === 'played'} onClick={() => setSort('played')} label="Most Played" />
                   <SortTab active={sort === 'alpha'} onClick={() => setSort('alpha')} label="A-Z" />
                 </div>
-                <div className="flex items-center gap-4 pl-6 border-l border-white/5">
+                <div className="flex items-center gap-4 pl-6 border-l border-ink/10">
                   <button 
                     type="button" 
                     onClick={() => setSelectionMode(true)}
-                    className="text-[10px] uppercase font-kissa-chassis tracking-[0.15em] text-[var(--muted)] hover:text-white transition-colors"
+                    className="text-[10px] uppercase font-kissa-chassis tracking-[0.15em] text-dim hover:text-ink transition-colors"
                   >
                     SELECT
                   </button>
                   <button 
                     type="button" 
                     onClick={handleShareStats}
-                    className="text-[10px] uppercase font-kissa-chassis tracking-[0.15em] text-[var(--accent)] hover:text-[var(--accent)]/80 transition-colors"
+                    className="text-[10px] uppercase font-kissa-chassis tracking-[0.15em] text-tone hover:text-tone/80 transition-colors"
                   >
                     STATS
                   </button>
@@ -128,14 +128,14 @@ export const RecordShelfView = memo(() => {
               </>
             ) : (
               <div className="flex items-center gap-6">
-                <span className="text-[10px] font-kissa-chassis tracking-[0.15em] uppercase text-[var(--accent)]">
+                <span className="text-[10px] font-kissa-chassis tracking-[0.15em] uppercase text-tone">
                   {selectedForShare.size}/9 SELECTED
                 </span>
                 <button 
                   type="button" 
                   onClick={handleShareCollection}
                   disabled={selectedForShare.size === 0}
-                  className="text-[10px] uppercase font-kissa-chassis tracking-[0.15em] text-white hover:text-white/80 disabled:opacity-30 transition-colors"
+                  className="text-[10px] uppercase font-kissa-chassis tracking-[0.15em] text-ink hover:opacity-80 disabled:opacity-30 transition-colors"
                 >
                   SHARE
                 </button>
@@ -145,7 +145,7 @@ export const RecordShelfView = memo(() => {
                     setSelectionMode(false)
                     setSelectedForShare(new Set())
                   }}
-                  className="text-[10px] uppercase font-kissa-chassis tracking-[0.15em] text-[var(--muted)] hover:text-white transition-colors"
+                  className="text-[10px] uppercase font-kissa-chassis tracking-[0.15em] text-dim hover:text-ink transition-colors"
                 >
                   CANCEL
                 </button>
@@ -160,7 +160,7 @@ export const RecordShelfView = memo(() => {
           <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/50"
               onClick={() => setShowClearConfirm(false)}
             />
             <motion.div
@@ -200,14 +200,14 @@ export const RecordShelfView = memo(() => {
 
       {records.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center p-10 pb-32 select-none opacity-80">
-          <div className="w-48 h-28 border border-[var(--panel-border)] rounded-sm flex items-end p-4 mb-6 relative overflow-hidden bg-black/40 shadow-[inset_0_4px_24px_rgba(0,0,0,0.5)]">
-            <div className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[var(--panel-border)]/50" />
-            <div className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[var(--panel-border)]/50" />
-            <span className="font-kissa-chassis text-[9.5px] uppercase tracking-[0.2em] font-bold text-[var(--muted)]">
+          <div className="w-48 h-28 border border-panel-line rounded-sm flex items-end p-4 mb-6 relative overflow-hidden bg-black/40 shadow-[inset_0_4px_24px_rgba(0,0,0,0.5)]">
+            <div className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-panel-line/50" />
+            <div className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-panel-line/50" />
+            <span className="font-kissa-chassis text-[9.5px] uppercase tracking-[0.2em] font-bold text-dim">
               EMPTY SHELF
             </span>
           </div>
-          <p className="font-kissa-chassis text-[11px] uppercase tracking-[0.1em] leading-relaxed text-[var(--muted)] text-center max-w-xs">
+          <p className="font-kissa-chassis text-[11px] uppercase tracking-[0.1em] leading-relaxed text-dim text-center max-w-xs">
             Play something in Spotify, Apple Music or TIDAL. Each album you listen to is kept here.
           </p>
         </div>
@@ -252,7 +252,7 @@ export const RecordShelfView = memo(() => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedAlbum(null)}
-              className="absolute inset-0 bg-black/30 pointer-events-auto z-30 backdrop-blur-[2px]"
+              className="absolute inset-0 pointer-events-auto z-30"
             />
             <motion.div
               initial={{ x: '100%', opacity: 0.5 }}
@@ -262,12 +262,12 @@ export const RecordShelfView = memo(() => {
               className="absolute right-0 top-0 bottom-0 w-[340px] min-[1400px]:w-[380px] bg-[#121013] border-l border-white/[0.03] shadow-[-16px_0_64px_rgba(0,0,0,0.8)] z-40 flex flex-col border-t border-t-white/[0.02]"
             >
               <div className="flex items-center justify-between p-6 pb-4 border-b border-white/5">
-                <span className="font-kissa-chassis text-[9px] uppercase tracking-[0.2em] text-[var(--muted)]/60">
+                <span className="font-kissa-chassis text-[9px] uppercase tracking-[0.2em] text-dim/60">
                   Record Inspector
                 </span>
                 <button
                   onClick={() => setSelectedAlbum(null)}
-                  className="text-[var(--muted)] hover:text-white transition-colors p-1"
+                  className="text-dim hover:text-white transition-colors p-1"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -279,40 +279,40 @@ export const RecordShelfView = memo(() => {
                     <img src={selectedRecord.artworkUrl} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                      <Disc3 className="w-12 h-12 text-[var(--accent)]/30 mb-2" />
+                      <Disc3 className="w-12 h-12 text-tone/30 mb-2" />
                     </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-white/10 pointer-events-none mix-blend-overlay" />
                   <div className="absolute top-0 left-0 bottom-0 w-[3px] bg-gradient-to-r from-white/20 to-transparent pointer-events-none" />
                 </div>
 
-                <h2 className="font-serif text-2xl font-medium tracking-tight text-[var(--on-surface)] leading-tight mb-1">
+                <h2 className="font-serif text-2xl font-medium tracking-tight text-ink leading-tight mb-1">
                   {selectedRecord.album}
                 </h2>
-                <p className="font-kissa-chassis text-[10px] uppercase tracking-[0.1em] text-[var(--muted)]/70">
+                <p className="font-kissa-chassis text-[10px] uppercase tracking-[0.1em] text-dim/70">
                   {selectedRecord.artist}
                 </p>
 
                 <div className="mt-8 flex gap-4">
                   <div className="flex-1 border border-white/5 bg-white/[0.02] rounded-md p-4 flex flex-col">
-                    <span className="font-kissa-chassis text-[9px] uppercase tracking-[0.15em] text-[var(--muted)]/50 mb-1">Plays</span>
-                    <span className="font-mono text-lg text-[var(--on-surface)]">{selectedRecord.playCount}</span>
+                    <span className="font-kissa-chassis text-[9px] uppercase tracking-[0.15em] text-dim/50 mb-1">Plays</span>
+                    <span className="font-mono text-lg text-ink">{selectedRecord.playCount}</span>
                   </div>
                   <div className="flex-1 border border-white/5 bg-white/[0.02] rounded-md p-4 flex flex-col">
-                    <span className="font-kissa-chassis text-[9px] uppercase tracking-[0.15em] text-[var(--muted)]/50 mb-1">Last Played</span>
-                    <span className="font-mono text-[13px] text-[var(--on-surface)] mt-1">{new Date(selectedRecord.lastListened).toLocaleDateString()}</span>
+                    <span className="font-kissa-chassis text-[9px] uppercase tracking-[0.15em] text-dim/50 mb-1">Last Played</span>
+                    <span className="font-mono text-[13px] text-ink mt-1">{new Date(selectedRecord.lastListened).toLocaleDateString()}</span>
                   </div>
                 </div>
 
                 <div className="mt-8 pb-4">
-                  <span className="font-kissa-chassis text-[9px] uppercase tracking-[0.15em] text-[var(--muted)]/50 block mb-3">
+                  <span className="font-kissa-chassis text-[9px] uppercase tracking-[0.15em] text-dim/50 block mb-3">
                     Tracks Encountered
                   </span>
                   <div className="flex flex-col gap-1.5">
                     {selectedRecord.tracksEncountered.map((t, i) => (
                       <div key={i} className="text-[12px] px-3 py-2 border border-white/[0.03] bg-white/[0.01] rounded flex items-center gap-3">
-                        <Play className="w-3 h-3 text-[var(--muted)]/30 shrink-0" />
-                        <span className="text-[var(--on-surface)]/80 truncate font-medium">{t}</span>
+                        <Play className="w-3 h-3 text-dim/30 shrink-0" />
+                        <span className="text-ink/80 truncate font-medium">{t}</span>
                       </div>
                     ))}
                   </div>
@@ -324,7 +324,7 @@ export const RecordShelfView = memo(() => {
                   onClick={() => {
                     setSharePayload({ type: 'album', data: selectedRecord as unknown as AlbumShareData, aspectRatio: '4:5' })
                   }}
-                  className="flex-1 py-3 bg-white/[0.03] hover:bg-[var(--accent)] hover:text-black border border-white/10 hover:border-[var(--accent)] text-[10px] uppercase font-kissa-chassis tracking-[0.15em] transition-colors rounded shadow-sm text-white flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-white/[0.03] hover:bg-tone hover:text-black border border-white/10 hover:border-tone text-[10px] uppercase font-kissa-chassis tracking-[0.15em] transition-colors rounded shadow-sm text-white flex items-center justify-center gap-2"
                 >
                   <Share className="w-3.5 h-3.5" />
                   Share
@@ -334,7 +334,7 @@ export const RecordShelfView = memo(() => {
                     removeRecord(selectedRecord.albumKey)
                     setSelectedAlbum(null)
                   }}
-                  className="py-3 px-4 bg-white/[0.03] hover:bg-red-500/20 hover:text-red-400 border border-white/10 hover:border-red-500/30 text-[10px] uppercase font-kissa-chassis tracking-[0.15em] transition-colors rounded shadow-sm text-[var(--muted)]"
+                  className="py-3 px-4 bg-white/[0.03] hover:bg-red-500/20 hover:text-red-400 border border-white/10 hover:border-red-500/30 text-[10px] uppercase font-kissa-chassis tracking-[0.15em] transition-colors rounded shadow-sm text-dim"
                   title="Remove from Shelf"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -364,14 +364,14 @@ function SortTab({ active, onClick, label }: { active: boolean, onClick: () => v
     >
       <span className={cn(
         "font-kissa-chassis text-[10px] uppercase tracking-[0.15em] transition-colors duration-ui",
-        active ? "text-white font-semibold" : "text-[var(--muted)]/60 group-hover:text-[var(--muted)] font-medium"
+        active ? "text-ink font-semibold" : "text-dim/60 group-hover:text-dim font-medium"
       )}>
         {label}
       </span>
       {active && (
         <motion.div 
           layoutId="sort-indicator"
-          className="absolute left-0 right-0 bottom-0 h-[2px] bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" 
+          className="absolute left-0 right-0 bottom-0 h-[2px] bg-tone shadow-[0_0_8px_var(--accent)]" 
         />
       )}
     </button>
@@ -389,13 +389,13 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
         className={cn(
           "relative w-full aspect-square transform-gpu transition-[transform,box-shadow,border-color] duration-content ease-primary rounded-sm shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.15),inset_1px_0_0_rgba(255,255,255,0.1)]",
           isSelected && !selectionMode ? "-translate-y-[6px] shadow-[0_16px_40px_rgba(0,0,0,0.8)]" : "hover:-translate-y-[3px] group-hover:shadow-[0_12px_28px_rgba(0,0,0,0.7)] z-10 hover:z-20",
-          isSelectedForShare ? "border-2 border-[var(--accent)]" : "border-2 border-transparent"
+          isSelectedForShare ? "border-2 border-tone" : "border-2 border-transparent"
         )}
       >
         {!selectionMode && (
           <div 
             className={cn(
-              "absolute top-1/2 -right-4 w-[90%] aspect-square rounded-full bg-[#111] -translate-y-1/2 transition-transform duration-content ease-primary z-0 border border-white/5",
+              "absolute top-1/2 -right-4 w-[90%] aspect-square rounded-full bg-[#111] -translate-y-1/2 transition-transform duration-content ease-primary z-0 border border-ink/10",
               "shadow-[-4px_0_12px_rgba(0,0,0,0.5)]",
               isSelected || isPlayingThisAlbum ? "translate-x-12 min-[900px]:translate-x-16 rotate-[24deg]" : "group-hover:translate-x-6 min-[900px]:group-hover:translate-x-8 group-hover:rotate-12",
               isPlayingThisAlbum ? "animate-spin-slow" : ""
@@ -406,7 +406,7 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
               {record.artworkUrl ? (
                  <img src={record.artworkUrl} className="w-full h-full object-cover opacity-80" alt="" />
               ) : (
-                 <div className="w-full h-full bg-[var(--accent)] opacity-80" />
+                 <div className="w-full h-full bg-tone opacity-80" />
               )}
             </div>
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#e8e4db]" />
@@ -418,7 +418,7 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
             <img src={record.artworkUrl} alt={record.album} className="w-full h-full object-cover pointer-events-none" />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center p-4">
-              <Disc3 className="w-12 h-12 text-[var(--accent)]/30 mb-2" />
+              <Disc3 className="w-12 h-12 text-tone/30 mb-2" />
               <span className="text-[10px] font-mono text-white/30 text-center uppercase break-all">{record.album}</span>
             </div>
           )}
@@ -430,7 +430,7 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
       {selectionMode && (
         <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 h-1 rounded-full transition-colors flex items-center justify-center">
            {isSelectedForShare ? (
-             <div className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+             <div className="w-1.5 h-1.5 rounded-full bg-tone shadow-[0_0_8px_var(--accent)]" />
            ) : (
              <div className="w-1 h-1 rounded-full bg-white/10" />
            )}
@@ -438,10 +438,10 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
       )}
 
       <div className="mt-4 flex flex-col px-1 z-10 transition-opacity" style={{ opacity: isSelected ? 1 : 0.85 }}>
-        <h3 className="font-serif text-[16px] leading-snug font-medium tracking-tight text-white/90 truncate">
+        <h3 className="font-serif text-[16px] leading-snug font-medium tracking-tight text-ink truncate">
           {record.album}
         </h3>
-        <p className="font-kissa-chassis text-[9.5px] uppercase tracking-[0.15em] mt-1 text-white/40 truncate">
+        <p className="font-kissa-chassis text-[9.5px] uppercase tracking-[0.15em] mt-1 text-dim truncate">
           {record.artist}
         </p>
       </div>

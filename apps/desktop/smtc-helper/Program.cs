@@ -204,6 +204,32 @@ namespace SmtcHelper
                 
                 await UpdateCurrentSessionAsync();
 
+                // Some players (Apple Music) report the position in whole seconds. The moment that
+                // number ticks over is the only instant it is exact, so watch for it closely; reading
+                // the timeline is cheap, and nothing is sent unless it changed.
+                _ = Task.Run(async () =>
+                {
+                    long lastTicks = -1;
+                    while (true)
+                    {
+                        try
+                        {
+                            await Task.Delay(40);
+                            var watched = _currentSession;
+                            if (watched == null) continue;
+                            long ticks = watched.GetTimelineProperties().Position.Ticks;
+                            if (ticks != lastTicks)
+                            {
+                                lastTicks = ticks;
+                                await BroadcastStateAsync(false);
+                            }
+                        }
+                        catch
+                        {
+                        }
+                    }
+                });
+
                 // High-frequency polling loop (200ms) to ensure instantaneous track & volume sync
                 _ = Task.Run(async () =>
                 {
@@ -765,9 +791,13 @@ namespace SmtcHelper
                     return;
                 }
 
-                var mediaProps = await session.TryGetMediaPropertiesAsync();
-                var playbackInfo = session.GetPlaybackInfo();
+                // Read the position first and note when: everything after this can take tens
+                // of milliseconds, and the app needs to know how old the position is.
                 var timelineInfo = session.GetTimelineProperties();
+                var playbackInfo = session.GetPlaybackInfo();
+                DateTimeOffset sampledAt = DateTimeOffset.UtcNow;
+                long sampledMs = sampledAt.ToUnixTimeMilliseconds();
+                var mediaProps = await session.TryGetMediaPropertiesAsync();
 
                 string rawTitle = mediaProps?.Title ?? "";
                 string rawArtist = mediaProps?.Artist ?? "";
@@ -868,6 +898,8 @@ namespace SmtcHelper
                 
                 int pStatus = (int)(playbackInfo?.PlaybackStatus ?? 0);
                 int pType = (int)(playbackInfo?.PlaybackType ?? 0);
+                // Whether the source lets other apps move its playback position.
+                string canSeek = (playbackInfo?.Controls?.IsPlaybackPositionEnabled ?? false) ? "true" : "false";
                 
                 double dur = timelineInfo?.EndTime.TotalSeconds ?? 0;
                 double pos = 0;
@@ -879,7 +911,7 @@ namespace SmtcHelper
                     DateTimeOffset lastUpdated = timelineInfo.LastUpdatedTime;
                     if (playbackInfo?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing && lastUpdated > DateTimeOffset.MinValue)
                     {
-                        double elapsed = (DateTimeOffset.UtcNow - lastUpdated).TotalSeconds;
+                        double elapsed = (sampledAt - lastUpdated).TotalSeconds;
                         if (elapsed > 0 && elapsed < 60)
                         {
                             rawPos += elapsed;
@@ -897,9 +929,9 @@ namespace SmtcHelper
                 string durText = dur.ToString("0.###", invariant);
                 // Everything except the running clock. The raw timeline is included so a seek
                 // or a fresh report from the source is passed on at once.
-                string stateKey = $"{sourceAppId}|{title}|{artist}|{albumTitle}|{pStatus}|{pType}|{durText}|{masterVol}|{isMuted}|{videoState}|{timelineKey}|{(thumbnailChanged ? 1 : 0)}";
+                string stateKey = $"{sourceAppId}|{title}|{artist}|{albumTitle}|{pStatus}|{pType}|{canSeek}|{durText}|{masterVol}|{isMuted}|{videoState}|{timelineKey}|{(thumbnailChanged ? 1 : 0)}";
 
-                string json = $@"{{""type"":""update"",""timestamp"":{nowMs},""session"":{{""sourceAppId"":{sourceAppId},""media"":{{""title"":{title},""artist"":{artist},""albumTitle"":{albumTitle},""albumArtist"":{albumArtist},""thumbnailBase64"":{thumb},""thumbnailUnchanged"":{thumbUnchanged}}},""playback"":{{""playbackStatus"":{pStatus},""playbackType"":{pType}}},""timeline"":{{""position"":{posText},""duration"":{durText}}},""volume"":{{""master"":{masterVol},""isMuted"":{(isMuted ? "true" : "false")}}}}},""videoState"":""{videoState}"",""hasActiveVideoPlayback"":{(hasActiveVideo ? "true" : "false")}}}";
+                string json = $@"{{""type"":""update"",""timestamp"":{sampledMs},""session"":{{""sourceAppId"":{sourceAppId},""media"":{{""title"":{title},""artist"":{artist},""albumTitle"":{albumTitle},""albumArtist"":{albumArtist},""thumbnailBase64"":{thumb},""thumbnailUnchanged"":{thumbUnchanged}}},""playback"":{{""playbackStatus"":{pStatus},""playbackType"":{pType},""canSeek"":{canSeek}}},""timeline"":{{""position"":{posText},""duration"":{durText}}},""volume"":{{""master"":{masterVol},""isMuted"":{(isMuted ? "true" : "false")}}}}},""videoState"":""{videoState}"",""hasActiveVideoPlayback"":{(hasActiveVideo ? "true" : "false")}}}";
 
                 string cleanJson = json.Replace("\r", "").Replace("\n", "");
                 if (force || isNewTrack || isVolChanged || isVideoChanged || stateKey != _lastStateKey || nowMs - _lastEmitMs >= HeartbeatMs)

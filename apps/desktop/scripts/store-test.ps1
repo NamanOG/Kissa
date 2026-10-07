@@ -11,7 +11,7 @@
 
     1. the package installs (Windows accepts the manifest)
     2. Kissa has a package identity
-    3. a write to the screensaver registry key reaches the REAL registry
+    3. Windows' own Install action accepts the screensaver copy in LocalState
     4. a file placed in LocalState is a real file Windows can run
     5. the "start with Windows" task can be read, enabled and disabled
 
@@ -147,13 +147,8 @@ try {
   $info = Invoke-InPackage $family "`"$helper`" --package-info"
   Report 'Kissa has a package identity' ($info -match '"packaged":true' -and $info -match [regex]::Escape($family)) $info.Trim()
 
-  # ── 3. Screensaver registry write reaches the real registry ─────────────────
+  # ── 3. LocalState copy is a real, runnable file ─────────────────────────────
   $probe = Join-Path $localState 'Kissa.scr'
-  Invoke-InPackage $family "reg.exe add `"HKCU\Control Panel\Desktop`" /v SCRNSAVE.EXE /t REG_SZ /d `"$probe`" /f" | Out-Null
-  $seenOutside = (Get-ItemProperty $regKey -ErrorAction SilentlyContinue).'SCRNSAVE.EXE'
-  Report 'Screensaver registry write is visible to Windows' ($seenOutside -eq $probe) "real value: $seenOutside"
-
-  # ── 4. LocalState copy is a real, runnable file ─────────────────────────────
   Invoke-InPackage $family "(if not exist `"$localState`" mkdir `"$localState`") & copy /y `"$bundledScr`" `"$probe`"" | Out-Null
   $copied = Test-Path $probe
   Report 'Kissa.scr copied into LocalState is a real file' $copied $probe
@@ -161,6 +156,21 @@ try {
     # /p is the screensaver "preview" switch: Kissa.scr exits immediately with code 0.
     $proc = Start-Process -FilePath $probe -ArgumentList '/p' -PassThru -Wait
     Report 'Windows can run that copy from outside the package' ($proc.ExitCode -eq 0) "exit code $($proc.ExitCode)"
+  }
+
+  # ── 4. Screensaver setting ──────────────────────────────────────────────────
+  # The package cannot change this setting itself (its registry writes are redirected and
+  # Microsoft does not grant the capability that lifts that). The app shows Kissa.scr in
+  # Explorer and the listener chooses Install; this runs the same Windows action.
+  if ($copied) {
+    Start-Process rundll32.exe -ArgumentList "desk.cpl,InstallScreenSaver $probe"
+    $set = $false
+    for ($i = 0; $i -lt 25; $i++) {
+      if ("$((Get-ItemProperty $regKey -ErrorAction SilentlyContinue).'SCRNSAVE.EXE')".Trim() -eq $probe) { $set = $true; break }
+      Start-Sleep -Milliseconds 200
+    }
+    Report "Windows' Install action accepts the LocalState copy" $set "value: $((Get-ItemProperty $regKey -ErrorAction SilentlyContinue).'SCRNSAVE.EXE')"
+    Get-Process rundll32 -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -like '*Screen Saver*' } | Stop-Process -Force
   }
 
   # ── 5. Startup task ─────────────────────────────────────────────────────────
@@ -193,7 +203,7 @@ Write-Host 'Launching the Store build of Kissa. Close your installed Kissa first
 Write-Host 'Please check by hand:'
 Write-Host '  a. Play music in Spotify / Apple Music: the record picks it up, artwork and lyrics load.'
 Write-Host '  b. Settings > Application: shows "Updated by Microsoft Store" and no update button.'
-Write-Host '  c. Settings > Set as Windows Screensaver: click it, then open Windows Screen Saver Settings'
+Write-Host '  c. Settings > System > Set Up Screensaver: a folder opens; right-click Kissa.scr > Install,'
 Write-Host '     and confirm Kissa is selected. Use Preview.'
 Write-Host '  d. Settings > Start with Windows: toggle it, then look in Task Manager > Startup apps.'
 Write-Host '  e. Tray icon menu has no "Check for Updates".'

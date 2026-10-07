@@ -167,16 +167,16 @@ function KissaApp(): React.JSX.Element {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 16 }}
                   transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                  className="hidden min-[1100px]:flex flex-col min-h-0 border-l px-5 py-6 transform-gpu border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-[var(--panel-shadow)]"
+                  className="hidden min-[1100px]:flex flex-col min-h-0 px-6 py-6 mt-10 mb-2 mr-4 rounded-[36px] border border-panel-line bg-[var(--panel-bg)] shadow-[var(--panel-shadow)]"
                 >
-                  <div className="flex items-center justify-between pb-3 shrink-0 border-b border-[var(--panel-border)]">
-                    <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] font-bold text-[var(--muted)]">
+                  <div className="flex items-center justify-between pb-3 shrink-0 border-b border-panel-line">
+                    <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] font-bold text-dim">
                       SIDE LYRICS
                     </span>
                     <button
                       type="button"
                       onClick={toggleSideLyrics}
-                      className="w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-ui ease-primary cursor-pointer text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-[var(--on-surface)]/[0.08]"
+                      className="w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-ui ease-primary cursor-pointer text-dim hover:text-ink hover:bg-ink/[0.08]"
                       title="Close Side Lyrics"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -204,40 +204,26 @@ function KissaApp(): React.JSX.Element {
                 <SyncedLyrics isLargeView />
               </div>
               <div
-                className="hidden min-[900px]:flex flex-col items-center justify-center p-8 border-l border-[var(--panel-border)] bg-[var(--panel-bg)] shadow-[var(--panel-shadow)]"
+                className="hidden min-[900px]:flex flex-col items-center justify-center p-8 mt-10 mb-2 mr-4 rounded-[36px] border border-panel-line bg-[var(--panel-bg)] shadow-[var(--panel-shadow)]"
               >
                 <div className="relative w-full max-w-[280px] aspect-square flex items-center justify-center">
-                  <div className="absolute inset-4 rounded-full blur-2xl pointer-events-none bg-[var(--accent)]/15" />
                   <VinylEngine
                     albumArt={currentTrack?.artworkUrl ?? albumPlaceholder}
-                    className="w-full h-full drop-shadow-[0_24px_48px_rgba(14,9,7,0.4)]"
+                    className="w-full h-full drop-shadow-[0_16px_26px_rgba(14,9,7,0.3)]"
                   />
                 </div>
 
-                <div className="mt-8 text-center w-full px-4 relative min-h-[4rem]">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={currentTrack?.audioUrl || currentTrack?.title || 'empty'}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                      className="absolute inset-x-4 top-0"
-                    >
-                      <h2
-                        className="font-serif text-2xl font-medium line-clamp-1 tracking-tight text-[var(--on-surface)]"
-                        title={currentTrack?.title}
-                      >
-                        {currentTrack?.title ?? '—'}
-                      </h2>
-                      <p className="mt-1 text-sm line-clamp-1 text-[var(--muted)]">
-                        {currentTrack?.artist ?? '—'}
-                      </p>
-                      <p className="mt-0.5 text-xs line-clamp-1 text-[var(--muted)] opacity-80">
-                        {currentTrack?.album ?? '—'}
-                      </p>
-                    </motion.div>
-                  </AnimatePresence>
+                <div className="mt-8 w-full px-4 text-center">
+                  <h2
+                    className="font-serif text-2xl font-medium line-clamp-1 tracking-tight text-ink"
+                    title={currentTrack?.title}
+                  >
+                    {currentTrack?.title ?? '—'}
+                  </h2>
+                  <p className="mt-1 text-sm line-clamp-1 text-dim">{currentTrack?.artist ?? '—'}</p>
+                  {currentTrack?.album && currentTrack.album !== currentTrack.title && (
+                    <p className="mt-0.5 text-xs line-clamp-1 text-dim opacity-80">{currentTrack.album}</p>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -251,7 +237,7 @@ function KissaApp(): React.JSX.Element {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.985 }}
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute inset-0 z-10 bg-black/5 dark:bg-black/20 backdrop-blur-[2px]"
+              className="absolute inset-0 z-10"
             >
               <RecordShelfView />
             </motion.div>

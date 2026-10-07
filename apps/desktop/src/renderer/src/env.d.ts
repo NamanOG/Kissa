@@ -47,7 +47,7 @@ export interface KissaSystemMediaAPI {
   exitScreensaver: () => Promise<void>
   onScreensaverModeChanged?: (callback: (isScreensaver: boolean) => void) => () => void
   isScreensaverRegistered?: () => Promise<boolean>
-  registerScreensaver?: () => Promise<{ success: boolean; error?: string; path?: string }>
+  registerScreensaver?: () => Promise<{ success: boolean; error?: string; path?: string; manual?: boolean }>
   unregisterScreensaver?: () => Promise<{ success: boolean; removed: boolean; reason?: string; currentPath?: string; error?: string }>
   openScreensaverSettings?: () => Promise<{ success: boolean; error?: string }>
   getUpdateStatus?: () => Promise<UpdateStatusPayload>

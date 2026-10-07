@@ -111,7 +111,8 @@ export function useSystemMediaSync(): void {
           artworkUrl: payload.artworkDataUrl || albumPlaceholder,
           duration: payload.duration > 0 ? payload.duration : 0,
           source: payload.sourceAppName,
-          sourceAppId: payload.sourceAppId
+          sourceAppId: payload.sourceAppId,
+          canSeek: payload.canSeek !== false
         })
         setIsPlaying(payload.isPlaying)
         setProgress(payload.progress || 0)
@@ -126,6 +127,13 @@ export function useSystemMediaSync(): void {
 
         const shouldUpdateArtist = Boolean(payload.artist) && payload.artist !== currentStoreTrack?.artist
         const shouldUpdateAlbum = Boolean(payload.album) && payload.album !== currentStoreTrack?.album
+
+        const canSeek = payload.canSeek !== false
+        if (currentStoreTrack && (currentStoreTrack.canSeek !== false) !== canSeek) {
+          usePlayerStore.setState((state) => ({
+            currentTrack: state.currentTrack ? { ...state.currentTrack, canSeek } : null
+          }))
+        }
 
         if (shouldUpdateArtwork || shouldUpdateArtist || shouldUpdateAlbum) {
           usePlayerStore.setState((state) => ({

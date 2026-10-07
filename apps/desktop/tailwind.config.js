@@ -1,5 +1,17 @@
 const themeTokens = require('./src/renderer/src/themes')
 
+/**
+ * A room colour that accepts Tailwind's opacity modifier (`text-ink/70`, `bg-tone/15`).
+ * The rooms set these variables to plain CSS colours, which Tailwind cannot make
+ * translucent by itself: `text-[var(--x)]/70` produces no CSS at all.
+ */
+const roomColor =
+  (variable) =>
+  ({ opacityValue }) =>
+    opacityValue === undefined
+      ? `var(${variable})`
+      : `color-mix(in srgb, var(${variable}) calc(${opacityValue} * 100%), transparent)`
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ['class'],
@@ -15,6 +27,10 @@ module.exports = {
     extend: {
       colors: {
         ...themeTokens.colors,
+        ink: roomColor('--on-surface'),
+        dim: roomColor('--muted'),
+        tone: roomColor('--accent'),
+        'panel-line': roomColor('--panel-border'),
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',

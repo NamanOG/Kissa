@@ -3,32 +3,24 @@
   Microsoft Store (MSIX) manifest for Kissa. electron-builder fills in the
   dollar-brace placeholders below.
 
-  Two things here go beyond electron-builder's default manifest, and both exist
-  so the Store build behaves like the classic installer:
+  One thing here goes beyond electron-builder's default manifest:
 
-  1. Screensaver registration. Windows reads the active screensaver from
-     HKCU\Control Panel\Desktop\SCRNSAVE.EXE. A packaged app's registry writes
-     are normally redirected to a private copy that Windows never sees, so the
-     write must be un-virtualized. On Windows 11 only that one key is exempted
-     (virtualization:ExcludedKey); Windows 10 has no per-key control, so there
-     registry write virtualization is switched off (desktop6). Both need the
-     restricted capability "unvirtualizedResources", which is declared through
-     appx.capabilities in electron-builder.yml and justified at submission.
+  Start with Windows. A packaged app starts at sign-in through a StartupTask
+  rather than the Run registry key. It ships disabled; the in-app setting
+  turns it on (see smtc-helper/HostCommands.cs). It starts Kissa with
+  "hidden", the same argument the classic build uses, so it opens in the tray.
 
-  2. Start with Windows. A packaged app starts at sign-in through a StartupTask
-     rather than the Run registry key. It ships disabled; the in-app setting
-     turns it on (see smtc-helper/HostCommands.cs). It starts Kissa with
-     "hidden", the same argument the classic build uses, so it opens in the tray.
+  The screensaver needs nothing here. A packaged app's registry writes are
+  redirected, so Kissa asks Windows to start its Kissa.scr, which registers
+  itself (see ScreensaverRegistryService.ts). No restricted capability is used.
 -->
 <Package
    xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
    xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
    xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
    xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
-   xmlns:desktop6="http://schemas.microsoft.com/appx/manifest/desktop/windows10/6"
-   xmlns:virtualization="http://schemas.microsoft.com/appx/manifest/virtualization/windows10"
    xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-   IgnorableNamespaces="uap uap10 desktop desktop6 virtualization rescap">
+   IgnorableNamespaces="uap uap10 desktop rescap">
   <!-- use single quotes to avoid double quotes escaping in the publisher value  -->
   <Identity Name="${identityName}"
     ProcessorArchitecture="${arch}"
@@ -39,12 +31,6 @@
     <PublisherDisplayName>${publisherDisplayName}</PublisherDisplayName>
     <Description>A vinyl player for Windows that turns whatever you are playing into a record on a desktop turntable.</Description>
     <Logo>${logo}</Logo>
-    <desktop6:RegistryWriteVirtualization>disabled</desktop6:RegistryWriteVirtualization>
-    <virtualization:RegistryWriteVirtualization>
-      <virtualization:ExcludedKeys>
-        <virtualization:ExcludedKey>HKEY_CURRENT_USER\Control Panel\Desktop</virtualization:ExcludedKey>
-      </virtualization:ExcludedKeys>
-    </virtualization:RegistryWriteVirtualization>
   </Properties>
   <Resources>
     ${resourceLanguages}

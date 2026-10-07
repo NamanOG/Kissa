@@ -43,6 +43,8 @@ export interface TrackInfo {
   duration: number
   source?: string
   sourceAppId?: string
+  /** False when the source app will not let Kissa move its playback position. */
+  canSeek?: boolean
 }
 
 export interface PlayerState {
@@ -135,7 +137,7 @@ export interface PlayerState {
 }
 
 function getInitialTheme(): AppTheme {
-  if (typeof localStorage === 'undefined') return 'quiet-room'
+  if (typeof localStorage === 'undefined') return 'adaptive'
   
   let saved = localStorage.getItem('kissa_theme')
   const legacySaved = localStorage.getItem('phono_theme')
@@ -146,7 +148,8 @@ function getInitialTheme(): AppTheme {
     localStorage.removeItem('phono_theme')
   }
 
-  if (!saved) return 'quiet-room'
+  // New listeners start with the room lit by whatever album is playing.
+  if (!saved) return 'adaptive'
   const legacyMap: Record<string, AppTheme> = {
     obsidian: 'quiet-room',
     walnut: 'quiet-room',
@@ -251,6 +254,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       return
     }
     const state = get()
+    if (state.currentTrack?.canSeek === false) return
     const duration = state.currentTrack?.duration ?? 0
     let target = Math.max(0, timeSeconds)
     if (duration > 0) {

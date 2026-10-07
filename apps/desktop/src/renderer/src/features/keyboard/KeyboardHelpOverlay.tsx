@@ -34,7 +34,7 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
           onClick={toggle}
         >
           <motion.div
-            className="relative w-full max-w-[420px] bg-[var(--panel-bg)] border border-white/[0.1] rounded-2xl p-8 overflow-hidden select-none shadow-[0_24px_64px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)]"
+            className="relative w-full max-w-[420px] bg-[var(--deck-bg)] border border-white/[0.1] rounded-2xl p-8 overflow-hidden select-none shadow-[0_24px_64px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)]"
             initial={{ scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.96, opacity: 0 }}
@@ -42,7 +42,7 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/[0.08]">
-              <h2 className="text-[12px] text-[var(--muted)] uppercase tracking-[0.2em] font-kissa-chassis font-bold">
+              <h2 className="text-[12px] text-dim uppercase tracking-[0.2em] font-kissa-chassis font-bold">
                 Quick Reference
               </h2>
               <button
@@ -61,10 +61,10 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
                   key={i} 
                   className="flex items-center justify-between group py-2 px-3 rounded-xl hover:bg-white/[0.05] transition-colors"
                 >
-                  <span className="text-[var(--on-surface)] text-[13.5px] font-medium tracking-wide">
+                  <span className="text-ink text-[13.5px] font-medium tracking-wide">
                     {sc.action}
                   </span>
-                  <kbd className="min-w-[36px] px-2.5 py-1 text-center bg-black/40 border border-white/10 rounded text-[11px] font-kissa-chassis font-bold tracking-widest text-[var(--muted)] shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] group-hover:text-[var(--accent)] group-hover:border-[var(--accent)]/50 transition-colors duration-ui ease-primary">
+                  <kbd className="min-w-[36px] px-2.5 py-1 text-center bg-black/40 border border-white/10 rounded text-[11px] font-kissa-chassis font-bold tracking-widest text-dim shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] group-hover:text-tone group-hover:border-tone/50 transition-colors duration-ui ease-primary">
                     {sc.key}
                   </kbd>
                 </div>

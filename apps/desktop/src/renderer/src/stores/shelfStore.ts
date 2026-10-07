@@ -31,6 +31,13 @@ function normalizeKey(album: string, artist: string): string {
 export const IDLE_SOURCE_APP_ID = 'kissa-idle'
 const IDLE_RECORD_KEY = normalizeKey('Kissa', 'Listening Room')
 
+const BROWSER_SOURCE = /chrome|msedge|edge|firefox|brave|opera|vivaldi|comet|youtube|(^|[^a-z])(arc|browser)([^a-z]|$)/i
+
+/** Tabs and streams are not records: the shelf and its stats are for music players. */
+export function isBrowserTrack(track: Pick<TrackInfo, 'source' | 'sourceAppId'>): boolean {
+  return BROWSER_SOURCE.test(track.sourceAppId ?? '') || BROWSER_SOURCE.test(track.source ?? '')
+}
+
 export const useShelfStore = create<ShelfState>()(
   persist(
     (set) => ({
@@ -38,6 +45,9 @@ export const useShelfStore = create<ShelfState>()(
       addOrUpdateRecord: (track) => set((state) => {
         if (!track.album || !track.artist) return state // Ignore incomplete metadata
         if (track.sourceAppId === IDLE_SOURCE_APP_ID) return state // Not a real listen
+        // A browser tab or video with no artist is not a record.
+        if (track.artist.trim().toLowerCase() === 'unknown artist') return state
+        if (isBrowserTrack(track)) return state
         
         const key = normalizeKey(track.album, track.artist)
         const existingIdx = state.records.findIndex((r) => r.albumKey === key)
@@ -81,13 +91,16 @@ export const useShelfStore = create<ShelfState>()(
     }),
     {
       name: 'kissa-record-shelf', // Persists to localStorage automatically
-      version: 1,
-      // v0 shelves recorded the idle placeholder as an album; drop that entry.
+      version: 2,
+      // v0 shelves recorded the idle placeholder as an album; v1 recorded browser
+      // streams with no artist. Drop both.
       migrate: (persisted) => {
         const state = (persisted ?? {}) as Partial<ShelfState>
         return {
           ...state,
-          records: (state.records ?? []).filter((r) => r.albumKey !== IDLE_RECORD_KEY)
+          records: (state.records ?? []).filter(
+            (r) => r.albumKey !== IDLE_RECORD_KEY && r.artist.trim().toLowerCase() !== 'unknown artist'
+          )
         } as ShelfState
       }
     }
