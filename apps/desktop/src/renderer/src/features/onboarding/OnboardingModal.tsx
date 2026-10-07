@@ -1,18 +1,13 @@
-import React, { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, ArrowLeft, X } from 'lucide-react'
-import { usePlayerStore } from '@renderer/stores/playerStore'
+import React, { useEffect, useState } from 'react'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { ArrowLeft, ArrowRight, X } from 'lucide-react'
+import { usePlayerStore, VINYL_COLORS } from '@renderer/stores/playerStore'
 import { cn } from '@renderer/utils/cn'
-import { useMechanicalTick } from '@renderer/hooks/useMechanicalTick'
 import { LISTENING_ENVIRONMENTS } from '@renderer/features/settings/themes'
-
-import onboardingIntro from '@renderer/media/onboarding_intro.jpg'
-import onboardingSetup from '@renderer/media/onboarding_setup.jpg'
+import { VINYL_PRESSINGS } from '@renderer/features/vinyl/VinylBase'
+import { VinylEngine } from '@renderer/features/vinyl'
+import { HardwareSwitch } from '@renderer/components/ui/HardwareSwitch'
 import kissaIdleCover from '@renderer/media/kissa_idle_cover.jpg'
-import quietRoomEnv from '@renderer/media/environments/01_quiet_room.jpg'
-import onboardingSettings from '@renderer/media/onboarding_settings.jpg'
-import onboardingReady from '@renderer/media/onboarding_ready.jpg'
-import onboardingControl from '@renderer/media/onboarding_control.jpg'
 
 export interface OnboardingModalProps {
   className?: string
@@ -20,440 +15,372 @@ export interface OnboardingModalProps {
 
 interface GuideStep {
   title: string
-  subtitle: string
-  description: string
-  image: string
-  imageAlt: string
-  imageFit?: 'cover' | 'contain'
-  details?: { label: string; text: string }[]
+  lead: string
+  /** Which room photograph backs this step. The room step shows the chosen room instead. */
+  room: number
 }
 
-const GUIDE_STEPS: GuideStep[] = [
-  {
-    title: 'Kissa',
-    subtitle: 'A music player built around the feeling of listening.',
-    description:
-      'Digital music often feels weightless and disposable. Kissa brings back the deliberate, tactile reverence of playing a physical vinyl record—giving your music room to breathe in a quiet, dedicated space.',
-    image: onboardingIntro,
-    imageAlt: 'Kissa listening player'
-  },
-  {
-    title: 'The Turntable',
-    subtitle: 'A physical listening surface that follows music from your apps.',
-    description:
-      'Watch the platter rotate at 33⅓ or 45 RPM with authentic inertia. The tonearm tracks the needle through the groove in real time, and dragging the headshell lets you physically seek across the record surface.',
-    image: onboardingSetup,
-    imageAlt: 'Physical turntable listening surface',
-    details: [
-      { label: 'Speeds', text: 'Switch between 33⅓ and 45 RPM' },
-      { label: 'Needle Drop', text: 'Drag and drop the tonearm to seek or return to rest' }
-    ]
-  },
-  {
-    title: 'The Shelf',
-    subtitle: 'Your listening history becomes an archival record crate.',
-    description:
-      'Every album you listen to is archived in a wooden record crate. Flip through vinyl sleeves by date or title, pull out a jacket to examine the artwork, and revisit past listening sessions with ease.',
-    image: kissaIdleCover,
-    imageAlt: 'Archival record shelf crate',
-    imageFit: 'cover',
-    details: [
-      { label: 'Crate Flipping', text: 'Navigate records like an authentic collection' },
-      { label: 'Artwork Inspection', text: 'Pull records forward to view sleeve art' }
-    ]
-  },
-  {
-    title: 'The Room',
-    subtitle: 'Ambient illumination and listening room environments.',
-    description:
-      'Transform your workspace into a quiet Japanese listening cafe. Choose from eight atmospheric lighting environments or let the room adaptively sample the palette of the current album.',
-    image: quietRoomEnv,
-    imageAlt: 'Listening room environment',
-    details: [
-      { label: 'Environments', text: '8 curated physical listening rooms' },
-      { label: 'Adaptive Lighting', text: 'Ambient glow subtly matches album art' }
-    ]
-  },
-  {
-    title: 'The Words',
-    subtitle: 'Synchronized, interactive lyric tracking.',
-    description:
-      'Read time-synced lyrics that flow naturally with the vocal phrasing. Click any line to seek directly to that lyric in the song, or fine-tune timing calibration to your personal taste.',
-    image: onboardingSettings,
-    imageAlt: 'Synchronized lyric tracking',
-    details: [
-      { label: 'Interactive Seeking', text: 'Click any lyric line to jump directly' },
-      { label: 'Timing Calibration', text: 'Adjust millisecond offset in settings' }
-    ]
-  },
-  {
-    title: 'The Display',
-    subtitle: 'A quiet fullscreen presence and native Windows screensaver.',
-    description:
-      'Press D or F11 to enter a distraction-free fullscreen display with subtle clock readouts and glowing vinyl. When your PC is idle, Kissa functions as a native Windows screensaver.',
-    image: onboardingReady,
-    imageAlt: 'Quiet fullscreen display and screensaver',
-    details: [
-      { label: 'Listening Display', text: 'Press D for a calm full-screen presence' },
-      { label: 'Screensaver', text: 'Native Windows screensaver with lyric display' }
-    ]
-  },
-  {
-    title: 'Control',
-    subtitle: 'Keyboard shortcuts and external media integration.',
-    description:
-      'Kissa follows Spotify, Apple Music, TIDAL, and browser audio sessions. Manage playback effortlessly with intuitive keyboard shortcuts designed for fluid operation.',
-    image: onboardingControl,
-    imageAlt: 'Keyboard shortcuts and media controls',
-    details: [
-      { label: 'Space', text: 'Play or pause playback' },
-      { label: '← / →', text: 'Seek 5 seconds backward or forward' },
-      { label: 'Shift + ← / →', text: 'Previous or next track' },
-      { label: '?', text: 'Open quick shortcut reference' }
-    ]
-  }
+const STEPS: GuideStep[] = [
+  { title: 'Welcome to Kissa', lead: 'Play music in any app. Kissa puts it on a turntable.', room: 0 },
+  { title: 'It follows your music', lead: 'Spotify, Apple Music, TIDAL or a browser tab. There is nothing to connect and no account.', room: 5 },
+  { title: 'Make the room yours', lead: 'Pick the light you listen in and the record on the platter. Both can be changed later in Settings.', room: 0 },
+  { title: 'Read along', lead: 'Lyrics move with the song, word by word, when timed lyrics exist for the recording.', room: 2 },
+  { title: 'Let it run', lead: 'Give the record the whole screen, or let it take over when your desk goes quiet.', room: 3 }
 ]
 
+function Key({ children }: { children: React.ReactNode }): React.JSX.Element {
+  return (
+    <kbd className="inline-flex h-6 min-w-6 items-center justify-center rounded-md border border-white/15 bg-white/[0.06] px-1.5 font-mono text-[11px] text-[#f5efe6]">
+      {children}
+    </kbd>
+  )
+}
+
+function Row({ keys, children }: { keys: React.ReactNode; children: React.ReactNode }): React.JSX.Element {
+  return (
+    <li className="flex items-center gap-4 border-t border-white/[0.07] py-3 first:border-t-0">
+      <span className="flex w-[92px] shrink-0 items-center gap-1">{keys}</span>
+      <span className="text-[14px] leading-snug text-[#cfc5ba]">{children}</span>
+    </li>
+  )
+}
+
+const FIELD_LABEL = 'mb-2.5 block font-mono text-[10.5px] font-semibold uppercase tracking-[0.18em] text-[#a89b8d]'
+
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) => {
-  const isOnboardingOpen = usePlayerStore((s) => s.isOnboardingOpen)
-  const setIsOnboardingOpen = usePlayerStore((s) => s.setIsOnboardingOpen)
+  const isOpen = usePlayerStore((s) => s.isOnboardingOpen)
+  const setIsOpen = usePlayerStore((s) => s.setIsOnboardingOpen)
   const theme = usePlayerStore((s) => s.theme)
   const setTheme = usePlayerStore((s) => s.setTheme)
-  const rpm = usePlayerStore((s) => s.rpm)
-  const setRpm = usePlayerStore((s) => s.setRpm)
+  const vinylColor = usePlayerStore((s) => s.vinylColor)
+  const setVinylColor = usePlayerStore((s) => s.setVinylColor)
+  const listenerName = usePlayerStore((s) => s.listenerName)
+  const setListenerName = usePlayerStore((s) => s.setListenerName)
   const screensaverLyrics = usePlayerStore((s) => s.screensaverLyrics)
-  const toggleScreensaverLyrics = usePlayerStore((s) => s.toggleScreensaverLyrics)
-  const playTick = useMechanicalTick()
+  const setScreensaverLyrics = usePlayerStore((s) => s.setScreensaverLyrics)
+  const reduceMotion = useReducedMotion()
 
-  const [step, setStep] = useState<number>(0)
-
-  const [reducedMotion, setReducedMotion] = useState(false)
-  useEffect(() => {
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      const media = window.matchMedia('(prefers-reduced-motion: reduce)')
-      setReducedMotion(media.matches)
-
-      const listener = () => setReducedMotion(media.matches)
-      media.addEventListener('change', listener)
-      return () => media.removeEventListener('change', listener)
-    }
-  }, [])
+  const [step, setStep] = useState(0)
+  const last = STEPS.length - 1
 
   useEffect(() => {
+    if (!isOpen) return
     const onKey = (e: KeyboardEvent): void => {
-      if (!isOnboardingOpen) return
-
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement ||
-        (e.target as HTMLElement).isContentEditable
-      ) {
+      const target = e.target as HTMLElement | null
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable) {
         return
       }
-
-      if (e.key === 'ArrowRight' && step < GUIDE_STEPS.length - 1) setStep((s) => s + 1)
-      if (e.key === 'ArrowLeft' && step > 0) setStep((s) => s - 1)
-      if (e.key === 'Escape') setIsOnboardingOpen(false)
+      if (e.key === 'ArrowRight') setStep((s) => Math.min(last, s + 1))
+      if (e.key === 'ArrowLeft') setStep((s) => Math.max(0, s - 1))
+      if (e.key === 'Escape') setIsOpen(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [isOnboardingOpen, step, setIsOnboardingOpen])
+  }, [isOpen, last, setIsOpen])
 
   useEffect(() => {
-    if (!isOnboardingOpen) {
-      const t = setTimeout(() => setStep(0), 400)
-      return () => clearTimeout(t)
-    }
-  }, [isOnboardingOpen])
+    if (isOpen) return
+    const t = setTimeout(() => setStep(0), 400)
+    return () => clearTimeout(t)
+  }, [isOpen])
 
-  if (!isOnboardingOpen) return null
+  if (!isOpen) return null
 
-  const close = (): void => setIsOnboardingOpen(false)
-  const isReduced = reducedMotion
-
-  const fadeTransition = { duration: 0.24, ease: [0.22, 1, 0.36, 1] as const }
-  const slideTransition = isReduced
-    ? fadeTransition
-    : { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const }
-
-  const slideVariants = {
-    initial: { opacity: 0, x: isReduced ? 0 : 16 },
-    animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: isReduced ? 0 : -16 }
-  }
-
-  const currentStep = GUIDE_STEPS[step]
-  const isLastStep = step === GUIDE_STEPS.length - 1
-
-  const activeEnvObj = LISTENING_ENVIRONMENTS.find((e) => e.id === theme)
-  const stepImage = step === 3 && activeEnvObj?.image ? activeEnvObj.image : currentStep.image
+  const current = STEPS[step]
+  const rooms = LISTENING_ENVIRONMENTS.filter((env) => env.id !== 'adaptive')
+  const chosenRoom = rooms.find((env) => env.id === theme) ?? rooms[0]
+  const picture = step === 2 ? chosenRoom.image : rooms[current.room].image
+  const ease = [0.22, 1, 0.36, 1] as const
 
   return (
-    <div
-      className={cn(
-        'fixed inset-0 z-[100] flex items-center justify-center select-none p-4 min-[640px]:p-8',
-        className
-      )}
-    >
+    <div className={cn('fixed inset-0 z-[100] flex items-center justify-center select-none p-4 min-[640px]:p-8', className)}>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={fadeTransition}
-        className="fixed inset-0 bg-[#0a0806]/92 backdrop-blur-xl pointer-events-auto"
-        onClick={close}
+        transition={{ duration: 0.2 }}
+        className="fixed inset-0 bg-[#080605]/90"
+        onClick={() => setIsOpen(false)}
       />
 
       <motion.div
-        initial={{ opacity: 0, scale: isReduced ? 1 : 0.98 }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Kissa guide"
+        initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: isReduced ? 1 : 0.98 }}
-        transition={slideTransition}
-        className="relative z-50 w-full max-w-4xl h-[84vh] min-h-[520px] max-h-[720px] rounded-2xl bg-[#14110e] border border-[#2a241e] shadow-[0_32px_64px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)] overflow-hidden pointer-events-auto flex flex-col"
+        transition={{ duration: 0.3, ease }}
+        className="relative grid h-[86vh] max-h-[660px] min-h-[540px] w-full max-w-[1000px] grid-cols-1 overflow-hidden rounded-[22px] border border-white/[0.08] bg-[#12100d] shadow-[0_40px_90px_rgba(0,0,0,0.8)] min-[900px]:grid-cols-[minmax(0,0.92fr)_minmax(0,1fr)]"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="font-serif italic text-[15px] text-[#f5efe6]/80 tracking-wide">
-              Kissa
-            </span>
-            <span className="text-white/20 text-xs">•</span>
-            <span className="text-[12px] font-mono text-[#a89b8d]">Guide</span>
-          </div>
+        {/* Picture: the room, with the record itself on the first step */}
+        <div className="relative hidden overflow-hidden bg-black min-[900px]:block">
+          <AnimatePresence initial={false}>
+            <motion.div
+              key={picture}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, ease }}
+              className="absolute inset-0"
+            >
+              <img src={picture} alt="" className="h-full w-full object-cover" draggable={false} />
+            </motion.div>
+          </AnimatePresence>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/20" />
 
-          <button
-            type="button"
-            onClick={close}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-[#8e8175] hover:text-[#f5efe6] hover:bg-white/[0.06] transition-colors cursor-pointer"
-            title="Close"
-            aria-label="Close"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {step === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/75">
+              <VinylEngine albumArt={kissaIdleCover} isActive className="w-[62%]" />
+            </div>
+          )}
+
+          <div className="absolute bottom-6 left-7 right-7 flex items-end justify-between">
+            <span className="font-kissa-editorial text-[64px] font-medium leading-none text-white/90">
+              {String(step + 1).padStart(2, '0')}
+            </span>
+            <span className="pb-2 font-mono text-[10.5px] uppercase tracking-[0.2em] text-white/60">
+              {step === 0
+                ? '喫茶 · listening café'
+                : step === 2
+                  ? theme === 'adaptive'
+                    ? 'Match Album'
+                    : chosenRoom.name
+                  : rooms[current.room].name}
+            </span>
+          </div>
         </div>
 
-        <div className="flex-1 relative overflow-hidden flex flex-col">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`step-${step}`}
-              variants={slideVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={slideTransition}
-              className="absolute inset-0 flex flex-col min-[900px]:flex-row gap-6 p-6 min-[900px]:p-10 overflow-y-auto no-scrollbar"
+        {/* Words and choices */}
+        <div className="flex min-h-0 flex-col">
+          <div className="flex shrink-0 items-center justify-between px-8 pt-6">
+            <span className="font-mono text-[11px] tracking-[0.18em] text-[#a89b8d]">
+              {step + 1} of {STEPS.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              aria-label="Close guide"
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-[#8e8175] outline-none transition-colors hover:bg-white/[0.07] hover:text-[#f5efe6] focus-visible:ring-1 focus-visible:ring-[#d7a76c]"
             >
-              <div className="w-full min-[900px]:w-[48%] h-48 min-[900px]:h-full rounded-2xl bg-[#0a0807] border border-white/[0.08] shadow-[0_12px_28px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.04)] overflow-hidden relative shrink-0 flex items-center justify-center p-1">
-                <img
-                  src={stepImage}
-                  alt={currentStep.imageAlt}
-                  className={cn(
-                    'w-full h-full rounded-xl transition-opacity duration-300',
-                    currentStep.imageFit === 'contain' ? 'object-contain' : 'object-cover'
-                  )}
-                  draggable={false}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-              </div>
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
 
-              <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
-                <div className="space-y-4">
-                  <div>
-                    <span className="text-[11px] font-mono tracking-widest text-[#d7a76c] font-medium">
-                      {step + 1} of {GUIDE_STEPS.length}
-                    </span>
-                    <h2 className="font-serif text-3xl min-[900px]:text-4xl text-[#f5efe6] font-normal tracking-tight mt-1">
-                      {currentStep.title}
-                    </h2>
-                  </div>
+          <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto px-8 pb-4 pt-5">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, y: reduceMotion ? 0 : 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.24, ease }}
+              >
+                <h2 className="font-kissa-editorial text-[44px] font-medium leading-[1.04] tracking-[-0.02em] text-[#f7f1e8] text-balance">
+                  {current.title}
+                </h2>
+                <p className="mt-4 max-w-[40ch] text-[16px] leading-relaxed text-[#cfc5ba]">{current.lead}</p>
 
-                  <p className="text-[14px] min-[900px]:text-[15px] font-medium text-[#d6cec7] leading-snug">
-                    {currentStep.subtitle}
-                  </p>
-
-                  <p className="text-[13px] min-[900px]:text-[13.5px] text-[#a89b8d] font-light leading-relaxed">
-                    {currentStep.description}
-                  </p>
-
-                  {currentStep.details && (
-                    <div className="pt-2 border-t border-white/[0.06] grid grid-cols-1 gap-2.5">
-                      {currentStep.details.map((detail, idx) => (
-                        <div key={idx} className="flex flex-col">
-                          <span className="text-[11.5px] font-mono text-[#d7a76c]/90 font-medium">
-                            {detail.label}
-                          </span>
-                          <span className="text-[12.5px] text-[#b7a99b] font-light">
-                            {detail.text}
-                          </span>
-                        </div>
-                      ))}
+                <div className="mt-8">
+                  {step === 0 && (
+                    <div>
+                      <label htmlFor="guide-name" className={FIELD_LABEL}>
+                        What should Kissa call you?
+                      </label>
+                      <input
+                        id="guide-name"
+                        type="text"
+                        value={listenerName}
+                        onChange={(e) => setListenerName(e.target.value)}
+                        maxLength={24}
+                        placeholder="Your name (optional)"
+                        autoComplete="off"
+                        spellCheck={false}
+                        className="w-full max-w-[320px] select-text appearance-none rounded-xl border border-white/[0.12] bg-white/[0.05] px-4 py-3 text-[16px] text-[#f7f1e8] outline-none placeholder:text-[#8e8175] focus-visible:border-[#d7a76c]"
+                      />
+                      <p className="mt-3 text-[13px] text-[#8e8175]">
+                        It stays on this PC. Kissa uses it to greet you and to title your shelf.
+                      </p>
                     </div>
                   )}
 
                   {step === 1 && (
-                    <div className="pt-3 border-t border-white/[0.06]">
-                      <span className="text-[11px] font-mono text-[#d7a76c]/90 font-medium block mb-2">
-                        Customize Default Rotation Speed
-                      </span>
-                      <div className="flex items-center gap-2.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            playTick()
-                            setRpm('33')
-                          }}
-                          className={cn(
-                            'px-3 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-wider transition-all cursor-pointer border',
-                            rpm === '33'
-                              ? 'bg-[#d7a76c] text-[#14110e] border-[#d7a76c] font-bold shadow-[0_2px_8px_rgba(215,167,108,0.25)]'
-                              : 'bg-white/[0.04] text-[#a89b8d] border-white/[0.08] hover:bg-white/[0.08] hover:text-[#f5efe6]'
-                          )}
-                        >
-                          33 ⅓ RPM · LP Album
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            playTick()
-                            setRpm('45')
-                          }}
-                          className={cn(
-                            'px-3 py-1.5 rounded-lg font-mono text-[11px] uppercase tracking-wider transition-all cursor-pointer border',
-                            rpm === '45'
-                              ? 'bg-[#d7a76c] text-[#14110e] border-[#d7a76c] font-bold shadow-[0_2px_8px_rgba(215,167,108,0.25)]'
-                              : 'bg-white/[0.04] text-[#a89b8d] border-white/[0.08] hover:bg-white/[0.08] hover:text-[#f5efe6]'
-                          )}
-                        >
-                          45 RPM · 7" / 12" Single
-                        </button>
+                    <ul>
+                      <Row keys={<Key>Space</Key>}>Play or pause</Row>
+                      <Row
+                        keys={
+                          <>
+                            <Key>Shift</Key>
+                            <Key>→</Key>
+                          </>
+                        }
+                      >
+                        Next track (← for the previous one)
+                      </Row>
+                      <Row keys={<Key>?</Key>}>Every shortcut, any time</Row>
+                    </ul>
+                  )}
+
+                  {step === 2 && (
+                    <div className="space-y-7">
+                      <div>
+                        <span className={FIELD_LABEL}>Room</span>
+                        <div role="radiogroup" aria-label="Listening room" className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            role="radio"
+                            aria-checked={theme === 'adaptive'}
+                            onClick={() => setTheme('adaptive')}
+                            className={cn(
+                              'col-span-2 flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-[13.5px] outline-none transition-colors focus-visible:ring-1 focus-visible:ring-[#d7a76c]',
+                              theme === 'adaptive'
+                                ? 'border-white/30 bg-white/[0.1] text-[#f7f1e8]'
+                                : 'border-white/[0.07] bg-white/[0.03] text-[#b7a99b] hover:bg-white/[0.06] hover:text-[#f7f1e8]'
+                            )}
+                          >
+                            <span
+                              className="h-3 w-3 shrink-0 rounded-full"
+                              style={{ background: 'conic-gradient(#c8553d, #d9a441, #3d6fc8, #c8553d)' }}
+                            />
+                            <span className="truncate">Match Album · lit by the cover that is playing</span>
+                          </button>
+                          {rooms.map((env) => {
+                            const selected = env.id === theme
+                            return (
+                              <button
+                                key={env.id}
+                                type="button"
+                                role="radio"
+                                aria-checked={selected}
+                                onClick={() => setTheme(env.id)}
+                                className={cn(
+                                  'flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-[13.5px] outline-none transition-colors focus-visible:ring-1 focus-visible:ring-[#d7a76c]',
+                                  selected
+                                    ? 'border-white/30 bg-white/[0.1] text-[#f7f1e8]'
+                                    : 'border-white/[0.07] bg-white/[0.03] text-[#b7a99b] hover:bg-white/[0.06] hover:text-[#f7f1e8]'
+                                )}
+                              >
+                                <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: env.accentColor }} />
+                                <span className="truncate">{env.name}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                      <div>
+                        <span className={FIELD_LABEL}>Record · {VINYL_PRESSINGS[vinylColor].name}</span>
+                        <div role="radiogroup" aria-label="Record colour" className="flex items-center gap-2.5">
+                          {VINYL_COLORS.map((color) => {
+                            const pressing = VINYL_PRESSINGS[color]
+                            const selected = color === vinylColor
+                            return (
+                              <button
+                                key={color}
+                                type="button"
+                                role="radio"
+                                aria-checked={selected}
+                                aria-label={pressing.name}
+                                title={pressing.name}
+                                onClick={() => setVinylColor(color)}
+                                className={cn(
+                                  'flex h-9 w-9 cursor-pointer items-center justify-center rounded-full outline-none transition-transform active:scale-95',
+                                  selected ? 'ring-2 ring-[#f7f1e8] ring-offset-2 ring-offset-[#12100d]' : 'hover:scale-105'
+                                )}
+                                style={{
+                                  background: `radial-gradient(circle, ${pressing.inner} 0%, ${pressing.outer} 100%)`,
+                                  boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.14)'
+                                }}
+                              >
+                                <span className="h-2.5 w-2.5 rounded-full bg-[#d7a76c]" />
+                              </button>
+                            )
+                          })}
+                        </div>
                       </div>
                     </div>
                   )}
 
                   {step === 3 && (
-                    <div className="pt-3 border-t border-white/[0.06]">
-                      <span className="text-[11px] font-mono text-[#d7a76c]/90 font-medium block mb-2">
-                        Choose Your Listening Atmosphere
-                      </span>
-                      <div className="grid grid-cols-2 gap-2 max-h-[140px] overflow-y-auto no-scrollbar pr-1">
-                        {LISTENING_ENVIRONMENTS.slice(0, 6).map((env) => {
-                          const isSelected = theme === env.id
-                          return (
-                            <button
-                              key={env.id}
-                              type="button"
-                              onClick={() => {
-                                playTick()
-                                setTheme(env.id)
-                              }}
-                              className={cn(
-                                'flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-left transition-all cursor-pointer group',
-                                isSelected
-                                  ? 'bg-[#d7a76c]/15 border-[#d7a76c] text-[#f5efe6]'
-                                  : 'bg-white/[0.03] border-white/[0.06] text-[#a89b8d] hover:bg-white/[0.06] hover:text-[#f5efe6]'
-                              )}
-                            >
-                              <span
-                                className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm"
-                                style={{ backgroundColor: env.accentColor }}
-                              />
-                              <div className="min-w-0 flex-1">
-                                <span className="text-[11px] font-medium block truncate">
-                                  {env.name}
-                                </span>
-                              </div>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
+                    <ul>
+                      <Row keys={<span className="text-[13px] text-[#a89b8d]">Click a line</span>}>
+                        Jump to that moment, where your music app allows it
+                      </Row>
+                      <Row
+                        keys={
+                          <>
+                            <Key>−</Key>
+                            <Key>+</Key>
+                          </>
+                        }
+                      >
+                        Hover the lyrics to nudge timing that runs early or late
+                      </Row>
+                      <Row keys={<span className="text-[13px] text-[#a89b8d]">Settings</span>}>
+                        Choose the size and typeface of the words
+                      </Row>
+                    </ul>
                   )}
 
-                  {step === 5 && (
-                    <div className="pt-3 border-t border-white/[0.06]">
-                      <span className="text-[11px] font-mono text-[#d7a76c]/90 font-medium block mb-2">
-                        Screensaver Preference
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          playTick()
-                          toggleScreensaverLyrics()
-                        }}
-                        className={cn(
-                          'flex items-center justify-between w-full px-3 py-2 rounded-lg border transition-all cursor-pointer',
-                          screensaverLyrics
-                            ? 'bg-[#d7a76c]/15 border-[#d7a76c] text-[#f5efe6]'
-                            : 'bg-white/[0.03] border-white/[0.06] text-[#a89b8d] hover:bg-white/[0.06] hover:text-[#f5efe6]'
-                        )}
-                      >
-                        <span className="text-[11.5px] font-medium">Show Live Lyrics on Screensaver</span>
-                        <span
-                          className={cn(
-                            'text-[10px] font-mono uppercase px-1.5 py-0.5 rounded',
-                            screensaverLyrics
-                              ? 'bg-[#d7a76c] text-[#14110e] font-bold'
-                              : 'bg-white/10 text-[#a89b8d]'
-                          )}
-                        >
-                          {screensaverLyrics ? 'Active' : 'Muted'}
-                        </span>
-                      </button>
-                    </div>
+                  {step === 4 && (
+                    <>
+                      <ul>
+                        <Row keys={<Key>D</Key>}>Listening Display: the deck and the sleeve, nothing else</Row>
+                        <Row keys={<Key>F11</Key>}>Fullscreen, with the controls a mouse-move away</Row>
+                        <Row keys={<span className="text-[13px] text-[#a89b8d]">Settings</span>}>
+                          Set Kissa as your Windows screensaver
+                        </Row>
+                      </ul>
+                      <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-3">
+                        <span className="text-[14px] text-[#cfc5ba]">Show lyrics on the display and screensaver</span>
+                        <HardwareSwitch
+                          checked={screensaverLyrics}
+                          onChange={setScreensaverLyrics}
+                          aria-label="Show lyrics on the display and screensaver"
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-
-        <div className="px-6 py-4 border-t border-white/[0.06] bg-[#100d0a] flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-1.5">
-            {GUIDE_STEPS.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setStep(i)}
-                className={cn(
-                  'h-1.5 rounded-full transition-all duration-300 cursor-pointer',
-                  i === step
-                    ? 'w-6 bg-[#d7a76c]'
-                    : 'w-1.5 bg-white/15 hover:bg-white/30'
-                )}
-                aria-label={`Go to step ${i + 1}`}
-              />
-            ))}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
-          <div className="flex items-center gap-3">
-            {step > 0 && (
-              <button
-                type="button"
-                onClick={() => setStep((s) => s - 1)}
-                className="px-4 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-[#f5efe6] text-[12px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95 border border-white/[0.06]"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 text-[#a89b8d]" />
-                Previous
-              </button>
-            )}
+          <div className="flex shrink-0 items-center justify-between gap-4 border-t border-white/[0.07] px-8 py-5">
+            <div className="flex items-center gap-1.5" role="tablist" aria-label="Guide steps">
+              {STEPS.map((s, i) => (
+                <button
+                  key={s.title}
+                  type="button"
+                  role="tab"
+                  aria-selected={i === step}
+                  aria-label={`Step ${i + 1}: ${s.title}`}
+                  onClick={() => setStep(i)}
+                  className={cn(
+                    'h-1 cursor-pointer rounded-full outline-none transition-[width,background-color] duration-300 focus-visible:ring-1 focus-visible:ring-[#d7a76c]',
+                    i === step ? 'w-8 bg-[#f7f1e8]' : 'w-4 bg-white/15 hover:bg-white/30'
+                  )}
+                />
+              ))}
+            </div>
 
-            {isLastStep ? (
+            <div className="flex items-center gap-2.5">
+              {step > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setStep((s) => s - 1)}
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full px-4 py-2.5 text-[13.5px] font-medium text-[#b7a99b] outline-none transition-colors hover:text-[#f7f1e8] focus-visible:ring-1 focus-visible:ring-[#d7a76c]"
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  Back
+                </button>
+              )}
               <button
                 type="button"
-                onClick={close}
-                className="px-5 py-1.5 rounded-xl bg-[#d7a76c] hover:bg-[#e0b279] text-[#14110e] text-[12px] font-bold transition-all cursor-pointer shadow-[0_2px_12px_rgba(215,167,108,0.3)] active:scale-95"
+                onClick={() => (step === last ? setIsOpen(false) : setStep((s) => s + 1))}
+                className="flex cursor-pointer items-center gap-2 rounded-full bg-[#f7f1e8] px-5 py-2.5 text-[13.5px] font-semibold text-[#12100d] outline-none transition-transform hover:bg-white focus-visible:ring-2 focus-visible:ring-[#d7a76c] active:scale-[0.97]"
               >
-                Start Listening
+                {step === last ? 'Start listening' : 'Next'}
+                {step !== last && <ArrowRight className="h-4 w-4" aria-hidden="true" />}
               </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setStep((s) => s + 1)}
-                className="px-4 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#f5efe6] text-[12px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95 border border-white/[0.08]"
-              >
-                Next
-                <ArrowRight className="w-3.5 h-3.5 text-[#a89b8d]" />
-              </button>
-            )}
+            </div>
           </div>
         </div>
       </motion.div>

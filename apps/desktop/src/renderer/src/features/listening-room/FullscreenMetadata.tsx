@@ -46,16 +46,16 @@ export const FullscreenMetadata = memo(({ className, isCentered = false }: Fulls
             </div>
           )}
           <h1
-            className="max-w-full font-serif text-[clamp(1.75rem,2.75vw,3rem)] font-medium leading-[1.15] pb-1 tracking-[-0.025em] text-[var(--on-surface)] line-clamp-2 drop-shadow-md"
+            className="max-w-full font-serif text-[clamp(1.75rem,2.75vw,3rem)] font-medium leading-[1.15] pb-1 tracking-[-0.025em] text-ink line-clamp-2 drop-shadow-md"
             title={title}
           >
             {title}
           </h1>
-          <p className="mt-2 max-w-full font-kissa-chassis uppercase text-[clamp(0.85rem,1.1vw,1rem)] tracking-[0.15em] text-[var(--muted)] line-clamp-1">
+          <p className="mt-2 max-w-full font-kissa-chassis uppercase text-[clamp(0.85rem,1.1vw,1rem)] tracking-[0.15em] text-dim line-clamp-1">
             {artist}
           </p>
-          {album && (
-            <p className="mt-1 max-w-full text-xs text-[var(--muted)]/60 font-sans tracking-wide line-clamp-1">
+          {album && album.toLowerCase() !== title.toLowerCase() && (
+            <p className="mt-1 max-w-full text-xs text-dim/60 font-sans tracking-wide line-clamp-1">
               {album}
             </p>
           )}

@@ -2,6 +2,28 @@ import React, { useEffect, useState, useRef } from 'react'
 import { SharePayload, AlbumShareData, StatsShareData } from '../../../../types/share'
 import { extractColorsFromImage, AdaptivePalette } from '../../hooks/useAdaptiveColor'
 import { cn } from '../../utils/cn'
+import { usePlayerStore } from '../../stores/playerStore'
+import { possessive } from '../../utils/greeting'
+
+const Label = ({ children }: { children: React.ReactNode }): React.JSX.Element => (
+  <span className="font-mono text-[15px] uppercase tracking-[0.22em] opacity-55">{children}</span>
+)
+
+const Cover = ({ src, size }: { src?: string; size: number }): React.JSX.Element => (
+  <div
+    className="shrink-0 overflow-hidden rounded-[6px] bg-black/40 shadow-[0_30px_70px_rgba(0,0,0,0.55)]"
+    style={{ width: size, height: size }}
+  >
+    {src && <img src={src} className="h-full w-full object-cover" alt="" />}
+  </div>
+)
+
+const Fact = ({ label, value }: { label: string; value: string }): React.JSX.Element => (
+  <div className="flex flex-col gap-2">
+    <Label>{label}</Label>
+    <span className="font-serif text-[40px] leading-none">{value}</span>
+  </div>
+)
 
 export interface ShareCardRendererProps {
   payload: SharePayload
@@ -12,6 +34,7 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
   const [palette, setPalette] = useState<AdaptivePalette | null>(null)
   const [imagesLoaded, setImagesLoaded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const listenerName = usePlayerStore((s) => s.listenerName)
 
   const { type, data, aspectRatio } = payload
 
@@ -102,171 +125,127 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
     return () => { mounted = false }
   }, [primaryArtwork, type, data, isExport])
 
-  const wrapperStyle = palette ? {
-    backgroundColor: palette.deckBg,
-    color: palette.onSurface,
-  } : {
-    backgroundColor: '#111',
-    color: '#fff',
-  }
-
   const isSquare = aspectRatio === '1:1'
-  const containerClass = cn(
-    'relative overflow-hidden flex flex-col',
-    isSquare ? 'w-[1080px] h-[1080px]' : 'w-[1080px] h-[1350px]'
-  )
+  const ink = palette?.onSurface ?? '#f5efe6'
+  const accent = palette?.accent ?? '#d98a4a'
+  const owner = possessive(listenerName)
+  const monthYear = (time: number): string =>
+    new Date(time).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+  const plural = (count: number, word: string): string => `${count} ${word}${count === 1 ? '' : 's'}`
 
-  const renderBackground = () => (
-    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-      {palette && (
-        <>
-          <div 
-            className="absolute w-[150%] h-[150%] rounded-full opacity-[0.15]" 
-            style={{ 
-              background: `radial-gradient(circle, ${palette.ambientPrimary} 0%, transparent 70%)`,
-              left: palette.spatialPrimaryX, 
-              top: palette.spatialPrimaryY, 
-              transform: 'translate(-50%, -50%)' 
-            }} 
-          />
-          <div 
-            className="absolute w-[100%] h-[100%] rounded-full opacity-[0.1]" 
-            style={{ 
-              background: `radial-gradient(circle, ${palette.ambientSecondary} 0%, transparent 70%)`,
-              left: palette.spatialSecondaryX, 
-              top: palette.spatialSecondaryY, 
-              transform: 'translate(-50%, -50%)' 
-            }} 
-          />
-        </>
-      )}
-      <div className="absolute inset-0 bg-radial-gradient from-transparent to-black/40 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.4) 100%)' }} />
-      <div className="absolute inset-6 border border-white/5 rounded-sm pointer-events-none" />
-      <div className="absolute inset-8 border border-white/[0.02] rounded-sm pointer-events-none" />
-    </div>
-  )
-
-  const renderBrand = () => (
-    <div className="absolute bottom-12 left-12 right-12 z-20 flex items-center justify-between opacity-60">
-      <span className="font-mono text-sm tracking-[0.4em] uppercase">Kissa</span>
-      <span className="font-mono text-xs tracking-widest text-white/50">{new Date().getFullYear()} / Catalog</span>
-    </div>
-  )
-
-  const renderAlbum = () => {
+  const renderAlbum = (): React.JSX.Element => {
     const album = data as AlbumShareData
     return (
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-20">
-        <div className="w-[600px] h-[600px] shadow-[0_40px_80px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.2)] rounded-sm overflow-hidden bg-[#111]">
-          {album.artworkUrl && <img src={album.artworkUrl} className="w-full h-full object-cover" alt="" />}
+      <div className="relative z-10 flex flex-1 flex-col justify-between">
+        <div className="flex justify-center">
+          <Cover src={album.artworkUrl} size={isSquare ? 560 : 800} />
         </div>
-        <div className="mt-16 text-center max-w-[800px]">
-          <h1 className="font-serif text-5xl font-medium tracking-tight mb-4">{album.album}</h1>
-          <p className="font-mono text-xl tracking-widest opacity-70 uppercase">{album.artist}</p>
-        </div>
-        <div className="mt-12 flex gap-12 border-t border-white/10 pt-8 opacity-70">
-          <div className="flex flex-col items-center">
-            <span className="font-mono text-xs tracking-[0.2em] uppercase mb-1">Play Count</span>
-            <span className="font-serif text-2xl">{album.playCount}</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="font-mono text-xs tracking-[0.2em] uppercase mb-1">First Listen</span>
-            <span className="font-serif text-2xl">{new Date(album.firstListened).getFullYear()}</span>
+        <div>
+          <h1 className="font-serif text-[76px] font-medium leading-[1.02] tracking-[-0.02em] line-clamp-2">
+            {album.album}
+          </h1>
+          <p className="mt-4 font-serif text-[38px] italic opacity-75 line-clamp-1">{album.artist}</p>
+          <div className="mt-10 flex gap-20 border-t pt-8" style={{ borderColor: 'color-mix(in srgb, currentColor 16%, transparent)' }}>
+            <Fact label="Played" value={plural(album.playCount, 'time')} />
+            <Fact label="First played" value={monthYear(album.firstListened)} />
           </div>
         </div>
       </div>
     )
   }
 
-  const renderCollection = () => {
+  const renderCollection = (): React.JSX.Element => {
     const albums = data as AlbumShareData[]
-    const count = albums.length
-    
-    let gridClass = 'grid-cols-2 gap-8'
-    let imageSize = 'w-[320px] h-[320px]'
-    if (count === 1) {
-      gridClass = 'grid-cols-1'
-      imageSize = 'w-[500px] h-[500px]'
-    } else if (count >= 7) {
-      gridClass = 'grid-cols-3 gap-6'
-      imageSize = 'w-[240px] h-[240px]'
-    } else if (count >= 4) {
-      gridClass = 'grid-cols-2 gap-10'
-      imageSize = 'w-[280px] h-[280px]'
-    }
-
+    const columns = albums.length <= 1 ? 1 : albums.length <= 4 ? 2 : 3
+    const size = columns === 1 ? 640 : columns === 2 ? (isSquare ? 330 : 440) : isSquare ? 240 : 290
     return (
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-16 w-full">
-        <h1 className="font-serif text-3xl font-medium tracking-tight mb-16 opacity-90 absolute top-20 left-20">My Listening Room</h1>
-        <div className={cn('grid w-full max-w-[840px] place-items-center', gridClass)}>
-          {albums.map((a, i) => (
-            <div key={i} className="flex flex-col items-center">
-              <div className={cn("shadow-[0_24px_48px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.2)] rounded-sm overflow-hidden bg-[#111]", imageSize)}>
-                {a.artworkUrl && <img src={a.artworkUrl} className="w-full h-full object-cover" alt="" />}
+      <div className="relative z-10 flex flex-1 flex-col">
+        <h1 className="font-serif text-[64px] font-medium leading-none tracking-[-0.02em]">
+          {owner ? `${owner} records` : 'From the shelf'}
+        </h1>
+        <p className="mt-4">
+          <Label>{plural(albums.length, 'album')}</Label>
+        </p>
+        <div className="flex flex-1 items-center justify-center">
+          <div className="grid gap-x-8 gap-y-9" style={{ gridTemplateColumns: `repeat(${columns}, ${size}px)` }}>
+            {albums.map((a, i) => (
+              <div key={i} className="min-w-0">
+                <Cover src={a.artworkUrl} size={size} />
+                <p className="mt-4 truncate font-serif text-[24px] leading-tight">{a.album}</p>
+                <p className="mt-1 truncate font-serif text-[19px] italic opacity-65">{a.artist}</p>
               </div>
-              <div className="mt-5 text-center px-4 w-full">
-                <p className="font-serif text-lg leading-tight truncate">{a.album}</p>
-                <p className="font-mono text-xs tracking-widest opacity-60 mt-1 uppercase truncate">{a.artist}</p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
-  const renderStats = () => {
+  const renderStats = (): React.JSX.Element => {
     const stats = data as StatsShareData
+    const top = stats.mostPlayedAlbum
     return (
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center p-20 w-full">
-        <div className="absolute top-24 left-24 right-24 border-b border-white/20 pb-8 flex justify-between items-end">
-          <h1 className="font-serif text-4xl font-medium tracking-tight">Listening Catalog</h1>
-          <span className="font-mono text-sm tracking-widest opacity-60 uppercase">
-            Est. {new Date(stats.firstListenDate).getFullYear()}
-          </span>
-        </div>
-
-        <div className="flex w-full mt-32 gap-16">
-          <div className="flex-1 flex flex-col gap-12">
-            <div className="flex flex-col">
-              <span className="font-mono text-xs tracking-[0.2em] uppercase opacity-50 mb-2">Total Albums</span>
-              <span className="font-serif text-7xl font-medium">{stats.totalAlbums}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-mono text-xs tracking-[0.2em] uppercase opacity-50 mb-2">Unique Artists</span>
-              <span className="font-serif text-7xl font-medium">{stats.uniqueArtists}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-mono text-xs tracking-[0.2em] uppercase opacity-50 mb-2">Total Plays</span>
-              <span className="font-serif text-7xl font-medium">{stats.totalPlays}</span>
-            </div>
+      <div className="relative z-10 flex flex-1 flex-col justify-between">
+        <div>
+          <Label>{owner ? `${owner} listening` : 'Listening'} · since {monthYear(stats.firstListenDate)}</Label>
+          <div className="mt-6 flex items-end gap-6">
+            <span
+              className="font-serif font-medium leading-[0.82] tracking-[-0.04em]"
+              style={{ fontSize: isSquare ? 260 : 340, color: accent }}
+            >
+              {stats.totalAlbums}
+            </span>
+            <span className="pb-4 font-serif text-[64px] italic leading-none">
+              {stats.totalAlbums === 1 ? 'record' : 'records'}
+            </span>
           </div>
-
-          <div className="flex-1 flex flex-col justify-center items-end border-l border-white/10 pl-16">
-            {stats.mostPlayedAlbum && (
-              <div className="flex flex-col items-end text-right">
-                <span className="font-mono text-xs tracking-[0.2em] uppercase opacity-50 mb-6">Most Played</span>
-                <div className="w-[300px] h-[300px] shadow-[0_32px_64px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.2)] rounded-sm overflow-hidden bg-[#111]">
-                  {stats.mostPlayedAlbum.artworkUrl && <img src={stats.mostPlayedAlbum.artworkUrl} className="w-full h-full object-cover" alt="" />}
-                </div>
-                <h3 className="font-serif text-2xl font-medium mt-6">{stats.mostPlayedAlbum.album}</h3>
-                <p className="font-mono text-sm tracking-widest opacity-70 mt-2 uppercase">{stats.mostPlayedAlbum.artist}</p>
-                <p className="font-mono text-xs opacity-50 mt-4">{stats.mostPlayedAlbum.playCount} Plays</p>
-              </div>
-            )}
+          <div className="mt-12 flex gap-20 border-t pt-8" style={{ borderColor: 'color-mix(in srgb, currentColor 16%, transparent)' }}>
+            <Fact label="Artists" value={String(stats.uniqueArtists)} />
+            <Fact label="Plays" value={String(stats.totalPlays)} />
           </div>
         </div>
+
+        {top && (
+          <div className="flex items-end gap-10">
+            <Cover src={top.artworkUrl} size={isSquare ? 250 : 340} />
+            <div className="min-w-0 pb-2">
+              <Label>Most played</Label>
+              <h2 className="mt-4 font-serif text-[52px] font-medium leading-[1.04] tracking-[-0.015em] line-clamp-2">
+                {top.album}
+              </h2>
+              <p className="mt-3 font-serif text-[30px] italic opacity-75 line-clamp-1">{top.artist}</p>
+              <p className="mt-5">
+                <Label>{plural(top.playCount, 'play')}</Label>
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
 
   return (
-    <div ref={containerRef} className={containerClass} style={wrapperStyle}>
-      {renderBackground()}
+    <div
+      ref={containerRef}
+      className={cn('relative flex flex-col overflow-hidden p-[84px]', isSquare ? 'h-[1080px] w-[1080px]' : 'h-[1350px] w-[1080px]')}
+      style={{ backgroundColor: palette?.deckBg ?? '#12100d', color: ink }}
+    >
+      {/* One soft light, taken from the cover. No frames, no vignette. */}
+      {palette && (
+        <div
+          className="pointer-events-none absolute -left-[20%] -top-[30%] h-[90%] w-[110%] rounded-full opacity-25"
+          style={{ background: `radial-gradient(closest-side, ${palette.ambientPrimary} 0%, transparent 100%)` }}
+        />
+      )}
+
       {type === 'album' && renderAlbum()}
       {type === 'collection' && renderCollection()}
       {type === 'stats' && renderStats()}
-      {renderBrand()}
+
+      <div className="relative z-10 mt-12 flex items-baseline justify-between">
+        <span className="font-serif text-[30px] italic">Kissa</span>
+        <Label>{monthYear(Date.now())}</Label>
+      </div>
     </div>
   )
 }

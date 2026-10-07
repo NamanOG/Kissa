@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Copy, Download, Loader2 } from 'lucide-react'
 import { SharePayload, AspectRatio } from '../../../../types/share'
@@ -45,12 +46,14 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
   const scale = typeof window !== 'undefined' ? Math.min((window.innerHeight * 0.6) / targetHeight, 0.4) : 0.35
 
   return (
+    // Rendered at the top of the page: inside the shelf it sat underneath the dock.
+    createPortal(
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+        className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4"
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.96, y: 16 }}
@@ -128,6 +131,8 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
           </div>
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
+    )
   )
 }

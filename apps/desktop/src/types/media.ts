@@ -8,6 +8,8 @@ export interface SystemMediaPayload {
   /** Set by the main process instead of resending an embedded cover the window already has. */
   artworkUnchanged?: boolean
   isPlaying: boolean
+  /** False when the source refuses position changes from other apps. */
+  canSeek?: boolean
   playbackType?: number
   progress: number
   duration: number

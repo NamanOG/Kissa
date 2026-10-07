@@ -50,7 +50,7 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
         style={{ opacity: 'calc(0.4 + 0.6 * var(--room-illumination, 1))' }}
       >
         <div className="flex h-4 items-center gap-2">
-          <span className="font-kissa-chassis text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--accent)]">
+          <span className="font-kissa-chassis text-[10px] font-semibold uppercase tracking-[0.22em] text-tone">
             {isIdle ? 'The room is quiet' : isPlaying ? 'Now playing' : 'Paused'}
           </span>
           {!isIdle && <HiFiVisualizer isPlaying={isPlaying} barsCount={5} height={10} showPeaks={false} />}
@@ -67,39 +67,39 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
           >
             {isIdle ? (
               <>
-                <h1 className="mt-2 font-kissa-editorial text-[clamp(1.5rem,2.4vw,2.8rem)] font-medium leading-[1.1] tracking-[-0.025em] text-[var(--on-surface)] text-balance">
+                <h1 className="mt-2 font-kissa-editorial text-[clamp(1.5rem,2.4vw,2.8rem)] font-medium leading-[1.1] tracking-[-0.025em] text-ink text-balance">
                   {greetingFor(new Date(), listenerName)}
                 </h1>
-                <p className="mt-3 max-w-[30ch] text-[13px] leading-relaxed text-[var(--muted)]">
+                <p className="mt-3 max-w-[30ch] text-[13px] leading-relaxed text-dim">
                   Play something in Spotify, Apple Music or your browser. It lands on the platter.
                 </p>
               </>
             ) : (
               <>
                 <h1
-                  className="mt-2 pb-1 font-kissa-editorial text-[clamp(1.5rem,2.4vw,2.8rem)] font-medium leading-[1.1] tracking-[-0.025em] text-[var(--on-surface)] line-clamp-2 text-balance"
+                  className="mt-2 pb-1 font-kissa-editorial text-[clamp(1.5rem,2.4vw,2.8rem)] font-medium leading-[1.1] tracking-[-0.025em] text-ink line-clamp-2 text-balance"
                   style={{ textShadow: 'var(--typography-glow)' }}
                   title={title}
                 >
                   {title}
                 </h1>
-                <p className="mt-2 font-kissa-editorial text-[1.1rem] font-medium text-[var(--on-surface)]/80 line-clamp-1" title={artist}>
+                <p className="mt-2 font-kissa-editorial text-[1.1rem] font-medium text-ink/80 line-clamp-1" title={artist}>
                   {artist}
                 </p>
                 {showAlbum && (
-                  <p className="mt-0.5 font-kissa-editorial text-[0.95rem] italic text-[var(--muted)] line-clamp-1" title={album}>
+                  <p className="mt-0.5 font-kissa-editorial text-[0.95rem] italic text-dim line-clamp-1" title={album}>
                     {album}
                   </p>
                 )}
 
-                <div className="mt-4 flex items-center gap-2.5 font-mono text-[10px] tracking-wide text-[var(--muted)]">
+                <div className="mt-4 flex items-center gap-2.5 font-mono text-[10px] tracking-wide text-dim">
                   {duration > 0 && <span className="tabular-nums">{formatTime(duration)}</span>}
                   {duration > 0 && currentTrack?.source && <span aria-hidden="true" className="opacity-50">·</span>}
                   {currentTrack?.source && <span>from {currentTrack.source}</span>}
                   <button
                     type="button"
                     onClick={() => setIsShareOpen(true)}
-                    className="ml-1 rounded p-1 text-[var(--muted)] transition-colors hover:text-[var(--on-surface)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[var(--accent)] active:scale-95"
+                    className="ml-1 rounded p-1 text-dim transition-colors hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone active:scale-95"
                     title="Share this track"
                     aria-label="Share this track"
                   >

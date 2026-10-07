@@ -36,13 +36,14 @@ interface LyricRowProps {
   /** 0 = the line being sung, 1 and 2 = its neighbours, 3 = everything further away. */
   distance: 0 | 1 | 2 | 3
   textClass: string
+  seekable: boolean
   onLineClick: (time: number) => void
 }
 
 const ROW_OPACITY = ['opacity-100', 'opacity-[0.38]', 'opacity-[0.24]', 'opacity-[0.16]'] as const
 
 const LyricRow = memo(
-  ({ line, index, distance, textClass, onLineClick }: LyricRowProps): React.JSX.Element => {
+  ({ line, index, distance, textClass, seekable, onLineClick }: LyricRowProps): React.JSX.Element => {
     const lineRef = useRef<HTMLParagraphElement>(null)
     const isActive = distance === 0
 
@@ -93,13 +94,14 @@ const LyricRow = memo(
           'group relative rounded-xl px-3.5 py-2.5 origin-left',
           'transition-[opacity,transform] duration-[600ms] ease-primary motion-reduce:transition-none',
           ROW_OPACITY[distance],
-          isActive ? 'cursor-default scale-100' : 'cursor-pointer scale-[0.97] hover:opacity-70'
+          isActive ? 'cursor-default scale-100' : 'scale-[0.97]',
+          !isActive && (seekable ? 'cursor-pointer hover:opacity-70' : 'cursor-default')
         )}
       >
         <p
           ref={lineRef}
           className={cn(
-            'py-1 tracking-[-0.015em] text-[var(--on-surface)] text-pretty',
+            'py-1 tracking-[-0.015em] text-ink text-pretty',
             textClass,
             isActive ? 'font-semibold' : 'font-normal'
           )}
@@ -120,10 +122,10 @@ const LyricRow = memo(
             : line.text}
         </p>
 
-        {!isActive && (
+        {!isActive && seekable && (
           <Play
             aria-hidden="true"
-            className="pointer-events-none absolute -left-3 top-1/2 h-3 w-3 -translate-y-1/2 fill-current text-[var(--accent)] opacity-0 transition-opacity duration-micro group-hover:opacity-80"
+            className="pointer-events-none absolute -left-3 top-1/2 h-3 w-3 -translate-y-1/2 fill-current text-tone opacity-0 transition-opacity duration-micro group-hover:opacity-80"
           />
         )}
       </div>
@@ -145,6 +147,7 @@ export const SyncedLyrics = memo(
     const artist = usePlayerStore((s) => s.currentTrack?.artist)
     const album = usePlayerStore((s) => s.currentTrack?.album)
     const sourceAppId = usePlayerStore((s) => s.currentTrack?.sourceAppId)
+    const canSeek = usePlayerStore((s) => s.currentTrack?.canSeek !== false)
     const duration = usePlayerStore((s) => Math.round(s.currentTrack?.duration ?? 0))
     const seek = usePlayerStore((s) => s.seek)
     const lyricsOffset = usePlayerStore((s) => s.lyricsOffset)
@@ -347,6 +350,7 @@ export const SyncedLyrics = memo(
 
     const handleLineClick = useCallback(
       (time: number): void => {
+        if (usePlayerStore.getState().currentTrack?.canSeek === false) return
         seek(time)
         const state = usePlayerStore.getState()
         if (!state.isPlaying) {
@@ -375,7 +379,7 @@ export const SyncedLyrics = memo(
           <button
             type="button"
             onClick={() => setUserIsScrolling(false)}
-            className="absolute bottom-6 right-6 z-30 flex items-center gap-1.5 rounded-full border border-[var(--panel-border)] bg-[var(--panel-bg)] px-3.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--accent)] shadow-[var(--panel-shadow)] transition-colors hover:text-[var(--on-surface)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[var(--accent)]"
+            className="absolute bottom-6 right-6 z-30 flex items-center gap-1.5 rounded-full border border-panel-line bg-[var(--panel-bg)] px-3.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-tone shadow-[var(--panel-shadow)] transition-colors hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
           >
             <LocateFixed className="h-3 w-3" aria-hidden="true" />
             <span>Current line</span>
@@ -384,7 +388,7 @@ export const SyncedLyrics = memo(
 
         {status === 'synced' && (
           <div
-            className="absolute bottom-6 left-6 z-30 flex items-center gap-0.5 rounded-full border border-[var(--panel-border)] bg-[var(--panel-bg)] p-0.5 opacity-0 shadow-[var(--panel-shadow)] transition-opacity duration-ui focus-within:opacity-100 group-hover/lyrics:opacity-100"
+            className="absolute bottom-6 left-6 z-30 flex items-center gap-0.5 rounded-full border border-panel-line bg-[var(--panel-bg)] p-0.5 opacity-0 shadow-[var(--panel-shadow)] transition-opacity duration-ui focus-within:opacity-100 group-hover/lyrics:opacity-100"
             role="group"
             aria-label="Lyrics timing"
           >
@@ -393,7 +397,7 @@ export const SyncedLyrics = memo(
               onClick={() => nudge(-0.1)}
               aria-label="Show lyrics earlier"
               title="Lyrics are late — show them earlier"
-              className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--on-surface)]/10 hover:text-[var(--on-surface)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[var(--accent)]"
+              className="flex h-6 w-6 items-center justify-center rounded-full text-dim transition-colors hover:bg-ink/10 hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
             >
               <Minus className="h-3 w-3" aria-hidden="true" />
             </button>
@@ -401,7 +405,7 @@ export const SyncedLyrics = memo(
               type="button"
               onClick={() => setLyricsOffset(0)}
               title="Reset timing"
-              className="min-w-[46px] rounded-full px-1 text-center font-mono text-[10px] font-semibold tabular-nums text-[var(--on-surface)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[var(--accent)]"
+              className="min-w-[46px] rounded-full px-1 text-center font-mono text-[10px] font-semibold tabular-nums text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
             >
               {lyricsOffset > 0 ? '+' : ''}
               {lyricsOffset.toFixed(1)}s
@@ -411,7 +415,7 @@ export const SyncedLyrics = memo(
               onClick={() => nudge(0.1)}
               aria-label="Show lyrics later"
               title="Lyrics are early — show them later"
-              className="flex h-6 w-6 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:bg-[var(--on-surface)]/10 hover:text-[var(--on-surface)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[var(--accent)]"
+              className="flex h-6 w-6 items-center justify-center rounded-full text-dim transition-colors hover:bg-ink/10 hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
             >
               <Plus className="h-3 w-3" aria-hidden="true" />
             </button>
@@ -438,7 +442,7 @@ export const SyncedLyrics = memo(
                       {[0, 1, 2].map((dot) => (
                         <span
                           key={dot}
-                          className="h-2 w-2 rounded-full bg-[var(--on-surface)] opacity-50 motion-safe:animate-pulse"
+                          className="h-2 w-2 rounded-full bg-ink opacity-50 motion-safe:animate-pulse"
                           style={{ animationDelay: `${dot * 220}ms` }}
                         />
                       ))}
@@ -451,6 +455,7 @@ export const SyncedLyrics = memo(
                       activeIndex < 0 ? 2 : (Math.min(3, Math.abs(index - activeIndex)) as 0 | 1 | 2 | 3)
                     }
                     textClass={textClass}
+                    seekable={canSeek}
                     onLineClick={handleLineClick}
                   />
                 </React.Fragment>
@@ -460,7 +465,7 @@ export const SyncedLyrics = memo(
 
           {status === 'plain' && (
             <div className="py-10">
-              <p className="mb-8 px-3.5 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+              <p className="mb-8 px-3.5 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-dim">
                 Lyrics · not timed for this recording
               </p>
               <div className="space-y-3">
@@ -469,7 +474,7 @@ export const SyncedLyrics = memo(
                     <p
                       key={i}
                       className={cn(
-                        'px-3.5 text-pretty text-[var(--on-surface)] opacity-80',
+                        'px-3.5 text-pretty text-ink opacity-80',
                         SIZE_CLASSES.compact[lyricsSize],
                         lyricsFace === 'serif' ? 'font-kissa-editorial' : 'font-kissa-lyrics'
                       )}
@@ -486,22 +491,22 @@ export const SyncedLyrics = memo(
 
           {status === 'loading' && (
             <div className="flex h-full flex-col items-center justify-center gap-3 py-24 text-center">
-              <div className="h-5 w-5 rounded-full border-2 border-[var(--accent)]/30 border-t-[var(--accent)] motion-safe:animate-spin" />
-              <p className="font-mono text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Finding lyrics…</p>
+              <div className="h-5 w-5 rounded-full border-2 border-tone/30 border-t-tone motion-safe:animate-spin" />
+              <p className="font-mono text-xs uppercase tracking-[0.18em] text-dim">Finding lyrics…</p>
             </div>
           )}
 
           {status === 'instrumental' && (
             <div className="flex h-full flex-col items-center justify-center gap-2 py-24 text-center">
-              <p className="font-serif text-2xl text-[var(--on-surface)] opacity-90">Instrumental</p>
-              <p className="text-xs text-[var(--muted)]">No words on this one. Just listen.</p>
+              <p className="font-serif text-2xl text-ink opacity-90">Instrumental</p>
+              <p className="text-xs text-dim">No words on this one. Just listen.</p>
             </div>
           )}
 
           {status === 'unavailable' && (
             <div className="flex h-full flex-col items-center justify-center gap-2 py-24 text-center">
-              <p className="font-serif text-2xl text-[var(--on-surface)] opacity-80">No Lyrics Found</p>
-              <p className="max-w-xs text-xs text-[var(--muted)]">
+              <p className="font-serif text-2xl text-ink opacity-80">No Lyrics Found</p>
+              <p className="max-w-xs text-xs text-dim">
                 Nothing turned up for {title || 'this track'}.
               </p>
             </div>
@@ -509,11 +514,11 @@ export const SyncedLyrics = memo(
 
           {status === 'waiting' && (
             <div className="flex h-full flex-col items-center justify-center gap-3 py-24 text-center">
-              <Quote className="mb-2 h-8 w-8 text-[var(--accent)] opacity-40 min-[900px]:h-10 min-[900px]:w-10" aria-hidden="true" />
-              <p className="font-serif text-2xl text-[var(--on-surface)] opacity-90 min-[900px]:text-3xl">
+              <Quote className="mb-2 h-8 w-8 text-tone opacity-40 min-[900px]:h-10 min-[900px]:w-10" aria-hidden="true" />
+              <p className="font-serif text-2xl text-ink opacity-90 min-[900px]:text-3xl">
                 Waiting for Music
               </p>
-              <p className="max-w-sm text-sm text-[var(--muted)]">
+              <p className="max-w-sm text-sm text-dim">
                 Lyrics will appear here when a track starts playing.
               </p>
             </div>

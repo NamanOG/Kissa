@@ -1,6 +1,5 @@
-import { app } from 'electron'
+import { app, shell } from 'electron'
 import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
 import { dirname, join, normalize, resolve } from 'node:path'
 import { copyFileSync, existsSync, mkdirSync, statSync } from 'node:fs'
 import { StorePackageService } from './StorePackageService'
@@ -78,12 +77,17 @@ export interface RegisterScreensaverResult {
   success: boolean
   error?: string
   path?: string
+  /**
+   * Store build: Kissa cannot change the setting itself, so it has opened the folder
+   * holding Kissa.scr for the listener to right-click and choose Install.
+   */
+  manual?: boolean
 }
 
 export interface UnregisterScreensaverResult {
   success: boolean
   removed: boolean
-  reason?: 'not_registered' | 'points_to_other_screensaver' | 'unregistered' | 'unsupported_platform'
+  reason?: 'not_registered' | 'points_to_other_screensaver' | 'unregistered' | 'unsupported_platform' | 'manual'
   currentPath?: string
   error?: string
 }
@@ -91,7 +95,6 @@ export interface UnregisterScreensaverResult {
 export class ScreensaverRegistryService {
   private static instance: ScreensaverRegistryService
   private execFn: RegExecFile = runExecFile
-
   private constructor() {}
 
   public static getInstance(): ScreensaverRegistryService {
@@ -227,13 +230,17 @@ export class ScreensaverRegistryService {
     }
 
     const store = StorePackageService.getInstance()
-    let scrPath = this.getScreensaverPath()
+    const scrPath = this.getScreensaverPath()
     if (store.isStorePackage()) {
       const copied = await this.ensureStoreScreensaverCopy()
       if (!copied) {
         return { success: false, error: 'Could not prepare the screensaver file for Windows.' }
       }
-      scrPath = copied
+      // A Store package's registry writes are redirected to a private copy that Windows
+      // never reads, and Microsoft does not grant Kissa the capability that lifts this.
+      // So Windows does it instead: show the file, and the listener chooses Install.
+      shell.showItemInFolder(copied)
+      return { success: false, manual: true, path: copied }
     }
 
     try {
@@ -272,6 +279,12 @@ export class ScreensaverRegistryService {
         reason: 'points_to_other_screensaver',
         currentPath: currentRegistered
       }
+    }
+
+    if (StorePackageService.getInstance().isStorePackage()) {
+      // Same limit as registering: only Windows can change it. Open its settings.
+      await this.openScreensaverSettings()
+      return { success: false, removed: false, reason: 'manual' }
     }
 
     try {

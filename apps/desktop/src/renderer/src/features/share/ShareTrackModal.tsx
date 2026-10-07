@@ -142,20 +142,20 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 8 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-[440px] bg-[var(--panel-bg)] border border-white/[0.08] rounded-2xl shadow-[0_24px_48px_rgba(0,0,0,0.8)] overflow-hidden z-10"
+            className="relative w-full max-w-[440px] bg-[var(--deck-bg)] border border-white/[0.08] rounded-2xl shadow-[0_24px_48px_rgba(0,0,0,0.8)] overflow-hidden z-10"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-5 pb-4 border-b border-white/[0.06]">
               <div className="flex flex-col">
-                <span className="text-[14px] font-medium text-[var(--on-surface)]">Share Track</span>
-                <span className="text-[11px] font-mono text-[var(--muted)]">
+                <span className="text-[14px] font-medium text-ink">Share Track</span>
+                <span className="text-[11px] font-mono text-dim">
                   {track.source ? `${track.source} · Following` : 'Kissa Player'}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-[var(--muted)] hover:text-[var(--on-surface)] hover:bg-white/[0.06] transition-colors cursor-pointer"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-dim hover:text-ink hover:bg-white/[0.06] transition-colors cursor-pointer"
                 aria-label="Close"
               >
                 <X className="w-4 h-4" />
@@ -172,14 +172,14 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
                 }}
               />
               <div className="flex flex-col min-w-0">
-                <h4 className="text-[14px] font-medium text-[var(--on-surface)] truncate">
+                <h4 className="text-[14px] font-medium text-ink truncate">
                   {track.title}
                 </h4>
-                <p className="text-[12px] text-[var(--muted)] truncate mt-0.5">
+                <p className="text-[12px] text-dim truncate mt-0.5">
                   {track.artist}
                 </p>
                 {track.album && track.album !== track.title && (
-                  <p className="text-[11px] text-[var(--muted)]/60 truncate mt-0.5">
+                  <p className="text-[11px] text-dim/60 truncate mt-0.5">
                     {track.album}
                   </p>
                 )}
@@ -187,7 +187,7 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
             </div>
 
             <div className="px-5 pb-4">
-              <div className="p-3.5 rounded-xl bg-black/40 border border-white/[0.05] text-[11.5px] font-mono leading-relaxed text-[var(--muted)] select-all whitespace-pre-wrap max-h-36 overflow-y-auto">
+              <div className="p-3.5 rounded-xl bg-black/40 border border-white/[0.05] text-[11.5px] font-mono leading-relaxed text-dim select-all whitespace-pre-wrap max-h-36 overflow-y-auto">
                 {shareText}
               </div>
             </div>
@@ -198,9 +198,9 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
                   <button
                     type="button"
                     onClick={handleOpenSource}
-                    className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-[var(--on-surface)] text-[11.5px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
+                    className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-ink text-[11.5px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
                   >
-                    <ExternalLink className="w-3.5 h-3.5 text-[var(--muted)]" />
+                    <ExternalLink className="w-3.5 h-3.5 text-dim" />
                     Open in {sourceInfo.label}
                   </button>
                 )}
@@ -208,16 +208,16 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
                   <button
                     type="button"
                     onClick={handleCopyLink}
-                    className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-[var(--on-surface)] text-[11.5px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
+                    className="px-3 py-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-ink text-[11.5px] font-medium transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
                   >
                     {copiedLink ? (
                       <>
-                        <Check className="w-3.5 h-3.5 text-[var(--accent)]" />
+                        <Check className="w-3.5 h-3.5 text-tone" />
                         Copied Link
                       </>
                     ) : (
                       <>
-                        <Copy className="w-3.5 h-3.5 text-[var(--muted)]" />
+                        <Copy className="w-3.5 h-3.5 text-dim" />
                         Copy Link
                       </>
                     )}
@@ -228,7 +228,7 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
               <button
                 type="button"
                 onClick={handleCopyText}
-                className="ml-auto px-4 py-1.5 rounded-xl bg-[var(--accent)] text-[var(--panel-bg)] text-[12px] font-bold transition-all cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/25 active:scale-95 flex items-center gap-1.5"
+                className="ml-auto px-4 py-1.5 rounded-xl bg-tone text-[var(--surface)] text-[12px] font-bold transition-all cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/25 active:scale-95 flex items-center gap-1.5"
               >
                 {copiedText ? (
                   <>

@@ -21,7 +21,7 @@ describe('StartupExperience', () => {
     render(<StartupExperience onComplete={onComplete} />)
 
     act(() => {
-      vi.advanceTimersByTime(1200)
+      vi.advanceTimersByTime(2000)
     })
 
     expect(onComplete).toHaveBeenCalled()

@@ -13,7 +13,7 @@ function NavMarker(): React.JSX.Element {
       layoutId="kissa-nav-marker"
       aria-hidden="true"
       transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 34 }}
-      className="absolute left-0 top-[30%] h-[40%] w-[3px] rounded-r-full bg-[var(--accent)]"
+      className="absolute left-0 top-[30%] h-[40%] w-[3px] rounded-r-full bg-tone"
     />
   )
 }
@@ -58,8 +58,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             onClick={() => setActiveView('deck')}
             aria-current={activeView === 'deck' ? 'page' : undefined}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-1.5 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06]",
-              activeView === 'deck' ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
+              "relative w-full flex flex-col items-center justify-center py-3 gap-1.5 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              activeView === 'deck' ? "text-tone" : "text-dim hover:text-ink"
             )}
             title="Kissa (Home Deck)"
           >
@@ -77,8 +77,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             onClick={() => setActiveView('lyrics')}
             aria-current={activeView === 'lyrics' ? 'page' : undefined}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06]",
-              activeView === 'lyrics' ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              activeView === 'lyrics' ? "text-tone" : "text-dim hover:text-ink"
             )}
             title="Live Synced Lyrics"
           >
@@ -94,8 +94,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             onClick={() => setActiveView('shelf')}
             aria-current={activeView === 'shelf' ? 'page' : undefined}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06] group",
-              activeView === 'shelf' ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06] group",
+              activeView === 'shelf' ? "text-tone" : "text-dim hover:text-ink"
             )}
             title="My Records"
           >
@@ -112,14 +112,14 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             type="button"
             onClick={() => usePlayerStore.getState().toggleMiniPlayer()}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06]",
-              isMiniPlayer ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              isMiniPlayer ? "text-tone" : "text-dim hover:text-ink"
             )}
             title="Mini player"
             aria-label="Mini player"
           >
             {isMiniPlayer && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone shadow-[0_0_8px_var(--accent)]" />
             )}
             {isMiniPlayer ? (
               <Maximize2 className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isMiniPlayer ? 2 : 1.5} />
@@ -132,14 +132,14 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             type="button"
             onClick={() => setIsOnboardingOpen(true)}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06]",
-              isOnboardingOpen ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              isOnboardingOpen ? "text-tone" : "text-dim hover:text-ink"
             )}
             title="Guide"
             aria-label="Guide"
           >
             {isOnboardingOpen && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone shadow-[0_0_8px_var(--accent)]" />
             )}
             <HelpCircle className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isOnboardingOpen ? 2 : 1.5} />
           </button>
@@ -148,14 +148,14 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             type="button"
             onClick={toggleKeyboardHelp}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06]",
-              isKeyboardHelpOpen ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              isKeyboardHelpOpen ? "text-tone" : "text-dim hover:text-ink"
             )}
             title="Keyboard shortcuts"
             aria-label="Keyboard shortcuts"
           >
             {isKeyboardHelpOpen && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone shadow-[0_0_8px_var(--accent)]" />
             )}
             <Keyboard className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isKeyboardHelpOpen ? 2 : 1.5} />
           </button>
@@ -164,14 +164,14 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             type="button"
             onClick={toggleSettings}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-[var(--on-surface)] focus-visible:bg-[var(--on-surface)]/[0.06] group",
-              isSettingsOpen ? "text-[var(--accent)]" : "text-[var(--muted)] hover:text-[var(--on-surface)]"
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06] group",
+              isSettingsOpen ? "text-tone" : "text-dim hover:text-ink"
             )}
             title="Settings"
             aria-label="Settings"
           >
             {isSettingsOpen && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone shadow-[0_0_8px_var(--accent)]" />
             )}
             <div className="relative">
               <Settings className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4 transition-transform duration-200 ease-out group-hover:rotate-[20deg]" strokeWidth={isSettingsOpen ? 2 : 1.5} />

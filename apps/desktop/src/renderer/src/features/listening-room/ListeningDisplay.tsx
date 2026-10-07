@@ -53,11 +53,11 @@ export const ListeningDisplay = memo(({ mode }: ListeningDisplayProps): React.JS
       <motion.div
         variants={environmentVariants}
         animate="animate"
-        className="w-full h-full flex flex-col justify-center items-center px-12 pb-16 min-[900px]:pb-20"
+        className="w-full h-full flex flex-col justify-center items-center px-12 py-10"
       >
         <div className="w-full max-w-[2000px] h-full flex flex-col min-[1200px]:flex-row items-center justify-center gap-12 min-[1200px]:gap-20 min-[1600px]:gap-28">
           
-          <div className="w-full max-w-[85vh] min-[1200px]:max-w-[58vw] min-[1600px]:max-w-[62vw] flex-shrink-0 flex items-center justify-center pointer-events-none [&_.mechanical-controls-class-if-any]:pointer-events-none">
+          <div className="w-full max-w-[85vh] min-[1200px]:max-w-[52vw] min-[1600px]:max-w-[54vw] flex-shrink-0 flex items-center justify-center pointer-events-none [&_.mechanical-controls-class-if-any]:pointer-events-none">
             <div className="w-full flex items-center justify-center">
               <TurntableEngine 
                 albumArt={currentTrack?.artworkUrl} 

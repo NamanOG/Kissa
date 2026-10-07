@@ -21,7 +21,7 @@ export const FullscreenProgress = memo((): React.JSX.Element => {
         <div
           ref={fillRef}
           data-testid="fullscreen-progress-fill"
-          className="h-full w-full origin-left will-change-transform bg-[var(--accent)] shadow-[0_0_12px_var(--accent)]"
+          className="h-full w-full origin-left will-change-transform bg-tone shadow-[0_0_12px_var(--accent)]"
           style={{ transform: 'scaleX(0)' }}
         />
       </div>

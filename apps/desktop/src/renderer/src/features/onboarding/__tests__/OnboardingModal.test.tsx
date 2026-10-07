@@ -3,7 +3,6 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { OnboardingModal } from '../OnboardingModal'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 
-// Mock framer-motion AnimatePresence to render children synchronously without waiting for exit transitions
 vi.mock('framer-motion', async () => {
   const actual = await vi.importActual('framer-motion')
   return {
@@ -12,119 +11,87 @@ vi.mock('framer-motion', async () => {
   }
 })
 
-describe('OnboardingModal component', () => {
+vi.mock('@renderer/features/vinyl', () => ({ VinylEngine: () => <div data-testid="vinyl" /> }))
+
+const TITLES = ['Welcome to Kissa', 'It follows your music', 'Make the room yours', 'Read along', 'Let it run']
+const next = (): void => {
+  fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+}
+
+describe('OnboardingModal', () => {
   beforeEach(() => {
     localStorage.clear()
     usePlayerStore.setState({
-      isOnboardingOpen: true
+      isOnboardingOpen: true,
+      listenerName: '',
+      theme: 'quiet-room',
+      vinylColor: 'black',
+      screensaverLyrics: false
     })
   })
 
-  it('renders initial intro step when isOnboardingOpen is true', () => {
-    render(<OnboardingModal />)
-    expect(screen.getByText('A music player built around the feeling of listening.')).toBeInTheDocument()
-    expect(screen.getByText('1 of 7')).toBeInTheDocument()
+  it('renders nothing when closed', () => {
+    usePlayerStore.setState({ isOnboardingOpen: false })
+    const { container } = render(<OnboardingModal />)
+    expect(container).toBeEmptyDOMElement()
   })
 
-  it('navigates across 7 editorial steps and closes on completion', () => {
+  it('opens on the welcome step', () => {
     render(<OnboardingModal />)
+    expect(screen.getByRole('heading', { name: TITLES[0] })).toBeInTheDocument()
+    expect(screen.getByText('1 of 5')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Back' })).not.toBeInTheDocument()
+  })
 
-    const nextBtn = screen.getByText('Next')
-    fireEvent.click(nextBtn)
-    expect(screen.getByText('The Turntable')).toBeInTheDocument()
-    expect(screen.getByText('2 of 7')).toBeInTheDocument()
-
-    fireEvent.click(nextBtn)
-    expect(screen.getByText('The Shelf')).toBeInTheDocument()
-    expect(screen.getByText('3 of 7')).toBeInTheDocument()
-
-    fireEvent.click(nextBtn)
-    expect(screen.getByText('The Room')).toBeInTheDocument()
-    expect(screen.getByText('4 of 7')).toBeInTheDocument()
-
-    fireEvent.click(nextBtn)
-    expect(screen.getByText('The Words')).toBeInTheDocument()
-    expect(screen.getByText('5 of 7')).toBeInTheDocument()
-
-    fireEvent.click(nextBtn)
-    expect(screen.getByText('The Display')).toBeInTheDocument()
-    expect(screen.getByText('6 of 7')).toBeInTheDocument()
-
-    fireEvent.click(nextBtn)
-    expect(screen.getByText('Control')).toBeInTheDocument()
-    expect(screen.getByText('7 of 7')).toBeInTheDocument()
-
-    const startBtn = screen.getByRole('button', { name: /start listening/i })
-    fireEvent.click(startBtn)
-
+  it('walks through every step and closes at the end', () => {
+    render(<OnboardingModal />)
+    for (let i = 1; i < TITLES.length; i++) {
+      next()
+      expect(screen.getByRole('heading', { name: TITLES[i] })).toBeInTheDocument()
+      expect(screen.getByText(`${i + 1} of 5`)).toBeInTheDocument()
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Start listening' }))
     expect(usePlayerStore.getState().isOnboardingOpen).toBe(false)
+    expect(localStorage.getItem('kissa_intro_seen_v3')).toBe('true')
   })
 
-  it('navigates backwards using Previous button', () => {
+  it('goes back', () => {
     render(<OnboardingModal />)
-
-    const nextBtn = screen.getByText('Next')
-    fireEvent.click(nextBtn)
-    expect(screen.getByText('The Turntable')).toBeInTheDocument()
-
-    const prevBtn = screen.getByText('Previous')
-    fireEvent.click(prevBtn)
-    expect(screen.getByText('A music player built around the feeling of listening.')).toBeInTheDocument()
+    next()
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(screen.getByRole('heading', { name: TITLES[0] })).toBeInTheDocument()
   })
 
-  it('navigates using keyboard arrows and escapes', () => {
+  it('follows the arrow keys and closes on Escape', () => {
     render(<OnboardingModal />)
-
     fireEvent.keyDown(window, { key: 'ArrowRight' })
-    expect(screen.getByText('The Turntable')).toBeInTheDocument()
-
+    expect(screen.getByRole('heading', { name: TITLES[1] })).toBeInTheDocument()
     fireEvent.keyDown(window, { key: 'ArrowLeft' })
-    expect(screen.getByText('A music player built around the feeling of listening.')).toBeInTheDocument()
-
+    expect(screen.getByRole('heading', { name: TITLES[0] })).toBeInTheDocument()
     fireEvent.keyDown(window, { key: 'Escape' })
     expect(usePlayerStore.getState().isOnboardingOpen).toBe(false)
   })
 
-  it('respects prefers-reduced-motion via window.matchMedia', () => {
-    Object.defineProperty(window, 'matchMedia', {
-      writable: true,
-      value: vi.fn().mockImplementation((query) => ({
-        matches: query === '(prefers-reduced-motion: reduce)',
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn()
-      }))
-    })
-
+  it('saves the name typed on the welcome step', () => {
     render(<OnboardingModal />)
-    expect(screen.getByText('A music player built around the feeling of listening.')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('What should Kissa call you?'), { target: { value: 'Naman' } })
+    expect(usePlayerStore.getState().listenerName).toBe('Naman')
   })
 
-  it('allows customizing turntable speed, room atmosphere, and screensaver preference', () => {
+  it('lets the listener choose a room and a record colour', () => {
     render(<OnboardingModal />)
-
-    fireEvent.click(screen.getByText('Next'))
-    expect(screen.getByText('The Turntable')).toBeInTheDocument()
-    const speed45Btn = screen.getByRole('button', { name: /45 RPM/i })
-    fireEvent.click(speed45Btn)
-    expect(usePlayerStore.getState().rpm).toBe('45')
-
-    fireEvent.click(screen.getByText('Next')) // to Step 3
-    fireEvent.click(screen.getByText('Next')) // to Step 4
-    expect(screen.getByText('The Room')).toBeInTheDocument()
-    const roomBtn = screen.getByRole('button', { name: /Vintage Amber/i })
-    fireEvent.click(roomBtn)
+    next()
+    next()
+    fireEvent.click(screen.getByRole('radio', { name: /Vintage Amber/ }))
     expect(usePlayerStore.getState().theme).toBe('dusty-record')
+    fireEvent.click(screen.getByRole('radio', { name: 'Oxblood' }))
+    expect(usePlayerStore.getState().vinylColor).toBe('oxblood')
+  })
 
-    fireEvent.click(screen.getByText('Next')) // to Step 5
-    fireEvent.click(screen.getByText('Next')) // to Step 6
-    expect(screen.getByText('The Display')).toBeInTheDocument()
-    const screensaverToggle = screen.getByRole('button', { name: /Show Live Lyrics on Screensaver/i })
-    fireEvent.click(screensaverToggle)
+  it('switches lyrics on for the display from the last step', () => {
+    render(<OnboardingModal />)
+    for (let i = 0; i < 4; i++) next()
+    fireEvent.click(screen.getByRole('switch', { name: 'Show lyrics on the display and screensaver' }))
     expect(usePlayerStore.getState().screensaverLyrics).toBe(true)
   })
 })

@@ -15,6 +15,7 @@ vi.mock('electron', () => ({
   shell: { showItemInFolder: vi.fn() }
 }))
 
+import { shell } from 'electron'
 import { StorePackageService, parseHelperJson, type HelperExecFile } from '../StorePackageService'
 import { ScreensaverRegistryService, type RegExecFile } from '../ScreensaverRegistryService'
 import { UpdateService } from '../UpdateService'
@@ -128,16 +129,28 @@ describe('Store build: screensaver registration', () => {
 
   const localCopy = () => path.join(tmp, 'Local', 'Packages', FAMILY, 'LocalState', 'Kissa.scr')
 
-  it('copies Kissa.scr into LocalState and registers that copy, not the package path', async () => {
-    const result = await registry.registerScreensaver()
+  it('copies Kissa.scr into LocalState and shows it to the listener, never writing the registry', async () => {
+    reg.mockImplementation(async (_file: string, args: string[]) => {
+      if (args[0] !== 'query' && !String(_file).endsWith('control.exe')) {
+        throw new Error('the Store build must not write the registry')
+      }
+      return { stdout: '', stderr: '' }
+    })
 
-    expect(result).toEqual({ success: true, path: localCopy() })
+    const result = await registry.registerScreensaver()
+    expect(result).toEqual({ success: false, manual: true, path: localCopy() })
     expect(fs.readFileSync(localCopy(), 'utf8')).toBe('scr-v1')
-    expect(reg).toHaveBeenCalledWith(
-      'reg.exe',
-      ['add', 'HKCU\\Control Panel\\Desktop', '/v', 'SCRNSAVE.EXE', '/t', 'REG_SZ', '/d', localCopy(), '/f'],
-      { windowsHide: true }
-    )
+    expect(shell.showItemInFolder).toHaveBeenCalledWith(localCopy())
+  })
+
+  it('opens Windows settings instead of clearing the value itself', async () => {
+    reg.mockImplementation(async (file: string, args: string[]) => {
+      if (args[0] === 'query') return { stdout: `    SCRNSAVE.EXE    REG_SZ    ${localCopy()}
+`, stderr: '' }
+      if (String(file).endsWith('control.exe')) return { stdout: '', stderr: '' }
+      throw new Error('the Store build must not write the registry')
+    })
+    expect(await registry.unregisterScreensaver()).toEqual({ success: false, removed: false, reason: 'manual' })
   })
 
   it('recognises its own registration by the LocalState path', async () => {

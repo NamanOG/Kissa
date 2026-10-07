@@ -78,14 +78,12 @@ appx:
   backgroundColor: '#0f0b07'
   languages:
     - en-US
-  # uap10 (startup task arguments) and unvirtualizedResources need Windows 10 2004+
+  # uap10 (startup task arguments) needs Windows 10 2004+
   minVersion: 10.0.19041.0
   maxVersionTested: 10.0.26100.0
   customManifestPath: appx-manifest.xml
   capabilities:
     - runFullTrust
-    # Restricted: lets the screensaver setting reach the real registry. See build/appx-manifest.xml.
-    - unvirtualizedResources
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:

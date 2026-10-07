@@ -6,9 +6,9 @@ import { SegmentedTabs } from '@renderer/components/ui/SegmentedTabs'
 import { cn } from '@renderer/utils/cn'
 import { greetingFor } from '@renderer/utils/greeting'
 
-const GROUP = 'rounded-2xl bg-[var(--on-surface)]/[0.03] border border-[var(--on-surface)]/[0.08] overflow-hidden flex flex-col'
+const GROUP = 'rounded-2xl bg-ink/[0.03] border border-ink/[0.08] overflow-hidden flex flex-col'
 const ROW = 'flex items-center justify-between gap-4 p-4 min-[600px]:px-5'
-const HEADING = 'text-[11px] font-mono font-bold text-[var(--muted)] mb-2.5 tracking-[0.2em] uppercase'
+const HEADING = 'text-[11px] font-mono font-bold text-dim mb-2.5 tracking-[0.2em] uppercase'
 
 /** The colour of the record on the platter, and what Kissa calls you. */
 export const RoomPersonalSettings = memo((): React.JSX.Element => {
@@ -21,10 +21,10 @@ export const RoomPersonalSettings = memo((): React.JSX.Element => {
     <div>
       <h4 className={HEADING}>Make it yours</h4>
       <div className={GROUP}>
-        <div className={cn(ROW, 'border-b border-[var(--on-surface)]/[0.06]')}>
+        <div className={cn(ROW, 'border-b border-ink/[0.06]')}>
           <div className="flex flex-col">
-            <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Pressing</span>
-            <span className="mt-0.5 text-[11.5px] text-[var(--muted)]">{VINYL_PRESSINGS[vinylColor].name}</span>
+            <span className="text-[13.5px] font-medium text-ink">Pressing</span>
+            <span className="mt-0.5 text-[11.5px] text-dim">{VINYL_PRESSINGS[vinylColor].name}</span>
           </div>
           <div role="radiogroup" aria-label="Record colour" className="flex items-center gap-2">
             {VINYL_COLORS.map((color) => {
@@ -41,15 +41,15 @@ export const RoomPersonalSettings = memo((): React.JSX.Element => {
                   onClick={() => setVinylColor(color)}
                   className={cn(
                     'relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full outline-none transition-transform duration-micro active:scale-95',
-                    'focus-visible:ring-1 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
-                    selected ? 'ring-[1.5px] ring-[var(--accent)] ring-offset-2 ring-offset-[var(--surface)]' : 'hover:scale-105'
+                    'focus-visible:ring-1 focus-visible:ring-tone focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
+                    selected ? 'ring-[1.5px] ring-tone ring-offset-2 ring-offset-[var(--surface)]' : 'hover:scale-105'
                   )}
                   style={{
                     background: `radial-gradient(circle, ${pressing.inner} 0%, ${pressing.outer} 100%)`,
                     boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.12), 0 2px 6px rgba(0,0,0,0.5)'
                   }}
                 >
-                  <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent)] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.4)]" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-tone shadow-[inset_0_0_0_1px_rgba(0,0,0,0.4)]" />
                   {selected && (
                     <Check aria-hidden="true" className="absolute h-3 w-3 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]" strokeWidth={3} />
                   )}
@@ -61,8 +61,8 @@ export const RoomPersonalSettings = memo((): React.JSX.Element => {
 
         <div className={ROW}>
           <label htmlFor="kissa-listener-name" className="flex flex-col">
-            <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Your name</span>
-            <span className="mt-0.5 text-[11.5px] text-[var(--muted)]">
+            <span className="text-[13.5px] font-medium text-ink">Your name</span>
+            <span className="mt-0.5 text-[11.5px] text-dim">
               {listenerName.trim()
                 ? `“${greetingFor(new Date(), listenerName)}” — on the deck, the shelf and share cards`
                 : 'Kissa greets you by it and names your shelf'}
@@ -78,7 +78,7 @@ export const RoomPersonalSettings = memo((): React.JSX.Element => {
             autoComplete="off"
             spellCheck={false}
             style={{ backgroundColor: 'color-mix(in srgb, var(--on-surface) 6%, transparent)' }}
-            className="w-[170px] shrink-0 select-text appearance-none rounded-xl border border-[var(--on-surface)]/10 px-3 py-1.5 text-[13px] text-[var(--on-surface)] outline-none placeholder:text-[var(--muted)]/60 focus-visible:border-[var(--accent)]"
+            className="w-[170px] shrink-0 select-text appearance-none rounded-xl border border-ink/10 px-3 py-1.5 text-[13px] text-ink outline-none placeholder:text-dim/60 focus-visible:border-tone"
           />
         </div>
       </div>
@@ -96,8 +96,8 @@ export const LyricsAppearanceRows = memo((): React.JSX.Element => {
 
   return (
     <>
-      <div className={cn(ROW, 'border-b border-[var(--on-surface)]/[0.06]')}>
-        <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Text Size</span>
+      <div className={cn(ROW, 'border-b border-ink/[0.06]')}>
+        <span className="text-[13.5px] font-medium text-ink">Text Size</span>
         <SegmentedTabs
           kind="radio"
           size="sm"
@@ -111,12 +111,12 @@ export const LyricsAppearanceRows = memo((): React.JSX.Element => {
           ]}
         />
       </div>
-      <div className={cn(ROW, 'border-b border-[var(--on-surface)]/[0.06]')}>
+      <div className={cn(ROW, 'border-b border-ink/[0.06]')}>
         <div className="flex flex-col">
-          <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Typeface</span>
+          <span className="text-[13.5px] font-medium text-ink">Typeface</span>
           <span
             className={cn(
-              'mt-0.5 text-[13px] text-[var(--muted)]',
+              'mt-0.5 text-[13px] text-dim',
               lyricsFace === 'serif' ? 'font-kissa-editorial text-[14.5px]' : 'font-kissa-lyrics'
             )}
           >
@@ -147,15 +147,15 @@ export const AboutRow = memo((): React.JSX.Element => {
     else window.open(url, '_blank', 'noopener,noreferrer')
   }
   return (
-    <div className={cn(ROW, 'border-t border-[var(--on-surface)]/[0.06]')}>
+    <div className={cn(ROW, 'border-t border-ink/[0.06]')}>
       <div className="flex flex-col">
-        <span className="text-[13.5px] font-medium text-[var(--on-surface)]">Kissa</span>
-        <span className="mt-0.5 text-[11.5px] text-[var(--muted)]">Made by GlyphCode · free to use</span>
+        <span className="text-[13.5px] font-medium text-ink">Kissa</span>
+        <span className="mt-0.5 text-[11.5px] text-dim">Made by GlyphCode · free to use</span>
       </div>
       <button
         type="button"
         onClick={() => open('https://github.com/NamanOG/Kissa')}
-        className="shrink-0 cursor-pointer rounded-xl border border-[var(--on-surface)]/10 bg-[var(--on-surface)]/[0.06] px-3.5 py-1.5 text-[12px] font-bold text-[var(--on-surface)] transition-colors hover:bg-[var(--on-surface)]/[0.12] active:scale-95"
+        className="shrink-0 cursor-pointer rounded-xl border border-ink/10 bg-ink/[0.06] px-3.5 py-1.5 text-[12px] font-bold text-ink transition-colors hover:bg-ink/[0.12] active:scale-95"
       >
         View on GitHub
       </button>

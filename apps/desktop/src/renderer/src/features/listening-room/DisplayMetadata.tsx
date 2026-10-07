@@ -12,9 +12,13 @@ export const DisplayMetadata = memo(({ className, align = 'left' }: DisplayMetad
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const prefersReducedMotion = useReducedMotion()
 
-  const title = currentTrack?.title ?? 'Waiting for music'
-  const artist = currentTrack?.artist ?? 'Kissa'
-  const album = currentTrack?.album
+  const isIdle = !currentTrack || currentTrack.sourceAppId === 'kissa-idle'
+  const title = isIdle ? 'Nothing playing' : currentTrack.title
+  const artist = isIdle ? 'Start a song in any app' : currentTrack.artist
+  const album =
+    !isIdle && currentTrack.album && currentTrack.album.toLowerCase() !== title.toLowerCase()
+      ? currentTrack.album
+      : undefined
   const metadataKey = currentTrack?.audioUrl ?? currentTrack?.artworkUrl ?? `${title}-${artist}-${album ?? ''}`
   const isCenter = align === 'center'
 
@@ -44,7 +48,7 @@ export const DisplayMetadata = memo(({ className, align = 'left' }: DisplayMetad
         >
           <h1
             className={cn(
-              'max-w-full font-serif text-[clamp(2rem,3.5vw,4.5rem)] font-medium leading-[1.1] pb-2 tracking-[-0.02em] text-[var(--on-surface)] line-clamp-2 drop-shadow-lg',
+              'max-w-full font-serif text-[clamp(2rem,3.5vw,4.5rem)] font-medium leading-[1.1] pb-2 tracking-[-0.02em] text-ink line-clamp-2 drop-shadow-lg',
               isCenter ? 'text-center' : 'text-left'
             )}
             title={title}
@@ -57,11 +61,11 @@ export const DisplayMetadata = memo(({ className, align = 'left' }: DisplayMetad
               isCenter ? 'items-center text-center' : 'items-start text-left'
             )}
           >
-            <p className="max-w-full font-kissa-chassis uppercase text-[clamp(1rem,1.2vw,1.25rem)] tracking-[0.2em] text-[var(--accent)] line-clamp-1 opacity-90 font-bold">
+            <p className="max-w-full font-kissa-chassis uppercase text-[clamp(1rem,1.2vw,1.25rem)] tracking-[0.2em] text-tone line-clamp-1 opacity-90 font-bold">
               {artist}
             </p>
             {album && (
-              <p className="max-w-full text-[clamp(0.9rem,1vw,1.1rem)] text-[var(--muted)] font-sans tracking-wide line-clamp-1 opacity-80">
+              <p className="max-w-full text-[clamp(0.9rem,1vw,1.1rem)] text-dim font-sans tracking-wide line-clamp-1 opacity-80">
                 {album}
               </p>
             )}
