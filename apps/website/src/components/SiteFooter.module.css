@@ -33,3 +33,45 @@
   font-size: 0.8125rem;
   color: var(--color-fg-subtle);
 }
+
+.studio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  margin-top: var(--space-8);
+}
+
+.studioLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--color-fg);
+  transition:
+    border-color var(--dur-ui) var(--ease-out),
+    background-color var(--dur-ui) var(--ease-out);
+}
+
+.studioLink:hover {
+  border-color: var(--color-fg-subtle);
+  background: var(--color-bg-raised);
+}
+
+.studioMark {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  background: #f4f2ec;
+}
+
+.studioMark svg {
+  width: 72%;
+  height: 72%;
+}

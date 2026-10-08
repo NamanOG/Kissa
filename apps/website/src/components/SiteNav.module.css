@@ -73,7 +73,7 @@
   color: var(--color-fg);
 }
 
-/* The marker: a 12px record — lacquer, copper label, spindle hole —
+/* The marker: a 12px record - lacquer, copper label, spindle hole -
    that only takes up space beside the current section. */
 .disc {
   width: 0;

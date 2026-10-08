@@ -1,12 +1,10 @@
-import { useEffect, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
 import styles from './DownloadButton.module.css'
 import { MagneticButton } from './MagneticButton'
-import { useLatestRelease } from '../../hooks/useLatestRelease'
+import { STORE_URL } from '../../lib/links'
 
 interface DownloadButtonProps {
   size?: 'sm' | 'lg'
-  /** Show version, size and platform under the button. */
+  /** Show price and platform under the button. */
   showMeta?: boolean
   className?: string
 }
@@ -19,73 +17,34 @@ export function WindowsIcon({ className }: { className?: string }) {
   )
 }
 
-function DownloadGlyph({ className }: { className?: string }) {
+function OpenGlyph({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <path d="M8 2v9m0 0L4.5 7.5M8 11l3.5-3.5M3 14h10" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 12 12 4M6 4h6v6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 
 /**
- * Starts the installer download immediately: the link is the release's
- * .exe asset itself, which GitHub serves as an attachment, so the browser
- * downloads it in place without navigating anywhere.
+ * Opens Kissa's Microsoft Store page, which installs it and keeps it updated.
  */
 export function DownloadButton({ size = 'lg', showMeta = false, className = '' }: DownloadButtonProps) {
-  const release = useLatestRelease()
-  const [started, setStarted] = useState(false)
-  const { setup } = release
-
-  useEffect(() => {
-    if (!started) return
-    const t = setTimeout(() => setStarted(false), 6000)
-    return () => clearTimeout(t)
-  }, [started])
-
-  const label = size === 'sm' ? 'Download' : 'Download for Windows'
-
   return (
     <div className={`${styles.wrap} ${size === 'lg' ? styles.lg : styles.sm} ${className}`}>
       <MagneticButton
-        href={setup.url}
-        download={setup.name}
-        onClick={() => setStarted(true)}
+        href={STORE_URL}
+        target="_blank"
+        rel="noopener"
         className={styles.button}
         strength={size === 'lg' ? 18 : 0}
-        aria-label={`Download Kissa ${release.version} installer for Windows (${setup.sizeMb} MB)`}
+        aria-label="Get Kissa from the Microsoft Store (opens in a new tab)"
       >
         <WindowsIcon className={styles.winIcon} />
-        <span className={styles.labelWrap}>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.span
-              key={started ? 'started' : 'idle'}
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -10, opacity: 0 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className={styles.label}
-            >
-              {started ? 'Downloading…' : label}
-            </motion.span>
-          </AnimatePresence>
-        </span>
-        {size === 'lg' && <DownloadGlyph className={styles.glyph} />}
+        <span className={styles.label}>{size === 'sm' ? 'Get Kissa' : 'Get it from Microsoft Store'}</span>
+        {size === 'lg' && <OpenGlyph className={styles.glyph} />}
       </MagneticButton>
 
-      {showMeta && (
-        <p className={styles.meta} aria-live="polite">
-          {started ? (
-            <>
-              Run <span className={styles.file}>{setup.name}</span> when it finishes.
-            </>
-          ) : (
-            <>
-              v{release.version} &middot; {setup.sizeMb} MB &middot; Free
-            </>
-          )}
-        </p>
-      )}
+      {showMeta && <p className={styles.meta}>Free &middot; Windows 10 &amp; 11 &middot; Updates itself</p>}
     </div>
   )
 }

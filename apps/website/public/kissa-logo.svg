@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Kissa">
+  <defs>
+    <linearGradient id="copper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e2a06a"/>
+      <stop offset="0.5" stop-color="#b8733f"/>
+      <stop offset="1" stop-color="#8a5229"/>
+    </linearGradient>
+    <radialGradient id="label" cx="0.4" cy="0.35" r="0.75">
+      <stop offset="0" stop-color="#e0a06c"/>
+      <stop offset="1" stop-color="#a4632f"/>
+    </radialGradient>
+    <clipPath id="grooves"><circle cx="256" cy="256" r="212"/></clipPath>
+  </defs>
+
+  <circle cx="256" cy="256" r="252" fill="#0b0b0c"/>
+  <circle cx="256" cy="256" r="228" fill="none" stroke="url(#copper)" stroke-width="7"/>
+
+  <g fill="none" stroke="#1e1e21" stroke-width="2">
+    <circle cx="256" cy="256" r="196"/>
+    <circle cx="256" cy="256" r="168"/>
+    <circle cx="256" cy="256" r="140"/>
+    <circle cx="256" cy="256" r="112"/>
+    <circle cx="256" cy="256" r="84"/>
+  </g>
+
+  <g clip-path="url(#grooves)" fill="none" stroke="#2fb3b8" stroke-width="5" stroke-linecap="round">
+    <path d="M40 304c70-34 120 34 196 34s126-52 240-34"/>
+    <path d="M40 330c70-34 120 34 196 34s126-52 240-34"/>
+    <path d="M40 356c70-34 120 34 196 34s126-52 240-34"/>
+    <path d="M40 382c70-34 120 34 196 34s126-52 240-34"/>
+    <path d="M40 408c70-34 120 34 196 34s126-52 240-34"/>
+    <path d="M40 434c70-34 120 34 196 34s126-52 240-34"/>
+  </g>
+
+  <circle cx="256" cy="246" r="58" fill="url(#label)"/>
+  <circle cx="256" cy="246" r="57" fill="none" stroke="#f0bd8f" stroke-opacity="0.45" stroke-width="2"/>
+  <circle cx="256" cy="246" r="10" fill="#0b0b0c"/>
+
+  <path d="M438 112c-4 60-22 116-74 172" fill="none" stroke="url(#copper)" stroke-width="13" stroke-linecap="round"/>
+  <path d="M370 268l22 22-62 44-18-18z" fill="url(#copper)"/>
+  <circle cx="438" cy="110" r="27" fill="url(#copper)"/>
+  <circle cx="438" cy="110" r="11" fill="#7a4720"/>
+</svg>

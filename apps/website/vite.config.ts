@@ -1,10 +1,10 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
-import snapshot from './src/data/release.json'
 import faq from './src/data/faq.json'
 
 const REPO = 'NamanOG/Kissa'
+const STORE_URL = 'https://apps.microsoft.com/detail/9p3n4x4wm80j'
 
 /**
  * Where the site is published. Everything that needs an absolute URL
@@ -28,66 +28,8 @@ const defaultSiteUrl = vercelHost
 
 const SITE_URL = (process.env.KISSA_SITE_URL ?? defaultSiteUrl).replace(/\/?$/, '/')
 
-interface GithubAsset {
-  name: string
-  browser_download_url: string
-  size: number
-}
-
-type Release = typeof snapshot
-
-/**
- * Resolve the newest GitHub release while building, so the direct installer
- * link is part of the shipped page and never depends on a visitor's browser
- * reaching the (rate-limited) GitHub API. Falls back to the committed
- * snapshot in src/data/release.json when GitHub can't be reached.
- */
-async function resolveLatestRelease(): Promise<Release> {
-  try {
-    const token = process.env.GITHUB_TOKEN
-    const res = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      signal: AbortSignal.timeout(6000)
-    })
-    if (!res.ok) return snapshot
-
-    const release = (await res.json()) as {
-      tag_name: string
-      published_at: string
-      html_url: string
-      assets: GithubAsset[]
-    }
-    const pick = (pattern: RegExp) => {
-      const asset = release.assets.find((a) => pattern.test(a.name))
-      return asset
-        ? {
-            name: asset.name,
-            url: asset.browser_download_url,
-            sizeMb: Math.round((asset.size / 1024 / 1024) * 10) / 10
-          }
-        : null
-    }
-    const setup = pick(/setup.*\.exe$/i)
-    const portable = pick(/portable.*\.exe$/i)
-    if (!setup) return snapshot
-
-    return {
-      version: release.tag_name.replace(/^v/, ''),
-      publishedAt: release.published_at,
-      notesUrl: release.html_url,
-      setup,
-      portable: portable ?? snapshot.portable
-    }
-  } catch {
-    return snapshot
-  }
-}
-
 /** schema.org data search engines use for rich results. */
-function structuredData(release: Release) {
+function structuredData() {
   const graph = [
     {
       '@type': 'SoftwareApplication',
@@ -99,13 +41,9 @@ function structuredData(release: Release) {
       applicationCategory: 'MultimediaApplication',
       applicationSubCategory: 'Music player',
       operatingSystem: 'Windows 10, Windows 11',
-      softwareVersion: release.version,
-      datePublished: release.publishedAt,
       url: SITE_URL,
-      downloadUrl: release.setup.url,
-      installUrl: release.setup.url,
-      fileSize: `${release.setup.sizeMb} MB`,
-      releaseNotes: release.notesUrl,
+      downloadUrl: STORE_URL,
+      installUrl: STORE_URL,
       screenshot: `${SITE_URL}og.jpg`,
       image: `${SITE_URL}og.jpg`,
       isAccessibleForFree: true,
@@ -151,15 +89,14 @@ function structuredData(release: Release) {
 }
 
 /** Fills the %PLACEHOLDERS% in index.html and writes robots.txt and sitemap.xml. */
-function seo(release: Release): Plugin {
+function seo(): Plugin {
   return {
     name: 'kissa-seo',
     transformIndexHtml(html) {
       return html
-        .replaceAll('%STRUCTURED_DATA%', structuredData(release))
+        .replaceAll('%STRUCTURED_DATA%', structuredData())
         .replaceAll('%SITE_URL%', SITE_URL)
-        .replaceAll('%DOWNLOAD_URL%', release.setup.url)
-        .replaceAll('%VERSION%', release.version)
+        .replaceAll('%DOWNLOAD_URL%', STORE_URL)
     },
     generateBundle() {
       this.emitFile({
@@ -180,16 +117,11 @@ function seo(release: Release): Plugin {
   }
 }
 
-export default defineConfig(async ({ command }) => {
-  const release = await resolveLatestRelease()
-
+export default defineConfig(({ command }) => {
   return {
     // Root in development; the published path (e.g. /Kissa/) when building.
     base: command === 'build' ? new URL(SITE_URL).pathname : '/',
-    plugins: [react(), seo(release)],
-    define: {
-      __KISSA_RELEASE__: JSON.stringify(release)
-    },
+    plugins: [react(), seo()],
     resolve: {
       alias: {
         '@': resolve(__dirname, 'src')
@@ -210,11 +142,7 @@ export default defineConfig(async ({ command }) => {
     // Development server
     server: {
       port: 5174,
-      open: false,
-      watch: {
-        // Ignore large/locked media files in public/product (e.g. mp4 being played)
-        ignored: ['**/public/product/**']
-      }
+      open: false
     }
   }
 })

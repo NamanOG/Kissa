@@ -40,7 +40,7 @@
   height: 110.9%;
 }
 
-/* Grab area over the headshell — same region the app uses */
+/* Grab area over the headshell - same region the app uses */
 .grip {
   position: absolute;
   left: 8%;
@@ -73,7 +73,7 @@
   vector-effect: non-scaling-stroke;
 }
 
-/* Status line under the platter — the app's "now playing" row */
+/* Status line under the platter - the app's "now playing" row */
 .status {
   position: absolute;
   left: 0;

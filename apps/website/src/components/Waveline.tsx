@@ -29,7 +29,7 @@ function wavePath(amplitude: number, phase: number) {
 }
 
 /**
- * Waveline — a line of type that is flat while the page is still and turns
+ * Waveline - a line of type that is flat while the page is still and turns
  * into a travelling sound wave the faster you scroll, then settles again.
  *
  * Built on the idea of Fancy Components' Marquee Along SVG Path

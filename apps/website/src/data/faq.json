@@ -17,11 +17,7 @@
   },
   {
     "q": "Which versions of Windows does it support?",
-    "a": "Windows 10 and Windows 11. There is a standard installer and a portable .exe that needs no installation."
-  },
-  {
-    "q": "Why does Windows show a SmartScreen warning when I install it?",
-    "a": "The installer is not code-signed yet, so Windows SmartScreen may warn about an unrecognised app. Choose More info, then Run anyway. The full source code is available on GitHub if you want to inspect or build it yourself."
+    "a": "Windows 10 and Windows 11. Kissa installs from the Microsoft Store, which also keeps it up to date."
   },
   {
     "q": "Where do the lyrics come from?",
@@ -29,6 +25,6 @@
   },
   {
     "q": "Can Kissa be used as a Windows screensaver?",
-    "a": "Yes. Kissa includes a native Windows screensaver that keeps the record turning, with or without lyrics, when your PC is idle."
+    "a": "Yes. Kissa includes a native Windows screensaver that keeps the record turning, with or without lyrics, when your PC is idle. You turn it on from Kissa's settings."
   }
 ]

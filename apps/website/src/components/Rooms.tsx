@@ -1,28 +1,29 @@
 import { useState } from 'react'
 import styles from './Rooms.module.css'
 import { RevealHeading } from './ui/Reveal'
-import { Vinyl } from './ui/Vinyl'
-import { Tonearm } from './ui/Tonearm'
 import { LISTENING_ROOMS } from '../data/rooms'
 import { asset } from '../lib/asset'
 
+/** Match Album is not a fixed room: it takes its light from the cover that is playing. */
+const MATCH_ALBUM = {
+  id: 'match-album',
+  number: '09',
+  name: 'Match Album',
+  description: 'No fixed room. The light is drawn from the colours of the cover on the platter.',
+  lightingMood: 'Lit by the cover',
+  image: 'media/rooms/room-match-album',
+  accentColor: '#d946a8'
+}
+
+const ROOMS = [...LISTENING_ROOMS, MATCH_ALBUM]
+
 /**
- * Rooms — pick a room and the deck is re-lit the way the app does it.
- * The wall light, faceplate, text and accent colours come straight from the
- * desktop app's theme definitions (see scripts/sync-rooms.py), so this is a
- * live preview rather than a picture of one.
+ * Rooms - pick a room and the app is shown in it. Every picture is the same
+ * window on the same record, so the only thing that changes is the light.
  */
 export function Rooms() {
   const [active, setActive] = useState(0)
-  const room = LISTENING_ROOMS[active]
-
-  const roomVars = {
-    '--room-accent': room.accentColor,
-    '--room-ink': room.inkColor,
-    '--room-muted': room.mutedColor,
-    '--room-plinth': room.plinthColor,
-    '--room-plinth-border': room.plinthBorder
-  } as React.CSSProperties
+  const room = ROOMS[active]
 
   return (
     <section id="rooms" className={styles.section} aria-labelledby="rooms-heading">
@@ -44,7 +45,7 @@ export function Rooms() {
 
         <div className={styles.layout}>
           <ul className={styles.index} role="list">
-            {LISTENING_ROOMS.map((r, i) => (
+            {ROOMS.map((r, i) => (
               <li key={r.id}>
                 <button
                   type="button"
@@ -65,51 +66,29 @@ export function Rooms() {
             ))}
           </ul>
 
-          <figure className={styles.viewer} style={roomVars}>
-            <div
-              className={styles.room}
-              role="img"
-              aria-label={`Kissa's deck in the ${room.name} room: ${room.description}`}
-            >
-              {LISTENING_ROOMS.map((r, i) => (
-                <div
+          <figure className={styles.viewer}>
+            <div className={styles.frame}>
+              {ROOMS.map((r, i) => (
+                <img
                   key={r.id}
-                  className={`${styles.wall} ${i === active ? styles.wallActive : ''}`}
-                  style={{ backgroundColor: r.wallColor, backgroundImage: r.light }}
+                  src={asset(`${r.image}-800.webp`)}
+                  srcSet={`${asset(`${r.image}-800.webp`)} 800w, ${asset(`${r.image}.webp`)} 1600w`}
+                  sizes="(max-width: 860px) 92vw, 720px"
+                  alt={`Kissa in the ${r.name} room: ${r.description}`}
+                  aria-hidden={i === active ? undefined : true}
+                  width={1600}
+                  height={900}
+                  loading="lazy"
+                  className={`${styles.shot} ${i === active ? styles.shotActive : ''}`}
                 />
               ))}
-              <div className={`${styles.vignette} ${room.isLight ? styles.vignetteLight : ''}`} />
-
-              <div className={styles.plinth}>
-                <div className={styles.record}>
-                  <Vinyl spinning platter />
-                  <Tonearm className={styles.tonearm} angle={29} />
-                </div>
-              </div>
-
-              <div className={styles.readout}>
-                <span className={styles.nowPlaying}>Now playing</span>
-                <span className={styles.roomTitle}>{room.name}</span>
-              </div>
-
-              <div className={styles.photoFrame}>
-                {LISTENING_ROOMS.map((r, i) => (
-                  <img
-                    key={r.id}
-                    src={asset(`${r.image}-480.webp`)}
-                    alt=""
-                    width={480}
-                    height={268}
-                    loading="lazy"
-                    className={`${styles.photo} ${i === active ? styles.photoActive : ''}`}
-                  />
-                ))}
-              </div>
             </div>
 
             <figcaption className={styles.caption}>
               <span aria-live="polite">{room.description}</span>
-              <span className="label">Live preview · the app&rsquo;s own lighting</span>
+              <span className="label">
+                {room.number} / 0{ROOMS.length}
+              </span>
             </figcaption>
           </figure>
         </div>

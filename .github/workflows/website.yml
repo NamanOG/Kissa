@@ -5,8 +5,7 @@ name: Deploy website
 # One-time setup: repository Settings → Pages → Build and deployment →
 # Source: "GitHub Actions".
 #
-# Runs when the website changes, and again after every app release so the
-# version number and download links baked into the page are always current.
+# Runs when the website changes.
 
 on:
   push:
@@ -14,9 +13,6 @@ on:
     paths:
       - 'apps/website/**'
       - '.github/workflows/website.yml'
-  workflow_run:
-    workflows: ['Release Kissa']
-    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -31,8 +27,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Skip when triggered by a release run that failed.
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,16 +43,8 @@ jobs:
       - name: Build
         run: npm run website:build
         env:
-          # Lets the build read the latest release without hitting API rate limits.
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Change this (or set a repository variable) when moving to a custom domain.
           KISSA_SITE_URL: ${{ vars.KISSA_SITE_URL || 'https://namanog.github.io/Kissa/' }}
-
-      - name: Drop source media the site does not serve
-        working-directory: apps/website/dist
-        run: |
-          rm -rf environments kissa_logo.png kissa_welcome_hero.jpg placeholder-album.png
-          rm -f product/*.png product/README.md
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

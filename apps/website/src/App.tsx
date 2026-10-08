@@ -4,7 +4,6 @@ import { Stage } from './components/Stage'
 import { Waveline } from './components/Waveline'
 import { PluckString } from './components/ui/PluckString'
 import { Modes } from './components/Modes'
-import { VideoShowcase } from './components/VideoShowcase'
 import { Rooms } from './components/Rooms'
 import { Sleeve } from './components/Sleeve'
 import { Faq } from './components/Faq'
@@ -22,8 +21,6 @@ export default function App() {
         <Waveline />
         <PluckString />
         <Modes />
-        <PluckString />
-        <VideoShowcase />
         <PluckString />
         <Rooms />
         <Sleeve />

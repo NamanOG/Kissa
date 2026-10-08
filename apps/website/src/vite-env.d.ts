@@ -1,7 +1,7 @@
 /**
  * Global type declarations for the website.
  *
- * CSS modules — tells TypeScript that importing *.module.css
+ * CSS modules - tells TypeScript that importing *.module.css
  * returns a record of class name strings.
  */
 declare module '*.module.css' {
@@ -10,7 +10,7 @@ declare module '*.module.css' {
 }
 
 /**
- * Side-effect CSS imports — used in main.tsx for global styles.
+ * Side-effect CSS imports - used in main.tsx for global styles.
  */
 declare module '*.css' {
   const styles: undefined
@@ -18,7 +18,7 @@ declare module '*.css' {
 }
 
 /**
- * Image asset imports — Vite resolves these to URLs.
+ * Image asset imports - Vite resolves these to URLs.
  */
 declare module '*.jpg' {
   const src: string
@@ -45,10 +45,6 @@ declare module '*.webp' {
   export default src
 }
 
-/**
- * Latest GitHub release resolved at build time (see vite.config.ts).
- */
-declare const __KISSA_RELEASE__: import('./hooks/useLatestRelease').LatestRelease
 
 /**
  * The parts of Vite's import.meta.env this site uses.

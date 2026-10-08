@@ -4,7 +4,7 @@ import styles from './Sleeve.module.css'
 import { RevealHeading } from './ui/Reveal'
 import { Vinyl } from './ui/Vinyl'
 import { ArrowOut, SideMark } from './ui/Marks'
-import { GITHUB_URL } from '../hooks/useLatestRelease'
+import { GITHUB_URL } from '../lib/links'
 
 const AUTHOR_URL = 'https://github.com/NamanOG'
 
@@ -32,7 +32,7 @@ const SIDES = [
 ]
 
 /**
- * Sleeve — the feature list as the back of an LP: two sides, eight tracks.
+ * Sleeve - the feature list as the back of an LP: two sides, eight tracks.
  * As the section scrolls in, the record slides out of its sleeve.
  */
 export function Sleeve() {

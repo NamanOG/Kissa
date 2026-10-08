@@ -9,7 +9,7 @@ export interface MagneticButtonProps
 }
 
 /**
- * MagneticButton — adapted from UI-Reference-System/components/buttons/magnetic-button.
+ * MagneticButton - adapted from UI-Reference-System/components/buttons/magnetic-button.
  * Pulls gently toward the cursor. Caches the rect on enter (no per-frame layout
  * reads), and is inert on touch devices and under reduced motion.
  */
