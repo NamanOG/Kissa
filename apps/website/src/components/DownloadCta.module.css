@@ -8,7 +8,7 @@
   text-align: center;
 }
 
-/* Cropped so the top of the label — and its turning artwork — stays in view */
+/* Cropped so the top of the label - and its turning artwork - stays in view */
 .record {
   position: absolute;
   z-index: -1;
@@ -57,10 +57,4 @@
 
 .alt a:hover {
   color: var(--color-fg);
-}
-
-.smartscreen {
-  font-size: 0.8125rem;
-  color: var(--color-fg-subtle);
-  max-width: 44ch;
 }

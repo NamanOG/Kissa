@@ -1,5 +1,5 @@
 /**
- * Kissa Website — CSS Reset
+ * Kissa Website - CSS Reset
  *
  * Minimal, modern reset. Not Tailwind, not Normalize.
  * Enough to remove browser inconsistencies, nothing more.
@@ -17,7 +17,7 @@
   padding: 0;
 }
 
-/* Smooth scrolling — respects user preference */
+/* Smooth scrolling - respects user preference */
 html {
   scroll-behavior: smooth;
 }
@@ -64,7 +64,7 @@ h6 {
   overflow-wrap: break-word;
 }
 
-/* Accessible focus — removed only for mouse users */
+/* Accessible focus - removed only for mouse users */
 :focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 3px;

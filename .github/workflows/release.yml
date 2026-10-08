@@ -39,6 +39,12 @@ jobs:
           files: |
             apps/desktop/dist/Kissa-Setup-*.exe
             apps/desktop/dist/Kissa-Portable-*.exe
+          body: |
+            ## Kissa is now on the Microsoft Store
+
+            **[Get Kissa from the Microsoft Store](https://apps.microsoft.com/detail/9p3n4x4wm80j)** - free, no SmartScreen prompt, and it keeps itself up to date.
+
+            The Store is now the recommended way to install Kissa. If you installed an earlier version with the `.exe` below, uninstall it and install from the Store instead. The installer and portable build attached here remain for anyone who cannot use the Store.
           draft: false
           prerelease: false
           generate_release_notes: true

@@ -29,7 +29,7 @@ function renderLine(line: string) {
 }
 
 /**
- * RevealHeading — line-by-line masked rise, adapted from
+ * RevealHeading - line-by-line masked rise, adapted from
  * UI-Reference-System/components/typography/vertical-cut-reveal.
  * Lines (not words) are masked so the heading keeps its typographic shape
  * while animating, and the full text stays readable to screen readers.

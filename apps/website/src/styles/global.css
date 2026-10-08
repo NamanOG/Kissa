@@ -1,5 +1,5 @@
 /**
- * Kissa Website — Global Styles
+ * Kissa Website - Global Styles
  *
  * Fonts are linked from index.html so they start downloading before this
  * stylesheet is parsed.
@@ -105,7 +105,7 @@ a {
 
 /* ─── Shared type roles ────────────────────────────────────── */
 
-/* Mono label — the small engraved text on hi-fi equipment */
+/* Mono label - the small engraved text on hi-fi equipment */
 .label {
   font-family: var(--font-mono);
   font-size: var(--text-label);
@@ -119,7 +119,7 @@ a {
   font-size: var(--text-title);
 }
 
-/* Second voice in a heading: same face, quieter — never italic */
+/* Second voice in a heading: same face, quieter - never italic */
 .section-title em,
 h1 em {
   font-style: normal;

@@ -1,5 +1,5 @@
 /*
- * Material rendering of a physical object — the one place gradients are
+ * Material rendering of a physical object - the one place gradients are
  * used on this site, and only to describe how lacquer, paper and steel
  * take light. Values mirror the desktop app's vinyl layers.
  */
@@ -71,7 +71,7 @@
   box-shadow: 0 0 0 0.5px #000;
 }
 
-/* Programme grooves — the dense music area */
+/* Programme grooves - the dense music area */
 .grooves {
   background: repeating-radial-gradient(
     circle at center,
@@ -85,7 +85,7 @@
   mask-image: radial-gradient(circle at center, transparent 14%, #000 14.5%, #000 94%, transparent 95%);
 }
 
-/* Run-out — sparse, by the label */
+/* Run-out - sparse, by the label */
 .runout {
   opacity: 0.6;
   background: repeating-radial-gradient(
@@ -99,7 +99,7 @@
   mask-image: radial-gradient(circle at center, transparent 14%, #000 14.5%, #000 20%, transparent 21%);
 }
 
-/* Lead-in — sparse, at the rim */
+/* Lead-in - sparse, at the rim */
 .leadin {
   opacity: 0.6;
   background: repeating-radial-gradient(
@@ -128,7 +128,7 @@
     inset 0 -2px 4px rgba(0, 0, 0, 0.95);
 }
 
-/* Pressed paper label — 28% of the record, as on the app */
+/* Pressed paper label - 28% of the record, as on the app */
 .spin > .label {
   inset: 36%;
   overflow: hidden;
@@ -147,7 +147,7 @@
 }
 
 /* Anisotropic highlight: a beam from ten o'clock to four, and a fainter cross.
-   Static — it does not turn with the record. */
+   Static - it does not turn with the record. */
 .reflection {
   background: conic-gradient(
     from 205deg,

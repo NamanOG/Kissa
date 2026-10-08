@@ -47,11 +47,6 @@
   height: 0.8rem;
 }
 
-.labelWrap {
-  display: inline-grid;
-  overflow: hidden;
-}
-
 .label {
   display: block;
 }
@@ -67,7 +62,7 @@
 }
 
 .button:hover .glyph {
-  transform: translateY(2px);
+  transform: translate(2px, -2px);
 }
 
 .meta {
@@ -76,8 +71,4 @@
   letter-spacing: 0.06em;
   color: var(--color-fg-subtle);
   padding-left: var(--space-2);
-}
-
-.file {
-  color: var(--color-fg);
 }

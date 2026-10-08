@@ -6,7 +6,7 @@ import styles from './Marks.module.css'
  * arrow shaped like a tonearm leaving its pivot.
  */
 
-/** 喫茶 ("kissa") set in a thin square — the mark on the sleeve and the hero. */
+/** 喫茶 ("kissa") set in a thin square - the mark on the sleeve and the hero. */
 export function Seal({ className = '' }: { className?: string }) {
   return (
     <span className={`${styles.seal} ${className}`} lang="ja" aria-label="Kissa">

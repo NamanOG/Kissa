@@ -18,8 +18,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/NamanOG/Kissa/releases/latest">
-    <img src="https://img.shields.io/badge/Download%20for%20Windows-.exe%20(Installer%20%26%20Portable)-0078d4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Kissa for Windows" />
+  <a href="https://apps.microsoft.com/detail/9p3n4x4wm80j">
+    <img src="https://img.shields.io/badge/Get%20it%20from-Microsoft%20Store-0078d4?style=for-the-badge&logo=windows&logoColor=white" alt="Get Kissa from the Microsoft Store" />
   </a>
 </p>
 
@@ -37,14 +37,7 @@ Kissa connects directly to active Windows System Media Transport Controls (SMTC)
 
 ## Download & Installation
 
-Binaries for **Windows 10 and Windows 11 (64-bit)** are available on the [**Releases Page**](https://github.com/NamanOG/Kissa/releases/latest).
-
-### Release Packages
-
-- **`Kissa-Setup-4.2.0.exe`** — Standard Windows installer (NSIS) with Start Menu integration, desktop shortcut, and native screensaver (`Kissa.scr`) packaging.
-- **`Kissa-Portable-4.2.0.exe`** — Self-contained standalone executable requiring no installation or registry changes.
-
-> **Windows SmartScreen Notice:** Kissa is distributed independently and is not code-signed with an expensive commercial EV certificate. When installing for the first time, Windows Defender SmartScreen may present an informational prompt. Click **More info → Run anyway** to proceed.
+Kissa is free on the [**Microsoft Store**](https://apps.microsoft.com/detail/9p3n4x4wm80j) for **Windows 10 and Windows 11 (64-bit)**. The Store installs it and keeps it up to date.
 
 ---
 

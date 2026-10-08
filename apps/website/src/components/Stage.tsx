@@ -44,7 +44,7 @@ const LYRICS = [
   'Then turn it over.'
 ]
 
-/** A closed ring that wobbles like a waveform — Kissa reading the session. */
+/** A closed ring that wobbles like a waveform - Kissa reading the session. */
 const LISTEN_RING = (() => {
   const pts: string[] = []
   for (let i = 0; i <= 360; i += 2) {
@@ -96,7 +96,7 @@ function Chapter({ progress, index, active, className = '', children }: ChapterP
 }
 
 /**
- * Stage — the hero and the "how it works" story as one pinned scene.
+ * Stage - the hero and the "how it works" story as one pinned scene.
  * The deck is the app's own record and tonearm, and scroll is the needle:
  * Kissa picks up what is playing, the arm cues and drops, and the page then
  * plays the side while the lyrics keep time.
@@ -131,11 +131,11 @@ export function Stage() {
   const x = useTransform(progress, intro, compact ? ['0%', '0%'] : ['5%', '0%'])
   const y = useTransform(progress, intro, compact ? ['160%', '0%'] : ['12%', '0%'])
 
-  /* Step 2 — the listening ring draws itself around the label. */
+  /* Step 2 - the listening ring draws itself around the label. */
   const listenLength = useTransform(progress, [0.4, 0.56], [0, 1])
   const listenOpacity = useTransform(progress, [0.39, 0.42, 0.58, 0.64], [0, 1, 1, 0])
 
-  /* Steps 3–4 — cue across, drop, then track the side inward. */
+  /* Steps 3–4 - cue across, drop, then track the side inward. */
   const armAngle = useTransform(
     progress,
     [0, CUE, NEEDLE_DOWN, 1],
@@ -343,8 +343,8 @@ export function Stage() {
             </p>
             <div className={styles.actions}>
               <DownloadButton showMeta />
-              <a href="#demo" className={styles.textLink}>
-                Watch the demo
+              <a href="#modes" className={styles.textLink}>
+                See it in motion
               </a>
             </div>
           </motion.div>

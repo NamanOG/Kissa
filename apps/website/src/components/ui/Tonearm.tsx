@@ -7,7 +7,7 @@ export const ARM_OUTER_GROOVE = 23
 export const ARM_INNER_GROOVE = 39.5
 
 /**
- * The Kissa tonearm — artwork taken from the desktop app
+ * The Kissa tonearm - artwork taken from the desktop app
  * (apps/desktop/src/renderer/src/features/turntable/TonearmAssembly.tsx):
  * gimbal pivot, brass counterweight, tapered satin tube, headshell and
  * cartridge. The forwarded ref points at the rotating arm; rotate it about
