@@ -272,7 +272,7 @@ export class ScreensaverRegistryService {
 
     const expectedPath = await this.resolveScreensaverPath()
     if (!areWindowsPathsEqual(currentRegistered, expectedPath)) {
-      // Mandatory safety guard: current screensaver points elsewhere. DO NOT TOUCH.
+      // The current screensaver is someone else's; leave it alone.
       return {
         success: false,
         removed: false,

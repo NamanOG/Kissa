@@ -73,7 +73,7 @@ function Invoke-InPackage([string]$familyName, [string]$commandLine, [int]$timeo
   if (Test-Path $out) { return (Get-Content -Raw -Path $out) } else { return '' }
 }
 
-# ── Remove ────────────────────────────────────────────────────────────────────
+# Remove
 if ($Remove) {
   $existing = Get-AppxPackage -Name $packageName
   if ($existing) {
@@ -101,7 +101,7 @@ if ($Remove) {
   return
 }
 
-# ── Preconditions ─────────────────────────────────────────────────────────────
+# Preconditions
 if (-not (Test-Path $manifest)) {
   Write-Host 'dist\store-layout not found. Run:  npm run build:store  then  npm run store:layout' -ForegroundColor Yellow
   exit 1
@@ -128,7 +128,7 @@ if (-not (Test-Path $savedScreensaverFile) -and $originalScreensaver -notlike "*
 Note "Screensaver before the test: $(if ($originalScreensaver) { $originalScreensaver } else { '(none)' })"
 
 try {
-  # ── 1. Install ──────────────────────────────────────────────────────────────
+  # Install
   try {
     Get-AppxPackage -Name $packageName | Remove-AppxPackage -ErrorAction SilentlyContinue
     Add-AppxPackage -Register $manifest
@@ -143,11 +143,11 @@ try {
   $bundledScr = Join-Path $layout 'app\Kissa.scr'
   $localState = Join-Path $env:LOCALAPPDATA "Packages\$family\LocalState"
 
-  # ── 2. Identity ─────────────────────────────────────────────────────────────
+  # Identity
   $info = Invoke-InPackage $family "`"$helper`" --package-info"
   Report 'Kissa has a package identity' ($info -match '"packaged":true' -and $info -match [regex]::Escape($family)) $info.Trim()
 
-  # ── 3. LocalState copy is a real, runnable file ─────────────────────────────
+  # LocalState copy is a real, runnable file
   $probe = Join-Path $localState 'Kissa.scr'
   Invoke-InPackage $family "(if not exist `"$localState`" mkdir `"$localState`") & copy /y `"$bundledScr`" `"$probe`"" | Out-Null
   $copied = Test-Path $probe
@@ -158,7 +158,7 @@ try {
     Report 'Windows can run that copy from outside the package' ($proc.ExitCode -eq 0) "exit code $($proc.ExitCode)"
   }
 
-  # ── 4. Screensaver setting ──────────────────────────────────────────────────
+  # Screensaver setting
   # The package cannot change this setting itself (its registry writes are redirected and
   # Microsoft does not grant the capability that lifts that). The app shows Kissa.scr in
   # Explorer and the listener chooses Install; this runs the same Windows action.
@@ -173,7 +173,7 @@ try {
     Get-Process rundll32 -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -like '*Screen Saver*' } | Stop-Process -Force
   }
 
-  # ── 5. Startup task ─────────────────────────────────────────────────────────
+  # Startup task
   $get = Invoke-InPackage $family "`"$helper`" --startup-task get"
   Report 'Startup task can be read' ($get -match '"ok":true') $get.Trim()
   $enable = Invoke-InPackage $family "`"$helper`" --startup-task enable"
@@ -182,7 +182,7 @@ try {
   Report 'Startup task can be disabled' ($disable -match '"ok":true' -and $disable -match '"enabled":false') $disable.Trim()
 }
 finally {
-  # ── Restore the screensaver setting exactly as it was ───────────────────────
+  # Restore the screensaver setting exactly as it was
   if ($originalScreensaver) {
     Set-ItemProperty -Path $regKey -Name 'SCRNSAVE.EXE' -Value $originalScreensaver
   } else {
@@ -197,7 +197,7 @@ finally {
   Write-Host "Results saved to $resultsFile"
 }
 
-# ── Manual checks ─────────────────────────────────────────────────────────────
+# Manual checks
 Write-Host ''
 Write-Host 'Launching the Store build of Kissa. Close your installed Kissa first if it is running.' -ForegroundColor Cyan
 Write-Host 'Please check by hand:'

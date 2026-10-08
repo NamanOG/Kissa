@@ -137,7 +137,7 @@ function KissaApp(): React.JSX.Element {
               <div className="relative flex-1 min-h-0 w-full overflow-hidden">
         <AnimatePresence mode="wait">
           {activeView === 'deck' && (
-            /* ═════════ VIEW 1: Vinyl Deck & Listening Room ═════════ */
+            /* Vinyl deck and listening room */
             <motion.div
               key="deck-view"
               initial={{ opacity: 0, scale: 0.985 }}
@@ -191,7 +191,7 @@ function KissaApp(): React.JSX.Element {
           )}
           
           {activeView === 'lyrics' && (
-            /* ═════════ VIEW 2: Apple Music Immersive Lyrics View ═════════ */
+            /* Immersive lyrics view */
             <motion.div
               key="lyrics-view"
               initial={{ opacity: 0, scale: 0.985 }}
@@ -230,7 +230,7 @@ function KissaApp(): React.JSX.Element {
           )}
 
           {activeView === 'shelf' && (
-            /* ═════════ VIEW 4: Record Shelf ═════════ */
+            /* Record shelf */
             <motion.div
               key="shelf-view"
               initial={{ opacity: 0, scale: 0.985 }}

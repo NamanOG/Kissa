@@ -15,7 +15,7 @@
   align-items: start;
 }
 
-/* ─── List ─────────────────────────────────────── */
+/* List */
 
 .list {
   list-style: none;
@@ -45,7 +45,7 @@
   max-width: 34ch;
 }
 
-/* ─── Pinned screen ────────────────────────────── */
+/* Pinned screen */
 
 .screen {
   position: sticky;

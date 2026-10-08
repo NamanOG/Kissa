@@ -153,11 +153,9 @@ export class WindowManager {
         this.mainWindow.setBounds(saved.bounds)
       }
 
-      // NOTE: We intentionally do NOT restore minimized or hidden state.
-      // The user has physically interacted with their machine to end the screensaver,
-      // so we must always leave the window in a visible, focused state.
-      // Re-hiding the window (when it was previously hidden in the tray) would cause
-      // a permanent blank-screen lockout with no way to recover.
+      // Don't restore the minimized or hidden state. The user just woke the machine, so the
+      // window has to end up visible and focused; re-hiding it to the tray would leave a blank
+      // screen with no way back.
       if (!this.mainWindow.isVisible()) {
         this.mainWindow.show()
       }

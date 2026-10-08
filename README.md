@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./apps/desktop/resources/kissa_logo.png" width="140" height="140" alt="Kissa Logo" style="border-radius: 50%;" />
+  <img src="./apps/desktop/src/renderer/src/media/kissa_logo.png" width="140" height="140" alt="Kissa Logo" style="border-radius: 50%;" />
 </p>
 
 <h1 align="center">Kissa</h1>
