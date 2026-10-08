@@ -1,4 +1,5 @@
 import { MotionConfig } from 'motion/react'
+import { Analytics } from '@vercel/analytics/react'
 import { SiteNav } from './components/SiteNav'
 import { Stage } from './components/Stage'
 import { Waveline } from './components/Waveline'
@@ -31,6 +32,7 @@ export default function App() {
 
       <PluckString />
       <SiteFooter />
+      <Analytics />
     </MotionConfig>
   )
 }
