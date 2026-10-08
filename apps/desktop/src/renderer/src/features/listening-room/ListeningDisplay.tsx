@@ -70,7 +70,7 @@ export const ListeningDisplay = memo(({ mode }: ListeningDisplayProps): React.JS
           <div className="flex flex-col justify-center max-w-[560px] w-full mt-8 min-[1200px]:mt-0 min-h-[420px]">
             <AnimatePresence mode="wait">
               {screensaverLyrics ? (
-                /* ── Mode 1: Live Synced Lyrics Mode ── */
+                /* Synced lyrics */
                 <motion.div
                   key="display-lyrics"
                   initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
@@ -100,7 +100,7 @@ export const ListeningDisplay = memo(({ mode }: ListeningDisplayProps): React.JS
                   </div>
                 </motion.div>
               ) : (
-                /* ── Mode 2: Pure Physical Album Sleeve Stand (Default) ── */
+                /* Album sleeve (default) */
                 <motion.div
                   key="display-album-art"
                   initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}

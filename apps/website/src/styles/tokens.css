@@ -10,7 +10,7 @@
  */
 
 :root {
-  /* ─── Color ───────────────────────────────────────────────── */
+  /* Color */
   --color-bg:          #0d0c0b;
   --color-bg-raised:   #161513;
   --color-vinyl:       #121110;
@@ -28,7 +28,7 @@
 
   --color-focus: var(--color-fg);
 
-  /* ─── Typography ──────────────────────────────────────────── */
+  /* Typography */
 
   /* Mona Sans, one family at two widths: an extended cut for display
      (the lettering on hi-fi faceplates) and the normal cut for reading.
@@ -54,7 +54,7 @@
   --tracking-display: -0.045em;
   --tracking-label:   0.12em;
 
-  /* ─── Spacing ─────────────────────────────────────────────── */
+  /* Spacing */
   --space-1:  0.25rem;
   --space-2:  0.5rem;
   --space-3:  0.75rem;
@@ -70,18 +70,18 @@
 
   --section-pad: clamp(5rem, 3rem + 7vw, 10rem);
 
-  /* ─── Layout ──────────────────────────────────────────────── */
+  /* Layout */
   --container-max: 1320px;
   --gutter:        clamp(1.25rem, 0.5rem + 3vw, 3rem);
   --nav-height:    64px;
 
-  /* ─── Radius ──────────────────────────────────────────────── */
+  /* Radius */
   --radius-sm:   4px;
   --radius-md:   10px;
   --radius-lg:   16px;
   --radius-full: 9999px;
 
-  /* ─── Motion ──────────────────────────────────────────────── */
+  /* Motion */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 

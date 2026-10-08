@@ -8,7 +8,7 @@
 @import './tokens.css';
 @import './reset.css';
 
-/* ─── Base ─────────────────────────────────────────────────── */
+/* Base */
 
 html {
   font-size: 16px;
@@ -34,7 +34,7 @@ body {
   color: var(--color-accent-ink);
 }
 
-/* ─── Typography ───────────────────────────────────────────── */
+/* Typography */
 
 h1,
 h2,
@@ -65,7 +65,7 @@ a {
   border-radius: var(--radius-sm);
 }
 
-/* ─── Layout primitives ────────────────────────────────────── */
+/* Layout primitives */
 
 .container {
   width: 100%;
@@ -103,7 +103,7 @@ a {
   transform: translateY(0);
 }
 
-/* ─── Shared type roles ────────────────────────────────────── */
+/* Shared type roles */
 
 /* Mono label - the small engraved text on hi-fi equipment */
 .label {

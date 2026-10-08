@@ -15,12 +15,10 @@ files:
   - '!screensaver/**'
   - '!smtc-helper/**'
   - '!scripts/**'
-  - '!out/ui-preview/**'
   # Shipped once each, outside the archive, via extraResources / extraFiles below.
   - '!resources/smtc-helper.exe'
   - '!resources/Kissa.scr'
-  - '!resources/kissa_logo.png'
-  - '!{vitest.config.ts,tsconfig*.json,tailwind.config.js,postcss.config.js,components.json}'
+  - '!{vitest.config.ts,tsconfig*.json,tailwind.config.js,postcss.config.js}'
 extraResources:
   - from: "resources"
     to: "."
@@ -84,25 +82,6 @@ appx:
   customManifestPath: appx-manifest.xml
   capabilities:
     - runFullTrust
-mac:
-  entitlementsInherit: build/entitlements.mac.plist
-  extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
-    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
-  notarize: false
-dmg:
-  artifactName: ${productName}-${version}.${ext}
-linux:
-  target:
-    - AppImage
-    - snap
-    - deb
-  maintainer: github.com/NamanOG
-  category: AudioVideo
-appImage:
-  artifactName: ${productName}-${version}.${ext}
 npmRebuild: false
 publish:
   provider: github

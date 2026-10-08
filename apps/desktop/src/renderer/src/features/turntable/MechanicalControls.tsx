@@ -2,7 +2,7 @@ import React, { memo, useCallback, useState } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 
-// ─── Acoustic Micro-Impulse Mechanical Sound Synthesis ────────────
+// Acoustic Micro-Impulse Mechanical Sound Synthesis
 let sharedAudioCtx: AudioContext | null = null
 
 function playMechanicalSound(type: 'switch' | 'button' | 'radio'): void {
@@ -162,7 +162,7 @@ function playMechanicalSound(type: 'switch' | 'button' | 'radio'): void {
   }
 }
 
-// ─── 1. Power Control (Flush Rocker Switch) ───────────────────────────────────
+// Power Control (Flush Rocker Switch)
 export const PowerControl = memo(({ active, onClick }: { active: boolean; onClick: () => void }) => {
   const [isPressed, setIsPressed] = useState(false)
 
@@ -231,7 +231,7 @@ export const PowerControl = memo(({ active, onClick }: { active: boolean; onClic
 })
 PowerControl.displayName = 'PowerControl'
 
-// ─── 2. Speed Selector (33 / 45 Dual Interlocking Push Buttons) ───────────────
+// Speed Selector (33 / 45 Dual Interlocking Push Buttons)
 export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick: () => void }) => {
   const [pressedBtn, setPressedBtn] = useState<'33' | '45' | null>(null)
 
@@ -311,7 +311,7 @@ export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick:
 })
 SpeedControl.displayName = 'SpeedControl'
 
-// ─── 3. Start / Stop Motor Control (Refined Tactile Push Button) ─────────────
+// Start / Stop Motor Control (Refined Tactile Push Button)
 export const StartStopControl = memo(({ isPlaying, onClick }: { isPlaying: boolean; onClick: () => void }) => {
   const [isPressed, setIsPressed] = useState(false)
 
@@ -369,7 +369,7 @@ export const StartStopControl = memo(({ isPlaying, onClick }: { isPlaying: boole
 })
 StartStopControl.displayName = 'StartStopControl'
 
-// ─── 4. Match Album / Adaptive Lighting Control (Hardware Toggle) ─────────────
+// Match Album / Adaptive Lighting Control (Hardware Toggle)
 export const MatchAlbumControl = memo(() => {
   const isAdaptive = usePlayerStore((s) => s.theme === 'adaptive')
   const setTheme = usePlayerStore((s) => s.setTheme)
@@ -435,7 +435,7 @@ export const MatchAlbumControl = memo(() => {
 })
 MatchAlbumControl.displayName = 'MatchAlbumControl'
 
-// ─── Main Control Cluster (Classic Turntable Hardware Architecture) ───────────
+// Control cluster
 export interface MechanicalControlsProps {
   className?: string
   style?: React.CSSProperties

@@ -3,7 +3,7 @@ import { PlaybackClock } from '@renderer/utils/PlaybackClock'
 
 import kissaIdleCover from '@renderer/media/kissa_idle_cover.jpg'
 
-// Try to use a dedicated Kissa artwork if it exists, fallback to kissa_logo
+// Artwork shown when nothing is playing
 const kissaArtworkFallback = kissaIdleCover
 
 export type AppTheme =

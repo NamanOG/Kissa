@@ -179,7 +179,7 @@ export const SyncedLyrics = memo(
       if (containerRef.current) containerRef.current.scrollTop = 0
     }, [trackKey])
 
-    // ── 2. Look the lyrics up ──
+    // Look the lyrics up
     // Timed lyrics are matched on the track's length, and a source often reports the
     // previous track's length (or none) for a moment after a track change. So wait for
     // the length to settle, and ask again if it changes afterwards.
@@ -250,7 +250,7 @@ export const SyncedLyrics = memo(
       [syncedSource, lyricsOffset]
     )
 
-    // ── 3. Which line is being sung ──
+    // Which line is being sung
     // The clock is read every frame, but React only hears about it when the line changes.
     useEffect(() => {
       if (lyricLines.length === 0) {

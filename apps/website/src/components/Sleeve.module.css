@@ -42,7 +42,7 @@
   align-items: start;
 }
 
-/* ─── Jacket and record ────────────────────────── */
+/* Jacket and record */
 
 .pack {
   --s: min(27vw, 380px);
@@ -87,7 +87,7 @@
   color: var(--color-fg-muted);
 }
 
-/* ─── Track listing ────────────────────────────── */
+/* Track listing */
 
 .sides {
   display: flex;

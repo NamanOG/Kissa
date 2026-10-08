@@ -20,7 +20,7 @@ export function useAudioPlayback(): void {
   /** True while we're programmatically seeking the audio element */
   const isSeekingRef = useRef(false)
 
-  // ── 1. Create & tear down the Audio element once ──────────────────
+  // Create & tear down the Audio element once
   useEffect(() => {
     const audio = new Audio()
     audio.preload = 'auto'
@@ -109,7 +109,7 @@ export function useAudioPlayback(): void {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── 2. Load a new source when the track URL changes ───────────────
+  // Load a new source when the track URL changes
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const audioUrl = currentTrack?.audioUrl
   const isPlayingStore = usePlayerStore((s) => s.isPlaying)
@@ -182,7 +182,7 @@ export function useAudioPlayback(): void {
     }
   }, [audioUrl, currentTrack])
 
-  // ── 3. React to play / pause state changes ────────────────────────
+  // React to play / pause state changes
   const isPlaying = usePlayerStore((s) => s.isPlaying)
 
   useEffect(() => {
@@ -274,7 +274,7 @@ export function useAudioPlayback(): void {
     }
   }, [isPlaying])
 
-  // ── 4. React to external seek (scrubber click, tonearm drag) ──────
+  // React to external seek (scrubber click, tonearm drag)
   const seekTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -310,7 +310,7 @@ export function useAudioPlayback(): void {
     }
   }, [])
 
-  // ── 5. React to volume changes ────────────────────────────────────
+  // React to volume changes
   const volume = usePlayerStore((s) => s.volume)
 
   useEffect(() => {
@@ -319,7 +319,7 @@ export function useAudioPlayback(): void {
     audio.volume = Math.max(0, Math.min(1, volume / 100))
   }, [volume])
 
-  // ── 6. Listen to Tray IPC ─────────────────────────────────────────
+  // Listen to Tray IPC
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).electron && (window as any).electron.onTrayAction) {
       const cleanup = (window as any).electron.onTrayAction((action: string) => {

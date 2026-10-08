@@ -52,3 +52,7 @@ apps/website/captures/*
 
 # Internal maintainer guides and instructions
 docs/
+
+# Native helpers, built by `npm run build:smtc` and `npm run build:screensaver`
+apps/desktop/resources/smtc-helper.exe
+apps/desktop/resources/Kissa.scr

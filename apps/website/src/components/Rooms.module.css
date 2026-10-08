@@ -23,7 +23,7 @@
   align-items: start;
 }
 
-/* ─── Index ────────────────────────────────────── */
+/* Index */
 
 .index {
   list-style: none;
@@ -75,7 +75,7 @@
   border-radius: 50%;
 }
 
-/* ─── Viewer ───────────────────────────────────── */
+/* Viewer */
 
 .viewer {
   position: sticky;

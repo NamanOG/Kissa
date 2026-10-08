@@ -12,7 +12,7 @@
   overflow: clip;
 }
 
-/* ─── Deck ─────────────────────────────────────── */
+/* Deck */
 
 .deckSlot {
   position: absolute;
@@ -120,7 +120,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ─── Chapters ─────────────────────────────────── */
+/* Chapters */
 
 .chapter {
   position: absolute;
@@ -219,7 +219,7 @@
   font-size: var(--text-lead);
 }
 
-/* ─── Lyrics ───────────────────────────────────── */
+/* Lyrics */
 
 .lyricsWindow {
   --lh: calc(var(--text-heading) * 1.5);
@@ -275,7 +275,7 @@
   filter: blur(1px);
 }
 
-/* ─── Small screens: deck above, copy below ────── */
+/* Small screens: deck above, copy below */
 
 @media (max-width: 860px) {
   .deckSlot {

@@ -81,7 +81,7 @@ describe('Manual Listening Display Launch', () => {
       expect(screen.queryByRole('main', { name: 'Listening Display' })).not.toBeInTheDocument()
     })
 
-    // CRITICAL: exitScreensaver must NOT have been called in manual interactive mode
+    // exitScreensaver must not be called in manual interactive mode
     expect(exitScreensaverMock).not.toHaveBeenCalled()
   })
 
