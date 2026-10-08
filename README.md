@@ -130,8 +130,6 @@ Kissa includes a dedicated Windows screensaver implementation that renders the f
    - Conditional unregister only removes the value if it currently points to `Kissa.scr`, leaving other screensavers untouched.
    - Built-in "Open Windows Screensaver Settings" button launches `control.exe desk.cpl,,@screensaver` to let users adjust Windows idle timeout natively.
 
-For comprehensive technical specifications, see [docs/windows-screensaver.md](docs/windows-screensaver.md).
-
 ---
 
 ## Usage Guide

@@ -49,3 +49,6 @@ apps/website/captures/*
 
 # Local assistant tooling
 .claude/
+
+# Internal maintainer guides and instructions
+docs/
