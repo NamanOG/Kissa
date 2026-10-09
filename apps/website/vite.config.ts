@@ -14,7 +14,7 @@ const STORE_URL = 'https://apps.microsoft.com/detail/9p3n4x4wm80j'
  * Defaults:
  * - If KISSA_SITE_URL is provided, use it.
  * - On Vercel (process.env.VERCEL), derive from VERCEL_PROJECT_PRODUCTION_URL or VERCEL_URL.
- * - Otherwise (e.g. GitHub Pages build), fall back to https://namanog.github.io/Kissa/
+ * - Otherwise fall back to the production address, https://kissa-player.vercel.app/
  *
  * Override with the KISSA_SITE_URL environment variable when deploying to a
  * custom domain, e.g. KISSA_SITE_URL=https://kissa.example.com/
@@ -24,7 +24,7 @@ const defaultSiteUrl = vercelHost
   ? `https://${vercelHost}/`
   : process.env.VERCEL
     ? 'https://localhost/'
-    : 'https://namanog.github.io/Kissa/'
+    : 'https://kissa-player.vercel.app/'
 
 const SITE_URL = (process.env.KISSA_SITE_URL ?? defaultSiteUrl).replace(/\/?$/, '/')
 
