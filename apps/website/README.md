@@ -32,7 +32,7 @@ Design rules: flat colour for the interface (no decorative gradients, glows or t
 ## Publishing & search
 
 - **Site URL**: set once in `vite.config.ts` (`SITE_URL`, or the `KISSA_SITE_URL` environment variable). The canonical link, social preview image, `robots.txt`, `sitemap.xml`, structured data and the asset base path are all derived from it.
-- **Deploy**: `.github/workflows/website.yml` builds and publishes to GitHub Pages on every website change. One-time setup: repository Settings → Pages → Source: "GitHub Actions".
+- **Deploy**: Vercel builds and publishes `apps/website` on every push to `main`. The live address is https://kissa-player.vercel.app/.
 - **Structured data**: `SoftwareApplication` (Store link, price) and `FAQPage` are generated at build time; the FAQ text comes from `src/data/faq.json`, which also feeds the visible FAQ section.
 - **Files in `public/`** must be referenced through `asset()` (`src/lib/asset.ts`) so they resolve under a sub-path such as `/Kissa/`.
 - **Media**: `python scripts/process-captures.py` turns the recordings in `captures/` into the clips, stills and link-preview card under `public/`.
