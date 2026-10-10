@@ -9,24 +9,10 @@ const STORE_URL = 'https://apps.microsoft.com/detail/9p3n4x4wm80j'
 /**
  * Where the site is published. Everything that needs an absolute URL
  * (canonical link, social preview image, sitemap, structured data) and the
- * asset base path are derived from this one value.
- *
- * Defaults:
- * - If KISSA_SITE_URL is provided, use it.
- * - On Vercel (process.env.VERCEL), derive from VERCEL_PROJECT_PRODUCTION_URL or VERCEL_URL.
- * - Otherwise fall back to the production address, https://kissa-player.vercel.app/
- *
- * Override with the KISSA_SITE_URL environment variable when deploying to a
- * custom domain, e.g. KISSA_SITE_URL=https://kissa.example.com/
+ * asset base path are derived from this one value. Set KISSA_SITE_URL to
+ * build for a different address.
  */
-const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL
-const defaultSiteUrl = vercelHost
-  ? `https://${vercelHost}/`
-  : process.env.VERCEL
-    ? 'https://localhost/'
-    : 'https://kissa-player.vercel.app/'
-
-const SITE_URL = (process.env.KISSA_SITE_URL ?? defaultSiteUrl).replace(/\/?$/, '/')
+const SITE_URL = (process.env.KISSA_SITE_URL ?? 'https://kissa.glyphcode.studio/').replace(/\/?$/, '/')
 
 /** schema.org data search engines use for rich results. */
 function structuredData() {
@@ -81,6 +67,7 @@ function structuredData() {
       '@id': `${SITE_URL}#website`,
       url: SITE_URL,
       name: 'Kissa',
+      alternateName: ['Kissa Vinyl Player', 'Kissa for Windows'],
       publisher: { '@id': `${SITE_URL}#author` }
     }
   ]
