@@ -154,7 +154,7 @@ export class RainScene extends SceneBase {
     const count = Math.round(Math.min(420, (w * h) / 2600))
     for (let i = 0; i < count; i++) this.resting.push(this.newDrop())
     this.runners = []
-    this.rain = new RainLayer(w, h)
+    this.rain = new RainLayer(w, h, 0.7)
     this.glassDirty = true
   }
 
@@ -289,10 +289,21 @@ export class RainScene extends SceneBase {
   protected draw(): void {
     const ctx = this.ctx
     if (!this.viewBlurred) return
-    if (!this.drawPhoto(ctx)) ctx.drawImage(this.viewBlurred, 0, 0)
+    const photo = this.drawPhoto(ctx)
+    if (!photo) ctx.drawImage(this.viewBlurred, 0, 0)
 
     // Rain falling outside, then the glass with its drops in front.
-    if (!this.reducedMotion) this.rain?.draw(ctx, this.wind.value * 0.5)
+    if (!this.reducedMotion) this.rain?.draw(ctx, this.wind.value * 0.5, photo ? 0.55 : 1)
+
+    // The photograph is an open veranda: no glass, only rain and a mist that thickens a little.
+    if (photo) {
+      if (this.mistCanvas) {
+        ctx.globalAlpha = 0.04 + 0.22 * this.progress
+        ctx.drawImage(this.mistCanvas, 0, 0)
+        ctx.globalAlpha = 1
+      }
+      return
+    }
 
     const mist = 0.08 + 0.4 * this.progress
     if (this.mistCanvas) {

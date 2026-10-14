@@ -91,22 +91,15 @@ export class NightScene extends SceneBase {
     if (!this.backdrop) return
     const photo = this.drawPhoto(ctx, 1.04)
     if (!photo) ctx.drawImage(this.backdrop, 0, 0)
-    if (photo) {
-      // The photograph's own sky: a veil lifts as the block runs, so its stars come out.
-      const veil = ctx.createLinearGradient(0, 0, 0, this.height * 0.8)
-      veil.addColorStop(0, `rgba(3, 5, 12, ${0.55 * (1 - this.progress)})`)
-      veil.addColorStop(1, 'rgba(3, 5, 12, 0)')
-      ctx.fillStyle = veil
-      ctx.fillRect(0, 0, this.width, this.height)
-    }
     if (!this.reducedMotion) this.meteors?.draw(ctx)
-    if (photo) return
     const shown = 0.1 + 0.9 * this.progress
     for (const s of this.stars) {
       if (s.threshold > shown) continue
+      // Over the photograph, stars only in the open sky above the mountains, and fainter.
+      if (photo && s.y > this.height * 0.42) continue
       const fadeIn = Math.min(1, (shown - s.threshold) / 0.08)
       const twinkle = this.reducedMotion ? 0.9 : 0.8 + 0.2 * Math.sin(s.phase)
-      ctx.fillStyle = `rgba(${s.tint}, ${Math.min(1, (0.35 + s.r * 0.45) * fadeIn * twinkle)})`
+      ctx.fillStyle = `rgba(${s.tint}, ${Math.min(1, (0.35 + s.r * 0.45) * fadeIn * twinkle * (photo ? 0.7 : 1))})`
       ctx.beginPath()
       ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
       ctx.fill()

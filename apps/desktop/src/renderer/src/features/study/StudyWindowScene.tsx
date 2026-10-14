@@ -94,7 +94,7 @@ export function StudyWindowScene({ className }: { className?: string }): React.J
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(90deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.25) 38%, rgba(0,0,0,0) 60%), radial-gradient(ellipse at 60% 50%, transparent 55%, rgba(0,0,0,0.5) 100%)'
+              'linear-gradient(90deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.45) 36%, rgba(0,0,0,0.1) 58%, rgba(0,0,0,0.15) 100%), radial-gradient(ellipse at 60% 50%, transparent 50%, rgba(0,0,0,0.5) 100%), linear-gradient(0deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 30%)'
           }}
         />
       </div>

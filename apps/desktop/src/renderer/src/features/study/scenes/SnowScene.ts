@@ -65,7 +65,7 @@ export class SnowScene extends SceneBase {
     f.fillStyle = haze
     f.fillRect(0, 0, w, h)
 
-    this.snow = new SnowLayer(w, h, 1.1)
+    this.snow = new SnowLayer(w, h, 0.55)
   }
 
   protected step(dt: number): void {
