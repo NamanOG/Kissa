@@ -288,6 +288,12 @@ export class MediaDetectionService {
   public start(): void {
     if (this.worker) return
 
+    // Lyrics found earlier are kept in the profile so they show at once after a restart.
+    LyricsService.configure({
+      cacheFile: join(electronApp.getPath('userData'), 'lyrics-cache.json'),
+      appVersion: electronApp.getVersion()
+    })
+
     ipcMain.handle('kissa:get-system-media', (event) => {
       const artwork = this.latestPayload?.artworkDataUrl
       if (artwork && artwork.startsWith('data:')) this.artworkSentTo.set(event.sender.id, artwork)
@@ -514,6 +520,7 @@ export class MediaDetectionService {
   }
 
   public stop(): void {
+    LyricsService.getInstance().flush()
     this.isWorkerHealthy = false
     this.videoPlaybackState = 'unknown'
     if (this.worker) {

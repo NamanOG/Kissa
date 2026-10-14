@@ -3,9 +3,19 @@ export interface LyricsRequest {
   artist: string
   album: string
   duration: number
+  /** Ask the provider again even if a recent lookup found nothing. */
+  force?: boolean
 }
 
+/**
+ * What a lookup concluded. "not-found" means the library answered and had nothing for
+ * this recording; "unavailable" means it could not be asked (offline, throttled, down),
+ * so trying again later may help.
+ */
+export type LyricsOutcome = 'synced' | 'plain' | 'instrumental' | 'not-found' | 'unavailable'
+
 export interface LyricsResponse {
+  status: LyricsOutcome
   syncedLyrics: string | null
   plainLyrics: string | null
   instrumental: boolean

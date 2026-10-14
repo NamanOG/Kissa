@@ -125,6 +125,34 @@ describe('SyncedLyrics Component & Parser', () => {
     expect(line.endTime).toBeCloseTo(6.00) // fallback is 6 seconds + 0s offset, up to 8 max
   })
 
+  it('tells "could not reach" apart from "not found" and retries on request', async () => {
+    const getLyrics = vi
+      .fn()
+      .mockResolvedValueOnce({ status: 'unavailable', syncedLyrics: null, plainLyrics: null, instrumental: false })
+      .mockResolvedValueOnce({ status: 'synced', syncedLyrics: DEFAULT_SYNCED_LRC, plainLyrics: null, instrumental: false })
+    window.electron = { getLyrics } as any
+
+    render(<SyncedLyrics />)
+    await waitFor(() => expect(screen.getByText('Lyrics Unreachable')).toBeInTheDocument())
+    expect(screen.queryByText('No Lyrics Found')).not.toBeInTheDocument()
+
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /try now/i })))
+    await waitFor(() => expect(screen.getByText(/convo/i)).toBeInTheDocument())
+    expect(getLyrics).toHaveBeenLastCalledWith(expect.objectContaining({ force: true }))
+  })
+
+  it('offers to search again after a miss', async () => {
+    const getLyrics = vi
+      .fn()
+      .mockResolvedValue({ status: 'not-found', syncedLyrics: null, plainLyrics: null, instrumental: false })
+    window.electron = { getLyrics } as any
+
+    render(<SyncedLyrics />)
+    await waitFor(() => expect(screen.getByText('No Lyrics Found')).toBeInTheDocument())
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: /search again/i })))
+    await waitFor(() => expect(getLyrics).toHaveBeenCalledTimes(2))
+  })
+
   it('correctly parses and preserves accented characters and inverted punctuation', async () => {
     const lrc = `
       [00:01.00] ¿Dónde está mi corazón y mi canción?

@@ -2,13 +2,13 @@ import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from '
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
-import { LocateFixed, Minus, Play, Plus, Quote } from 'lucide-react'
+import { LocateFixed, Minus, Play, Plus, Quote, RotateCw } from 'lucide-react'
 import { parseLrc, type LyricLine } from './lrc'
 
 export { parseLrc } from './lrc'
 export type { LyricLine, LyricToken } from './lrc'
 
-type LyricsStatus = 'loading' | 'synced' | 'plain' | 'instrumental' | 'unavailable' | 'waiting'
+type LyricsStatus = 'loading' | 'synced' | 'plain' | 'instrumental' | 'unavailable' | 'unreachable' | 'waiting'
 
 /** How long the source must hold a duration before lyrics are looked up with it. */
 const LOOKUP_SETTLE_MS = 350
@@ -16,6 +16,11 @@ const LOOKUP_SETTLE_MS = 350
 const LEAD_IN_SECONDS = 0.15
 /** A silence at least this long between lines shows the "interlude" dots. */
 const INTERLUDE_SECONDS = 5
+/** When the lyrics library could not be reached, try once more on its own after this. */
+const AUTO_RETRY_MS = 15_000
+
+const RETRY_BUTTON_CLASS =
+  'mt-4 flex items-center gap-1.5 rounded-full border border-panel-line bg-[var(--panel-bg)] px-3.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-tone shadow-[var(--panel-shadow)] transition-colors hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone'
 
 const SIZE_CLASSES = {
   large: {
@@ -162,6 +167,9 @@ export const SyncedLyrics = memo(
     const [userIsScrolling, setUserIsScrolling] = useState(false)
     const [activeIndex, setActiveIndex] = useState(-1)
     const [interludeBefore, setInterludeBefore] = useState(-1)
+    /** Bumped to look the current track up again ("Try again", or the automatic retry). */
+    const [lookupRound, setLookupRound] = useState(0)
+    const autoRetriedRef = useRef(false)
 
     const containerRef = useRef<HTMLDivElement>(null)
     const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -176,6 +184,8 @@ export const SyncedLyrics = memo(
       setActiveIndex(-1)
       setInterludeBefore(-1)
       setStatus(trackKey ? 'loading' : 'waiting')
+      setLookupRound(0)
+      autoRetriedRef.current = false
       if (containerRef.current) containerRef.current.scrollTop = 0
     }, [trackKey])
 
@@ -198,9 +208,18 @@ export const SyncedLyrics = memo(
       }
 
       let cancelled = false
+      if (lookupRound > 0) {
+        setStatus((s) => (s === 'unavailable' || s === 'unreachable' ? 'loading' : s))
+      }
       const timer = setTimeout(() => {
         window.electron
-          .getLyrics({ title: title ?? '', artist: artist ?? '', album: album ?? '', duration })
+          .getLyrics({
+            title: title ?? '',
+            artist: artist ?? '',
+            album: album ?? '',
+            duration,
+            force: lookupRound > 0
+          })
           .then((res) => {
             if (cancelled) return
 
@@ -227,13 +246,16 @@ export const SyncedLyrics = memo(
             } else if (res?.instrumental) {
               setSyncedSource(null)
               setStatus('instrumental')
+            } else if (res?.status === 'unavailable') {
+              // Keep anything already showing for this track; only say so when there is nothing.
+              setStatus((s) => (s === 'synced' || s === 'plain' ? s : 'unreachable'))
             } else {
               setSyncedSource(null)
               setStatus('unavailable')
             }
           })
           .catch(() => {
-            if (!cancelled) setStatus('unavailable')
+            if (!cancelled) setStatus((s) => (s === 'synced' || s === 'plain' ? s : 'unreachable'))
           })
       }, LOOKUP_SETTLE_MS)
 
@@ -243,7 +265,22 @@ export const SyncedLyrics = memo(
       }
       // title/artist/album are folded into trackKey.
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [trackKey, duration, lyricsSource])
+    }, [trackKey, duration, lyricsSource, lookupRound])
+
+    // The library could not be reached (offline, busy): try once more by itself.
+    useEffect(() => {
+      if (status !== 'unreachable' || autoRetriedRef.current) return
+      const timer = setTimeout(() => {
+        autoRetriedRef.current = true
+        setLookupRound((n) => n + 1)
+      }, AUTO_RETRY_MS)
+      return (): void => clearTimeout(timer)
+    }, [status])
+
+    const retryLookup = useCallback((): void => {
+      autoRetriedRef.current = true
+      setLookupRound((n) => n + 1)
+    }, [])
 
     const lyricLines = useMemo(
       () => (syncedSource ? parseLrc(syncedSource, lyricsOffset || 0) : []),
@@ -509,6 +546,23 @@ export const SyncedLyrics = memo(
               <p className="max-w-xs text-xs text-dim">
                 Nothing turned up for {title || 'this track'}.
               </p>
+              <button type="button" onClick={retryLookup} className={RETRY_BUTTON_CLASS}>
+                <RotateCw className="h-3 w-3" aria-hidden="true" />
+                <span>Search again</span>
+              </button>
+            </div>
+          )}
+
+          {status === 'unreachable' && (
+            <div className="flex h-full flex-col items-center justify-center gap-2 py-24 text-center" role="status">
+              <p className="font-serif text-2xl text-ink opacity-80">Lyrics Unreachable</p>
+              <p className="max-w-xs text-xs text-dim">
+                The lyrics library didn&apos;t answer. Kissa will try again shortly.
+              </p>
+              <button type="button" onClick={retryLookup} className={RETRY_BUTTON_CLASS}>
+                <RotateCw className="h-3 w-3" aria-hidden="true" />
+                <span>Try now</span>
+              </button>
             </div>
           )}
 
