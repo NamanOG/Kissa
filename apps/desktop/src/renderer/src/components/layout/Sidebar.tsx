@@ -1,7 +1,8 @@
 import React from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
-import { Quote, Settings, HelpCircle, Keyboard, Minimize2, Maximize2, Disc3 } from 'lucide-react'
+import { Quote, Settings, HelpCircle, Keyboard, Minimize2, Maximize2, Disc3, BookOpen } from 'lucide-react'
+import { useStudyStore } from '@renderer/stores/studyStore'
 import { motion, useReducedMotion } from 'framer-motion'
 import kissaLogo from '@renderer/media/kissa_logo.png'
 
@@ -36,6 +37,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const toggleKeyboardHelp = usePlayerStore((s) => s.toggleKeyboardHelp)
     const isMiniPlayer = usePlayerStore((s) => s.isMiniPlayer)
     const hasUpdateAvailable = usePlayerStore((s) => s.hasUpdateAvailable)
+    const isStudying = useStudyStore((s) => s.active !== null)
 
     return (
       <aside
@@ -52,7 +54,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
         }}
         {...props}
       >
-        <nav className="flex flex-col items-center space-y-4 w-full">
+        <nav className="flex flex-col items-center space-y-4 [@media(max-height:760px)]:space-y-0 w-full">
           <button
             type="button"
             onClick={() => setActiveView('deck')}
@@ -105,9 +107,30 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
               Shelf
             </span>
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveView('study')}
+            aria-current={activeView === 'study' ? 'page' : undefined}
+            className={cn(
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              activeView === 'study' ? "text-tone" : "text-dim hover:text-ink"
+            )}
+            title={isStudying ? 'Study Room (session running)' : 'Study Room'}
+          >
+            {activeView === 'study' && <NavMarker />}
+            <span className="relative">
+              <BookOpen className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={activeView === 'study' ? 2 : 1.5} />
+              {isStudying && (
+                <span aria-hidden="true" className="absolute -top-0.5 -right-1 h-1.5 w-1.5 rounded-full bg-tone" />
+              )}
+            </span>
+            <span className="font-mono text-[9px] min-[900px]:text-[10px] tracking-widest font-medium uppercase">
+              Study
+            </span>
+          </button>
         </nav>
 
-        <div className="mt-auto w-full flex flex-col items-center gap-2">
+        <div className="mt-auto w-full flex flex-col items-center gap-2 [@media(max-height:760px)]:gap-0">
           <button
             type="button"
             onClick={() => usePlayerStore.getState().toggleMiniPlayer()}

@@ -55,7 +55,7 @@ export interface PlayerState {
   illuminationLevel: number
   rpm: '33' | '45'
   isPowered: boolean
-  activeView: 'deck' | 'lyrics' | 'shelf'
+  activeView: 'deck' | 'lyrics' | 'shelf' | 'study'
   showSideLyrics: boolean
   isMiniPlayer: boolean
   isFullscreen: boolean
@@ -96,7 +96,7 @@ export interface PlayerState {
   setIsPowered: (isPowered: boolean) => void
   togglePower: () => void
 
-  setActiveView: (view: 'deck' | 'lyrics' | 'shelf') => void
+  setActiveView: (view: 'deck' | 'lyrics' | 'shelf' | 'study') => void
   toggleActiveView: () => void
   setShowSideLyrics: (show: boolean) => void
   toggleSideLyrics: () => void

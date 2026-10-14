@@ -6,6 +6,7 @@ import { Play, Pause, SkipBack, SkipForward, Maximize2, ListMusic, X } from 'luc
 import { cn } from '@renderer/utils/cn'
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
+import { StudyChip } from '@renderer/features/study/StudyChip'
 
 export const MiniPlayerView = (): React.JSX.Element => {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
@@ -69,6 +70,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
               </p>
             </motion.div>
           </AnimatePresence>
+          <StudyChip className="mt-1.5" />
         </div>
         
         <button

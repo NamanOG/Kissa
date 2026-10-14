@@ -25,6 +25,7 @@ import { ShareExportMount } from './features/share/ShareExportMount'
 import { ListeningRoom } from './features/listening-room'
 import { ListeningDisplay } from './features/listening-room/ListeningDisplay'
 import { StartupExperience } from './features/startup/StartupExperience'
+import { StudyRoomView, useStudyEngine } from './features/study'
 
 function KissaApp(): React.JSX.Element {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
@@ -49,6 +50,9 @@ function KissaApp(): React.JSX.Element {
   useKeyboardShortcuts()
 
   useAdaptiveColor()
+
+  // The study session clock runs whichever view is open.
+  useStudyEngine()
 
   const addOrUpdateRecord = useShelfStore((s) => s.addOrUpdateRecord)
   
@@ -229,6 +233,26 @@ function KissaApp(): React.JSX.Element {
             </motion.div>
           )}
 
+          {activeView === 'study' && (
+            /* Study Room: the desk beside the deck */
+            <motion.div
+              key="study-view"
+              initial={{ opacity: 0, scale: 0.985 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.985 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-0 grid min-h-0 overflow-hidden transform-gpu grid-cols-1 min-[900px]:grid-cols-[minmax(320px,1fr)_minmax(340px,1.4fr)] min-[1200px]:grid-cols-[minmax(380px,1fr)_minmax(400px,1.5fr)]"
+            >
+              <aside className="min-h-0 flex flex-col justify-center overflow-y-auto no-scrollbar transform-gpu">
+                <StudyRoomView />
+              </aside>
+              <section className="hidden min-[900px]:flex min-h-0 items-center justify-center p-2 min-[900px]:p-4 overflow-hidden transform-gpu">
+                <div className="w-full flex items-center justify-center">
+                  <TurntableEngine />
+                </div>
+              </section>
+            </motion.div>
+          )}
           {activeView === 'shelf' && (
             /* Record shelf */
             <motion.div

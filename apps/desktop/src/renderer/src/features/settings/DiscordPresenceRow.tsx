@@ -58,6 +58,7 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
           </span>
         </div>
         <HardwareSwitch
+          disabled={status.state === 'unconfigured' && !status.enabled}
           checked={status.enabled || confirming}
           onChange={onToggle}
           aria-label="Share Apple Music activity on Discord"

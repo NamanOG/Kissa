@@ -347,8 +347,8 @@ export class DiscordPresenceService {
 
   private updateState(): void {
     let state: DiscordPresenceState
-    if (!this.enabled) state = 'off'
-    else if (!this.options.applicationId) state = 'unconfigured'
+    if (!this.options.applicationId) state = 'unconfigured'
+    else if (!this.enabled) state = 'off'
     else if (!this.connected) state = 'no-discord'
     else {
       const next = this.desired()

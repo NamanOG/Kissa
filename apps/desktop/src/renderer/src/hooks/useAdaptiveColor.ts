@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
+import { useStudyStore } from '@renderer/stores/studyStore'
 
 export interface AdaptivePalette {
   accent: string
@@ -280,8 +281,11 @@ export function useAdaptiveColor() {
   const artworkUrl = usePlayerStore((s) => s.currentTrack?.artworkUrl)
   const theme = usePlayerStore((s) => s.theme)
   const [colors, setColors] = useState<AdaptivePalette | null>(null)
+  // During a study session the room keeps its colour instead of changing with every cover.
+  const holdColors = useStudyStore((s) => s.active !== null && s.prefs.holdRoomColor)
 
   useEffect(() => {
+    if (holdColors) return
     if (theme !== 'adaptive' || !artworkUrl) {
       setColors(null)
       return
@@ -305,7 +309,7 @@ export function useAdaptiveColor() {
     return () => {
       isMounted = false
     }
-  }, [artworkUrl, theme])
+  }, [artworkUrl, theme, holdColors])
 
   const activePalette = colors || DEFAULT_ADAPTIVE_PALETTE
 
