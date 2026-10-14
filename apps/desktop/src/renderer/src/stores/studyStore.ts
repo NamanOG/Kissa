@@ -37,6 +37,8 @@ export interface StudyPrefs {
   environment: StudyEnvironment
   /** A quiet generated sound bed for the environment while the Study Room is open. */
   ambience: boolean
+  /** Room sound level, 0..1. */
+  ambienceVolume: number
   /** Keep the display on (no screensaver) while a session runs. */
   keepScreenAwake: boolean
   /** Focus minutes a day the person is aiming for; 0 hides the goal. */
@@ -58,6 +60,7 @@ export const DEFAULT_PREFS: StudyPrefs = {
   holdRoomColor: true,
   environment: 'rain',
   ambience: false,
+  ambienceVolume: 0.6,
   keepScreenAwake: true,
   dailyGoalMinutes: 120
 }

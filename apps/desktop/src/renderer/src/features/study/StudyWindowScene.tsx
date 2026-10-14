@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { useStudyStore } from '@renderer/stores/studyStore'
 import { environmentInfo, type StudyScene } from './scenes'
 import { isRunning, segmentElapsed } from './studySession'
-import { setAmbience } from './ambience'
+import { setAmbience, setAmbienceVolume } from './ambience'
 
 /**
  * The Study Room's surroundings: the chosen environment, full bleed, with a soft shade so
@@ -18,6 +18,7 @@ export function StudyWindowScene({ className }: { className?: string }): React.J
   const reduceMotion = useReducedMotion() ?? false
   const environment = useStudyStore((s) => s.prefs.environment)
   const ambience = useStudyStore((s) => s.prefs.ambience)
+  const ambienceVolume = useStudyStore((s) => s.prefs.ambienceVolume)
   const hasSession = useStudyStore((s) => s.active !== null)
   const segmentId = useStudyStore((s) => s.active?.segment.id)
   const info = environmentInfo(environment)
@@ -70,6 +71,9 @@ export function StudyWindowScene({ className }: { className?: string }): React.J
     return (): void => window.clearInterval(id)
   }, [info, reduceMotion, hasSession, segmentId])
 
+  useEffect(() => {
+    setAmbienceVolume(ambienceVolume)
+  }, [ambienceVolume])
   useEffect(() => {
     setAmbience(ambience ? environment : null)
   }, [ambience, environment])

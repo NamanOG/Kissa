@@ -41,7 +41,7 @@ function useNow(active: boolean): number {
 }
 
 const EYEBROW = 'font-kissa-chassis text-[11px] font-bold uppercase tracking-[0.24em] text-tone'
-const SOFT_LABEL = 'font-mono text-[10px] uppercase tracking-[0.2em] text-white/40'
+const SOFT_LABEL = 'font-mono text-[10px] uppercase tracking-[0.2em] text-white/65'
 // Kissa's immersive controls (the Listening Room's language): glass pills, quiet
 // uppercase sans labels, the room's accent for the one primary action.
 const PRIMARY_BUTTON =
@@ -51,7 +51,7 @@ const QUIET_BUTTON =
 const CHIP = (selected: boolean): string =>
   cn(
     'h-8 rounded-full px-3.5 font-sans text-[12px] font-medium uppercase tracking-[0.08em] transition-colors cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone',
-    selected ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/[0.06] hover:text-white'
+    selected ? 'bg-white/20 text-white' : 'text-white/75 hover:bg-white/[0.08] hover:text-white'
   )
 
 type LengthChoice = 25 | 50 | 90 | 0
@@ -64,7 +64,7 @@ export function StudyRoomView(): React.JSX.Element {
   const stage = review ? 'review' : active ? 'session' : 'setup'
 
   return (
-    <section aria-label="Study journal" className="flex h-full w-full flex-col select-none text-white">
+    <section aria-label="Study journal" className="flex h-full w-full flex-col select-none text-white [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]">
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={stage}
@@ -127,7 +127,7 @@ function SetupPage(): React.JSX.Element {
             maxLength={140}
             onChange={(e) => setIntention(e.target.value)}
             placeholder={lastIntention ? lastIntention : 'Read chapter 4'}
-            className="font-kissa-editorial w-full rounded-2xl border border-white/10 bg-black/20 px-5 py-3.5 text-[20px] text-white placeholder:text-white/30 outline-none transition-colors focus:border-white/30 select-text"
+            className="font-kissa-editorial w-full rounded-2xl border border-white/15 bg-black/35 px-5 py-3.5 text-[20px] text-white placeholder:text-white/45 outline-none transition-colors focus:border-white/30 select-text"
           />
         </label>
 
@@ -156,7 +156,7 @@ function SetupPage(): React.JSX.Element {
             </div>
           </div>
         </div>
-        <label className="-mt-2 flex w-fit cursor-pointer items-center gap-3 font-sans text-[13px] text-white/60">
+        <label className="-mt-2 flex w-fit cursor-pointer items-center gap-3 font-sans text-[13px] text-white/80">
           <HardwareSwitch
             checked={prefs.keepScreenAwake}
             onChange={(keepScreenAwake) => setPrefs({ keepScreenAwake })}
@@ -171,7 +171,7 @@ function SetupPage(): React.JSX.Element {
             Begin
           </button>
           {history.length > 0 && (
-            <button type="button" className="font-sans text-[13px] font-semibold text-white/45 hover:text-white cursor-pointer" onClick={() => setShowHistory(true)}>
+            <button type="button" className="font-sans text-[13px] font-semibold text-white/70 hover:text-white cursor-pointer" onClick={() => setShowHistory(true)}>
               My sessions
             </button>
           )}
@@ -192,7 +192,7 @@ function StepsEditor({ steps, onChange }: { steps: string[]; onChange: (s: strin
   }
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="-mt-3 inline-flex w-fit items-center gap-2 font-sans text-[13px] font-medium text-white/50 transition-colors hover:text-white cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone rounded">
+      <button type="button" onClick={() => setOpen(true)} className="-mt-3 inline-flex w-fit items-center gap-2 font-sans text-[13px] font-medium text-white/75 transition-colors hover:text-white cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone rounded">
         <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Break it into small steps
       </button>
     )

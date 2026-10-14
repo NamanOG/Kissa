@@ -27,6 +27,7 @@ export function StudyRoom(): React.JSX.Element {
   const studying = useStudyStore((s) => s.active !== null && s.active.segment.runningSince !== null)
   const environment = useStudyStore((s) => s.prefs.environment)
   const ambience = useStudyStore((s) => s.prefs.ambience)
+  const ambienceVolume = useStudyStore((s) => s.prefs.ambienceVolume)
   const setPrefs = useStudyStore((s) => s.setPrefs)
   const isFullscreen = usePlayerStore((s) => s.isFullscreen)
   const info = environmentInfo(environment)
@@ -100,7 +101,20 @@ export function StudyRoom(): React.JSX.Element {
             title={ambience ? 'Room sound on' : 'Room sound off'}
           >
             {ambience ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-          </button>
+          </button>          {ambience && (
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.02}
+              value={ambienceVolume}
+              onChange={(e) => setPrefs({ ambienceVolume: Number(e.target.value) })}
+              aria-label="Room sound volume"
+              title="Room sound volume"
+              className="mr-2 h-1 w-24 cursor-pointer appearance-none rounded-full bg-white/20 accent-white app-region-no-drag"
+            />
+          )}
+
           <button type="button" className={ICON_BUTTON} onClick={() => usePlayerStore.getState().toggleMiniPlayer()} aria-label="Mini player" title="Mini player: keep the timer beside your work">
             <Minimize2 className="h-4 w-4" />
           </button>
