@@ -33,6 +33,7 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
   const dragAngleRef = useRef<number>(REST_ANGLE)
   const armStateRef = useRef<'RESTING' | 'MOVING_TO_RECORD' | 'LOWERING' | 'PLAYING' | 'LIFTING' | 'RETURNING' | 'SWEEPING'>('RESTING')
   const armAngleRef = useRef<number>(REST_ANGLE)
+  const lastTransformRef = useRef<string>('')
   const armScaleRef = useRef<number>(1.015)
   const transitionStartRef = useRef<number>(0)
   const startAngleRef = useRef<number>(REST_ANGLE)
@@ -142,8 +143,15 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       armScaleRef.current = nextScale
 
       const scaleStr = physicalFeedback ? nextScale : 1.0
-      tonearmRef.current.style.transition = 'none'
-      tonearmRef.current.style.transform = `rotate(${nextAngle}deg) scale(${scaleStr})`
+      // While tracking a groove the arm moves a fraction of a degree a second. Writing the
+      // transform every frame repainted the whole arm 60 times a second for no visible
+      // change, so only write when it has moved by a visible amount.
+      const transform = `rotate(${nextAngle.toFixed(2)}deg) scale(${scaleStr.toFixed(4)})`
+      if (transform !== lastTransformRef.current) {
+        lastTransformRef.current = transform
+        tonearmRef.current.style.transition = 'none'
+        tonearmRef.current.style.transform = transform
+      }
       
       const isResting = armStateRef.current === 'RESTING'
       const isRestPosition = nextAngle === REST_ANGLE && nextScale === 1.015
@@ -228,6 +236,7 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
     
     tonearmRef.current.style.transition = 'none'
     tonearmRef.current.style.transform = `rotate(${clampedAngle}deg) scale(1.015)`
+    lastTransformRef.current = ''
   }
 
   const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>): void => {

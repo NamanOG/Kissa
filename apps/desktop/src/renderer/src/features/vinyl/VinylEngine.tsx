@@ -122,7 +122,7 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
 
       <div
         ref={vinylRef}
-        className="absolute inset-0 w-full h-full rounded-full transform-gpu"
+        className="absolute inset-0 w-full h-full rounded-full transform-gpu will-change-transform"
       >
         <VinylBase />
         <GrooveLayer />

@@ -52,8 +52,10 @@ const LyricRow = memo(
     const lineRef = useRef<HTMLParagraphElement>(null)
     const isActive = distance === 0
 
-    // Word-by-word fill for the active line. Runs outside React: one style write per
-    // word, and only when that word's fill actually moved.
+    // Word-by-word fill for the active line, only when the lyrics carry real word timing.
+    // LRCLIB's line-synced lyrics do not; filling words by guessed timings looked like
+    // karaoke the singer was not following, and repainted the whole lyrics panel every
+    // frame. Line-timed lyrics light the whole line at once instead.
     useEffect(() => {
       const el = lineRef.current
       const tokens = line.tokens
@@ -62,7 +64,7 @@ const LyricRow = memo(
       const spans = Array.from(el.querySelectorAll<HTMLElement>('.lyric-word'))
       const words = tokens.filter((t) => !t.isWhitespace)
 
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (line.timingType !== 'real' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         spans.forEach((span) => span.style.setProperty('--word-progress', '100%'))
         return
       }

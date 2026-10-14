@@ -42,8 +42,15 @@ export const HiFiVisualizer = memo(
     useEffect(() => {
       const barsData = barsDataRef.current
       
-      const animate = () => {
-        timeRef.current += 0.05
+      // A decorative meter: 30 updates a second look the same as 60 and halve its cost.
+      let lastFrame = 0
+      const animate = (now: number = performance.now()) => {
+        if (now - lastFrame < 32) {
+          animFrameRef.current = requestAnimationFrame(animate)
+          return
+        }
+        lastFrame = now
+        timeRef.current += 0.1
         const t = timeRef.current
         
         let allSettled = !isPlaying
@@ -75,7 +82,7 @@ export const HiFiVisualizer = memo(
             }
           }
           
-          bar.currentHeight += (bar.targetHeight - bar.currentHeight) * 0.25
+          bar.currentHeight += (bar.targetHeight - bar.currentHeight) * 0.45
           
           const el = barsRef.current[i]
           if (el) {
