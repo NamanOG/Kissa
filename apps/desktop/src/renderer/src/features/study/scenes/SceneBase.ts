@@ -16,6 +16,8 @@ export interface StudyScene {
   reset(): void
   /** Whether a session is running (slightly livelier) or not. */
   setActive(active: boolean): void
+  /** A photograph to show behind the weather. */
+  setPhoto(url: string | undefined): void
   start(): void
   stop(): void
   dispose(): void
@@ -92,6 +94,10 @@ export abstract class SceneBase implements StudyScene {
   protected target = 0
   protected active = false
   protected resetting = false
+  /** Seconds since the scene started, for slow drifts and sways. */
+  protected time = 0
+  /** A photograph behind the weather, when the environment has one. */
+  protected photo: HTMLImageElement | null = null
   private raf = 0
   private lastFrame = 0
   private running = false
@@ -103,6 +109,35 @@ export abstract class SceneBase implements StudyScene {
     const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) throw new Error('2D canvas unavailable')
     this.ctx = ctx
+  }
+
+  /** Loads the environment's photograph; until it arrives the scene draws its own backdrop. */
+  public setPhoto(url: string | undefined): void {
+    if (!url) return
+    const img = new Image()
+    img.decoding = 'async'
+    img.onload = (): void => {
+      this.photo = img
+      if (this.width > 0) this.draw(performance.now())
+    }
+    img.src = url
+  }
+
+  /**
+   * Draws the photograph to cover the view, drifting very slowly (a few pixels a minute),
+   * the way a still view looks alive when you are not quite looking at it.
+   */
+  protected drawPhoto(ctx: CanvasRenderingContext2D, zoom = 1.06): boolean {
+    const img = this.photo
+    if (!img) return false
+    const { width: w, height: h } = this
+    const scale = Math.max(w / img.naturalWidth, h / img.naturalHeight) * zoom
+    const dw = img.naturalWidth * scale
+    const dh = img.naturalHeight * scale
+    const driftX = this.reducedMotion ? 0 : Math.sin(this.time * 0.02) * (dw - w) * 0.35
+    const driftY = this.reducedMotion ? 0 : Math.cos(this.time * 0.015) * (dh - h) * 0.25
+    ctx.drawImage(img, (w - dw) / 2 + driftX, (h - dh) / 2 + driftY, dw, dh)
+    return true
   }
 
   protected abstract build(): void
@@ -163,6 +198,7 @@ export abstract class SceneBase implements StudyScene {
       const diff = this.target - this.progress
       this.progress += Math.sign(diff) * Math.min(Math.abs(diff), rate * dt)
       if (this.resetting && this.progress <= 0.001) this.resetting = false
+      this.time += dt
       this.step(dt)
       this.draw(now)
     }
@@ -184,3 +220,4 @@ export abstract class SceneBase implements StudyScene {
     if (this.width > 0) this.draw(0)
   }
 }
+

@@ -32,6 +32,7 @@ export function StudyWindowScene({ className }: { className?: string }): React.J
       return
     }
     sceneRef.current = scene
+    scene.setPhoto(info.photo)
     const fit = (): void => scene.resize(canvas.clientWidth, canvas.clientHeight)
     fit()
     const observer = new ResizeObserver(fit)

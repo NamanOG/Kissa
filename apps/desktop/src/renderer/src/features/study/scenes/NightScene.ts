@@ -1,4 +1,5 @@
 import { SceneBase, drawBokeh, makeCanvas, rand, weighted } from './SceneBase'
+import { ShootingStars } from './weather'
 
 /**
  * Night: a clear sky over a sleeping town. The town is far below and out of focus, a few
@@ -20,6 +21,7 @@ interface Star {
 export class NightScene extends SceneBase {
   private backdrop: HTMLCanvasElement | null = null
   private stars: Star[] = []
+  private meteors: ShootingStars | null = null
 
   protected build(): void {
     const { width: w, height: h } = this
@@ -56,6 +58,7 @@ export class NightScene extends SceneBase {
     b.filter = `blur(${Math.max(3, w / 260)}px)`
     b.drawImage(scene, 0, 0)
 
+    this.meteors = new ShootingStars(w, h)
     this.stars = []
     const count = Math.round(Math.min(520, (w * h) / 2200))
     for (let i = 0; i < count; i++) {
@@ -79,12 +82,25 @@ export class NightScene extends SceneBase {
 
   protected step(dt: number): void {
     for (const s of this.stars) s.phase += dt * s.speed
+    // More shooting stars the longer you stay with it.
+    this.meteors?.step(dt, 0.6 + this.progress)
   }
 
   protected draw(): void {
     const ctx = this.ctx
     if (!this.backdrop) return
-    ctx.drawImage(this.backdrop, 0, 0)
+    const photo = this.drawPhoto(ctx, 1.04)
+    if (!photo) ctx.drawImage(this.backdrop, 0, 0)
+    if (photo) {
+      // The photograph's own sky: a veil lifts as the block runs, so its stars come out.
+      const veil = ctx.createLinearGradient(0, 0, 0, this.height * 0.8)
+      veil.addColorStop(0, `rgba(3, 5, 12, ${0.55 * (1 - this.progress)})`)
+      veil.addColorStop(1, 'rgba(3, 5, 12, 0)')
+      ctx.fillStyle = veil
+      ctx.fillRect(0, 0, this.width, this.height)
+    }
+    if (!this.reducedMotion) this.meteors?.draw(ctx)
+    if (photo) return
     const shown = 0.1 + 0.9 * this.progress
     for (const s of this.stars) {
       if (s.threshold > shown) continue

@@ -1,4 +1,5 @@
 import { SceneBase, makeCanvas, rand } from './SceneBase'
+import { RainLayer, Wind } from './weather'
 
 /**
  * Rain: a dusk street through rain-streaked glass. The glass mists over as a block runs;
@@ -19,14 +20,6 @@ interface Runner extends Drop {
   lastTrailY: number
 }
 
-interface Streak {
-  x: number
-  y: number
-  len: number
-  speed: number
-  alpha: number
-}
-
 export class RainScene extends SceneBase {
   private viewBlurred: HTMLCanvasElement | null = null
   private viewSharp: HTMLCanvasElement | null = null
@@ -36,7 +29,8 @@ export class RainScene extends SceneBase {
   private mistCtx: CanvasRenderingContext2D | null = null
   private resting: Drop[] = []
   private runners: Runner[] = []
-  private streaks: Streak[] = []
+  private rain: RainLayer | null = null
+  private readonly wind = new Wind()
   private glassDirty = true
   /** Fine condensation-sized droplets, drawn once. */
   private micro: HTMLCanvasElement | null = null
@@ -128,7 +122,7 @@ export class RainScene extends SceneBase {
 
     this.viewBlurred = makeCanvas(w, h)
     const blurred = this.viewBlurred.getContext('2d')!
-    blurred.filter = `blur(${Math.max(8, w / 70)}px)`
+    blurred.filter = `blur(${Math.max(5, w / 130)}px)`
     blurred.drawImage(scene, 0, 0)
     blurred.filter = 'none'
     blurred.fillStyle = 'rgba(6, 8, 12, 0.3)'
@@ -160,16 +154,7 @@ export class RainScene extends SceneBase {
     const count = Math.round(Math.min(420, (w * h) / 2600))
     for (let i = 0; i < count; i++) this.resting.push(this.newDrop())
     this.runners = []
-    this.streaks = []
-    for (let i = 0; i < Math.round(w / 14); i++) {
-      this.streaks.push({
-        x: rand(0, w),
-        y: rand(-h, h),
-        len: rand(h * 0.03, h * 0.07),
-        speed: rand(h * 0.9, h * 1.5),
-        alpha: rand(0.04, 0.12)
-      })
-    }
+    this.rain = new RainLayer(w, h)
     this.glassDirty = true
   }
 
@@ -187,14 +172,8 @@ export class RainScene extends SceneBase {
   protected step(dt: number): void {
     const { width: w, height: h } = this
     const intensity = this.active ? 1 : 0.7
-    for (const s of this.streaks) {
-      s.y += s.speed * dt
-      s.x += s.speed * dt * 0.06
-      if (s.y > h) {
-        s.y = -s.len - rand(0, h * 0.3)
-        s.x = rand(-w * 0.05, w)
-      }
-    }
+    this.wind.step(dt)
+    this.rain?.step(dt, this.wind.value * 0.5)
 
     const landings = dt * intensity * (w / 40)
     for (let i = 0; i < landings; i++) {
@@ -296,19 +275,10 @@ export class RainScene extends SceneBase {
   protected draw(): void {
     const ctx = this.ctx
     if (!this.viewBlurred) return
-    ctx.drawImage(this.viewBlurred, 0, 0)
+    if (!this.drawPhoto(ctx)) ctx.drawImage(this.viewBlurred, 0, 0)
 
-    if (!this.reducedMotion) {
-      ctx.lineCap = 'round'
-      ctx.lineWidth = 1
-      for (const s of this.streaks) {
-        ctx.strokeStyle = `rgba(200, 215, 230, ${s.alpha})`
-        ctx.beginPath()
-        ctx.moveTo(s.x, s.y)
-        ctx.lineTo(s.x + s.len * 0.06, s.y + s.len)
-        ctx.stroke()
-      }
-    }
+    // Rain falling outside, then the glass with its drops in front.
+    if (!this.reducedMotion) this.rain?.draw(ctx, this.wind.value * 0.5)
 
     const mist = 0.08 + 0.4 * this.progress
     if (this.mistCanvas) {

@@ -1,4 +1,5 @@
 import { SceneBase, drawBokeh, makeCanvas, rand, weighted } from './SceneBase'
+import { SnowLayer, Wind } from './weather'
 
 /**
  * Snow: a winter street at night seen out of focus, warm windows and street lamps blurred
@@ -7,18 +8,11 @@ import { SceneBase, drawBokeh, makeCanvas, rand, weighted } from './SceneBase'
  * edges; a break clears it.
  */
 
-interface Flake {
-  x: number
-  y: number
-  r: number
-  depth: number
-  phase: number
-}
-
 export class SnowScene extends SceneBase {
   private view: HTMLCanvasElement | null = null
   private frost: HTMLCanvasElement | null = null
-  private flakes: Flake[] = []
+  private snow: SnowLayer | null = null
+  private readonly wind = new Wind()
 
   protected build(): void {
     const { width: w, height: h } = this
@@ -58,7 +52,7 @@ export class SnowScene extends SceneBase {
 
     this.view = makeCanvas(w, h)
     const v = this.view.getContext('2d')!
-    v.filter = `blur(${Math.max(6, w / 120)}px)`
+    v.filter = `blur(${Math.max(3, w / 260)}px)`
     v.drawImage(scene, 0, 0)
 
     // Frost: a soft pale haze at the edges of the glass, no drawn crystals.
@@ -71,50 +65,19 @@ export class SnowScene extends SceneBase {
     f.fillStyle = haze
     f.fillRect(0, 0, w, h)
 
-    this.flakes = []
-    const count = Math.round(Math.min(320, w / 3.6))
-    for (let i = 0; i < count; i++) this.flakes.push(this.newFlake(rand(0, h)))
-  }
-
-  private newFlake(y = -10): Flake {
-    // Most flakes are far away; a few drift right past the glass.
-    const depth = Math.pow(Math.random(), 1.8)
-    return { x: rand(0, this.width), y, r: 0.5 + depth * 2.2, depth, phase: rand(0, Math.PI * 2) }
+    this.snow = new SnowLayer(w, h, 1.1)
   }
 
   protected step(dt: number): void {
-    for (const f of this.flakes) {
-      f.y += (10 + f.depth * 34) * dt
-      f.phase += dt * (0.4 + f.depth * 0.8)
-      f.x += Math.sin(f.phase) * (0.15 + f.depth * 0.45) + 4 * dt
-      if (f.y > this.height + 8) Object.assign(f, this.newFlake())
-      if (f.x > this.width + 8) f.x = -8
-    }
+    this.wind.step(dt)
+    this.snow?.step(dt, this.wind.value * 0.6)
   }
 
   protected draw(): void {
     const ctx = this.ctx
     if (!this.view) return
-    ctx.drawImage(this.view, 0, 0)
-    for (const f of this.flakes) {
-      if (f.depth > 0.8) {
-        const r = f.r * 2.6
-        const soft = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r)
-        soft.addColorStop(0, 'rgba(236, 241, 250, 0.32)')
-        soft.addColorStop(1, 'rgba(236, 241, 250, 0)')
-        ctx.fillStyle = soft
-        ctx.beginPath()
-        ctx.arc(f.x, f.y, r, 0, Math.PI * 2)
-        ctx.fill()
-      } else {
-        ctx.globalAlpha = 0.25 + f.depth * 0.55
-        ctx.fillStyle = '#e8eef8'
-        ctx.beginPath()
-        ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.globalAlpha = 1
-      }
-    }
+    if (!this.drawPhoto(ctx)) ctx.drawImage(this.view, 0, 0)
+    this.snow?.draw(ctx)
     if (this.frost) {
       ctx.globalAlpha = 0.25 + 0.75 * this.progress
       ctx.drawImage(this.frost, 0, 0)

@@ -1,4 +1,5 @@
 import { SceneBase, drawBokeh, lerp, makeCanvas, rand, weighted } from './SceneBase'
+import { LeafLayer, Wind } from './weather'
 
 /**
  * Forest: a woodland canopy out of focus, light coming through the leaves as soft discs,
@@ -10,7 +11,8 @@ import { SceneBase, drawBokeh, lerp, makeCanvas, rand, weighted } from './SceneB
 export class ForestScene extends SceneBase {
   private canopy: HTMLCanvasElement | null = null
   private sun: HTMLCanvasElement | null = null
-  private time = 0
+  private leaves: LeafLayer | null = null
+  private readonly wind = new Wind()
 
   protected build(): void {
     const { width: w, height: h } = this
@@ -59,7 +61,7 @@ export class ForestScene extends SceneBase {
 
     this.canopy = makeCanvas(sw, sh)
     const c = this.canopy.getContext('2d')!
-    c.filter = `blur(${Math.max(5, w / 140)}px)`
+    c.filter = `blur(${Math.max(2, w / 300)}px)`
     c.drawImage(scene, 0, 0)
 
     // Sunlight from the upper right, shown more strongly as the block goes on.
@@ -71,10 +73,13 @@ export class ForestScene extends SceneBase {
     glow.addColorStop(1, 'rgba(255, 214, 140, 0)')
     s.fillStyle = glow
     s.fillRect(0, 0, w, h)
+
+    this.leaves = new LeafLayer(w, h, Math.round(w / 70))
   }
 
   protected step(dt: number): void {
-    this.time += dt
+    this.wind.step(dt)
+    this.leaves?.step(dt, this.wind.value * 0.5)
   }
 
   protected draw(): void {
@@ -85,7 +90,7 @@ export class ForestScene extends SceneBase {
     // A slow sway, as branches move in a breeze.
     const sway = this.reducedMotion ? 0 : Math.sin(this.time * 0.18) * pad * 0.5
     const lift = this.reducedMotion ? 0 : Math.sin(this.time * 0.11 + 1) * pad * 0.25
-    ctx.drawImage(this.canopy, -pad + sway, -pad + lift)
+    if (!this.drawPhoto(ctx, 1.05)) ctx.drawImage(this.canopy, -pad + sway, -pad + lift)
 
     const p = this.progress
     // Morning is cool and dim; midday warm and bright.
@@ -96,5 +101,6 @@ export class ForestScene extends SceneBase {
     ctx.drawImage(this.sun, 0, 0)
     ctx.globalCompositeOperation = 'source-over'
     ctx.globalAlpha = 1
+    if (!this.reducedMotion) this.leaves?.draw(ctx, lerp(0.75, 1, p))
   }
 }

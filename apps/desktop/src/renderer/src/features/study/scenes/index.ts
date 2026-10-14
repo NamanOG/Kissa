@@ -11,6 +11,8 @@ export interface EnvironmentInfo {
   label: string
   /** What the scene does as a block runs, said plainly for the picker's tooltip. */
   keepsTime: string
+  /** A photograph behind the weather (bundled asset URL). Without one the scene draws its own view. */
+  photo?: string
   /** The lamp's colour against this scene. */
   lamp: string
   create: (canvas: HTMLCanvasElement, reducedMotion: boolean) => StudyScene
