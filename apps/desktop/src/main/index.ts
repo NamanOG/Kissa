@@ -8,6 +8,7 @@ import { ScreensaverSessionService } from './services/ScreensaverSessionService'
 import { ScreensaverRegistryService } from './services/ScreensaverRegistryService'
 import { StorePackageService } from './services/StorePackageService'
 import { startDiscordPresence, stopDiscordPresence } from './services/discord'
+import { startStudyKeepAwake, stopStudyKeepAwake } from './services/StudyKeepAwake'
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
@@ -50,6 +51,9 @@ if (!gotSingleInstanceLock) {
     // Optional Apple Music activity on Discord (off until the person turns it on).
     startDiscordPresence()
 
+    // Study sessions keep the display on (no screensaver) while they run.
+    startStudyKeepAwake()
+
     // Start named pipe server for Windows screensaver supervisor coordination
     ScreensaverSessionService.getInstance().start()
 
@@ -77,6 +81,7 @@ if (!gotSingleInstanceLock) {
   app.on('before-quit', () => {
     ScreensaverSessionService.getInstance().stop()
     stopDiscordPresence()
+    stopStudyKeepAwake()
     MediaDetectionService.getInstance().stop()
   })
 

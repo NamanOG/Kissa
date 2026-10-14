@@ -163,6 +163,20 @@ export class RainScene extends SceneBase {
     return { x, y, r: roll > 0.93 ? rand(3.6, 6) : roll > 0.6 ? rand(1.8, 3.4) : rand(0.8, 1.8) }
   }
 
+  /** Drops and mist show the real street once the photograph is here. */
+  protected onPhoto(): void {
+    const cover = this.photoCover()
+    if (!cover) return
+    this.viewSharp = cover
+    const blurred = makeCanvas(this.width, this.height)
+    const b = blurred.getContext('2d')!
+    b.filter = `blur(${Math.max(6, this.width / 90)}px)`
+    b.drawImage(cover, 0, 0)
+    this.viewBlurred = blurred
+    this.paintMist(1)
+    this.glassDirty = true
+  }
+
   public reset(): void {
     super.reset()
     // A wipe also clears the lines drawn through the mist.

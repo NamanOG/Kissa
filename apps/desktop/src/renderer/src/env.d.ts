@@ -58,6 +58,7 @@ export interface KissaSystemMediaAPI {
   installUpdate?: () => Promise<UpdateInstallResult>
   onUpdateStatusChanged?: (callback: (status: UpdateStatusPayload) => void) => () => void
   getDiscordPresence?: () => Promise<DiscordPresenceStatus>
+  setStudyKeepAwake?: (on: boolean) => Promise<boolean>
   setDiscordPresenceEnabled: (enabled: boolean) => Promise<DiscordPresenceStatus>
   onDiscordPresenceChanged?: (callback: (status: DiscordPresenceStatus) => void) => () => void
 }

@@ -3,6 +3,11 @@ import { RainScene } from './RainScene'
 import { SnowScene } from './SnowScene'
 import { ForestScene } from './ForestScene'
 import { NightScene } from './NightScene'
+// Photographs generated for Kissa with Figma AI (owned by GlyphCode); the weather is drawn on top.
+import rainPhoto from '@renderer/media/study/rain.jpg'
+import snowPhoto from '@renderer/media/study/snow.jpg'
+import forestPhoto from '@renderer/media/study/forest.jpg'
+import nightPhoto from '@renderer/media/study/night.jpg'
 
 export type StudyEnvironment = 'rain' | 'snow' | 'forest' | 'night'
 
@@ -23,6 +28,7 @@ export const ENVIRONMENTS: EnvironmentInfo[] = [
     id: 'rain',
     label: 'Rain',
     keepsTime: 'The glass mists over as you focus; a break wipes it clear.',
+    photo: rainPhoto,
     lamp: '255, 176, 96',
     create: (c, r) => new RainScene(c, r)
   },
@@ -30,6 +36,7 @@ export const ENVIRONMENTS: EnvironmentInfo[] = [
     id: 'snow',
     label: 'Snow',
     keepsTime: 'Frost gathers at the edges as you focus; a break clears it.',
+    photo: snowPhoto,
     lamp: '255, 186, 120',
     create: (c, r) => new SnowScene(c, r)
   },
@@ -37,6 +44,7 @@ export const ENVIRONMENTS: EnvironmentInfo[] = [
     id: 'forest',
     label: 'Forest',
     keepsTime: 'Morning light warms towards midday as you focus; a break returns to morning.',
+    photo: forestPhoto,
     lamp: '255, 200, 140',
     create: (c, r) => new ForestScene(c, r)
   },
@@ -44,6 +52,7 @@ export const ENVIRONMENTS: EnvironmentInfo[] = [
     id: 'night',
     label: 'Night',
     keepsTime: 'The stars come out as you focus; a break leaves only the brightest.',
+    photo: nightPhoto,
     lamp: '255, 170, 100',
     create: (c, r) => new NightScene(c, r)
   }

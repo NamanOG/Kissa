@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Check, Coffee, Pause, Play, Plus, Square, Trash2, X } from 'lucide-react'
 import { cn } from '@renderer/utils/cn'
 import { useStudyStore } from '@renderer/stores/studyStore'
+import { HardwareSwitch } from '@renderer/components/ui/HardwareSwitch'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { greetingFor } from '@renderer/utils/greeting'
 import {
@@ -89,6 +90,7 @@ function SetupPage(): React.JSX.Element {
   const prefs = useStudyStore((s) => s.prefs)
   const lastIntention = useStudyStore((s) => s.lastIntention)
   const start = useStudyStore((s) => s.start)
+  const setPrefs = useStudyStore((s) => s.setPrefs)
   const history = useStudyStore((s) => s.history)
   const listenerName = usePlayerStore((s) => s.listenerName)
   const [intention, setIntention] = useState('')
@@ -154,6 +156,15 @@ function SetupPage(): React.JSX.Element {
             </div>
           </div>
         </div>
+        <label className="-mt-2 flex w-fit cursor-pointer items-center gap-3 font-sans text-[13px] text-white/60">
+          <HardwareSwitch
+            checked={prefs.keepScreenAwake}
+            onChange={(keepScreenAwake) => setPrefs({ keepScreenAwake })}
+            aria-label="Keep the screen on during sessions"
+          />
+          Keep the screen on while studying
+        </label>
+
         <div className="mt-1 flex items-center gap-5">
           <button type="submit" className={PRIMARY_BUTTON}>
             <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />

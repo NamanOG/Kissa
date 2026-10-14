@@ -8,6 +8,15 @@ import { useStudyStore } from '@renderer/stores/studyStore'
  */
 export function useStudyEngine(): void {
   const hasSession = useStudyStore((s) => s.active !== null)
+  const keepAwake = useStudyStore(
+    (s) => s.prefs.keepScreenAwake && s.active !== null && s.active.segment.runningSince !== null && !s.active.interruption
+  )
+
+  // While a session runs, keep the display on so the screensaver does not cover it.
+  useEffect(() => {
+    void window.electron?.setStudyKeepAwake?.(keepAwake)
+  }, [keepAwake])
+  useEffect(() => () => void window.electron?.setStudyKeepAwake?.(false), [])
 
   useEffect(() => {
     if (!hasSession) return

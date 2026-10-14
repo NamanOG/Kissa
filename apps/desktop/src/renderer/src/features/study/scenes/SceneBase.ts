@@ -118,7 +118,10 @@ export abstract class SceneBase implements StudyScene {
     img.decoding = 'async'
     img.onload = (): void => {
       this.photo = img
-      if (this.width > 0) this.draw(performance.now())
+      if (this.width > 0) {
+        this.onPhoto()
+        this.draw(performance.now())
+      }
     }
     img.src = url
   }
@@ -140,6 +143,24 @@ export abstract class SceneBase implements StudyScene {
     return true
   }
 
+  /** Called when the photograph arrives (and after each resize once it has). */
+  protected onPhoto(): void {}
+
+  /** The photograph scaled to cover the view, without drift: for effects that sample it. */
+  protected photoCover(): HTMLCanvasElement | null {
+    const img = this.photo
+    if (!img || this.width === 0) return null
+    const c = document.createElement('canvas')
+    c.width = this.width
+    c.height = this.height
+    const g = c.getContext('2d')!
+    const scale = Math.max(this.width / img.naturalWidth, this.height / img.naturalHeight) * 1.06
+    const dw = img.naturalWidth * scale
+    const dh = img.naturalHeight * scale
+    g.drawImage(img, (this.width - dw) / 2, (this.height - dh) / 2, dw, dh)
+    return c
+  }
+
   protected abstract build(): void
   protected abstract step(dt: number): void
   protected abstract draw(time: number): void
@@ -153,6 +174,7 @@ export abstract class SceneBase implements StudyScene {
     this.canvas.width = w
     this.canvas.height = h
     this.build()
+    if (this.photo) this.onPhoto()
     this.draw(performance.now())
   }
 
