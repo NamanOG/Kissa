@@ -106,7 +106,8 @@ describe('DiscordPresenceService', () => {
     expect(activity.type).toBe(2)
     expect(activity.details).toBe('Paper Lanterns')
     expect(activity.state).toBe('The Quiet Hours')
-    expect(activity.assets).toEqual({
+    expect(activity.buttons).toEqual([{ label: 'Get Kissa for Windows', url: 'https://apps.microsoft.com/detail/9p3n4x4wm80j' }])
+    expect(activity.assets).toMatchObject({
       large_image: 'https://is1-ssl.mzstatic.com/image/thumb/x/1200x1200bb.jpg',
       large_text: 'Night Shift'
     })
@@ -120,7 +121,10 @@ describe('DiscordPresenceService', () => {
     await flush()
     h.service.onMedia(track({ artworkDataUrl: 'data:image/jpeg;base64,AAAA' }))
     await flush(5_000)
-    expect(h.last().activities.at(-1)!.assets).toBeUndefined()
+    const assets = h.last().activities.at(-1)!.assets as Record<string, string>
+    // Kissa's badge stands in; the embedded image is never sent.
+    expect(assets.large_image).toBe('https://kissa.glyphcode.studio/favicon.png')
+    expect(JSON.stringify(assets)).not.toContain('data:')
   })
 
   it('clears at once when the source switches to Spotify', async () => {

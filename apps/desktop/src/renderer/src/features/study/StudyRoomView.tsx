@@ -53,8 +53,8 @@ export function StudyRoomView(): React.JSX.Element {
 
   return (
     <section
-      aria-label="Study Room"
-      className="flex w-full flex-col items-start select-none px-4 pt-4 pb-14 min-[800px]:px-6 min-[800px]:pt-6 min-[1200px]:pl-10 min-[1200px]:pr-6"
+      aria-label="Study desk"
+      className="flex w-full flex-col items-start select-none px-8 py-20 min-[1200px]:px-12"
     >
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
@@ -208,7 +208,7 @@ function SessionDesk({ session }: { session: StudySession }): React.JSX.Element 
     <div>
       <span className={cn(LABEL, isBreak ? 'text-dim' : 'text-tone')}>{phase}</span>
       <h1
-        className="mt-2 font-kissa-editorial text-[clamp(1.35rem,2.1vw,2.2rem)] font-medium leading-[1.15] tracking-[-0.02em] text-ink line-clamp-3 text-balance"
+        className="mt-2 font-kissa-editorial text-[clamp(1.5rem,2.3vw,2.4rem)] font-normal italic leading-[1.15] tracking-[-0.01em] text-ink/90 line-clamp-3 text-balance"
         title={session.intention || undefined}
       >
         {session.intention || 'Open study'}
@@ -217,7 +217,7 @@ function SessionDesk({ session }: { session: StudySession }): React.JSX.Element 
       <div className="mt-8">
         <p
           className={cn(
-            'font-mono text-[clamp(3rem,6vw,4.6rem)] font-light leading-none tracking-[-0.04em] tabular-nums text-ink transition-opacity',
+            'font-kissa-editorial text-[clamp(4.5rem,9vw,8rem)] font-light leading-[0.9] tracking-[-0.02em] tabular-nums lining-nums text-ink transition-opacity [text-shadow:0_2px_30px_rgba(0,0,0,0.45)]',
             !running && !segment.ended && 'opacity-60'
           )}
           aria-live="off"

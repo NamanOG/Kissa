@@ -15,6 +15,7 @@ import {
   type SessionRecord,
   type StudySession
 } from '@renderer/features/study/studySession'
+import type { StudyEnvironment } from '@renderer/features/study/scenes'
 
 /**
  * Study Room state: the active session, the session being reviewed, a modest local
@@ -31,6 +32,10 @@ export interface StudyPrefs {
   chime: boolean
   /** Keep the room's colours steady while a session runs instead of following each cover. */
   holdRoomColor: boolean
+  /** The Study Room's surroundings. */
+  environment: StudyEnvironment
+  /** A quiet generated sound bed for the environment while the Study Room is open. */
+  ambience: boolean
 }
 
 interface Persisted {
@@ -45,7 +50,9 @@ interface Persisted {
 export const DEFAULT_PREFS: StudyPrefs = {
   plan: { focusMinutes: 50, breakMinutes: 10 },
   chime: true,
-  holdRoomColor: true
+  holdRoomColor: true,
+  environment: 'rain',
+  ambience: false
 }
 
 function load(): Persisted {

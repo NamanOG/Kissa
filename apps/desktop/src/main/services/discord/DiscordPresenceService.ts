@@ -19,6 +19,11 @@ const PAUSED_CLEAR_MS = 2 * 60 * 1000
 const SEEK_TOLERANCE_MS = 3_000
 const RECONNECT_DELAYS_MS = [5_000, 10_000, 20_000, 40_000, 60_000]
 
+const KISSA_STORE_URL = 'https://apps.microsoft.com/detail/9p3n4x4wm80j'
+/** Public, served by the Kissa website (180x180 PNG). */
+const KISSA_BADGE_URL = 'https://kissa.glyphcode.studio/favicon.png'
+const KISSA_BADGE_TEXT = 'Kissa · vinyl player for Windows'
+
 export interface PresenceClient {
   connect(): Promise<void>
   setActivity(activity: Record<string, unknown> | null): Promise<unknown>
@@ -80,6 +85,8 @@ export class DiscordPresenceService {
   private generation = 0
   /** Discord builds that reject newer fields get the activity without them. */
   private useStatusDisplayType = true
+  private useLinks = true
+  private useButtons = true
 
   private state: DiscordPresenceState = 'off'
   private readonly listeners = new Set<(status: DiscordPresenceStatus) => void>()
@@ -176,7 +183,18 @@ export class DiscordPresenceService {
     const activity: Record<string, unknown> = { type: 2, details }
     if (state) activity.state = state
     if (this.useStatusDisplayType) activity.status_display_type = 2
-    if (art) activity.assets = album ? { large_image: art, large_text: album } : { large_image: art }
+    // Kissa's mark sits on the cover's corner and, like the button, leads to the Store page,
+    // so people who see the activity can find the app.
+    activity.assets = art
+      ? {
+          large_image: art,
+          ...(album ? { large_text: album } : {}),
+          small_image: KISSA_BADGE_URL,
+          small_text: KISSA_BADGE_TEXT,
+          ...(this.useLinks ? { small_url: KISSA_STORE_URL } : {})
+        }
+      : { large_image: KISSA_BADGE_URL, large_text: KISSA_BADGE_TEXT, ...(this.useLinks ? { large_url: KISSA_STORE_URL } : {}) }
+    if (this.useButtons) activity.buttons = [{ label: 'Get Kissa for Windows', url: KISSA_STORE_URL }]
 
     let startMs: number | undefined
     const duration = p.duration > 0 ? p.duration : 0
@@ -247,8 +265,17 @@ export class DiscordPresenceService {
     } catch (err) {
       if (generation !== this.generation) return
       const message = err instanceof Error ? err.message : String(err)
-      if (this.useStatusDisplayType && /status_display_type/i.test(message)) {
-        this.useStatusDisplayType = false
+      // Older Discord builds reject newer activity fields: drop the one named and retry.
+      const drop =
+        this.useStatusDisplayType && /status_display_type/i.test(message)
+          ? (): void => void (this.useStatusDisplayType = false)
+          : this.useLinks && /_url/i.test(message)
+            ? (): void => void (this.useLinks = false)
+            : this.useButtons && /button/i.test(message)
+              ? (): void => void (this.useButtons = false)
+              : null
+      if (drop) {
+        drop()
         this.sent = null
         this.reconcile()
         return
