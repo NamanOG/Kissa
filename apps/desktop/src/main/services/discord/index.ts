@@ -18,8 +18,8 @@ function settingsStore(filePath: string): PresenceSettingsStore {
   return {
     load: () => {
       try {
-        const parsed = JSON.parse(readFileSync(filePath, 'utf8')) as { enabled?: unknown }
-        return { enabled: parsed.enabled === true }
+        const parsed = JSON.parse(readFileSync(filePath, 'utf8')) as { enabled?: unknown; shareSpotify?: unknown }
+        return { enabled: parsed.enabled === true, shareSpotify: parsed.shareSpotify === true }
       } catch {
         return { enabled: false }
       }
@@ -27,7 +27,7 @@ function settingsStore(filePath: string): PresenceSettingsStore {
     save: (settings) => {
       try {
         mkdirSync(dirname(filePath), { recursive: true })
-        writeFileSync(filePath, JSON.stringify({ version: 1, enabled: settings.enabled }), 'utf8')
+        writeFileSync(filePath, JSON.stringify({ version: 1, enabled: settings.enabled, shareSpotify: settings.shareSpotify }), 'utf8')
       } catch (err) {
         console.warn('[DiscordPresence] Could not save the setting:', err)
       }
@@ -50,6 +50,7 @@ export function startDiscordPresence(): void {
 
   ipcMain.handle('kissa:discord-get-status', () => presence.getStatus())
   ipcMain.handle('kissa:discord-set-enabled', (_event, enabled: unknown) => presence.setEnabled(enabled === true))
+  ipcMain.handle('kissa:discord-set-share-spotify', (_event, on: unknown) => presence.setShareSpotify(on === true))
   presence.onStatusChange((status) => {
     for (const win of BrowserWindow.getAllWindows()) {
       if (!win.isDestroyed()) win.webContents.send('kissa:discord-status-changed', status)

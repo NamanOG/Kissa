@@ -44,6 +44,7 @@ export interface KissaSystemMediaAPI {
   getDiscordPresence: () => Promise<DiscordPresenceStatus>
   setStudyKeepAwake: (on: boolean) => Promise<boolean>
   setDiscordPresenceEnabled: (enabled: boolean) => Promise<DiscordPresenceStatus>
+  setDiscordShareSpotify: (on: boolean) => Promise<DiscordPresenceStatus>
   onDiscordPresenceChanged: (callback: (status: DiscordPresenceStatus) => void) => () => void
 }
 
@@ -141,6 +142,7 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
   getDiscordPresence: () => ipcRenderer.invoke('kissa:discord-get-status'),
   setStudyKeepAwake: (on) => ipcRenderer.invoke('kissa:study-keep-awake', on),
   setDiscordPresenceEnabled: (enabled) => ipcRenderer.invoke('kissa:discord-set-enabled', enabled),
+  setDiscordShareSpotify: (on) => ipcRenderer.invoke('kissa:discord-set-share-spotify', on),
   onDiscordPresenceChanged: (callback) => {
     const handler = (_event: unknown, status: DiscordPresenceStatus): void => callback(status)
     ipcRenderer.on('kissa:discord-status-changed', handler)

@@ -3,6 +3,7 @@ import { EventEmitter } from 'events'
 import {
   DiscordPresenceService,
   isAppleMusicSource,
+  isSpotifySource,
   type PresenceClient
 } from '../discord/DiscordPresenceService'
 import { FrameDecoder, encodeFrame } from '../discord/DiscordIpcClient'
@@ -42,9 +43,9 @@ function track(over: Partial<SystemMediaPayload> = {}): SystemMediaPayload {
   }
 }
 
-function setup(enabled = true, applicationId = '123456789') {
+function setup(enabled = true, applicationId = '123456789', shareSpotify = false) {
   const clients: FakeClient[] = []
-  let saved: { enabled: boolean } = { enabled }
+  let saved: { enabled: boolean; shareSpotify?: boolean } = { enabled, shareSpotify }
   const createClient = (): FakeClient => {
     const c = new FakeClient()
     if (failNext) {
@@ -86,7 +87,7 @@ describe('DiscordPresenceService', () => {
     h.service.onMedia(track())
     await flush(10_000)
     expect(h.clients.length).toBe(0)
-    expect(h.service.getStatus()).toEqual({ enabled: false, state: 'off' })
+    expect(h.service.getStatus()).toEqual({ enabled: false, shareSpotify: false, state: 'off' })
   })
 
   it('says so when the build has no Application ID', async () => {
@@ -135,6 +136,46 @@ describe('DiscordPresenceService', () => {
     h.service.onMedia(track({ sourceAppId: 'Spotify.exe', sourceAppName: 'Spotify' }))
     expect(h.last().activities.at(-1)).toBeNull()
     expect(h.service.getStatus().state).toBe('idle')
+  })
+
+  it('shares Spotify only after the separate opt-in, and remembers it', async () => {
+    const h = setup()
+    await flush()
+    const spotify = track({ sourceAppId: 'Spotify.exe', sourceAppName: 'Spotify', title: 'Green Room' })
+    h.service.onMedia(spotify)
+    await flush(5_000)
+    expect(h.clients.length).toBe(1)
+    expect(h.last().activities.some((a) => a?.details === 'Green Room')).toBe(false)
+    expect(h.service.getStatus()).toEqual({ enabled: true, shareSpotify: false, state: 'idle' })
+
+    const status = h.service.setShareSpotify(true)
+    expect(h.saved()).toEqual({ enabled: true, shareSpotify: true })
+    await flush(5_000)
+    const a = h.last().activities.at(-1)!
+    expect(a.details).toBe('Green Room')
+    expect(a.buttons).toEqual([{ label: 'Get Kissa for Windows', url: 'https://apps.microsoft.com/detail/9p3n4x4wm80j' }])
+    expect(h.service.getStatus().state).toBe('sharing')
+    expect(status.shareSpotify).toBe(true)
+
+    h.service.setShareSpotify(false)
+    await flush(5_000)
+    expect(h.last().activities.at(-1)).toBeNull()
+    expect(h.service.getStatus().state).toBe('idle')
+  })
+
+  it('starts sharing Spotify at once when the saved setting says so', async () => {
+    const h = setup(true, '123456789', true)
+    await flush()
+    h.service.onMedia(track({ sourceAppId: 'SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify', title: 'Green Room' }))
+    await flush(5_000)
+    expect(h.last().activities.at(-1)!.details).toBe('Green Room')
+  })
+
+  it('turning sharing off keeps the Spotify choice for next time', async () => {
+    const h = setup(true, '123456789', true)
+    await flush()
+    h.service.setEnabled(false)
+    expect(h.saved()).toEqual({ enabled: false, shareSpotify: true })
   })
 
   it('coalesces a burst of skips into the last track', async () => {
@@ -195,7 +236,7 @@ describe('DiscordPresenceService', () => {
     expect(client.activities.at(-1)).toBeNull()
     expect(client.activities.some((a) => a?.details === 'Two')).toBe(false)
     expect(client.closed).toBe(true)
-    expect(h.saved()).toEqual({ enabled: false })
+    expect(h.saved()).toEqual({ enabled: false, shareSpotify: false })
   })
 
   it('waits for Discord and reconnects with backoff, then shares', async () => {
@@ -264,6 +305,16 @@ describe('isAppleMusicSource', () => {
     expect(isAppleMusicSource('Spotify.exe')).toBe(false)
     expect(isAppleMusicSource('MSEdge')).toBe(false)
     expect(isAppleMusicSource(undefined)).toBe(false)
+  })
+})
+
+describe('isSpotifySource', () => {
+  it('recognises classic and Store Spotify only', () => {
+    expect(isSpotifySource('Spotify.exe')).toBe(true)
+    expect(isSpotifySource('SpotifyAB.SpotifyMusic_zpdnekdrzrea0!Spotify')).toBe(true)
+    expect(isSpotifySource(APPLE)).toBe(false)
+    expect(isSpotifySource('MSEdge')).toBe(false)
+    expect(isSpotifySource(undefined)).toBe(false)
   })
 })
 

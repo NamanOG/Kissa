@@ -3,9 +3,9 @@ import type { DiscordPresenceState, DiscordPresenceStatus } from '../../../types
 import { DiscordIpcClient } from './DiscordIpcClient'
 
 /**
- * Shows the Apple Music track Kissa is following on the person's Discord profile, when
- * they have turned that on. Spotify already does this itself, so only Apple Music (and
- * iTunes) sessions are shared; any other source clears Kissa's activity.
+ * Shows the track Kissa is following on the person's Discord profile, when they have turned
+ * that on: Apple Music (and iTunes) always, Spotify only if they also opt in (Spotify can share
+ * itself, which would put two cards on the profile). Any other source clears Kissa's activity.
  *
  * It listens to the same normalized media updates as the windows do, so it works with
  * every window closed (tray) and starts no polling of its own.
@@ -32,8 +32,8 @@ export interface PresenceClient {
 }
 
 export interface PresenceSettingsStore {
-  load(): { enabled: boolean }
-  save(settings: { enabled: boolean }): void
+  load(): { enabled: boolean; shareSpotify?: boolean }
+  save(settings: { enabled: boolean; shareSpotify: boolean }): void
 }
 
 export interface DiscordPresenceOptions {
@@ -48,6 +48,11 @@ export function isAppleMusicSource(sourceAppId: string | undefined): boolean {
   if (!sourceAppId) return false
   const id = sourceAppId.toLowerCase()
   return id.startsWith('appleinc.applemusicwin') || id.includes('applemusic') || /(^|[\\/])itunes(\.exe)?$/.test(id) || id === 'itunes'
+}
+
+/** The Spotify desktop app (classic or Microsoft Store). */
+export function isSpotifySource(sourceAppId: string | undefined): boolean {
+  return Boolean(sourceAppId && sourceAppId.toLowerCase().includes('spotify'))
 }
 
 /** Discord rejects text under 2 or over 128 characters. */
@@ -68,6 +73,8 @@ interface Desired {
 
 export class DiscordPresenceService {
   private enabled: boolean
+  /** Spotify can share itself; Kissa shares it too only when asked, for Kissa's card and Store link. */
+  private shareSpotify: boolean
   private client: PresenceClient | null = null
   private connecting = false
   private connected = false
@@ -97,13 +104,15 @@ export class DiscordPresenceService {
   constructor(private readonly options: DiscordPresenceOptions) {
     this.createClient = options.createClient ?? ((id) => new DiscordIpcClient(id))
     this.now = options.now ?? Date.now
-    this.enabled = Boolean(options.settings.load().enabled)
+    const saved = options.settings.load()
+    this.enabled = Boolean(saved.enabled)
+    this.shareSpotify = saved.shareSpotify === true
     this.updateState()
     if (this.enabled && this.options.applicationId) void this.ensureConnected()
   }
 
   public getStatus(): DiscordPresenceStatus {
-    return { enabled: this.enabled, state: this.state }
+    return { enabled: this.enabled, shareSpotify: this.shareSpotify, state: this.state }
   }
 
   public onStatusChange(listener: (status: DiscordPresenceStatus) => void): () => void {
@@ -114,7 +123,7 @@ export class DiscordPresenceService {
   public setEnabled(enabled: boolean): DiscordPresenceStatus {
     if (enabled === this.enabled) return this.getStatus()
     this.enabled = enabled
-    this.options.settings.save({ enabled })
+    this.options.settings.save({ enabled, shareSpotify: this.shareSpotify })
     if (enabled) {
       if (this.options.applicationId) void this.ensureConnected()
     } else {
@@ -138,10 +147,23 @@ export class DiscordPresenceService {
     return this.getStatus()
   }
 
+  public setShareSpotify(on: boolean): DiscordPresenceStatus {
+    if (on === this.shareSpotify) return this.getStatus()
+    this.shareSpotify = on
+    this.options.settings.save({ enabled: this.enabled, shareSpotify: on })
+    this.onMedia(this.latest)
+    this.updateState()
+    return this.getStatus()
+  }
+
+  private isShared(sourceAppId: string | undefined): boolean {
+    return isAppleMusicSource(sourceAppId) || (this.shareSpotify && isSpotifySource(sourceAppId))
+  }
+
   /** Every normalized media update, from MediaDetectionService. */
   public onMedia(payload: SystemMediaPayload | null): void {
     this.latest = payload
-    if (payload && !payload.isPlaying && isAppleMusicSource(payload.sourceAppId)) {
+    if (payload && !payload.isPlaying && this.isShared(payload.sourceAppId)) {
       if (this.pausedSince === null) this.pausedSince = this.now()
     } else {
       this.pausedSince = null
@@ -168,7 +190,7 @@ export class DiscordPresenceService {
 
   private desired(): Desired | null {
     const p = this.latest
-    if (!p || !p.title || !isAppleMusicSource(p.sourceAppId)) return null
+    if (!p || !p.title || !this.isShared(p.sourceAppId)) return null
     if (p.title === 'Unknown Title') return null
 
     const paused = !p.isPlaying

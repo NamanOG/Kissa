@@ -60,6 +60,7 @@ export interface KissaSystemMediaAPI {
   getDiscordPresence?: () => Promise<DiscordPresenceStatus>
   setStudyKeepAwake?: (on: boolean) => Promise<boolean>
   setDiscordPresenceEnabled: (enabled: boolean) => Promise<DiscordPresenceStatus>
+  setDiscordShareSpotify?: (on: boolean) => Promise<DiscordPresenceStatus>
   onDiscordPresenceChanged?: (callback: (status: DiscordPresenceStatus) => void) => () => void
 }
 
