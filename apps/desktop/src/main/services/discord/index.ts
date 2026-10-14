@@ -6,12 +6,13 @@ import { MediaDetectionService } from '../MediaDetectionService'
 
 /**
  * The public Application ID of the "Kissa" application in the Discord Developer Portal.
- * It identifies the app to the local Discord client; it is not a secret. Set it here or
- * through MAIN_VITE_DISCORD_APPLICATION_ID at build time. Empty: the setting explains
- * that this build cannot share to Discord.
+ * It identifies the app to the local Discord client; it is not a secret, so it ships in
+ * the source and every build (Store, Setup, Portable) can share. MAIN_VITE_DISCORD_APPLICATION_ID
+ * overrides it for testing against another application.
  */
+const KISSA_DISCORD_APPLICATION_ID = '1559921959058546758'
 const DISCORD_APPLICATION_ID: string =
-  (import.meta.env?.MAIN_VITE_DISCORD_APPLICATION_ID as string | undefined)?.trim() || ''
+  (import.meta.env?.MAIN_VITE_DISCORD_APPLICATION_ID as string | undefined)?.trim() || KISSA_DISCORD_APPLICATION_ID
 
 function settingsStore(filePath: string): PresenceSettingsStore {
   return {
