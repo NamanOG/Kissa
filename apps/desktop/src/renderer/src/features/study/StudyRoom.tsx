@@ -163,25 +163,25 @@ function RecordCorner(): React.JSX.Element {
   return (
     <div className="absolute right-[5vw] top-1/2 z-10 flex w-[min(40vw,520px)] -translate-y-[46%] flex-col items-center">
       {/* The record rests in front of its sleeve: the vinyl whole and turning, the cover behind it. */}
-      <div className="relative h-[clamp(200px,38vh,360px)] aspect-[1.45/1]">
-        <div className="absolute left-0 top-[9%] h-[82%] aspect-square opacity-90">
+      <div className="relative h-[clamp(190px,34vh,330px)] aspect-[1.4/1]">
+        <div className="absolute left-0 top-0 h-full aspect-square">
           <AlbumSleeve artworkUrl={idle ? undefined : track?.artworkUrl} title={track?.album || track?.title} flat className="h-full w-auto aspect-square" />
         </div>
         <motion.div
-          className="absolute top-0 h-full aspect-square"
+          className="absolute top-[3%] h-[94%] aspect-square"
           initial={false}
-          animate={{ left: out ? '31%' : '24%' }}
+          animate={{ left: out ? '38%' : '30%' }}
           transition={{ duration: reduceMotion ? 0 : 1.1, ease: [0.22, 1, 0.36, 1] }}
         >
           <VinylEngine albumArt={track?.artworkUrl ?? albumPlaceholder} className="h-full w-full drop-shadow-[0_26px_40px_rgba(0,0,0,0.65)]" />
         </motion.div>
       </div>
       <div className="mt-8 flex w-full flex-col items-center text-center">
-        <p className="font-kissa-editorial line-clamp-2 text-[clamp(1.6rem,2.2vw,2.2rem)] leading-tight text-white" title={track?.title}>
+        <p className="font-kissa-editorial line-clamp-2 text-[clamp(1.6rem,2.2vw,2.2rem)] leading-tight text-white [text-shadow:0_2px_18px_rgba(0,0,0,0.6)]" title={track?.title}>
           {idle ? 'Nothing playing' : track?.title}
         </p>
         {!idle && (
-          <p className="mt-2 line-clamp-1 font-kissa-chassis text-[12px] font-bold uppercase tracking-[0.22em] text-tone" title={track?.artist}>
+          <p className="mt-2 line-clamp-1 font-kissa-chassis text-[12px] font-bold uppercase tracking-[0.22em] text-tone [text-shadow:0_1px_12px_rgba(0,0,0,0.7)]" title={track?.artist}>
             {track?.artist}
           </p>
         )}

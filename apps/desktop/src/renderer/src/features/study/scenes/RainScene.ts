@@ -101,7 +101,7 @@ export class RainScene extends SceneBase {
       const ly = horizon + (Math.random() - 0.35) * h * 0.38 * Math.random()
       const lr = rand(w * 0.008, w * 0.045) * (ly > horizon ? 1.15 : 0.85)
       const rgb = pick()
-      const alpha = rand(0.18, 0.5)
+      const alpha = rand(0.1, 0.3)
       const disc = g.createRadialGradient(lx, ly, 0, lx, ly, lr)
       disc.addColorStop(0, `rgba(${rgb}, ${alpha * 0.85})`)
       disc.addColorStop(0.78, `rgba(${rgb}, ${alpha})`)
@@ -131,7 +131,7 @@ export class RainScene extends SceneBase {
     blurred.filter = `blur(${Math.max(8, w / 70)}px)`
     blurred.drawImage(scene, 0, 0)
     blurred.filter = 'none'
-    blurred.fillStyle = 'rgba(6, 8, 12, 0.16)'
+    blurred.fillStyle = 'rgba(6, 8, 12, 0.3)'
     blurred.fillRect(0, 0, w, h)
 
     this.glass = makeCanvas(w, h)
@@ -251,8 +251,8 @@ export class RainScene extends SceneBase {
     m.globalAlpha = alpha
     m.drawImage(this.viewBlurred, 0, 0)
     const veil = m.createLinearGradient(0, 0, 0, this.height)
-    veil.addColorStop(0, 'rgba(190, 200, 210, 0.16)')
-    veil.addColorStop(1, 'rgba(210, 205, 200, 0.32)')
+    veil.addColorStop(0, 'rgba(190, 200, 210, 0.05)')
+    veil.addColorStop(1, 'rgba(210, 205, 200, 0.14)')
     m.fillStyle = veil
     m.fillRect(0, 0, this.width, this.height)
     m.globalAlpha = 1
@@ -310,7 +310,7 @@ export class RainScene extends SceneBase {
       }
     }
 
-    const mist = 0.12 + 0.78 * this.progress
+    const mist = 0.08 + 0.4 * this.progress
     if (this.mistCanvas) {
       ctx.globalAlpha = mist
       ctx.drawImage(this.mistCanvas, 0, 0)
