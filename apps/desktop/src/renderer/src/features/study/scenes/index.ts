@@ -27,14 +27,14 @@ export const ENVIRONMENTS: EnvironmentInfo[] = [
   {
     id: 'snow',
     label: 'Snow',
-    keepsTime: 'Frost creeps in from the edges as you focus; a break warms it away.',
+    keepsTime: 'Frost gathers at the edges as you focus; a break clears it.',
     lamp: '255, 186, 120',
     create: (c, r) => new SnowScene(c, r)
   },
   {
     id: 'forest',
     label: 'Forest',
-    keepsTime: 'First light turns to morning as you focus; a break returns to dawn.',
+    keepsTime: 'Morning light warms towards midday as you focus; a break returns to morning.',
     lamp: '255, 200, 140',
     create: (c, r) => new ForestScene(c, r)
   },

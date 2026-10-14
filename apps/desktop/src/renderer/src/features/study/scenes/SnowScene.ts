@@ -1,9 +1,10 @@
-import { SceneBase, makeCanvas, rand } from './SceneBase'
+import { SceneBase, drawBokeh, makeCanvas, rand, weighted } from './SceneBase'
 
 /**
- * Snow: a winter night over a pine valley with a few cabin lights, snow falling in three
- * depths. Frost creeps in from the window's edges as a block runs; a break warms the glass
- * clear again.
+ * Snow: a winter street at night seen out of focus, warm windows and street lamps blurred
+ * into soft discs, with snow falling past the glass. Flakes near the glass are large and
+ * soft; far ones are fine points. As a block runs, a pale frost gathers at the window's
+ * edges; a break clears it.
  */
 
 interface Flake {
@@ -23,113 +24,71 @@ export class SnowScene extends SceneBase {
     const { width: w, height: h } = this
     const scene = makeCanvas(w, h)
     const g = scene.getContext('2d')!
+
+    // Night sky over snow: dark at the top, a pale cold glow where snow lies under lamps.
     const sky = g.createLinearGradient(0, 0, 0, h)
-    sky.addColorStop(0, '#0a1020')
-    sky.addColorStop(0.55, '#1a2438')
-    sky.addColorStop(1, '#2a3346')
+    sky.addColorStop(0, '#0b1019')
+    sky.addColorStop(0.5, '#151d2a')
+    sky.addColorStop(0.78, '#262c38')
+    sky.addColorStop(1, '#2f3038')
     g.fillStyle = sky
     g.fillRect(0, 0, w, h)
 
-    // Three ridges of pines, nearer ones darker and larger.
-    const ridges: Array<[number, string, number]> = [
-      [0.58, '#1c2638', 0.05],
-      [0.68, '#141c2b', 0.07],
-      [0.8, '#0c121d', 0.1]
-    ]
-    for (const [base, colour, size] of ridges) {
-      g.fillStyle = colour
-      g.fillRect(0, h * base, w, h)
-      let x = -w * 0.02
-      while (x < w * 1.02) {
-        const tw = rand(w * size * 0.35, w * size * 0.6)
-        const th = rand(h * size * 1.4, h * size * 2.6)
-        g.beginPath()
-        g.moveTo(x, h * base + 2)
-        g.lineTo(x + tw / 2, h * base - th)
-        g.lineTo(x + tw, h * base + 2)
-        g.fill()
-        x += tw * rand(0.45, 0.9)
+    const horizon = h * 0.6
+    drawBokeh(g, Math.round(w / 14), () => {
+      const near = Math.random() > 0.7
+      return {
+        x: rand(-w * 0.05, w * 1.05),
+        y: horizon + rand(-h * 0.14, h * 0.12),
+        r: near ? rand(w * 0.03, w * 0.06) : rand(w * 0.01, w * 0.028),
+        rgb: weighted([
+          ['255, 184, 110', 5],
+          ['255, 214, 160', 3],
+          ['205, 220, 245', 2]
+        ]),
+        alpha: near ? rand(0.08, 0.16) : rand(0.14, 0.32)
       }
-      // Snow lying on the ridge.
-      g.fillStyle = 'rgba(210, 222, 240, 0.08)'
-      g.fillRect(0, h * base, w, h * 0.012)
-    }
-
-    // Cabin windows in the valley.
-    for (let i = 0; i < 7; i++) {
-      const cx = rand(w * 0.05, w * 0.95)
-      const cy = rand(h * 0.6, h * 0.76)
-      const glow = g.createRadialGradient(cx, cy, 0, cx, cy, w * 0.03)
-      glow.addColorStop(0, 'rgba(255, 190, 120, 0.9)')
-      glow.addColorStop(0.3, 'rgba(255, 170, 90, 0.25)')
-      glow.addColorStop(1, 'rgba(255, 170, 90, 0)')
-      g.fillStyle = glow
-      g.fillRect(cx - w * 0.03, cy - w * 0.03, w * 0.06, w * 0.06)
-    }
-
-    // Moonlight on the snow and a low mist in the valley.
-    const moon = g.createRadialGradient(w * 0.75, h * 0.18, 0, w * 0.75, h * 0.18, w * 0.5)
-    moon.addColorStop(0, 'rgba(190, 205, 235, 0.22)')
-    moon.addColorStop(1, 'rgba(190, 205, 235, 0)')
-    g.fillStyle = moon
-    g.fillRect(0, 0, w, h)
-    const mist = g.createLinearGradient(0, h * 0.55, 0, h * 0.85)
-    mist.addColorStop(0, 'rgba(170, 185, 210, 0)')
-    mist.addColorStop(0.5, 'rgba(170, 185, 210, 0.16)')
-    mist.addColorStop(1, 'rgba(170, 185, 210, 0)')
-    g.fillStyle = mist
-    g.fillRect(0, h * 0.55, w, h * 0.3)
+    })
+    // Lamp light falling on snow, a broad pale band.
+    const ground = g.createLinearGradient(0, horizon, 0, h)
+    ground.addColorStop(0, 'rgba(200, 210, 230, 0.06)')
+    ground.addColorStop(1, 'rgba(200, 210, 230, 0.02)')
+    g.fillStyle = ground
+    g.fillRect(0, horizon, w, h - horizon)
 
     this.view = makeCanvas(w, h)
     const v = this.view.getContext('2d')!
-    v.filter = `blur(${Math.max(3, w / 220)}px)`
+    v.filter = `blur(${Math.max(6, w / 120)}px)`
     v.drawImage(scene, 0, 0)
 
-    // Frost: feathery crystals, dense at the edges and fading towards the middle.
+    // Frost: a soft pale haze at the edges of the glass, no drawn crystals.
     this.frost = makeCanvas(w, h)
     const f = this.frost.getContext('2d')!
-    const crystals = Math.round((w * h) / 380)
-    f.lineCap = 'round'
-    for (let i = 0; i < crystals; i++) {
-      const x = rand(0, w)
-      const y = rand(0, h)
-      const edge = Math.min(x, y, w - x, h - y) / (Math.min(w, h) * 0.5)
-      if (Math.random() < edge * 1.4) continue
-      const len = rand(1.5, 5) * (1.2 - edge)
-      const angle = rand(0, Math.PI)
-      f.strokeStyle = `rgba(225, 235, 248, ${rand(0.06, 0.22) * (1 - edge)})`
-      f.lineWidth = rand(0.4, 0.9)
-      for (let arm = 0; arm < 3; arm++) {
-        const a = angle + (arm * Math.PI) / 3
-        f.beginPath()
-        f.moveTo(x - Math.cos(a) * len, y - Math.sin(a) * len)
-        f.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len)
-        f.stroke()
-      }
-    }
-    const haze = f.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75)
-    haze.addColorStop(0, 'rgba(220, 230, 245, 0)')
-    haze.addColorStop(1, 'rgba(220, 230, 245, 0.35)')
+    const haze = f.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.32, w / 2, h / 2, Math.hypot(w, h) * 0.55)
+    haze.addColorStop(0, 'rgba(215, 225, 240, 0)')
+    haze.addColorStop(0.7, 'rgba(215, 225, 240, 0.08)')
+    haze.addColorStop(1, 'rgba(215, 225, 240, 0.26)')
     f.fillStyle = haze
     f.fillRect(0, 0, w, h)
 
     this.flakes = []
-    const count = Math.round(Math.min(380, w / 3.2))
+    const count = Math.round(Math.min(320, w / 3.6))
     for (let i = 0; i < count; i++) this.flakes.push(this.newFlake(rand(0, h)))
   }
 
   private newFlake(y = -10): Flake {
-    const depth = Math.random()
-    return { x: rand(0, this.width), y, r: 0.6 + depth * 2.4, depth, phase: rand(0, Math.PI * 2) }
+    // Most flakes are far away; a few drift right past the glass.
+    const depth = Math.pow(Math.random(), 1.8)
+    return { x: rand(0, this.width), y, r: 0.5 + depth * 2.2, depth, phase: rand(0, Math.PI * 2) }
   }
 
   protected step(dt: number): void {
     for (const f of this.flakes) {
-      f.y += (12 + f.depth * 38) * dt
-      f.phase += dt * (0.6 + f.depth)
-      f.x += Math.sin(f.phase) * (0.2 + f.depth * 0.5) + 6 * dt
-      if (f.y > this.height + 5) Object.assign(f, this.newFlake())
-      if (f.x > this.width + 5) f.x = -5
+      f.y += (10 + f.depth * 34) * dt
+      f.phase += dt * (0.4 + f.depth * 0.8)
+      f.x += Math.sin(f.phase) * (0.15 + f.depth * 0.45) + 4 * dt
+      if (f.y > this.height + 8) Object.assign(f, this.newFlake())
+      if (f.x > this.width + 8) f.x = -8
     }
   }
 
@@ -138,29 +97,26 @@ export class SnowScene extends SceneBase {
     if (!this.view) return
     ctx.drawImage(this.view, 0, 0)
     for (const f of this.flakes) {
-      if (f.depth > 0.86) {
-        // Flakes close to the glass are large and out of focus.
-        const r = f.r * 2.4
+      if (f.depth > 0.8) {
+        const r = f.r * 2.6
         const soft = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r)
-        soft.addColorStop(0, 'rgba(238, 243, 251, 0.5)')
-        soft.addColorStop(0.6, 'rgba(238, 243, 251, 0.22)')
-        soft.addColorStop(1, 'rgba(238, 243, 251, 0)')
+        soft.addColorStop(0, 'rgba(236, 241, 250, 0.32)')
+        soft.addColorStop(1, 'rgba(236, 241, 250, 0)')
         ctx.fillStyle = soft
         ctx.beginPath()
         ctx.arc(f.x, f.y, r, 0, Math.PI * 2)
         ctx.fill()
-        continue
+      } else {
+        ctx.globalAlpha = 0.25 + f.depth * 0.55
+        ctx.fillStyle = '#e8eef8'
+        ctx.beginPath()
+        ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.globalAlpha = 1
       }
-      ctx.globalAlpha = 0.3 + f.depth * 0.6
-      ctx.fillStyle = '#eef3fb'
-      ctx.beginPath()
-      ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.globalAlpha = 1
     }
-    ctx.globalAlpha = 1
     if (this.frost) {
-      ctx.globalAlpha = 0.1 + 0.85 * this.progress
+      ctx.globalAlpha = 0.25 + 0.75 * this.progress
       ctx.drawImage(this.frost, 0, 0)
       ctx.globalAlpha = 1
     }

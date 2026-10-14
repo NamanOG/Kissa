@@ -47,6 +47,42 @@ export function mixHex(a: string, b: string, t: number): string {
   return `rgb(${ch(16)}, ${ch(8)}, ${ch(0)})`
 }
 
+/**
+ * Out-of-focus light, as a camera lens renders it: soft-edged discs that brighten where
+ * they overlap. Everything in the Study Room's views is defocused like this, the way a
+ * window looks when your eyes are on the desk, so no scene shows invented detail.
+ */
+export function drawBokeh(
+  g: CanvasRenderingContext2D,
+  count: number,
+  place: () => { x: number; y: number; r: number; rgb: string; alpha: number }
+): void {
+  g.save()
+  g.globalCompositeOperation = 'lighter'
+  for (let i = 0; i < count; i++) {
+    const { x, y, r, rgb, alpha } = place()
+    const disc = g.createRadialGradient(x, y, 0, x, y, r)
+    disc.addColorStop(0, `rgba(${rgb}, ${alpha * 0.8})`)
+    disc.addColorStop(0.8, `rgba(${rgb}, ${alpha})`)
+    disc.addColorStop(0.92, `rgba(${rgb}, ${alpha * 0.45})`)
+    disc.addColorStop(1, `rgba(${rgb}, 0)`)
+    g.fillStyle = disc
+    g.beginPath()
+    g.arc(x, y, r, 0, Math.PI * 2)
+    g.fill()
+  }
+  g.restore()
+}
+
+/** Picks from weighted choices. */
+export function weighted<T>(choices: Array<[T, number]>): T {
+  let roll = Math.random() * choices.reduce((s, [, w]) => s + w, 0)
+  for (const [value, weight] of choices) {
+    if ((roll -= weight) <= 0) return value
+  }
+  return choices[0][0]
+}
+
 export abstract class SceneBase implements StudyScene {
   protected readonly ctx: CanvasRenderingContext2D
   protected width = 0

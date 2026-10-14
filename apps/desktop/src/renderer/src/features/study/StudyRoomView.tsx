@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Check, Coffee, Feather, Pause, Play, Plus, Square, Trash2, X } from 'lucide-react'
+import { Check, Coffee, Pause, Play, Plus, Square, Trash2, X } from 'lucide-react'
 import { cn } from '@renderer/utils/cn'
 import { useStudyStore } from '@renderer/stores/studyStore'
+import { usePlayerStore } from '@renderer/stores/playerStore'
+import { greetingFor } from '@renderer/utils/greeting'
 import {
   breakMs,
   focusMs,
@@ -88,6 +90,7 @@ function SetupPage(): React.JSX.Element {
   const lastIntention = useStudyStore((s) => s.lastIntention)
   const start = useStudyStore((s) => s.start)
   const history = useStudyStore((s) => s.history)
+  const listenerName = usePlayerStore((s) => s.listenerName)
   const [intention, setIntention] = useState('')
   const [length, setLength] = useState<LengthChoice>((prefs.plan.focusMinutes ?? 0) as LengthChoice)
   const [breaks, setBreaks] = useState<BreakChoice>(prefs.plan.breakMinutes as BreakChoice)
@@ -102,9 +105,9 @@ function SetupPage(): React.JSX.Element {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1">
-      <span className={EYEBROW}>A quiet sitting</span>
-      <h1 className="font-kissa-editorial mt-3 text-[clamp(2.6rem,4vw,3.6rem)] font-normal leading-[1.02] tracking-[-0.01em]">
-        Settle in.
+      <span className={EYEBROW}>New session</span>
+      <h1 className="font-kissa-editorial mt-3 text-[clamp(2.6rem,4vw,3.6rem)] font-normal leading-[1.02] tracking-[-0.01em] text-balance">
+        {greetingFor(new Date(), listenerName)}
       </h1>
 
       <form
@@ -122,7 +125,7 @@ function SetupPage(): React.JSX.Element {
             maxLength={140}
             onChange={(e) => setIntention(e.target.value)}
             placeholder={lastIntention ? lastIntention : 'Read chapter 4'}
-            className="font-kissa-editorial w-full rounded-2xl border border-white/10 bg-black/20 px-5 py-3.5 text-[20px] italic text-white placeholder:text-white/30 outline-none transition-colors focus:border-white/30 select-text"
+            className="font-kissa-editorial w-full rounded-2xl border border-white/10 bg-black/20 px-5 py-3.5 text-[20px] text-white placeholder:text-white/30 outline-none transition-colors focus:border-white/30 select-text"
           />
         </label>
 
@@ -257,10 +260,10 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
     <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1">
       <span className={EYEBROW}>{phase}</span>
       <h1
-        className="font-kissa-editorial mt-2 line-clamp-2 text-[clamp(1.4rem,2.1vw,1.9rem)] font-normal italic leading-[1.15] text-white/90 text-balance"
+        className="font-kissa-editorial mt-2 line-clamp-2 text-[clamp(1.4rem,2.1vw,1.9rem)] font-normal leading-[1.15] text-white/90 text-balance"
         title={session.intention || undefined}
       >
-        {session.intention || 'An open sitting'}
+        {session.intention || 'Open session'}
       </h1>
 
       <p
@@ -293,7 +296,7 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
       </div>
 
       {session.interruption ? (
-        <div className="mt-7 max-w-[420px] rounded-[28px] border border-white/10 bg-black/40 p-5 backdrop-blur-3xl">
+        <div className="mt-7 max-w-[420px] rounded-2xl bg-black/40 p-5">
           <p className="font-sans text-[14px] leading-relaxed text-white/85">
             Kissa wasn&apos;t running for {formatMinutes(session.interruption.awayMs)}, so that time isn&apos;t counted.
           </p>
@@ -309,15 +312,15 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
       ) : segment.ended ? (
         <div className="mt-7 inline-flex w-fit self-start flex-wrap items-center gap-1 rounded-full border border-white/10 bg-black/40 p-1.5 shadow-[0_24px_48px_rgba(0,0,0,0.45)] backdrop-blur-3xl">
           {isBreak ? (
-            <button type="button" className={PRIMARY_BUTTON} onClick={backToFocus} autoFocus>
+            <button type="button" className={PRIMARY_BUTTON} onClick={backToFocus}>
               <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> Back to it
             </button>
           ) : session.plan.breakMinutes > 0 ? (
-            <button type="button" className={PRIMARY_BUTTON} onClick={() => takeBreak()} autoFocus>
+            <button type="button" className={PRIMARY_BUTTON} onClick={() => takeBreak()}>
               <Coffee className="h-3.5 w-3.5" aria-hidden="true" /> Take {session.plan.breakMinutes} min break
             </button>
           ) : (
-            <button type="button" className={PRIMARY_BUTTON} onClick={backToFocus} autoFocus>
+            <button type="button" className={PRIMARY_BUTTON} onClick={backToFocus}>
               <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> Another block
             </button>
           )}
@@ -359,7 +362,7 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
         </div>
       )}
 
-      <div className="mt-6 max-w-[420px] rounded-[28px] border border-white/10 bg-black/35 p-5 backdrop-blur-2xl">
+      <div className="mt-8 max-w-[420px] border-t border-white/10 pt-5">
         <TaskList tasks={session.tasks ?? []} editable />
         <div className="mt-3 border-t border-white/[0.08] pt-3">
           <ThoughtJar session={session} />
@@ -473,7 +476,6 @@ function ThoughtJar({ session }: { session: StudySession }): React.JSX.Element {
     <div>
       {open ? (
         <div className="flex items-center gap-2 rounded-2xl bg-black/25 px-3 py-2">
-          <Feather className="h-4 w-4 shrink-0 text-tone" aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
@@ -488,8 +490,8 @@ function ThoughtJar({ session }: { session: StudySession }): React.JSX.Element {
               }
             }}
             onBlur={() => !draft.trim() && setOpen(false)}
-            placeholder="Park it here, deal with it later"
-            aria-label="Park a thought"
+            placeholder="Write it down, get back to work"
+            aria-label="Note for later"
             className="font-sans flex-1 bg-transparent text-[14px] text-white/85 placeholder:text-white/35 outline-none select-text"
           />
         </div>
@@ -498,10 +500,10 @@ function ThoughtJar({ session }: { session: StudySession }): React.JSX.Element {
           type="button"
           onClick={() => setOpen(true)}
           className="font-sans inline-flex items-center gap-2 rounded text-[13px] font-semibold text-white/45 transition-colors hover:text-white cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
-          title="A stray thought? Write it down and get back to work."
+          title="Something on your mind? Note it and come back to it after."
         >
-          <Feather className="h-4 w-4" aria-hidden="true" />
-          Park a thought
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+          Note for later
           {count > 0 && <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] tabular-nums">{count}</span>}
         </button>
       )}
@@ -560,13 +562,12 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
 
       {thoughts.length > 0 && (
         <div className="mt-5">
-          <span className={SOFT_LABEL}>Thoughts you parked</span>
+          <span className={SOFT_LABEL}>Notes for later</span>
           <ul className="mt-2 flex flex-col gap-1.5">
             {thoughts.map((t) => (
               <li key={t.at} className="font-sans group flex items-start gap-2.5 rounded-xl bg-black/20 px-3 py-2 text-[14px] text-white/85">
-                <Feather className="mt-0.5 h-3.5 w-3.5 shrink-0 text-tone" aria-hidden="true" />
                 <span className="flex-1 select-text">{t.text}</span>
-                <button type="button" aria-label="Dismiss this thought" onClick={() => removeThought(t.at)} className="text-white/45 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer">
+                <button type="button" aria-label="Dismiss this note" onClick={() => removeThought(t.at)} className="text-white/45 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </li>
@@ -636,9 +637,9 @@ function HistoryPage({ records, onBack }: { records: SessionRecord[]; onBack: ()
         {records.map((r) => (
           <li key={r.id} className="group flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-black/20">
             <div className="min-w-0 flex-1">
-              <p className="font-kissa-editorial truncate text-[16px] italic text-white">
+              <p className="font-kissa-editorial truncate text-[16px] text-white">
                 {r.intentionDone && <Check className="mr-1.5 inline h-3.5 w-3.5 text-tone" aria-label="Done" />}
-                {r.intention || 'An open sitting'}
+                {r.intention || 'Open session'}
               </p>
               <p className="font-sans text-[12px] text-white/45 tabular-nums">
                 {dateFmt.format(new Date(r.startedAt))} · {formatMinutes(r.focusMs)}
@@ -646,7 +647,7 @@ function HistoryPage({ records, onBack }: { records: SessionRecord[]; onBack: ()
                 {r.rating && ` · ${RATING_LABEL[r.rating]}`}
               </p>
             </div>
-            <button type="button" onClick={() => deleteRecord(r.id)} className="text-white/45 opacity-0 transition-opacity hover:text-white group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer" aria-label={`Delete session ${r.intention || 'An open sitting'}`}>
+            <button type="button" onClick={() => deleteRecord(r.id)} className="text-white/45 opacity-0 transition-opacity hover:text-white group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer" aria-label={`Delete session ${r.intention || 'Open session'}`}>
               <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           </li>

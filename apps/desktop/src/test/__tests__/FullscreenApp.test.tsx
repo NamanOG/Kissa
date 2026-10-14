@@ -17,7 +17,8 @@ vi.mock('@renderer/hooks/useSystemMediaSync', () => ({
 import App from '@renderer/App'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 
-describe('fullscreen App architecture', () => {
+// Renders the whole app; under a full parallel run it can exceed the 5 s default.
+describe('fullscreen App architecture', { timeout: 20_000 }, () => {
   beforeEach(() => {
     window.electron = {
       isScreensaver: vi.fn().mockResolvedValue(false),

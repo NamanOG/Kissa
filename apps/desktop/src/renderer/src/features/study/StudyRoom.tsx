@@ -71,7 +71,7 @@ export function StudyRoom(): React.JSX.Element {
       <header className={cn('absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-4 px-8 pt-6 app-region-drag transition-opacity duration-700', recede)}>
         <div className="flex items-center gap-5">
           <span className="font-kissa-chassis text-[11px] font-bold uppercase tracking-[0.26em] text-white/60">Study Room</span>
-          <div role="radiogroup" aria-label="Weather outside" className={cn(GLASS, 'flex items-center gap-0.5 p-1 app-region-no-drag')}>
+          <div role="radiogroup" aria-label="Weather outside" className="flex items-center gap-0.5 app-region-no-drag">
             {ENVIRONMENTS.map((env) => (
               <button
                 key={env.id}
@@ -90,7 +90,7 @@ export function StudyRoom(): React.JSX.Element {
             ))}
           </div>
         </div>
-        <div className={cn(GLASS, 'flex items-center gap-0.5 p-1 app-region-no-drag')}>
+        <div className="flex items-center gap-0.5 app-region-no-drag">
           <button
             type="button"
             className={ICON_BUTTON}
