@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-4.2.0-blue?style=flat-square" alt="Version 4.2.0" />
+  <img src="https://img.shields.io/badge/Version-4.3.0-blue?style=flat-square" alt="Version 4.3.0" />
   <img src="https://img.shields.io/badge/Electron-39-blue?style=flat-square&logo=electron" alt="Electron 39" />
   <img src="https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-Strict-blue?style=flat-square&logo=typescript" alt="TypeScript" />
@@ -251,12 +251,20 @@ npm run build:win
 
 Production artifacts are output to `apps/desktop/dist/`:
 
-- `Kissa-Setup-4.2.0.exe`
-- `Kissa-Portable-4.2.0.exe`
+- `Kissa-Setup-4.3.0.exe`
+- `Kissa-Portable-4.3.0.exe`
 
 ---
 
 ## Version History
+
+### v4.3.0 — The Study Room
+
+- **Study Room:** A full-window place to work with your record still turning. Four rooms (Rain, Snow, Forest, Night) are photographs with living weather on top, each with its own CC0 field recording and a volume slider. Set an intention and small steps, choose sittings and breaks, park stray thoughts, and review the session at the end. The clock survives sleep and restarts, and the screensaver waits while a session is running.
+- **Share on Discord:** Optional, off by default. Shows the Apple Music track on your Discord profile with its cover, a time bar, Kissa's badge and a Store link. Spotify can be shared too through a separate switch.
+- **Lyrics That Arrive:** Lyrics lookups now survive LRCLIB throttling and slow responses, reject results for the wrong song, and remember lyrics already found so a replay shows them at once.
+- **Lighter Deck:** Line-timed lyrics no longer repaint every frame, the tonearm only redraws when it moves, and the level meter runs at 30 frames a second.
+- **Privacy:** `PRIVACY.md` covers Discord sharing, Study Room data and the website's cookieless visit counts.
 
 ### v4.2.0 — The Front Door
 

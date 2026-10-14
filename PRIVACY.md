@@ -4,7 +4,7 @@ Kissa is a desktop application that runs on your own PC. It has no accounts, no 
 
 ## What stays on your PC
 
-- Your settings, your record shelf (listening history) and any lyric timing adjustments are stored locally in your Windows user profile.
+- Your settings, your record shelf (listening history), lyric timing adjustments, a cache of lyrics already found, and your Study Room sessions (intentions, steps, notes and times) are stored locally in your Windows user profile.
 - Kissa reads what is currently playing from the Windows System Media Transport Controls (title, artist, album, artwork, playback position). That information is used to draw the turntable and is not uploaded anywhere.
 
 ## What Kissa requests from other services
@@ -20,13 +20,17 @@ To show lyrics and cover artwork, Kissa looks them up from public services. Thes
 
 Each of those services handles requests under its own privacy policy.
 
+## Sharing on Discord (off unless you turn it on)
+
+Kissa can show the track you are playing on your Discord profile. It is off by default, and Kissa asks before turning it on. When it is on, Kissa talks only to the Discord app running on your own PC, which publishes the activity to your profile: the track title, artist, album, a public cover image Kissa matched to the album, the time played, and a link to Kissa's Store page. Your friends and people in servers you share can see it, under Discord's own privacy policy. Apple Music is shared when this is on; Spotify is shared only if you also turn on **Also share Spotify**. Turning sharing off clears the activity at once.
+
 ## Links you open yourself
 
 The share feature can open a track in Spotify, Apple Music, TIDAL or YouTube. Those links open in your browser only when you choose them.
 
 ## The website
 
-The Kissa website sets no cookies and runs no analytics. It asks GitHub's public API for the latest release so the download button is current, and loads its typefaces from Google Fonts (the app itself carries its own fonts and contacts no font server). It remembers the latest release number in your browser's local storage for a few minutes to avoid repeating that request.
+The Kissa website sets no cookies. It counts page visits with Vercel Web Analytics, which is cookieless and records pages viewed, referrer, browser, operating system, device type and country, without identifying individual visitors. It asks GitHub's public API for the latest release so the download button is current, and loads its typefaces from Google Fonts (the app itself carries its own fonts and contacts no font server). It remembers the latest release number in your browser's local storage for a few minutes to avoid repeating that request.
 
 ## Changes and contact
 
