@@ -7,6 +7,7 @@ import { LISTENING_ENVIRONMENTS } from './themes'
 import { ThemeCard } from './ThemeCard'
 import { SegmentedTabs } from '@renderer/components/ui/SegmentedTabs'
 import { AboutRow, LyricsAppearanceRows, RoomPersonalSettings } from './PersonalSettings'
+import { DiscordPresenceRow } from './DiscordPresenceRow'
 import { cn } from '@renderer/utils/cn'
 import { checkForUpdates, KISSA_RELEASES_URL } from '@renderer/utils/updater'
 import type { UpdateStatusPayload } from '../../../../types/update'
@@ -589,6 +590,13 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     </button>
                   </div>
 
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-[11px] font-mono font-bold text-dim mb-2.5 tracking-[0.2em] uppercase">Sharing</h4>
+                <div className="rounded-2xl bg-ink/[0.03] border border-ink/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)]">
+                  <DiscordPresenceRow />
                 </div>
               </div>
 

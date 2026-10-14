@@ -7,6 +7,7 @@ import { ShareManager } from './services/ShareManager'
 import { ScreensaverSessionService } from './services/ScreensaverSessionService'
 import { ScreensaverRegistryService } from './services/ScreensaverRegistryService'
 import { StorePackageService } from './services/StorePackageService'
+import { startDiscordPresence, stopDiscordPresence } from './services/discord'
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
@@ -46,6 +47,9 @@ if (!gotSingleInstanceLock) {
     // Start background system media detection (Apple Music, Spotify, etc.)
     MediaDetectionService.getInstance().start()
 
+    // Optional Apple Music activity on Discord (off until the person turns it on).
+    startDiscordPresence()
+
     // Start named pipe server for Windows screensaver supervisor coordination
     ScreensaverSessionService.getInstance().start()
 
@@ -72,6 +76,7 @@ if (!gotSingleInstanceLock) {
 
   app.on('before-quit', () => {
     ScreensaverSessionService.getInstance().stop()
+    stopDiscordPresence()
     MediaDetectionService.getInstance().stop()
   })
 

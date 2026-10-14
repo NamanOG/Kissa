@@ -4,10 +4,11 @@ import type { SystemMediaPayload } from '../types/media'
 import type { LyricsRequest, LyricsResponse } from '../types/lyrics'
 import type { ShareExportOptions, SharePayload } from '../types/share'
 import type { UpdateStatusPayload, UpdateInstallResult } from '../types/update'
+import type { DiscordPresenceStatus } from '../types/discord'
 
 export interface KissaSystemMediaAPI {
   getSystemMedia: () => Promise<SystemMediaPayload | null>
-  getLyrics: (request: LyricsRequest) => Promise<LyricsResponse | null>
+  getLyrics: (request: LyricsRequest) => Promise<LyricsResponse>
   onSystemMediaUpdate: (callback: (data: SystemMediaPayload | null) => void) => () => void
   getVolume: () => Promise<{ master: number; isMuted: boolean } | null>
   mediaPlayPause: () => Promise<void>
@@ -40,6 +41,9 @@ export interface KissaSystemMediaAPI {
   cancelUpdate: () => Promise<UpdateStatusPayload>
   installUpdate: () => Promise<UpdateInstallResult>
   onUpdateStatusChanged: (callback: (status: UpdateStatusPayload) => void) => () => void
+  getDiscordPresence: () => Promise<DiscordPresenceStatus>
+  setDiscordPresenceEnabled: (enabled: boolean) => Promise<DiscordPresenceStatus>
+  onDiscordPresenceChanged: (callback: (status: DiscordPresenceStatus) => void) => () => void
 }
 
 // The main process sends an embedded cover once and then marks updates "unchanged".
@@ -131,6 +135,15 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
     ipcRenderer.on('kissa:update-status-changed', handler)
     return (): void => {
       ipcRenderer.removeListener('kissa:update-status-changed', handler)
+    }
+  },
+  getDiscordPresence: () => ipcRenderer.invoke('kissa:discord-get-status'),
+  setDiscordPresenceEnabled: (enabled) => ipcRenderer.invoke('kissa:discord-set-enabled', enabled),
+  onDiscordPresenceChanged: (callback) => {
+    const handler = (_event: unknown, status: DiscordPresenceStatus): void => callback(status)
+    ipcRenderer.on('kissa:discord-status-changed', handler)
+    return (): void => {
+      ipcRenderer.removeListener('kissa:discord-status-changed', handler)
     }
   }
 }

@@ -202,6 +202,7 @@ export class MediaDetectionService {
   private lastUpdateTimestamp: number = 0
   private isWorkerHealthy: boolean = false
   private isInternalAudioPlaying: boolean = false
+  private readonly payloadListeners = new Set<(payload: SystemMediaPayload | null) => void>()
 
   private constructor() { }
 
@@ -493,7 +494,20 @@ export class MediaDetectionService {
     }
   }
 
+  /** Main-process consumers (Discord presence) get the same updates the windows do. */
+  public onPayload(listener: (payload: SystemMediaPayload | null) => void): () => void {
+    this.payloadListeners.add(listener)
+    return () => this.payloadListeners.delete(listener)
+  }
+
   private broadcast(payload: SystemMediaPayload | null): void {
+    for (const listener of this.payloadListeners) {
+      try {
+        listener(payload)
+      } catch (err) {
+        console.warn('[MediaDetectionService] Media listener failed:', err)
+      }
+    }
     const windows = BrowserWindow.getAllWindows()
     for (const win of windows) {
       if (win.isDestroyed() || !win.webContents) continue
