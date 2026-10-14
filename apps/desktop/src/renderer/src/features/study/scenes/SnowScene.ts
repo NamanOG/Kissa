@@ -67,6 +67,19 @@ export class SnowScene extends SceneBase {
       g.fillRect(cx - w * 0.03, cy - w * 0.03, w * 0.06, w * 0.06)
     }
 
+    // Moonlight on the snow and a low mist in the valley.
+    const moon = g.createRadialGradient(w * 0.75, h * 0.18, 0, w * 0.75, h * 0.18, w * 0.5)
+    moon.addColorStop(0, 'rgba(190, 205, 235, 0.22)')
+    moon.addColorStop(1, 'rgba(190, 205, 235, 0)')
+    g.fillStyle = moon
+    g.fillRect(0, 0, w, h)
+    const mist = g.createLinearGradient(0, h * 0.55, 0, h * 0.85)
+    mist.addColorStop(0, 'rgba(170, 185, 210, 0)')
+    mist.addColorStop(0.5, 'rgba(170, 185, 210, 0.16)')
+    mist.addColorStop(1, 'rgba(170, 185, 210, 0)')
+    g.fillStyle = mist
+    g.fillRect(0, h * 0.55, w, h * 0.3)
+
     this.view = makeCanvas(w, h)
     const v = this.view.getContext('2d')!
     v.filter = `blur(${Math.max(3, w / 220)}px)`
@@ -125,11 +138,25 @@ export class SnowScene extends SceneBase {
     if (!this.view) return
     ctx.drawImage(this.view, 0, 0)
     for (const f of this.flakes) {
-      ctx.globalAlpha = 0.35 + f.depth * 0.55
+      if (f.depth > 0.86) {
+        // Flakes close to the glass are large and out of focus.
+        const r = f.r * 2.4
+        const soft = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, r)
+        soft.addColorStop(0, 'rgba(238, 243, 251, 0.5)')
+        soft.addColorStop(0.6, 'rgba(238, 243, 251, 0.22)')
+        soft.addColorStop(1, 'rgba(238, 243, 251, 0)')
+        ctx.fillStyle = soft
+        ctx.beginPath()
+        ctx.arc(f.x, f.y, r, 0, Math.PI * 2)
+        ctx.fill()
+        continue
+      }
+      ctx.globalAlpha = 0.3 + f.depth * 0.6
       ctx.fillStyle = '#eef3fb'
       ctx.beginPath()
       ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2)
       ctx.fill()
+      ctx.globalAlpha = 1
     }
     ctx.globalAlpha = 1
     if (this.frost) {

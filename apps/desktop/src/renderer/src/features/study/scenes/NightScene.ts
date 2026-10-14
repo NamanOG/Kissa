@@ -52,7 +52,21 @@ export class NightScene extends SceneBase {
     band.addColorStop(1, 'rgba(150, 160, 210, 0)')
     b.fillStyle = band
     b.fillRect(-w, -h * 0.18, w * 2, h * 0.36)
+    // Star dust along the band: thousands of faint points, densest at its centre line.
+    for (let i = 0; i < Math.round(w * 2.2); i++) {
+      const x = rand(-w, w)
+      const spread = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5
+      const y = spread * h * 0.16
+      b.fillStyle = `rgba(${rand(200, 235) | 0}, ${rand(205, 230) | 0}, 255, ${rand(0.04, 0.22) * (1 - Math.abs(spread))})`
+      b.fillRect(x, y, rand(0.6, 1.4), rand(0.6, 1.4))
+    }
     b.restore()
+    // The town's glow on the horizon.
+    const glow = b.createLinearGradient(0, h * 0.62, 0, h * 0.85)
+    glow.addColorStop(0, 'rgba(255, 170, 110, 0)')
+    glow.addColorStop(1, 'rgba(255, 170, 110, 0.14)')
+    b.fillStyle = glow
+    b.fillRect(0, h * 0.62, w, h * 0.23)
     // The moon, a low glow at the right.
     const moon = b.createRadialGradient(w * 0.82, h * 0.2, 0, w * 0.82, h * 0.2, w * 0.12)
     moon.addColorStop(0, 'rgba(240, 236, 220, 0.9)')

@@ -13,7 +13,8 @@ import {
   type Rating,
   type SessionPlan,
   type SessionRecord,
-  type StudySession
+  type StudySession,
+  type StudyTask
 } from '@renderer/features/study/studySession'
 import type { StudyEnvironment } from '@renderer/features/study/scenes'
 
@@ -36,6 +37,8 @@ export interface StudyPrefs {
   environment: StudyEnvironment
   /** A quiet generated sound bed for the environment while the Study Room is open. */
   ambience: boolean
+  /** Focus minutes a day the person is aiming for; 0 hides the goal. */
+  dailyGoalMinutes: number
 }
 
 interface Persisted {
@@ -52,7 +55,8 @@ export const DEFAULT_PREFS: StudyPrefs = {
   chime: true,
   holdRoomColor: true,
   environment: 'rain',
-  ambience: false
+  ambience: false,
+  dailyGoalMinutes: 120
 }
 
 function load(): Persisted {
@@ -90,7 +94,12 @@ function newId(): string {
 }
 
 export interface StudyState extends Persisted {
-  start: (intention: string, plan: SessionPlan) => void
+  start: (intention: string, plan: SessionPlan, tasks?: string[]) => void
+  addTask: (text: string) => void
+  toggleTask: (id: string) => void
+  removeTask: (id: string) => void
+  parkThought: (text: string) => void
+  removeThought: (at: number) => void
   tick: (now?: number) => void
   pause: () => void
   resume: () => void
@@ -138,10 +147,14 @@ export const useStudyStore = create<StudyState>((set, get) => {
   return {
     ...initial,
 
-    start: (intention, plan) => {
+    start: (intention, plan, tasks = []) => {
       const now = Date.now()
+      const list: StudyTask[] = tasks
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .map((text) => ({ id: newId(), text: text.slice(0, 120), done: false }))
       commit({
-        active: startSession(intention, plan, now, newId()),
+        active: startSession(intention, plan, now, newId(), list),
         review: null,
         lastIntention: intention.trim() || undefined,
         prefs: { ...get().prefs, plan }
@@ -162,6 +175,28 @@ export const useStudyStore = create<StudyState>((set, get) => {
       lastHeartbeatSave = now
       commit({ active: next })
     },
+    addTask: (text) =>
+      update((s) =>
+        text.trim() && (s.tasks ?? []).length < 8
+          ? { ...s, tasks: [...(s.tasks ?? []), { id: newId(), text: text.trim().slice(0, 120), done: false }] }
+          : s
+      ),
+    toggleTask: (id) => {
+      const flip = (s: StudySession): StudySession => ({
+        ...s,
+        tasks: (s.tasks ?? []).map((t) => (t.id === id ? { ...t, done: !t.done } : t))
+      })
+      // Tasks can still be ticked off on the review after finishing.
+      const { active, review } = get()
+      if (active) commit({ active: flip(active) })
+      else if (review) commit({ review: flip(review) })
+    },
+    removeTask: (id) => update((s) => ({ ...s, tasks: (s.tasks ?? []).filter((t) => t.id !== id) })),
+    parkThought: (text) =>
+      update((s, now) =>
+        text.trim() ? { ...s, thoughts: [...(s.thoughts ?? []), { at: now, text: text.trim().slice(0, 240) }].slice(-30) } : s
+      ),
+    removeThought: (at) => update((s) => ({ ...s, thoughts: (s.thoughts ?? []).filter((t) => t.at !== at) })),
     pause: () => update(pause),
     resume: () => update(resume),
     extend: () => update(extend),

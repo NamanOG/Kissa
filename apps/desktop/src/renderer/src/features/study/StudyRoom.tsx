@@ -1,22 +1,27 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { Maximize, Minimize, Minimize2, Pause, Play, SkipBack, SkipForward, Volume2, VolumeX, X } from 'lucide-react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { useStudyStore } from '@renderer/stores/studyStore'
-import { TurntableEngine } from '@renderer/features/turntable'
+import { VinylEngine } from '@renderer/features/vinyl'
+import { AlbumSleeve } from '@renderer/features/now-playing/AlbumSleeve'
+import albumPlaceholder from '@renderer/media/placeholder-album.png'
 import { StudyWindowScene } from './StudyWindowScene'
 import { StudyRoomView } from './StudyRoomView'
 import { ENVIRONMENTS, environmentInfo } from './scenes'
 
-const CHROME_BUTTON =
-  'flex h-8 w-8 items-center justify-center rounded-full text-ink/70 transition-colors hover:bg-white/10 hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone cursor-pointer app-region-no-drag'
-
 /**
- * The Study Room, full window: the environment fills the room, the desk sits in the lamp's
- * light, and the turntable stays on a low shelf in the corner, dimmed, still playing.
- * Everything that is not the desk recedes while a session runs and returns on hover.
+ * The Study Room, in the Listening Room's language: the chosen weather fills the whole
+ * window, the clock and journal sit on the left in Kissa's editorial serif and mono
+ * labels, and the record turns on the right with the track beneath it. Controls are
+ * glass pills that step back while a session runs and return on hover or keyboard focus.
  */
+
+const ICON_BUTTON =
+  'flex h-10 w-10 items-center justify-center rounded-full text-white/50 transition-[color,background-color,transform] hover:bg-white/10 hover:text-white active:scale-95 focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone cursor-pointer app-region-no-drag'
+const GLASS = 'rounded-full border border-white/10 bg-black/40 shadow-[0_24px_48px_rgba(0,0,0,0.45)] backdrop-blur-3xl'
+
 export function StudyRoom(): React.JSX.Element {
   const reduceMotion = useReducedMotion()
   const studying = useStudyStore((s) => s.active !== null && s.active.segment.runningSince !== null)
@@ -32,7 +37,7 @@ export function StudyRoom(): React.JSX.Element {
     player.setActiveView('deck')
   }
 
-  // Esc leaves the room, after anything else Esc is for (modals, true full screen).
+  // Esc leaves the room, after anything else Esc is for (modals, true full screen, a field).
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key !== 'Escape' || e.defaultPrevented) return
@@ -56,25 +61,17 @@ export function StudyRoom(): React.JSX.Element {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: reduceMotion ? 0 : 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute inset-0 z-0 overflow-hidden"
-      aria-label="Study Room"
+      transition={{ duration: reduceMotion ? 0 : 0.6, ease: [0.22, 1, 0.36, 1] }}
+      className="absolute inset-0 z-0 overflow-hidden bg-black"
       role="region"
+      aria-label="Study Room"
     >
-      <StudyWindowScene />
+      <StudyWindowScene className="absolute inset-0" />
 
-      {/* Top: what this room is, its surroundings, and the way out. */}
-      <header
-        className={cn(
-          'absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-4 px-6 pt-4 pb-3 app-region-drag transition-opacity duration-700',
-          recede
-        )}
-      >
+      <header className={cn('absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-4 px-8 pt-6 app-region-drag transition-opacity duration-700', recede)}>
         <div className="flex items-center gap-5">
-          <span className="font-kissa-chassis text-[10px] font-semibold uppercase tracking-[0.26em] text-ink/70">
-            Study Room
-          </span>
-          <div role="radiogroup" aria-label="Surroundings" className="flex items-center gap-1 app-region-no-drag">
+          <span className="font-kissa-chassis text-[11px] font-bold uppercase tracking-[0.26em] text-white/60">Study Room</span>
+          <div role="radiogroup" aria-label="Weather outside" className={cn(GLASS, 'flex items-center gap-0.5 p-1 app-region-no-drag')}>
             {ENVIRONMENTS.map((env) => (
               <button
                 key={env.id}
@@ -84,8 +81,8 @@ export function StudyRoom(): React.JSX.Element {
                 title={env.keepsTime}
                 onClick={() => setPrefs({ environment: env.id })}
                 className={cn(
-                  'rounded-full px-3 py-1 font-kissa-editorial text-[15px] italic transition-colors cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone',
-                  env.id === info.id ? 'bg-white/10 text-ink' : 'text-ink/55 hover:text-ink'
+                  'h-8 rounded-full px-3.5 font-sans text-[12px] font-medium uppercase tracking-[0.08em] transition-colors cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone',
+                  env.id === info.id ? 'bg-white/15 text-white' : 'text-white/50 hover:text-white'
                 )}
               >
                 {env.label}
@@ -93,10 +90,10 @@ export function StudyRoom(): React.JSX.Element {
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className={cn(GLASS, 'flex items-center gap-0.5 p-1 app-region-no-drag')}>
           <button
             type="button"
-            className={CHROME_BUTTON}
+            className={ICON_BUTTON}
             onClick={() => setPrefs({ ambience: !ambience })}
             aria-pressed={ambience}
             aria-label={ambience ? 'Turn off room sound' : 'Turn on room sound'}
@@ -104,47 +101,49 @@ export function StudyRoom(): React.JSX.Element {
           >
             {ambience ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
           </button>
-          <button
-            type="button"
-            className={CHROME_BUTTON}
-            onClick={() => usePlayerStore.getState().toggleMiniPlayer()}
-            aria-label="Mini player"
-            title="Mini player (keeps the timer beside your work)"
-          >
+          <button type="button" className={ICON_BUTTON} onClick={() => usePlayerStore.getState().toggleMiniPlayer()} aria-label="Mini player" title="Mini player: keep the timer beside your work">
             <Minimize2 className="h-4 w-4" />
           </button>
           <button
             type="button"
-            className={CHROME_BUTTON}
+            className={ICON_BUTTON}
             onClick={() => usePlayerStore.getState().setFullscreen(!isFullscreen)}
             aria-label={isFullscreen ? 'Leave full screen' : 'Full screen'}
             title={isFullscreen ? 'Leave full screen' : 'Full screen'}
           >
             {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
           </button>
-          <button type="button" className={CHROME_BUTTON} onClick={leave} aria-label="Leave the Study Room" title="Leave (Esc)">
+          <button type="button" className={ICON_BUTTON} onClick={leave} aria-label="Leave the Study Room" title="Leave (Esc)">
             <X className="h-4 w-4" />
           </button>
         </div>
       </header>
 
-      {/* The desk, in the lamp's light. */}
-      <div className="absolute inset-y-0 left-0 z-10 flex w-full max-w-[560px] items-center overflow-y-auto no-scrollbar min-[1200px]:pl-8">
-        <StudyRoomView />
+      <div className="absolute inset-0 z-10 flex items-center gap-[4vw] px-[6vw] pt-24 pb-10">
+        {/* Left: the clock and the journal. */}
+        <div className="flex h-full min-w-0 max-w-[560px] flex-1 flex-col justify-center">
+          <StudyRoomView />
+        </div>
+
       </div>
 
-      <ShelfDeck receding={studying} />
+      <RecordCorner />
     </motion.div>
   )
 }
 
-/** The turntable on a low shelf: smaller, dimmed, with quiet transport beneath. */
-function ShelfDeck({ receding }: { receding: boolean }): React.JSX.Element {
+/**
+ * The record in its sleeve, in the corner: Kissa's own sleeve and vinyl at desk size. The
+ * record slides out of the sleeve and turns while music plays, and slips back in when it
+ * stops, so the music is present without facing you.
+ */
+function RecordCorner(): React.JSX.Element {
   const track = usePlayerStore((s) => s.currentTrack)
   const isPlaying = usePlayerStore((s) => s.isPlaying)
   const togglePlayPause = usePlayerStore((s) => s.togglePlayPause)
-  const [hover, setHover] = useState(false)
+  const reduceMotion = useReducedMotion()
   const idle = !track || track.sourceAppId === 'kissa-idle'
+  const out = isPlaying && !idle
 
   const send = (kind: 'prev' | 'next' | 'play'): void => {
     const external = Boolean(track?.sourceAppId) && window.electron
@@ -157,48 +156,51 @@ function ShelfDeck({ receding }: { receding: boolean }): React.JSX.Element {
     } else if (kind === 'next') {
       if (external && window.electron.mediaNext) void window.electron.mediaNext()
       else usePlayerStore.getState().playNext()
-    } else {
-      if (external && window.electron.mediaPrev) void window.electron.mediaPrev()
-      else usePlayerStore.getState().playPrev()
-    }
+    } else if (external && window.electron.mediaPrev) void window.electron.mediaPrev()
+    else usePlayerStore.getState().playPrev()
   }
 
-  const bright = hover || !receding
-
   return (
-    <div
-      className="absolute bottom-0 right-0 z-10 flex w-[min(58vw,820px)] items-end justify-end gap-6 pr-[3vw] pb-[2.5vh]"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      onFocus={() => setHover(true)}
-      onBlur={() => setHover(false)}
-    >
-      <div className={cn('mb-[5vh] flex flex-col items-end gap-2 transition-opacity duration-700', bright ? 'opacity-100' : 'opacity-45')}>
-        <div className="max-w-[220px] text-right">
-          <p className="truncate font-kissa-editorial text-[17px] italic text-ink/90" title={track?.title}>
-            {idle ? 'Nothing on the platter' : track?.title}
-          </p>
-          {!idle && <p className="truncate text-[11.5px] text-ink/55">{track?.artist}</p>}
+    <div className="absolute right-[5vw] top-1/2 z-10 flex w-[min(40vw,520px)] -translate-y-[46%] flex-col items-center">
+      {/* The record rests in front of its sleeve: the vinyl whole and turning, the cover behind it. */}
+      <div className="relative h-[clamp(200px,38vh,360px)] aspect-[1.45/1]">
+        <div className="absolute left-0 top-[9%] h-[82%] aspect-square opacity-90">
+          <AlbumSleeve artworkUrl={idle ? undefined : track?.artworkUrl} title={track?.album || track?.title} flat className="h-full w-auto aspect-square" />
         </div>
-        <div className="flex items-center gap-1" role="group" aria-label="Music">
-          <button type="button" className={CHROME_BUTTON} onClick={() => send('prev')} aria-label="Previous track">
-            <SkipBack className="h-3.5 w-3.5 fill-current" />
-          </button>
-          <button type="button" className={CHROME_BUTTON} onClick={() => send('play')} aria-label={isPlaying ? 'Pause music' : 'Play music'}>
-            {isPlaying ? <Pause className="h-3.5 w-3.5 fill-current" /> : <Play className="h-3.5 w-3.5 fill-current" />}
-          </button>
-          <button type="button" className={CHROME_BUTTON} onClick={() => send('next')} aria-label="Next track">
-            <SkipForward className="h-3.5 w-3.5 fill-current" />
-          </button>
-        </div>
+        <motion.div
+          className="absolute top-0 h-full aspect-square"
+          initial={false}
+          animate={{ left: out ? '31%' : '24%' }}
+          transition={{ duration: reduceMotion ? 0 : 1.1, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <VinylEngine albumArt={track?.artworkUrl ?? albumPlaceholder} className="h-full w-full drop-shadow-[0_26px_40px_rgba(0,0,0,0.65)]" />
+        </motion.div>
       </div>
-      {/* The turntable stands on the desk in the lamp's light: full size and sharp, the room's centrepiece. */}
-      <div className="relative w-[clamp(360px,38vw,600px)] shrink-0">
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-[6%] -bottom-[3%] h-[18%] rounded-[50%] bg-black/60 blur-2xl"
-        />
-        <TurntableEngine />
+      <div className="mt-8 flex w-full flex-col items-center text-center">
+        <p className="font-kissa-editorial line-clamp-2 text-[clamp(1.6rem,2.2vw,2.2rem)] leading-tight text-white" title={track?.title}>
+          {idle ? 'Nothing playing' : track?.title}
+        </p>
+        {!idle && (
+          <p className="mt-2 line-clamp-1 font-kissa-chassis text-[12px] font-bold uppercase tracking-[0.22em] text-tone" title={track?.artist}>
+            {track?.artist}
+          </p>
+        )}
+        <div className={cn(GLASS, 'mt-6 flex items-center gap-2 px-2 py-1.5')} role="group" aria-label="Music">
+          <button type="button" className={ICON_BUTTON} onClick={() => send('prev')} aria-label="Previous track">
+            <SkipBack className="h-4 w-4 fill-current" />
+          </button>
+          <button
+            type="button"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-black transition-transform active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
+            onClick={() => send('play')}
+            aria-label={isPlaying ? 'Pause music' : 'Play music'}
+          >
+            {isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 translate-x-[1px] fill-current" />}
+          </button>
+          <button type="button" className={ICON_BUTTON} onClick={() => send('next')} aria-label="Next track">
+            <SkipForward className="h-4 w-4 fill-current" />
+          </button>
+        </div>
       </div>
     </div>
   )

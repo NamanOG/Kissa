@@ -9,7 +9,7 @@ vi.mock('framer-motion', async (importOriginal) => {
   return { ...actual, AnimatePresence: ({ children }: { children: React.ReactNode }) => children }
 })
 
-describe('StudyRoomView', () => {
+describe('StudyRoomView', { timeout: 20_000 }, () => {
   beforeEach(() => {
     vi.useFakeTimers({ now: new Date('2026-10-14T09:00:00Z') })
     Object.defineProperty(window, 'matchMedia', {

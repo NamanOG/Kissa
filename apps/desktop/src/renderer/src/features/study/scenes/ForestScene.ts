@@ -37,9 +37,9 @@ export class ForestScene extends SceneBase {
     this.trees = []
     // Far to near; each layer is drawn in black and tinted by the light at draw time.
     const layers: Array<[number, number, number]> = [
-      [0.55, 0.06, 4],
-      [0.66, 0.09, 1.5],
-      [0.8, 0.13, 0.8]
+      [0.55, 0.06, 6],
+      [0.66, 0.09, 3],
+      [0.8, 0.13, 1.4]
     ]
     for (const [base, size, blur] of layers) {
       const c = makeCanvas(w, h)
@@ -61,14 +61,14 @@ export class ForestScene extends SceneBase {
           const t = s / steps
           const half = (tw / 2) * t * rand(0.85, 1.05)
           g.lineTo(cx + half, top + th * t - th * 0.03)
-          g.lineTo(cx + half * 0.55, top + th * t)
+          g.lineTo(cx + half * 0.78, top + th * t)
         }
         g.lineTo(cx + tw * 0.04, h * base + 2)
         g.lineTo(cx - tw * 0.04, h * base + 2)
         for (let s = steps; s >= 1; s--) {
           const t = s / steps
           const half = (tw / 2) * t * rand(0.85, 1.05)
-          g.lineTo(cx - half * 0.55, top + th * t)
+          g.lineTo(cx - half * 0.78, top + th * t)
           g.lineTo(cx - half, top + th * t - th * 0.03)
         }
         g.closePath()

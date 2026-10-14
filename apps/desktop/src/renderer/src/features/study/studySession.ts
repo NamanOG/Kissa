@@ -20,6 +20,18 @@ export type SegmentKind = 'focus' | 'break'
 
 export type Rating = 'distracted' | 'okay' | 'focused'
 
+export interface StudyTask {
+  id: string
+  text: string
+  done: boolean
+}
+
+/** A stray thought set aside during a sitting, to deal with afterwards. */
+export interface ParkedThought {
+  at: number
+  text: string
+}
+
 export interface SessionPlan {
   /** Minutes per focus block; null for an open session that counts up. */
   focusMinutes: number | null
@@ -58,6 +70,9 @@ export interface StudySession {
   interruption: { at: number; awayMs: number } | null
   /** The last segment whose end has been announced. */
   announcedSegmentId: number | null
+  /** What this sitting is for, in small steps. Optional; older saved sessions have none. */
+  tasks?: StudyTask[]
+  thoughts?: ParkedThought[]
 }
 
 export interface SessionRecord {
@@ -71,6 +86,9 @@ export interface SessionRecord {
   plannedFocusMinutes: number | null
   rating: Rating | null
   intentionDone: boolean
+  tasksDone?: number
+  tasksTotal?: number
+  thoughts?: string[]
 }
 
 /** Longer than Kissa ever goes without a tick while running (ticks are 1 s, background unthrottled). */
@@ -105,8 +123,16 @@ function newSegment(id: number, kind: SegmentKind, plannedMs: number | null, now
   return { id, kind, plannedMs, elapsedBeforeMs: 0, runningSince: now, ended: false }
 }
 
-export function startSession(intention: string, plan: SessionPlan, now: number, id: string): StudySession {
+export function startSession(
+  intention: string,
+  plan: SessionPlan,
+  now: number,
+  id: string,
+  tasks: StudyTask[] = []
+): StudySession {
   return {
+    tasks: tasks.slice(0, 8),
+    thoughts: [],
     version: 1,
     id,
     intention: intention.trim().slice(0, 140),
@@ -251,7 +277,10 @@ export function toRecord(
     breaks: finished.breaksTaken,
     plannedFocusMinutes: finished.plan.focusMinutes,
     rating: reflection.rating,
-    intentionDone: reflection.intentionDone
+    intentionDone: reflection.intentionDone,
+    tasksDone: (finished.tasks ?? []).filter((t) => t.done).length,
+    tasksTotal: (finished.tasks ?? []).length,
+    thoughts: (finished.thoughts ?? []).map((t) => t.text)
   }
 }
 

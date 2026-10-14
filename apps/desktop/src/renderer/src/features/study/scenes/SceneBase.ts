@@ -85,8 +85,15 @@ export abstract class SceneBase implements StudyScene {
     this.draw(performance.now())
   }
 
+  private primed = false
+
   public setProgress(progress: number): void {
     this.target = Math.max(0, Math.min(1, progress))
+    // The first value (opening the room mid-session) is shown as it is, not eased into.
+    if (!this.primed) {
+      this.primed = true
+      this.progress = this.target
+    }
     if (this.reducedMotion) this.renderStill()
   }
 

@@ -38,6 +38,8 @@ export class RainScene extends SceneBase {
   private runners: Runner[] = []
   private streaks: Streak[] = []
   private glassDirty = true
+  /** Fine condensation-sized droplets, drawn once. */
+  private micro: HTMLCanvasElement | null = null
 
   protected build(): void {
     const { width: w, height: h } = this
@@ -74,24 +76,51 @@ export class RainScene extends SceneBase {
       x += bw + rand(w * 0.005, w * 0.03)
     }
 
-    for (let i = 0; i < 14; i++) {
-      const lx = rand(0, w)
-      const ly = rand(horizon * 0.85, horizon * 1.05)
-      const lr = rand(w * 0.01, w * 0.035)
-      const hue = Math.random() > 0.3 ? '255, 186, 110' : '170, 205, 255'
-      const glow = g.createRadialGradient(lx, ly, 0, lx, ly, lr * 3)
-      glow.addColorStop(0, `rgba(${hue}, 0.95)`)
-      glow.addColorStop(0.35, `rgba(${hue}, 0.35)`)
-      glow.addColorStop(1, `rgba(${hue}, 0)`)
-      g.fillStyle = glow
-      g.fillRect(lx - lr * 3, ly - lr * 3, lr * 6, lr * 6)
-      const refl = g.createLinearGradient(0, ly, 0, h)
-      refl.addColorStop(0, `rgba(${hue}, 0.22)`)
-      refl.addColorStop(1, `rgba(${hue}, 0)`)
-      g.fillStyle = refl
-      g.fillRect(lx - lr * 0.6, ly, lr * 1.2, h - ly)
+    // City lights out of focus: lens bokeh, soft-edged discs that brighten where they
+    // overlap. Sodium amber and warm windows mostly, a few cool whites, tail lights and a
+    // traffic green, denser near the street.
+    const palette: Array<[string, number]> = [
+      ['255, 176, 92', 0.34],
+      ['255, 206, 140', 0.22],
+      ['214, 228, 255', 0.16],
+      ['255, 92, 72', 0.12],
+      ['120, 220, 170', 0.05],
+      ['255, 236, 200', 0.11]
+    ]
+    const pick = (): string => {
+      let roll = Math.random()
+      for (const [rgb, weight] of palette) {
+        if ((roll -= weight) <= 0) return rgb
+      }
+      return palette[0][0]
     }
-
+    g.globalCompositeOperation = 'lighter'
+    const discs = Math.round(w / 9)
+    for (let i = 0; i < discs; i++) {
+      const lx = rand(-w * 0.05, w * 1.05)
+      const ly = horizon + (Math.random() - 0.35) * h * 0.38 * Math.random()
+      const lr = rand(w * 0.008, w * 0.045) * (ly > horizon ? 1.15 : 0.85)
+      const rgb = pick()
+      const alpha = rand(0.18, 0.5)
+      const disc = g.createRadialGradient(lx, ly, 0, lx, ly, lr)
+      disc.addColorStop(0, `rgba(${rgb}, ${alpha * 0.85})`)
+      disc.addColorStop(0.78, `rgba(${rgb}, ${alpha})`)
+      disc.addColorStop(0.9, `rgba(${rgb}, ${alpha * 0.55})`)
+      disc.addColorStop(1, `rgba(${rgb}, 0)`)
+      g.fillStyle = disc
+      g.beginPath()
+      g.arc(lx, ly, lr, 0, Math.PI * 2)
+      g.fill()
+      // A faint smear of the light on the wet road below it.
+      if (ly < horizon * 1.02 && Math.random() > 0.5) {
+        const refl = g.createLinearGradient(0, ly, 0, Math.min(h, ly + h * 0.35))
+        refl.addColorStop(0, `rgba(${rgb}, ${alpha * 0.25})`)
+        refl.addColorStop(1, `rgba(${rgb}, 0)`)
+        g.fillStyle = refl
+        g.fillRect(lx - lr * 0.35, ly, lr * 0.7, h * 0.35)
+      }
+    }
+    g.globalCompositeOperation = 'source-over'
     this.viewSharp = makeCanvas(w, h)
     const sharp = this.viewSharp.getContext('2d')!
     sharp.filter = `blur(${Math.max(2, w / 320)}px)`
@@ -110,6 +139,22 @@ export class RainScene extends SceneBase {
     this.mistCanvas = makeCanvas(w, h)
     this.mistCtx = this.mistCanvas.getContext('2d')
     this.paintMist(1)
+
+    this.micro = makeCanvas(w, h)
+    const mc = this.micro.getContext('2d')!
+    for (let i = 0; i < Math.round((w * h) / 420); i++) {
+      const x = rand(0, w)
+      const y = rand(0, h)
+      const r = rand(0.35, 1.1)
+      mc.fillStyle = 'rgba(0, 0, 0, 0.22)'
+      mc.beginPath()
+      mc.arc(x, y + r * 0.3, r, 0, Math.PI * 2)
+      mc.fill()
+      mc.fillStyle = `rgba(235, 240, 250, ${rand(0.12, 0.35)})`
+      mc.beginPath()
+      mc.arc(x - r * 0.2, y - r * 0.25, r * 0.55, 0, Math.PI * 2)
+      mc.fill()
+    }
 
     this.resting = []
     const count = Math.round(Math.min(420, (w * h) / 2600))
@@ -276,6 +321,11 @@ export class RainScene extends SceneBase {
       this.glassCtx.clearRect(0, 0, this.width, this.height)
       for (const d of this.resting) this.drawDrop(this.glassCtx, d.x, d.y, d.r)
       this.glassDirty = false
+    }
+    if (this.micro) {
+      ctx.globalAlpha = 0.5 + 0.5 * (1 - this.progress)
+      ctx.drawImage(this.micro, 0, 0)
+      ctx.globalAlpha = 1
     }
     if (this.glass) ctx.drawImage(this.glass, 0, 0)
     for (const d of this.runners) this.drawDrop(ctx, d.x, d.y, d.r)
