@@ -11,9 +11,10 @@ describe('StartupExperience', () => {
     vi.useRealTimers()
   })
 
-  it('renders the quiet kissa mark and platter', () => {
+  it("renders Kissa's mark and name", () => {
     render(<StartupExperience onComplete={vi.fn()} />)
-    expect(screen.getByText('kissa')).toBeInTheDocument()
+    expect(screen.getByText('Kissa')).toBeInTheDocument()
+    expect(screen.getByLabelText('Kissa')).toBeInTheDocument()
   })
 
   it('triggers onComplete after the subtle wake duration', () => {
