@@ -16,6 +16,8 @@ import type {
 
 const GITHUB_REPO = 'NamanOG/Kissa'
 export const KISSA_RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases`
+const KISSA_STORE_PAGE_URL = 'https://apps.microsoft.com/detail/9p3n4x4wm80j'
+const KISSA_STORE_APP_URL = 'ms-windows-store://pdp/?productid=9P3N4X4WM80J'
 
 export function parseSemver(ver: string): number[] {
   if (!ver || typeof ver !== 'string') return []
@@ -136,11 +138,7 @@ export class UpdateService {
   }
 
   public async checkForUpdates(): Promise<UpdateStatusPayload> {
-    if (this.isStoreManaged()) {
-      this.state = 'idle'
-      this.errorMessage = null
-      return this.getStatusPayload()
-    }
+    if (this.isStoreManaged()) return this.checkStoreForUpdates()
 
     if (this.isScreensaverActive()) {
       this.state = 'error'
@@ -240,6 +238,87 @@ export class UpdateService {
       return this.getStatusPayload()
     }
   }
+
+  /**
+   * The Store build cannot update itself, but it can say when the Store has a newer
+   * version (the Store may not have installed it yet, or automatic updates are off).
+   * It asks the Store first; if the Store cannot say (offline, or a copy not installed
+   * from the Store), the latest public release stands in. Failures stay quiet: the Store
+   * remains the one that updates.
+   */
+  private async checkStoreForUpdates(): Promise<UpdateStatusPayload> {
+    this.state = 'checking'
+    this.errorMessage = null
+    this.broadcastStatus()
+    const local = this.getCurrentVersion()
+    let version: string | null = null
+    let known = false
+    try {
+      const store = await StorePackageService.getInstance().checkStoreUpdates()
+      if (store) {
+        known = true
+        if (store.available) version = store.version || 'new'
+      }
+    } catch {
+      // fall through to the public release
+    }
+    if (!known) {
+      try {
+        const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
+          headers: { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'Kissa-Desktop' },
+          signal: AbortSignal.timeout(8_000)
+        })
+        if (res.ok) {
+          const data = (await res.json()) as { tag_name?: unknown; draft?: unknown; prerelease?: unknown }
+          if (typeof data.tag_name === 'string' && !data.draft && !data.prerelease) {
+            known = true
+            if (isNewerVersion(data.tag_name, local)) version = data.tag_name.replace(/^v/i, '')
+          }
+        }
+      } catch {
+        // offline: say nothing
+      }
+    }
+    if (version) {
+      this.state = 'available'
+      this.updateInfo = {
+        version,
+        releaseName: `Kissa ${version}`,
+        assetName: '',
+        assetSize: 0,
+        downloadUrl: KISSA_STORE_PAGE_URL,
+        isPortable: false
+      }
+    } else {
+      this.state = known ? 'up-to-date' : 'idle'
+      this.updateInfo = null
+    }
+    this.broadcastStatus()
+    return this.getStatusPayload()
+  }
+
+  /** Opens Kissa's page in the Microsoft Store app (or on the web if that fails). */
+  public async openStorePage(): Promise<void> {
+    try {
+      await shell.openExternal(KISSA_STORE_APP_URL)
+    } catch {
+      await shell.openExternal(KISSA_STORE_PAGE_URL).catch(() => {})
+    }
+  }
+
+  /**
+   * Store builds look for a newer version shortly after start and twice a day, so a
+   * person whose Store has not updated Kissa yet is told it can.
+   */
+  public startStoreUpdateWatch(): void {
+    if (!this.isStoreManaged() || this.storeWatch) return
+    const check = (): void => void this.checkStoreForUpdates()
+    setTimeout(check, 20_000).unref?.()
+    this.storeWatch = setInterval(check, 12 * 60 * 60 * 1000)
+    this.storeWatch.unref?.()
+  }
+
+  private storeWatch: ReturnType<typeof setInterval> | null = null
 
   public async downloadUpdate(): Promise<UpdateStatusPayload> {
     if (this.isStoreManaged()) {
@@ -551,5 +630,9 @@ export class UpdateService {
     ipcMain.handle('kissa:install-update', () => {
       return this.installUpdate()
     })
+
+    ipcMain.handle('kissa:open-store-page', () => this.openStorePage())
+
+    this.startStoreUpdateWatch()
   }
 }

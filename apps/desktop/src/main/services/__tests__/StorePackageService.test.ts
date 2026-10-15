@@ -192,15 +192,38 @@ describe('Store build: updates are left to the Store', () => {
 
   afterEach(() => store.setStorePackageForTesting(null))
 
-  it('marks the status as Store-managed and never checks, downloads or installs', async () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('asks the Store for a newer version but never downloads or installs itself', async () => {
     store.setStorePackageForTesting(true)
+    const helper = vi.fn().mockImplementation(async (_file: string, args: string[]) =>
+      args[0] === '--store-updates' ? '{"ok":true,"available":true,"version":"4.3.0"}' : '{"packaged":true,"familyName":"x"}'
+    )
+    store.setExecFileForTesting(helper as unknown as HelperExecFile)
     const updates = UpdateService.getInstance()
 
     const status = await updates.checkForUpdates()
     expect(status.isStoreManaged).toBe(true)
-    expect(status.state).toBe('idle')
-    expect((await updates.downloadUpdate()).state).toBe('idle')
+    expect(status.state).toBe('available')
+    expect(status.updateInfo?.version).toBe('4.3.0')
+    expect(helper.mock.calls.some((c) => c[1][0] === '--store-updates')).toBe(true)
+    expect((await updates.downloadUpdate()).state).toBe('available')
     expect(await updates.installUpdate()).toMatchObject({ success: false })
+  })
+
+  it('says up to date when the Store has nothing newer', async () => {
+    store.setStorePackageForTesting(true)
+    store.setExecFileForTesting((async () => '{"ok":true,"available":false,"version":""}') as unknown as HelperExecFile)
+    expect((await UpdateService.getInstance().checkForUpdates()).state).toBe('up-to-date')
+  })
+
+  it('falls back to the public release when the Store cannot say', async () => {
+    store.setStorePackageForTesting(true)
+    store.setExecFileForTesting((async () => '{"ok":false,"error":"x"}') as unknown as HelperExecFile)
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ tag_name: 'v4.4.0' }), { status: 200 })))
+    const status = await UpdateService.getInstance().checkForUpdates()
+    expect(status.state).toBe('available')
+    expect(status.updateInfo?.version).toBe('4.4.0')
   })
 
   it('leaves the classic build self-updating', () => {

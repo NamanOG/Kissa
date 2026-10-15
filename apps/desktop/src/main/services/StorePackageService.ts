@@ -144,6 +144,14 @@ export class StorePackageService {
     )
   }
 
+  /** Asks the Microsoft Store whether it has a newer Kissa. Null when the Store could not say. */
+  public async checkStoreUpdates(): Promise<{ available: boolean; version: string } | null> {
+    if (!this.isStorePackage()) return null
+    const result = await this.runHelper<{ ok: boolean; available?: boolean; version?: string }>(['--store-updates'])
+    if (!result?.ok) return null
+    return { available: result.available === true, version: typeof result.version === 'string' ? result.version : '' }
+  }
+
   public async setStartupTask(enabled: boolean): Promise<StartupTaskResult> {
     return (
       (await this.runHelper<StartupTaskResult>(['--startup-task', enabled ? 'enable' : 'disable'])) ?? {

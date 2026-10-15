@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
+using Windows.Services.Store;
 
 namespace SmtcHelper
 {
@@ -15,6 +16,7 @@ namespace SmtcHelper
     ///   --startup-task get        state of the package's "start at sign-in" task
     ///   --startup-task enable
     ///   --startup-task disable
+    ///   --store-updates           does the Microsoft Store have a newer Kissa?
     ///
     /// These matter only for the Store build: a packaged app has an identity,
     /// its registry and AppData writes are redirected, and "start with Windows"
@@ -34,7 +36,7 @@ namespace SmtcHelper
 
         /// <summary>True when the first argument is one of the commands above.</summary>
         public static bool Handles(string[] args) =>
-            args.Length > 0 && (args[0] == "--package-info" || args[0] == "--startup-task");
+            args.Length > 0 && (args[0] == "--package-info" || args[0] == "--startup-task" || args[0] == "--store-updates");
 
         public static async Task<int> RunAsync(string[] args)
         {
@@ -47,6 +49,27 @@ namespace SmtcHelper
                     Print(family == null
                         ? "{\"packaged\":false,\"familyName\":null}"
                         : "{\"packaged\":true,\"familyName\":\"" + Escape(family) + "\"}");
+                    return 0;
+                }
+
+                if (args[0] == "--store-updates")
+                {
+                    if (GetPackageFamilyName() == null)
+                    {
+                        Print("{\"ok\":false,\"available\":false,\"error\":\"not_packaged\"}");
+                        return 0;
+                    }
+                    // Asks the Store which updates it has for this package. Works only for a
+                    // copy installed from the Store; a sideloaded test package reports an error.
+                    StoreContext context = StoreContext.GetDefault();
+                    var updates = await context.GetAppAndOptionalStorePackageUpdatesAsync();
+                    string version = "";
+                    if (updates.Count > 0)
+                    {
+                        var v = updates[0].Package.Id.Version;
+                        version = v.Major + "." + v.Minor + "." + v.Build;
+                    }
+                    Print("{\"ok\":true,\"available\":" + (updates.Count > 0 ? "true" : "false") + ",\"version\":\"" + Escape(version) + "\"}");
                     return 0;
                 }
 

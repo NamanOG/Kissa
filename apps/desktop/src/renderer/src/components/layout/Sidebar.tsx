@@ -37,6 +37,15 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const toggleKeyboardHelp = usePlayerStore((s) => s.toggleKeyboardHelp)
     const isMiniPlayer = usePlayerStore((s) => s.isMiniPlayer)
     const hasUpdateAvailable = usePlayerStore((s) => s.hasUpdateAvailable)
+
+    // A small mark on Settings while a newer Kissa is waiting (download or Store update).
+    React.useEffect(() => {
+      const api = window.electron
+      const apply = (state: string | undefined): void =>
+        usePlayerStore.getState().setHasUpdateAvailable(state === 'available' || state === 'downloaded')
+      void api?.getUpdateStatus?.().then((s) => apply(s?.state)).catch(() => {})
+      return api?.onUpdateStatusChanged?.((s) => apply(s.state))
+    }, [])
     const isStudying = useStudyStore((s) => s.active !== null)
 
     return (
@@ -199,7 +208,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             <div className="relative">
               <Settings className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4 transition-transform duration-200 ease-out group-hover:rotate-[20deg]" strokeWidth={isSettingsOpen ? 2 : 1.5} />
               {hasUpdateAvailable && (
-                <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse" />
+                <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-tone shadow-[0_0_8px_var(--accent)]" />
               )}
             </div>
           </button>

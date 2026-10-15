@@ -618,8 +618,8 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                             <>
                               {currentState === 'checking' && 'Checking for updates…'}
                               {currentState === 'error' && (updatePayload?.error || "Couldn't check for updates")}
-                              {currentState === 'up-to-date' && "You're up to date"}
-                              {currentState === 'available' && updatePayload?.updateInfo ? `Kissa ${updatePayload.updateInfo.version} is available${updatePayload.updateInfo.assetSize ? ` (${Math.round(updatePayload.updateInfo.assetSize / (1024 * 1024))} MB)` : ''}` : ''}
+                              {currentState === 'up-to-date' && (isStoreManaged ? `Version ${appVersion} · You're up to date` : "You're up to date")}
+                              {currentState === 'available' && updatePayload?.updateInfo ? `${updatePayload.updateInfo.version === 'new' ? 'A new version of Kissa' : `Kissa ${updatePayload.updateInfo.version}`} is available${isStoreManaged ? ' in the Microsoft Store' : ''}${updatePayload.updateInfo.assetSize ? ` (${Math.round(updatePayload.updateInfo.assetSize / (1024 * 1024))} MB)` : ''}` : ''}
                               {currentState === 'downloading' && `Downloading ${updatePayload?.updateInfo?.version || ''}… ${updatePayload?.progress?.percent ?? 0}%`}
                               {currentState === 'downloaded' && (updatePayload?.isPortable ? 'Portable update downloaded to Downloads' : 'Update ready to install')}
                               {currentState === 'installing' && 'Restarting Kissa…'}
@@ -633,7 +633,26 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                         </span>
                       </div>
 
-                      {isStoreManaged ? null : isConfirmingRestart ? (
+                      {isStoreManaged ? (
+                        currentState === 'available' ? (
+                          <button
+                            type="button"
+                            onClick={() => void window.electron?.openStorePage?.()}
+                            className="px-4 py-1.5 rounded-xl bg-tone text-[var(--surface)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95 shrink-0"
+                          >
+                            Update in Microsoft Store
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleCheckUpdate}
+                            disabled={currentState === 'checking'}
+                            className="px-4 py-1.5 rounded-xl bg-ink/[0.08] hover:bg-ink/[0.14] text-ink text-[12px] font-bold transition-colors cursor-pointer border border-ink/10 active:scale-95 disabled:opacity-50 disabled:pointer-events-none shrink-0"
+                          >
+                            Check for Updates
+                          </button>
+                        )
+                      ) : isConfirmingRestart ? (
                         <div className="flex items-center gap-2 shrink-0">
                           <button
                             type="button"

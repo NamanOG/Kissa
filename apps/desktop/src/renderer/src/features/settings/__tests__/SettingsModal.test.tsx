@@ -426,6 +426,8 @@ describe('SettingsModal startup and background switches', () => {
     render(<SettingsModal />)
 
     expect(await screen.findByText('Version 4.1.0 · Updated by Microsoft Store')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Check for Updates' })).not.toBeInTheDocument()
+    // It can ask the Store, but never downloads an installer itself.
+    expect(screen.getByRole('button', { name: 'Check for Updates' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Download Update/ })).not.toBeInTheDocument()
   })
 })
