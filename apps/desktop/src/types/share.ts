@@ -17,6 +17,10 @@ export interface StatsShareData {
   totalPlays: number
   mostPlayedAlbum?: AlbumShareData
   mostRecentAlbum?: AlbumShareData
+  /** The next most-played albums after the top one (up to four). */
+  runnersUp?: AlbumShareData[]
+  /** The artist with the most plays across the shelf. */
+  topArtist?: { name: string; plays: number }
   firstListenDate: number
 }
 

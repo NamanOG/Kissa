@@ -60,19 +60,19 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 16 }}
           transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          className="relative flex flex-col w-full max-w-3xl max-h-[90vh] bg-[#111] rounded-lg shadow-2xl overflow-hidden border border-white/10"
+          className="relative flex flex-col w-full max-w-3xl max-h-[90vh] bg-[var(--deck-bg)] rounded-[28px] shadow-[0_30px_80px_rgba(0,0,0,0.65)] overflow-hidden border border-ink/[0.08]"
         >
-          <div className="flex items-center justify-between p-6 border-b border-white/10">
-            <h2 className="font-serif text-2xl tracking-tight text-white/90">Preview Export</h2>
+          <div className="flex items-center justify-between px-8 pt-7 pb-5">
+            <h2 className="font-kissa-editorial text-[26px] font-normal text-ink">Share a card</h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-dim hover:bg-ink/[0.08] hover:text-ink transition-colors cursor-pointer" aria-label="Close"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center justify-center bg-black/40 min-h-[50vh]">
+          <div className="flex-1 overflow-y-auto px-8 py-6 flex flex-col items-center justify-center bg-black/25 min-h-[50vh]">
             <div 
               className="relative shadow-2xl overflow-hidden rounded-md transition-[transform,margin,width,height] duration-content ease-primary"
               style={{
@@ -87,25 +87,25 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
             </div>
           </div>
 
-          <div className="p-6 border-t border-white/10 bg-[#161616] flex items-center justify-between">
-            <div className="flex bg-black/50 p-1 rounded-md border border-white/5">
+          <div className="px-8 py-5 flex items-center justify-between gap-4">
+            <div className="flex rounded-full border border-ink/10 bg-black/30 p-1">
               <button
                 onClick={() => setAspectRatio('4:5')}
                 className={cn(
-                  "px-4 py-1.5 text-xs font-mono tracking-widest rounded-sm transition-colors",
-                  aspectRatio === '4:5' ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"
+                  "px-4 py-1.5 text-[12px] font-semibold rounded-full transition-colors cursor-pointer",
+                  aspectRatio === '4:5' ? "bg-ink/[0.12] text-ink" : "text-dim hover:text-ink"
                 )}
               >
-                4:5
+                Portrait
               </button>
               <button
                 onClick={() => setAspectRatio('1:1')}
                 className={cn(
-                  "px-4 py-1.5 text-xs font-mono tracking-widest rounded-sm transition-colors",
-                  aspectRatio === '1:1' ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"
+                  "px-4 py-1.5 text-[12px] font-semibold rounded-full transition-colors cursor-pointer",
+                  aspectRatio === '1:1' ? "bg-ink/[0.12] text-ink" : "text-dim hover:text-ink"
                 )}
               >
-                1:1
+                Square
               </button>
             </div>
 
@@ -114,18 +114,18 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
                 variant="secondary"
                 disabled={!!exporting}
                 onClick={() => handleExport('copy')}
-                className="font-mono text-xs uppercase tracking-widest"
+                className="rounded-full font-sans normal-case tracking-normal text-[12.5px] font-semibold"
               >
                 {exporting === 'copy' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                Copy Image
+                Copy image
               </Button>
               <Button
                 disabled={!!exporting}
                 onClick={() => handleExport('save')}
-                className="font-mono text-xs uppercase tracking-widest bg-white text-black hover:bg-white/90"
+                className="rounded-full font-sans normal-case tracking-normal text-[12.5px] font-bold bg-tone text-[var(--surface)] hover:bg-tone/90"
               >
                 {exporting === 'save' ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Download className="w-4 h-4 mr-2" />}
-                Save PNG
+                Save image
               </Button>
             </div>
           </div>

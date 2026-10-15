@@ -191,7 +191,7 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
           <div className="mt-6 flex items-end gap-6">
             <span
               className="font-serif font-medium leading-[0.82] tracking-[-0.04em]"
-              style={{ fontSize: isSquare ? 260 : 340, color: accent }}
+              style={{ fontSize: isSquare ? 260 : stats.runnersUp?.length ? 250 : 340, color: accent }}
             >
               {stats.totalAlbums}
             </span>
@@ -199,25 +199,47 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
               {stats.totalAlbums === 1 ? 'record' : 'records'}
             </span>
           </div>
-          <div className="mt-12 flex gap-20 border-t pt-8" style={{ borderColor: 'color-mix(in srgb, currentColor 16%, transparent)' }}>
+          <div className="mt-12 flex gap-16 border-t pt-8" style={{ borderColor: 'color-mix(in srgb, currentColor 16%, transparent)' }}>
             <Fact label="Artists" value={String(stats.uniqueArtists)} />
             <Fact label="Plays" value={String(stats.totalPlays)} />
+            {stats.topArtist && (
+              <div className="flex min-w-0 flex-col gap-2">
+                <Label>Most played artist</Label>
+                <span className="truncate font-serif text-[40px] leading-none">{stats.topArtist.name}</span>
+              </div>
+            )}
           </div>
         </div>
 
         {top && (
-          <div className="flex items-end gap-10">
-            <Cover src={top.artworkUrl} size={isSquare ? 250 : 340} />
-            <div className="min-w-0 pb-2">
-              <Label>Most played</Label>
-              <h2 className="mt-4 font-serif text-[52px] font-medium leading-[1.04] tracking-[-0.015em] line-clamp-2">
-                {top.album}
-              </h2>
-              <p className="mt-3 font-serif text-[30px] opacity-75 line-clamp-1">{top.artist}</p>
-              <p className="mt-5">
-                <Label>{plural(top.playCount, 'play')}</Label>
-              </p>
+          <div>
+            <div className="flex items-end gap-10">
+              <Cover src={top.artworkUrl} size={isSquare ? 230 : 300} />
+              <div className="min-w-0 pb-2">
+                <Label>Most played</Label>
+                <h2 className="mt-4 font-serif text-[50px] font-medium leading-[1.04] tracking-[-0.015em] line-clamp-2">
+                  {top.album}
+                </h2>
+                <p className="mt-3 font-serif text-[30px] opacity-75 line-clamp-1">{top.artist}</p>
+                <p className="mt-5">
+                  <Label>{plural(top.playCount, 'play')}</Label>
+                </p>
+              </div>
             </div>
+            {!isSquare && stats.runnersUp && stats.runnersUp.length > 0 && (
+              <div className="mt-12">
+                <Label>Also on the turntable</Label>
+                <div className="mt-5 grid grid-cols-4 gap-6">
+                  {stats.runnersUp.slice(0, 4).map((a, i) => (
+                    <div key={i} className="min-w-0">
+                      <Cover src={a.artworkUrl} size={204} />
+                      <p className="mt-3 truncate font-serif text-[22px] leading-tight">{a.album}</p>
+                      <p className="mt-1 truncate font-mono text-[14px] uppercase tracking-[0.16em] opacity-55">{plural(a.playCount, 'play')}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -243,7 +265,10 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
       {type === 'stats' && renderStats()}
 
       <div className="relative z-10 mt-12 flex items-baseline justify-between">
-        <span className="font-serif text-[30px]">Kissa</span>
+        <span className="flex items-baseline gap-5">
+          <span className="font-serif text-[30px]">Kissa</span>
+          <Label>Vinyl player for Windows</Label>
+        </span>
         <Label>{monthYear(Date.now())}</Label>
       </div>
     </div>

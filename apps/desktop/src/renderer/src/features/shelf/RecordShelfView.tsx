@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useShelfStore, RecordEntry } from '../../stores/shelfStore'
 import { usePlayerStore } from '../../stores/playerStore'
 import { possessive } from '../../utils/greeting'
-import { Play, Disc3, X, Share, Trash2 } from 'lucide-react'
+import { Disc3, X, Share, Trash2 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { SharePreviewModal } from '../share/SharePreviewModal'
 import { SharePayload, StatsShareData, AlbumShareData } from '../../../../types/share'
@@ -43,13 +43,19 @@ export const RecordShelfView = memo(() => {
 
   const handleShareStats = () => {
     if (records.length === 0) return
+    const byPlays = [...records].sort((a, b) => b.playCount - a.playCount)
+    const artistPlays = new Map<string, number>()
+    for (const r of records) artistPlays.set(r.artist, (artistPlays.get(r.artist) ?? 0) + r.playCount)
+    const [topArtistName, topArtistPlays] = [...artistPlays].sort((a, b) => b[1] - a[1])[0] ?? ['', 0]
     const stats: StatsShareData = {
       totalAlbums: records.length,
-      uniqueArtists: new Set(records.map(r => r.artist)).size,
+      uniqueArtists: artistPlays.size,
       totalPlays: records.reduce((sum, r) => sum + r.playCount, 0),
       firstListenDate: Math.min(...records.map(r => r.firstListened)),
-      mostPlayedAlbum: [...records].sort((a, b) => b.playCount - a.playCount)[0] as unknown as AlbumShareData,
-      mostRecentAlbum: [...records].sort((a, b) => b.lastListened - a.lastListened)[0] as unknown as AlbumShareData
+      mostPlayedAlbum: byPlays[0] as unknown as AlbumShareData,
+      mostRecentAlbum: [...records].sort((a, b) => b.lastListened - a.lastListened)[0] as unknown as AlbumShareData,
+      runnersUp: byPlays.slice(1, 5) as unknown as AlbumShareData[],
+      topArtist: topArtistName ? { name: topArtistName, plays: topArtistPlays } : undefined
     }
     setSharePayload({ type: 'stats', data: stats, aspectRatio: '4:5' })
   }
@@ -106,38 +112,38 @@ export const RecordShelfView = memo(() => {
                   <button 
                     type="button" 
                     onClick={() => setSelectionMode(true)}
-                    className="text-[10px] uppercase font-kissa-chassis tracking-[0.15em] text-dim hover:text-ink transition-colors"
+                    className="text-[12.5px] font-semibold cursor-pointer text-dim hover:text-ink transition-colors"
                   >
-                    SELECT
+                    Select to share
                   </button>
                   <button 
                     type="button" 
                     onClick={handleShareStats}
-                    className="text-[10px] uppercase font-kissa-chassis tracking-[0.15em] text-tone hover:text-tone/80 transition-colors"
+                    className="text-[12.5px] font-semibold cursor-pointer text-tone hover:text-tone/80 transition-colors"
                   >
-                    STATS
+                    Share my stats
                   </button>
                   <button 
                     type="button" 
                     onClick={() => setShowClearConfirm(true)}
-                    className="text-[10px] uppercase font-kissa-chassis tracking-[0.15em] text-red-500/70 hover:text-red-500 transition-colors ml-4"
+                    className="text-[12.5px] font-semibold cursor-pointer text-red-500/70 hover:text-red-500 transition-colors ml-4"
                   >
-                    CLEAR
+                    Clear
                   </button>
                 </div>
               </>
             ) : (
               <div className="flex items-center gap-6">
-                <span className="text-[10px] font-kissa-chassis tracking-[0.15em] uppercase text-tone">
-                  {selectedForShare.size}/9 SELECTED
+                <span className="text-[12.5px] font-semibold text-tone">
+                  {selectedForShare.size} of 9 selected
                 </span>
                 <button 
                   type="button" 
                   onClick={handleShareCollection}
                   disabled={selectedForShare.size === 0}
-                  className="text-[10px] uppercase font-kissa-chassis tracking-[0.15em] text-ink hover:opacity-80 disabled:opacity-30 transition-colors"
+                  className="text-[12.5px] font-semibold cursor-pointer text-ink hover:opacity-80 disabled:opacity-30 transition-colors"
                 >
-                  SHARE
+                  Share
                 </button>
                 <button 
                   type="button" 
@@ -145,9 +151,9 @@ export const RecordShelfView = memo(() => {
                     setSelectionMode(false)
                     setSelectedForShare(new Set())
                   }}
-                  className="text-[10px] uppercase font-kissa-chassis tracking-[0.15em] text-dim hover:text-ink transition-colors"
+                  className="text-[12.5px] font-semibold cursor-pointer text-dim hover:text-ink transition-colors"
                 >
-                  CANCEL
+                  Cancel
                 </button>
               </div>
             )}
@@ -258,89 +264,111 @@ export const RecordShelfView = memo(() => {
               initial={{ x: '100%', opacity: 0.5 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: '100%', opacity: 0.5 }}
-              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-              className="absolute right-0 top-0 bottom-0 w-[340px] min-[1400px]:w-[380px] bg-[#121013] border-l border-white/[0.03] shadow-[-16px_0_64px_rgba(0,0,0,0.8)] z-40 flex flex-col border-t border-t-white/[0.02]"
+              transition={{ type: 'spring', damping: 30, stiffness: 240 }}
+              role="dialog"
+              aria-label={`${selectedRecord.album} by ${selectedRecord.artist}`}
+              className="absolute bottom-0 right-0 top-0 z-40 flex w-[400px] flex-col overflow-hidden border-l border-ink/[0.06] bg-[var(--deck-bg)] shadow-[-24px_0_80px_rgba(0,0,0,0.6)] min-[1400px]:w-[440px]"
             >
-              <div className="flex items-center justify-between p-6 pb-4 border-b border-white/5">
-                <span className="font-kissa-chassis text-[9px] uppercase tracking-[0.2em] text-dim/60">
-                  Record Inspector
-                </span>
-                <button
-                  onClick={() => setSelectedAlbum(null)}
-                  className="text-dim hover:text-white transition-colors p-1"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              {/* Lit by its own cover, like the record on the deck. */}
+              {selectedRecord.artworkUrl && (
+                <img
+                  src={selectedRecord.artworkUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -top-16 left-1/2 h-[70%] w-[160%] -translate-x-1/2 object-cover opacity-30 blur-3xl"
+                />
+              )}
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-[var(--deck-bg)]/70 to-[var(--deck-bg)]" aria-hidden="true" />
 
-              <div className="flex-1 overflow-y-auto no-scrollbar p-6">
-                <div className="w-full aspect-square rounded-sm overflow-hidden mb-6 shadow-xl border border-white/5 relative bg-[#1a1411]">
-                  {selectedRecord.artworkUrl ? (
-                    <img src={selectedRecord.artworkUrl} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                      <Disc3 className="w-12 h-12 text-tone/30 mb-2" />
+              <button
+                type="button"
+                onClick={() => setSelectedAlbum(null)}
+                className="absolute right-5 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full text-dim transition-colors hover:bg-ink/[0.08] hover:text-ink cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <div className="relative flex-1 overflow-y-auto no-scrollbar px-9 pb-6 pt-16">
+                <div className="relative aspect-square w-[70%]">
+                  {/* The record peeking out of its sleeve. */}
+                  <div
+                    className="absolute right-[-30%] top-[4%] aspect-square w-[92%] rounded-full border border-ink/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+                    style={{ backgroundImage: 'repeating-radial-gradient(#101010 0px, #191919 2px, #101010 4px)' }}
+                    aria-hidden="true"
+                  >
+                    <div className="absolute left-1/2 top-1/2 aspect-square w-[34%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full">
+                      {selectedRecord.artworkUrl && <img src={selectedRecord.artworkUrl} alt="" className="h-full w-full object-cover" />}
                     </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-white/10 pointer-events-none mix-blend-overlay" />
-                  <div className="absolute top-0 left-0 bottom-0 w-[3px] bg-gradient-to-r from-white/20 to-transparent pointer-events-none" />
-                </div>
-
-                <h2 className="font-serif text-2xl font-medium tracking-tight text-ink leading-tight mb-1">
-                  {selectedRecord.album}
-                </h2>
-                <p className="font-kissa-chassis text-[10px] uppercase tracking-[0.1em] text-dim/70">
-                  {selectedRecord.artist}
-                </p>
-
-                <div className="mt-8 flex gap-4">
-                  <div className="flex-1 border border-white/5 bg-white/[0.02] rounded-md p-4 flex flex-col">
-                    <span className="font-kissa-chassis text-[9px] uppercase tracking-[0.15em] text-dim/50 mb-1">Plays</span>
-                    <span className="font-mono text-lg text-ink">{selectedRecord.playCount}</span>
                   </div>
-                  <div className="flex-1 border border-white/5 bg-white/[0.02] rounded-md p-4 flex flex-col">
-                    <span className="font-kissa-chassis text-[9px] uppercase tracking-[0.15em] text-dim/50 mb-1">Last Played</span>
-                    <span className="font-mono text-[13px] text-ink mt-1">{new Date(selectedRecord.lastListened).toLocaleDateString()}</span>
-                  </div>
-                </div>
-
-                <div className="mt-8 pb-4">
-                  <span className="font-kissa-chassis text-[9px] uppercase tracking-[0.15em] text-dim/50 block mb-3">
-                    Tracks Encountered
-                  </span>
-                  <div className="flex flex-col gap-1.5">
-                    {selectedRecord.tracksEncountered.map((t, i) => (
-                      <div key={i} className="text-[12px] px-3 py-2 border border-white/[0.03] bg-white/[0.01] rounded flex items-center gap-3">
-                        <Play className="w-3 h-3 text-dim/30 shrink-0" />
-                        <span className="text-ink/80 truncate font-medium">{t}</span>
+                  <div className="relative h-full w-full overflow-hidden rounded-xl bg-[#1a1411] shadow-[0_24px_50px_rgba(0,0,0,0.6)]">
+                    {selectedRecord.artworkUrl ? (
+                      <img src={selectedRecord.artworkUrl} alt={selectedRecord.album} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Disc3 className="h-12 w-12 text-tone/30" />
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
+
+                <h2 className="mt-9 font-kissa-editorial text-[30px] font-normal leading-[1.08] text-ink text-balance">{selectedRecord.album}</h2>
+                <p className="mt-2 text-[12px] font-bold uppercase tracking-[0.2em] text-tone">{selectedRecord.artist}</p>
+
+                <dl className="mt-8 grid grid-cols-3 border-y border-ink/[0.08] py-5">
+                  <div>
+                    <dd className="font-kissa-editorial text-[30px] leading-none text-ink tabular-nums">{selectedRecord.playCount}</dd>
+                    <dt className="mt-2 text-[11px] text-dim">{selectedRecord.playCount === 1 ? 'play' : 'plays'}</dt>
+                  </div>
+                  <div className="border-l border-ink/[0.08] pl-5">
+                    <dd className="font-kissa-editorial text-[22px] leading-[1.36] text-ink">{shelfDate(selectedRecord.firstListened)}</dd>
+                    <dt className="mt-2 text-[11px] text-dim">first played</dt>
+                  </div>
+                  <div className="border-l border-ink/[0.08] pl-5">
+                    <dd className="font-kissa-editorial text-[22px] leading-[1.36] text-ink">{shelfDate(selectedRecord.lastListened)}</dd>
+                    <dt className="mt-2 text-[11px] text-dim">last played</dt>
+                  </div>
+                </dl>
+
+                {selectedRecord.tracksEncountered.length > 0 && (
+                  <div className="mt-8">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-dim">Songs you have played</p>
+                    <ol className="mt-3">
+                      {selectedRecord.tracksEncountered.map((t, i) => (
+                        <li key={i} className="flex items-baseline gap-4 border-b border-ink/[0.05] py-2.5 last:border-b-0">
+                          <span className="w-5 shrink-0 font-mono text-[11px] text-dim/70 tabular-nums">{String(i + 1).padStart(2, '0')}</span>
+                          <span className="truncate text-[13.5px] text-ink/90">{t}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
               </div>
 
-              <div className="p-6 border-t border-white/5 flex gap-3 shrink-0">
+              <div className="relative flex shrink-0 items-center gap-3 border-t border-ink/[0.06] px-9 py-5">
                 <button
+                  type="button"
                   onClick={() => {
                     setSharePayload({ type: 'album', data: selectedRecord as unknown as AlbumShareData, aspectRatio: '4:5' })
                   }}
-                  className="flex-1 py-3 bg-white/[0.03] hover:bg-tone hover:text-black border border-white/10 hover:border-tone text-[10px] uppercase font-kissa-chassis tracking-[0.15em] transition-colors rounded shadow-sm text-white flex items-center justify-center gap-2"
+                  className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-tone text-[12.5px] font-bold text-[var(--surface)] transition-transform cursor-pointer active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
                 >
-                  <Share className="w-3.5 h-3.5" />
-                  Share
+                  <Share className="h-4 w-4" />
+                  Share a card
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     removeRecord(selectedRecord.albumKey)
                     setSelectedAlbum(null)
                   }}
-                  className="py-3 px-4 bg-white/[0.03] hover:bg-red-500/20 hover:text-red-400 border border-white/10 hover:border-red-500/30 text-[10px] uppercase font-kissa-chassis tracking-[0.15em] transition-colors rounded shadow-sm text-dim"
-                  title="Remove from Shelf"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink/10 text-dim transition-colors hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-300 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone"
+                  aria-label="Remove from the shelf"
+                  title="Remove from the shelf"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="h-4 w-4" />
                 </button>
-              </div>
-            </motion.div>
+              </div>            </motion.div>
           </>
         )}
       </AnimatePresence>
@@ -354,6 +382,16 @@ export const RecordShelfView = memo(() => {
 })
 
 RecordShelfView.displayName = 'RecordShelfView'
+
+/** Today, yesterday, a date this year, or a date with the year. */
+function shelfDate(time: number): string {
+  const d = new Date(time)
+  const today = new Date()
+  const days = Math.round((new Date(today.toDateString()).getTime() - new Date(d.toDateString()).getTime()) / 86_400_000)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  return d.toLocaleDateString(undefined, d.getFullYear() === today.getFullYear() ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' })
+}
 
 function SortTab({ active, onClick, label }: { active: boolean, onClick: () => void, label: string }) {
   return (
