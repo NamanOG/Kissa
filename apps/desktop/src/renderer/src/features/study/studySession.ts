@@ -319,3 +319,35 @@ export function formatMinutes(ms: number): string {
   const m = minutes % 60
   return m ? `${h} h ${m} min` : `${h} h`
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** Focus minutes for each of the last seven days, oldest first (today last). */
+export function lastSevenDays(records: SessionRecord[], now: number): { start: number; focusMs: number }[] {
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today)
+    d.setDate(d.getDate() - (6 - i))
+    return { start: d.getTime(), focusMs: 0 }
+  })
+  for (const r of records) {
+    for (let i = days.length - 1; i >= 0; i--) {
+      if (r.startedAt >= days[i].start) {
+        if (i < days.length - 1 || r.startedAt < days[i].start + DAY_MS) days[i].focusMs += r.focusMs
+        break
+      }
+    }
+  }
+  return days
+}
+
+/** Days in a row, ending today (or yesterday, if today has not reached it yet), that met the goal. */
+export function goalStreak(days: { focusMs: number }[], goalMs: number): number {
+  if (goalMs <= 0) return 0
+  let i = days.length - 1
+  if (days[i].focusMs < goalMs) i--
+  let streak = 0
+  for (; i >= 0 && days[i].focusMs >= goalMs; i--) streak++
+  return streak
+}

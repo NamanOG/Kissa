@@ -11,7 +11,9 @@ import {
   focusMs,
   formatClock,
   formatMinutes,
+  goalStreak,
   isRunning,
+  lastSevenDays,
   segmentElapsed,
   segmentRemaining,
   type Rating,
@@ -644,6 +646,7 @@ function HistoryPage({ records, onBack }: { records: SessionRecord[]; onBack: ()
       </button>
       <h1 className="font-kissa-editorial mt-3 text-[clamp(1.8rem,2.6vw,2.4rem)] font-normal">My sessions</h1>
       <p className="font-sans mt-1 text-[13px] text-white/45">{formatMinutes(weekFocus)} in the last seven days</p>
+      <WeekStrip records={records} />
       <ul className="mt-5 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto no-scrollbar">
         {records.map((r) => (
           <li key={r.id} className="group flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-black/20">
@@ -691,6 +694,53 @@ function HistoryPage({ records, onBack }: { records: SessionRecord[]; onBack: ()
           </button>
         )}
       </div>
+    </div>
+  )
+}
+
+/** A quiet week at a glance: one bar a day against the daily goal. */
+function WeekStrip({ records }: { records: SessionRecord[] }): React.JSX.Element | null {
+  const goal = useStudyStore((s) => s.prefs.dailyGoalMinutes)
+  const days = useMemo(() => lastSevenDays(records, Date.now()), [records])
+  const goalMs = goal * 60_000
+  const top = Math.max(goalMs, ...days.map((d) => d.focusMs), 60 * 60_000)
+  const streak = goalStreak(days, goalMs)
+  const dayFmt = new Intl.DateTimeFormat(undefined, { weekday: 'narrow' })
+  const longFmt = new Intl.DateTimeFormat(undefined, { weekday: 'long' })
+  const summary = days.map((d) => `${longFmt.format(new Date(d.start))} ${formatMinutes(d.focusMs)}`).join(', ')
+
+  return (
+    <div className="mt-7" role="img" aria-label={`Focus by day: ${summary}`}>
+      <div className="relative flex h-16 items-end gap-2">
+        {goalMs > 0 && (
+          <div
+            className="pointer-events-none absolute inset-x-0 border-t border-dashed border-white/25"
+            style={{ bottom: `${(goalMs / top) * 100}%` }}
+            aria-hidden="true"
+          >
+            <span className="font-sans absolute -top-[17px] right-0 text-[10.5px] text-white/45">Goal {formatMinutes(goalMs)}</span>
+          </div>
+        )}
+        {days.map((d, i) => {
+          const met = goalMs > 0 && d.focusMs >= goalMs
+          return (
+            <div key={d.start} className="flex h-full flex-1 items-end" title={`${longFmt.format(new Date(d.start))}: ${formatMinutes(d.focusMs)}`}>
+              <div
+                className={cn('w-full rounded-[3px]', met ? 'bg-white/90' : i === days.length - 1 ? 'bg-white/70' : 'bg-white/50')}
+                style={{ height: d.focusMs > 0 ? `${Math.max(4, (d.focusMs / top) * 100)}%` : '2px' }}
+              />
+            </div>
+          )
+        })}
+      </div>
+      <div className="mt-1.5 flex gap-2" aria-hidden="true">
+        {days.map((d, i) => (
+          <span key={d.start} className={cn('font-sans flex-1 text-center text-[11px]', i === days.length - 1 ? 'text-white/80' : 'text-white/40')}>
+            {dayFmt.format(new Date(d.start))}
+          </span>
+        ))}
+      </div>
+      {streak >= 2 && <p className="font-sans mt-2 text-[12.5px] text-white/60">Daily goal met {streak} days in a row</p>}
     </div>
   )
 }
