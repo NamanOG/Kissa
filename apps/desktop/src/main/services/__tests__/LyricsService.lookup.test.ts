@@ -71,9 +71,10 @@ describe('LyricsService lookups', () => {
     const h = harness(() => ({ status: 503, retryAfter: '1' }))
     const result = await h.service.getLyrics(request)
     expect(result.status).toBe('unavailable')
-    // Stops at the first request that stays unavailable: no hammering of fallbacks.
-    expect(new Set(h.calls).size).toBe(1)
-    expect(h.calls.length).toBe(3)
+    // One refused step is retried past (LRCLIB throttles some requests while answering the
+    // next); two refused steps in a row end the lookup: no hammering of every fallback.
+    expect(new Set(h.calls).size).toBe(2)
+    expect(h.calls.length).toBe(10)
 
     const callsBefore = h.calls.length
     await h.service.getLyrics(request)
@@ -83,7 +84,15 @@ describe('LyricsService lookups', () => {
   it('treats a network failure as unavailable, not as a missing song', async () => {
     const h = harness(() => 'network-error')
     expect((await h.service.getLyrics(request)).status).toBe('unavailable')
-    expect(h.calls.length).toBe(1)
+    // One quick second try, then it stops: no network means no point trying the rest.
+    expect(h.calls.length).toBe(2)
+  })
+
+  it('keeps going when one step is throttled and finds the lyrics in the next', async () => {
+    // The exact lookup with the album keeps getting 429; the next one is answered.
+    const h = harness((url) => (isGet(url) && url.searchParams.has('album_name') ? { status: 429, retryAfter: '1' } : isGet(url) ? { status: 200, body: record() } : undefined))
+    const result = await h.service.getLyrics(request)
+    expect(result.status).toBe('synced')
   })
 
   it('stays away for as long as a long Retry-After asks', async () => {

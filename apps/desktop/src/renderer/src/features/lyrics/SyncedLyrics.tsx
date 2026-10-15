@@ -17,7 +17,8 @@ const LEAD_IN_SECONDS = 0.15
 /** A silence at least this long between lines shows the "interlude" dots. */
 const INTERLUDE_SECONDS = 5
 /** When the lyrics library could not be reached, try once more on its own after this. */
-const AUTO_RETRY_MS = 15_000
+/** Automatic retries after the library was busy or unreachable: soon at first, then less often. */
+const AUTO_RETRY_MS = [3_000, 10_000, 30_000, 60_000]
 
 const RETRY_BUTTON_CLASS =
   'mt-4 flex items-center gap-1.5 rounded-full border border-panel-line bg-[var(--panel-bg)] px-3.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-tone shadow-[var(--panel-shadow)] transition-colors hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone'
@@ -171,7 +172,7 @@ export const SyncedLyrics = memo(
     const [interludeBefore, setInterludeBefore] = useState(-1)
     /** Bumped to look the current track up again ("Try again", or the automatic retry). */
     const [lookupRound, setLookupRound] = useState(0)
-    const autoRetriedRef = useRef(false)
+    const autoRetriedRef = useRef(0)
 
     const containerRef = useRef<HTMLDivElement>(null)
     const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -187,7 +188,7 @@ export const SyncedLyrics = memo(
       setInterludeBefore(-1)
       setStatus(trackKey ? 'loading' : 'waiting')
       setLookupRound(0)
-      autoRetriedRef.current = false
+      autoRetriedRef.current = 0
       if (containerRef.current) containerRef.current.scrollTop = 0
     }, [trackKey])
 
@@ -271,16 +272,17 @@ export const SyncedLyrics = memo(
 
     // The library could not be reached (offline, busy): try once more by itself.
     useEffect(() => {
-      if (status !== 'unreachable' || autoRetriedRef.current) return
+      if (status !== 'unreachable' || autoRetriedRef.current >= AUTO_RETRY_MS.length) return
+      const wait = AUTO_RETRY_MS[autoRetriedRef.current]
       const timer = setTimeout(() => {
-        autoRetriedRef.current = true
+        autoRetriedRef.current += 1
         setLookupRound((n) => n + 1)
-      }, AUTO_RETRY_MS)
+      }, wait)
       return (): void => clearTimeout(timer)
     }, [status])
 
     const retryLookup = useCallback((): void => {
-      autoRetriedRef.current = true
+      autoRetriedRef.current = AUTO_RETRY_MS.length
       setLookupRound((n) => n + 1)
     }, [])
 

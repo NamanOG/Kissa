@@ -14,7 +14,7 @@ const LOOKUP_DEADLINE_MS = 20_000
 const REQUEST_TIMEOUT_MS = 10_000
 /** LRCLIB asks clients to honour Retry-After. Waits longer than this end the lookup instead. */
 const MAX_RETRY_WAIT_MS = 4_000
-const MAX_RETRIES_PER_REQUEST = 2
+const MAX_RETRIES_PER_REQUEST = 4
 /** A song LRCLIB definitely does not have is not asked for again for a while. */
 const MISS_COOLDOWN_MS = 30 * 60 * 1000
 const MEMORY_LIMIT = 200
@@ -209,7 +209,7 @@ export function parseRetryAfter(header: string | null, now: number): number | un
 type Attempt =
   | { kind: 'ok'; body: unknown }
   | { kind: 'not-found' }
-  | { kind: 'transient' }
+  | { kind: 'transient'; offline?: boolean }
 
 interface LookupStats {
   requests: number
@@ -405,7 +405,7 @@ export class LyricsService {
     let instrumental: LyricsResponse | null = null
 
     /** Runs one step. True when the lookup is finished (timed lyrics found, or LRCLIB unreachable). */
-    type StepResult = 'done' | 'unreachable' | 'continue'
+    type StepResult = 'done' | 'unreachable' | 'offline' | 'continue'
     let found: LyricsResponse | null = null
 
     const consider = (result: LyricsResponse | null): StepResult => {
@@ -425,7 +425,7 @@ export class LyricsService {
       params.set('duration', String(d))
       const attempt = await this.ask(`${LRCLIB_BASE}/get?${params}`, asked, deadline, stats)
       if (attempt === null) return 'continue'
-      if (attempt.kind === 'transient') return 'unreachable'
+      if (attempt.kind === 'transient') return attempt.offline ? 'offline' : 'unreachable'
       if (attempt.kind === 'not-found') return 'continue'
       const item = attempt.body as Partial<LRCLIBItem>
       // An exact lookup can still return a different song when the catalogue is sparse.
@@ -436,7 +436,7 @@ export class LyricsService {
     const search = async (params: URLSearchParams, d: number): Promise<StepResult> => {
       const attempt = await this.ask(`${LRCLIB_BASE}/search?${params}`, asked, deadline, stats)
       if (attempt === null) return 'continue'
-      if (attempt.kind === 'transient') return 'unreachable'
+      if (attempt.kind === 'transient') return attempt.offline ? 'offline' : 'unreachable'
       if (attempt.kind === 'not-found') return 'continue'
       const items = Array.isArray(attempt.body) ? (attempt.body as LRCLIBItem[]) : []
       return consider(pickBestLyricsResult(items, { title, artist, duration: d }))
@@ -455,7 +455,11 @@ export class LyricsService {
       words ? Promise.resolve<StepResult>('continue') : search(new URLSearchParams({ q: `${title} ${artist}` }), duration)
     )
 
+    // LRCLIB refuses some requests under load (429 with Retry-After) while answering the
+    // next, so one refused step does not end the lookup: the next step still runs. Two
+    // refused in a row means it is down for now; no network at all ends it at once.
     let unreachable = false
+    let refusedInARow = 0
     for (const step of steps) {
       if (this.now() >= deadline) {
         unreachable = true
@@ -463,9 +467,15 @@ export class LyricsService {
       }
       const result = await step()
       if (result === 'done') return found!
-      if (result === 'unreachable') {
+      if (result === 'offline') {
         unreachable = true
         break
+      }
+      if (result === 'unreachable') {
+        unreachable = true
+        if (++refusedInARow >= 2) break
+      } else {
+        refusedInARow = 0
       }
     }
 
@@ -499,7 +509,7 @@ export class LyricsService {
 
     for (let attempt = 0; ; attempt++) {
       const remaining = deadline - this.now()
-      if (remaining < 250) return { kind: 'transient' }
+      if (remaining < 250) return { kind: 'transient', offline: true }
       stats.requests++
       let res: Response
       try {
@@ -508,9 +518,11 @@ export class LyricsService {
           signal: AbortSignal.timeout(Math.min(REQUEST_TIMEOUT_MS, remaining))
         })
       } catch {
-        // Offline or timed out. Retrying straight away rarely helps either.
+        // Offline or timed out: one more try if there is time, after a short pause.
         stats.transient++
-        return { kind: 'transient' }
+        if (attempt >= 1 || this.now() + 1500 >= deadline) return { kind: 'transient', offline: true }
+        await this.sleep(500)
+        continue
       }
 
       if (res.ok) {
