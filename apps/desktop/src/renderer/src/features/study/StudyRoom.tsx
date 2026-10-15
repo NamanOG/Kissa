@@ -63,7 +63,7 @@ export function StudyRoom(): React.JSX.Element {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: reduceMotion ? 0 : 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute inset-0 z-0 overflow-hidden bg-black"
+      className="absolute inset-0 z-0 overflow-hidden bg-black [--rec-h:clamp(210px,min(48vh,31vw),500px)]"
       role="region"
       aria-label="Study Room"
     >
@@ -133,9 +133,9 @@ export function StudyRoom(): React.JSX.Element {
         </div>
       </header>
 
-      <div className="absolute inset-0 z-10 flex items-center gap-[4vw] px-[6vw] pt-24 pb-10">
+      <div className="absolute inset-0 z-10 flex items-center gap-[4vw] px-[6vw] pt-24 pb-10 [@media(max-height:720px)]:pt-20 [@media(max-height:720px)]:pb-6">
         {/* Left: the clock and the journal. */}
-        <div className="flex h-full min-w-0 max-w-[560px] flex-1 flex-col justify-center">
+        <div className="flex h-full min-w-0 max-w-[min(560px,calc(85vw-var(--rec-h)*1.4))] flex-1 flex-col justify-center">
           <StudyRoomView />
         </div>
 
@@ -175,9 +175,9 @@ function RecordCorner(): React.JSX.Element {
   }
 
   return (
-    <div className="absolute right-[5vw] top-1/2 z-10 flex w-[min(40vw,520px)] -translate-y-[46%] flex-col items-center">
+    <div className="absolute right-[5vw] top-1/2 z-10 flex w-[calc(var(--rec-h)*1.4)] -translate-y-[46%] flex-col items-center">
       {/* The record rests in front of its sleeve: the vinyl whole and turning, the cover behind it. */}
-      <div className="relative h-[clamp(190px,34vh,330px)] aspect-[1.4/1]">
+      <div className="relative h-[var(--rec-h)] aspect-[1.4/1]">
         <div className="absolute left-0 top-0 h-full aspect-square">
           <AlbumSleeve artworkUrl={idle ? undefined : track?.artworkUrl} title={track?.album || track?.title} flat className="h-full w-auto aspect-square" />
         </div>

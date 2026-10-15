@@ -106,14 +106,14 @@ function SetupPage(): React.JSX.Element {
   if (showHistory) return <HistoryPage records={history} onBack={() => setShowHistory(false)} />
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1">
+    <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1 pb-6 [mask-image:linear-gradient(to_bottom,#000_calc(100%-24px),transparent)]">
       <span className={EYEBROW}>New session</span>
-      <h1 className="font-kissa-editorial mt-3 text-[clamp(2.6rem,4vw,3.6rem)] font-normal leading-[1.02] tracking-[-0.01em] text-balance">
+      <h1 className="font-kissa-editorial mt-3 text-[clamp(2.3rem,min(4vw,7vh),3.6rem)] font-normal leading-[1.02] tracking-[-0.01em] text-balance">
         {greetingFor(new Date(), listenerName)}
       </h1>
 
       <form
-        className="mt-10 flex flex-col gap-9"
+        className="mt-10 flex flex-col gap-9 [@media(min-height:721px)_and_(max-height:800px)]:mt-6 [@media(min-height:721px)_and_(max-height:800px)]:gap-6 [@media(max-height:720px)]:mt-4 [@media(max-height:720px)]:gap-4"
         onSubmit={(e) => {
           e.preventDefault()
           begin()
@@ -268,7 +268,7 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
           : 'Paused'
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1">
+    <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1 pb-6 [mask-image:linear-gradient(to_bottom,#000_calc(100%-24px),transparent)]">
       <span className={EYEBROW}>{phase}</span>
       <h1
         className="font-kissa-editorial mt-2 line-clamp-2 text-[clamp(1.4rem,2.1vw,1.9rem)] font-normal leading-[1.15] text-white/90 text-balance"
@@ -279,7 +279,7 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
 
       <p
         className={cn(
-          'font-kissa-editorial mt-3 text-[clamp(5.5rem,10vw,9.5rem)] font-light leading-none tracking-[-0.01em] tabular-nums lining-nums text-white transition-opacity duration-500 [text-shadow:0_4px_40px_rgba(0,0,0,0.45)]',
+          'font-kissa-editorial mt-3 text-[clamp(4.5rem,min(10vw,17vh),9.5rem)] font-light leading-none tracking-[-0.01em] tabular-nums lining-nums text-white transition-opacity duration-500 [text-shadow:0_4px_40px_rgba(0,0,0,0.45)]',
           !running && !segment.ended ? 'opacity-55' : 'opacity-100'
         )}
       >
@@ -542,7 +542,7 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
   const thoughts = session.thoughts ?? []
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1">
+    <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1 pb-6 [mask-image:linear-gradient(to_bottom,#000_calc(100%-24px),transparent)]">
       <span className={EYEBROW}>Sitting finished</span>
       <h1 className="font-kissa-editorial mt-2 text-[clamp(2rem,3vw,2.75rem)] font-normal leading-[1.05]">
         {formatMinutes(focus)} of focus
