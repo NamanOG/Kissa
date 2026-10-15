@@ -268,6 +268,9 @@ Production artifacts are output to `apps/desktop/dist/`:
 - **Lighter and Smoother:** On 120 and 144 Hz screens the record turns in 60 steps a second and nothing wakes the window faster than it can show; line-timed lyrics no longer repaint every frame; progress bars and the tonearm redraw only when they move. The Deck uses about a quarter of the processor time it did.
 - **A Bigger Record in the Study Room:** The record and sleeve grow with the window, and the setup fits small windows.
 - **Kissa's Own Sleeve:** The idle cover and record label are drawn from Kissa's logo.
+- **The Fireplace Room:** A fifth Study Room: a cabin hearth whose flames sway, surge and throw sparks, with a real fire recording.
+- **Covers That Match Your Player:** Kissa keeps your player's own cover and only swaps in a sharper catalogue copy when it is the same picture (albums such as HEROES & VILLAINS have different art on different services).
+- **A New Opening:** Kissa's mark assembles itself when the app opens.
 - **Privacy:** `PRIVACY.md` covers Discord sharing, Study Room data and the website's cookieless visit counts.
 
 ### v4.2.0 — The Front Door
