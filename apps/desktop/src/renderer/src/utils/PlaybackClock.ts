@@ -198,15 +198,26 @@ export class PlaybackClock {
   }
 
   private static ensureSubscriberLoop(): void {
-    if (this.subscriberRafId !== null || this.subscribers.size === 0) return
+    if (this.subscriberRafId !== null || this.subscriberTimer !== null || this.subscribers.size === 0) return
     this.subscriberRafId = requestAnimationFrame(this.onSubscriberFrame)
   }
 
   private static stopSubscriberLoop(): void {
+    if (this.subscriberTimer !== null) {
+      clearTimeout(this.subscriberTimer)
+      this.subscriberTimer = null
+    }
     if (this.subscriberRafId === null) return
     cancelAnimationFrame(this.subscriberRafId)
     this.subscriberRafId = null
   }
+
+  /**
+   * At most about 60 updates a second, on any display. On 120 and 144 Hz screens an
+   * every-frame loop woke the page twice as often for movement nobody can see (lyrics and
+   * progress bars move by fractions of a pixel between frames).
+   */
+  private static subscriberTimer: ReturnType<typeof setTimeout> | null = null
 
   private static onSubscriberFrame = (): void => {
     this.subscriberRafId = null
@@ -214,7 +225,10 @@ export class PlaybackClock {
 
     const time = this.getCurrentTime()
     this.notifySubscribers(time)
-    this.ensureSubscriberLoop()
+    this.subscriberTimer = setTimeout(() => {
+      this.subscriberTimer = null
+      this.ensureSubscriberLoop()
+    }, 12)
   }
 
   private static notifySubscribers(time: number): void {

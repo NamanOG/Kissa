@@ -160,7 +160,28 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
         return
       }
 
+      // Tracking a groove the arm moves well under a degree a minute, so between checks it
+      // sleeps instead of waking the page on every display frame. Any change of state (pause,
+      // power, seek) wakes it at once through the store subscription below.
+      if (armStateRef.current === 'PLAYING') {
+        rafId = -1
+        sleepTimer = window.setTimeout(() => {
+          sleepTimer = 0
+          rafId = requestAnimationFrame(updateRotation)
+        }, 120)
+        return
+      }
+
       rafId = requestAnimationFrame(updateRotation)
+    }
+
+    let sleepTimer = 0
+    const wake = (): void => {
+      if (sleepTimer) {
+        window.clearTimeout(sleepTimer)
+        sleepTimer = 0
+        rafId = requestAnimationFrame(updateRotation)
+      }
     }
 
     rafId = requestAnimationFrame(updateRotation)
@@ -175,6 +196,14 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
         }
       }
 
+      if (
+        state.isPlaying !== prevState.isPlaying ||
+        state.isPowered !== prevState.isPowered ||
+        Math.abs(state.progress - prevState.progress) > 1.5
+      ) {
+        wake()
+      }
+
       if (!rafId && !isDragging) {
         if (
           state.isPlaying !== prevState.isPlaying ||
@@ -187,7 +216,8 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
     })
 
     return () => {
-      if (rafId) cancelAnimationFrame(rafId)
+      if (rafId > 0) cancelAnimationFrame(rafId)
+      window.clearTimeout(sleepTimer)
       unsubscribe()
     }
   }, [isDragging])

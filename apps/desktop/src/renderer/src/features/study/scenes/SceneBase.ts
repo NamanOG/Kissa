@@ -99,6 +99,7 @@ export abstract class SceneBase implements StudyScene {
   /** A photograph behind the weather, when the environment has one. */
   protected photo: HTMLImageElement | null = null
   private raf = 0
+  private timer = 0
   private lastFrame = 0
   private running = false
 
@@ -208,12 +209,23 @@ export abstract class SceneBase implements StudyScene {
       return
     }
     this.lastFrame = performance.now()
+    // Sleep between frames instead of skipping animation frames: a skipped frame still wakes
+    // the page at the display's rate (120 times a second on many laptops).
+    const next = (): void => {
+      const wait = Math.max(0, FRAME_MS - (performance.now() - this.lastFrame) - 4)
+      this.timer = window.setTimeout(() => {
+        if (this.running) this.raf = requestAnimationFrame(loop)
+      }, wait)
+    }
     const loop = (now: number): void => {
       if (!this.running) return
-      this.raf = requestAnimationFrame(loop)
       const elapsed = now - this.lastFrame
-      if (elapsed < FRAME_MS) return
+      if (elapsed < FRAME_MS - 6) {
+        next()
+        return
+      }
       this.lastFrame = now
+      next()
       const dt = Math.min(elapsed, 100) / 1000
       // Progress eases slowly; a reset settles in a couple of seconds.
       const rate = this.resetting ? 0.5 : 0.04
@@ -230,6 +242,7 @@ export abstract class SceneBase implements StudyScene {
   public stop(): void {
     this.running = false
     cancelAnimationFrame(this.raf)
+    window.clearTimeout(this.timer)
   }
 
   public dispose(): void {

@@ -7,11 +7,16 @@ export const FullscreenProgress = memo((): React.JSX.Element => {
   const fillRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    let last = -1
     return PlaybackClock.subscribe((time) => {
       if (!fillRef.current) return
 
+      // A full-width bar: write only when it has moved about half a pixel on a wide screen.
       const progress = duration > 0 ? Math.max(0, Math.min(1, time / duration)) : 0
-      fillRef.current.style.transform = `scaleX(${progress})`
+      const step = Math.round(progress * 4000) / 4000
+      if (step === last) return
+      last = step
+      fillRef.current.style.transform = `scaleX(${step})`
     })
   }, [duration])
 

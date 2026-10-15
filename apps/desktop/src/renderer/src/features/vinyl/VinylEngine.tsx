@@ -15,6 +15,47 @@ import albumPlaceholder from '@renderer/media/placeholder-album.png'
 let savedVinylPhase = 0
 
 /**
+ * On high-refresh displays (120 Hz and up) the record turns in 60 steps a second instead of
+ * at the display's rate: it looks the same, and every frame the window does not present
+ * saves real CPU and GPU time (measured: Study Room 197% → 135% of a core at 120 Hz).
+ * On 60 Hz displays the turn stays continuous.
+ */
+let highRefresh: boolean | null = null
+const highRefreshListeners = new Set<() => void>()
+function detectRefresh(): void {
+  if (highRefresh !== null || typeof requestAnimationFrame === 'undefined') return
+  highRefresh = false
+  let attempts = 0
+  const measure = (): void => {
+    const stamps: number[] = []
+    const tick = (t: number): void => {
+      stamps.push(t)
+      if (stamps.length < 24) {
+        requestAnimationFrame(tick)
+        return
+      }
+      // The quickest quarter of frames shows the display's own rate; slower ones are just
+      // a busy page. While the page is busy (start-up, a track change) the answer is unclear,
+      // so try again later.
+      const gaps = stamps.slice(1).map((s, i) => s - stamps[i]).sort((a, b) => a - b)
+      const quick = gaps[Math.floor(gaps.length / 4)]
+      if (quick < 12) {
+        highRefresh = true
+        highRefreshListeners.forEach((fn) => fn())
+      } else if (quick > 20 && ++attempts < 8) {
+        window.setTimeout(measure, 4000)
+      }
+    }
+    requestAnimationFrame(tick)
+  }
+  window.setTimeout(measure, 2000)
+}
+
+function spinEasing(durationMs: number): string {
+  return highRefresh ? `steps(${Math.round((durationMs / 1000) * 60)})` : 'linear'
+}
+
+/**
  * Vinyl record engine — handles spin animation with real physics
  * (acceleration on play, friction deceleration on pause).
  * Steady-state rotation is offloaded to the compositor via WAAPI.
@@ -45,7 +86,7 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
         {
           duration: 1800, // 33 1/3 RPM default (1.8s per rev)
           iterations: Infinity,
-          easing: 'linear'
+          easing: spinEasing(1800)
         }
       )
       animationRef.current.currentTime = savedVinylPhase
@@ -66,8 +107,14 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
     if (!animationRef.current) return
     const targetDuration = rpm === '45' ? 1333.33 : 1800
     const effect = animationRef.current.effect as KeyframeEffect
-    if (effect) {
-      effect.updateTiming({ duration: targetDuration })
+    const apply = (): void => {
+      const current = (animationRef.current?.effect as KeyframeEffect | null) ?? effect
+      current?.updateTiming({ duration: targetDuration, easing: spinEasing(targetDuration) })    }
+    apply()
+    detectRefresh()
+    highRefreshListeners.add(apply)
+    return (): void => {
+      highRefreshListeners.delete(apply)
     }
   }, [rpm])
 

@@ -42,14 +42,16 @@ export const HiFiVisualizer = memo(
     useEffect(() => {
       const barsData = barsDataRef.current
       
-      // A decorative meter: 30 updates a second look the same as 60 and halve its cost.
-      let lastFrame = 0
-      const animate = (now: number = performance.now()) => {
-        if (now - lastFrame < 32) {
+      // A decorative meter: 30 updates a second look the same as 60 and halve its cost. It
+      // sleeps between updates rather than skipping animation frames, which would still wake
+      // the page at the display's rate.
+      let timer = 0
+      const schedule = (): void => {
+        timer = window.setTimeout(() => {
           animFrameRef.current = requestAnimationFrame(animate)
-          return
-        }
-        lastFrame = now
+        }, 28)
+      }
+      const animate = () => {
         timeRef.current += 0.1
         const t = timeRef.current
         
@@ -90,14 +92,13 @@ export const HiFiVisualizer = memo(
           }
         }
 
-        if (!allSettled) {
-          animFrameRef.current = requestAnimationFrame(animate)
-        }
+        if (!allSettled) schedule()
       }
 
       animFrameRef.current = requestAnimationFrame(animate)
 
       return () => {
+        window.clearTimeout(timer)
         if (animFrameRef.current !== null) {
           cancelAnimationFrame(animFrameRef.current)
         }

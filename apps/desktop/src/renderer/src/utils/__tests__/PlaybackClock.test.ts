@@ -119,6 +119,7 @@ describe('PlaybackClock subscribers', () => {
   })
 
   it('isolates a throwing subscriber and keeps the shared RAF alive', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const healthySubscriber = vi.fn()
     subscribe(() => {
@@ -127,6 +128,10 @@ describe('PlaybackClock subscribers', () => {
     subscribe(healthySubscriber)
 
     runNextAnimationFrame()
+    // The next frame is requested after a short sleep (at most ~60 updates a second).
+    expect(requestAnimationFrameMock).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(20)
+    vi.useRealTimers()
 
     expect(errorSpy).toHaveBeenCalledTimes(1)
     expect(healthySubscriber).toHaveBeenCalledWith(12.5)

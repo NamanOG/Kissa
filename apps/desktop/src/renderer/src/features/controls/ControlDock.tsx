@@ -46,20 +46,25 @@ const Scrubber = memo(() => {
   // PlaybackClock owns the shared timing loop; this subscriber only updates DOM state.
   useEffect(() => {
     let lastSecond = -1
+    let lastPx = -1
 
     return PlaybackClock.subscribe((time) => {
       if (isDraggingRef.current) return // Ignore clock updates while user is scrubbing
 
       if (duration > 0 && railWidthRef.current > 0) {
         const elapsed = Math.max(0, Math.min(time, duration))
-        const percent = elapsed / duration
-
-        if (fillRef.current) {
-          fillRef.current.style.transform = `scaleX(${percent})`
-        }
-        if (thumbRef.current) {
-          const px = percent * railWidthRef.current - 5
-          thumbRef.current.style.transform = `translate3d(${px}px, -50%, 0)`
+        // The bar moves about a pixel a second on a long track; redraw it only when it has
+        // moved a quarter of a pixel, not on every display frame.
+        const px = Math.round(((elapsed / duration) * railWidthRef.current) * 4) / 4
+        if (px !== lastPx) {
+          lastPx = px
+          const percent = px / railWidthRef.current
+          if (fillRef.current) {
+            fillRef.current.style.transform = `scaleX(${percent})`
+          }
+          if (thumbRef.current) {
+            thumbRef.current.style.transform = `translate3d(${px - 5}px, -50%, 0)`
+          }
         }
 
         const currentSecond = Math.floor(elapsed)
