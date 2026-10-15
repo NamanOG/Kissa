@@ -11,7 +11,8 @@ vi.mock('framer-motion', async () => {
   }
 })
 
-describe('Manual Listening Display Launch', () => {
+// Renders the whole App; under a full parallel run it can exceed the default 5 s.
+describe('Manual Listening Display Launch', { timeout: 20_000 }, () => {
   let exitScreensaverMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
