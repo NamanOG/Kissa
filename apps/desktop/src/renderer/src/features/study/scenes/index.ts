@@ -3,13 +3,15 @@ import { RainScene } from './RainScene'
 import { SnowScene } from './SnowScene'
 import { ForestScene } from './ForestScene'
 import { NightScene } from './NightScene'
+import { FireplaceScene } from './FireplaceScene'
 // Photographs generated for Kissa with Figma AI (owned by GlyphCode); the weather is drawn on top.
 import rainPhoto from '@renderer/media/study/rain.jpg'
 import snowPhoto from '@renderer/media/study/snow.jpg'
 import forestPhoto from '@renderer/media/study/forest.jpg'
 import nightPhoto from '@renderer/media/study/night.jpg'
+import fireplacePhoto from '@renderer/media/study/fireplace.jpg'
 
-export type StudyEnvironment = 'rain' | 'snow' | 'forest' | 'night'
+export type StudyEnvironment = 'rain' | 'snow' | 'forest' | 'night' | 'fireplace'
 
 export interface EnvironmentInfo {
   id: StudyEnvironment
@@ -55,6 +57,14 @@ export const ENVIRONMENTS: EnvironmentInfo[] = [
     photo: nightPhoto,
     lamp: '255, 170, 100',
     create: (c, r) => new NightScene(c, r)
+  },
+  {
+    id: 'fireplace',
+    label: 'Fireplace',
+    keepsTime: 'The fire takes hold as you focus; a break lets it settle.',
+    photo: fireplacePhoto,
+    lamp: '255, 160, 80',
+    create: (c, r) => new FireplaceScene(c, r)
   }
 ]
 

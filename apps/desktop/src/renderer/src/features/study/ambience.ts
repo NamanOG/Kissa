@@ -5,6 +5,7 @@ import rainSound from '@renderer/media/study/sounds/rain.mp3'
 import snowSound from '@renderer/media/study/sounds/snow.mp3'
 import forestSound from '@renderer/media/study/sounds/forest.mp3'
 import nightSound from '@renderer/media/study/sounds/night.mp3'
+import fireplaceSound from '@renderer/media/study/sounds/fireplace.mp3'
 
 /**
  * The Study Room's room sound: a real recording for each environment, looped seamlessly
@@ -16,7 +17,8 @@ const SOURCES: Record<StudyEnvironment, string> = {
   rain: rainSound,
   snow: snowSound,
   forest: forestSound,
-  night: nightSound
+  night: nightSound,
+  fireplace: fireplaceSound
 }
 
 /** Seconds of the recording's end blended into its start, so the loop has no seam. */

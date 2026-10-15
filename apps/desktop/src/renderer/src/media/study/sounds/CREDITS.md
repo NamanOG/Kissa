@@ -11,3 +11,4 @@ MP3 previews, unmodified (the app crossfades each loop point at runtime).
 | snow.mp3 | [outdoor winter ambience birds light wind trees](https://freesound.org/people/lwdickens/sounds/260634/) | lwdickens |
 | forest.mp3 | [forest with small river birds and nature field recording](https://freesound.org/people/Garuda1982/sounds/577623/) | Garuda1982 |
 | night.mp3 | [crickets-waves](https://freesound.org/people/maryhelena.clark/sounds/518404/) | maryhelena.clark |
+| fireplace.mp3 | [Fireplace crackling wood little flame](https://freesound.org/people/BonnyOrbit/sounds/484338/) | BonnyOrbit |

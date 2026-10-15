@@ -54,7 +54,8 @@ const ROOM_NAMES: Record<string, string> = {
   rain: 'Rain room',
   snow: 'Snow room',
   forest: 'Forest room',
-  night: 'Night room'
+  night: 'Night room',
+  fireplace: 'Fireplace room'
 }
 
 export function studyPresence(state: Pick<StudyState, 'active' | 'prefs'>): StudyPresence | null {
