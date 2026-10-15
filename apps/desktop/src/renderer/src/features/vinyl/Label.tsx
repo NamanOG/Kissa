@@ -29,7 +29,6 @@ export const Label = memo(({ className, style, size = '28%', albumArt, ...props 
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.7)',
         ...style
       }}
       {...props}
@@ -69,7 +68,6 @@ export const Label = memo(({ className, style, size = '28%', albumArt, ...props 
         )}
       </AnimatePresence>
 
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-white/[0.05] mix-blend-overlay" />
     </div>
   )
 })

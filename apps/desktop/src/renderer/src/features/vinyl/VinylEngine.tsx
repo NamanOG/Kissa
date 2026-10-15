@@ -173,10 +173,18 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
       >
         <VinylBase />
         <GrooveLayer />
-        <EdgeLayer />
         <Label albumArt={artwork} />
       </div>
 
+      {/* Light and shadow come from the room, not the record: they stay put while it turns.
+          Baked into the turning layer, the rim's highlight and shadow circled round with it
+          and the record read as an oval wobbling on the spindle. */}
+      <EdgeLayer />
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[28%] w-[28%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-tr from-black/20 via-transparent to-white/[0.05] mix-blend-overlay"
+        style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.7)' }}
+        aria-hidden="true"
+      />
       <ReflectionLayer />
       <Spindle />
     </div>

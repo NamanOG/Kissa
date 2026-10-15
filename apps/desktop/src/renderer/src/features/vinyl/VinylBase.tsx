@@ -27,7 +27,7 @@ export const VinylBase = memo(({ className, style, size = '100%', ...props }: Vi
       {...props}
     >
       <svg
-        className="w-full h-full pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"
+        className="w-full h-full pointer-events-none"
         viewBox="0 0 100 100"
         xmlns="http://www.w3.org/2000/svg"
       >
