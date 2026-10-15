@@ -104,6 +104,8 @@ export class ArtworkService {
   /** Per track and picture: the public copy of the player's cover, or null when there is none. */
   private verifiedUrl = new Map<string, string | null>()
   private matching = new Map<string, Promise<string | null>>()
+  /** Per track: the same-named album's official cover, for Discord when no exact picture matched. */
+  private publicFallback = new Map<string, string>()
   /** Replaceable in tests; compares the player's cover with a catalogue cover. */
   public compareCovers: (reference: string, candidate: string) => Promise<boolean | null> = (a, b) => coversMatch(a, b)
 
@@ -149,8 +151,13 @@ export class ArtworkService {
    */
   private async findSamePicture(title: string, artist: string, album: string | undefined, reference: string): Promise<string | null | undefined> {
     const candidates = await this.catalogueCandidates(title, artist, album)
+    const fallbackKey = this.getKey(title, artist, album)
+    if (candidates[0]?.sameAlbumName && !this.publicFallback.has(fallbackKey)) {
+      this.publicFallback.set(fallbackKey, candidates[0].url)
+      if (this.publicFallback.size > 400) this.publicFallback.delete(this.publicFallback.keys().next().value as string)
+    }
     let compared = false
-    for (const url of candidates.slice(0, 10)) {
+    for (const { url } of candidates.slice(0, 10)) {
       const same = await this.compareCovers(reference, url)
       if (same === null) continue
       compared = true
@@ -164,7 +171,11 @@ export class ArtworkService {
   }
 
   /** Catalogue covers for the song, best guesses first (same album name, then same artist). */
-  private async catalogueCandidates(title: string, artist: string, album: string | undefined): Promise<string[]> {
+  private async catalogueCandidates(
+    title: string,
+    artist: string,
+    album: string | undefined
+  ): Promise<Array<{ url: string; sameAlbumName: boolean }>> {
     const cleanT = cleanTrackTitle(title) || title
     const cleanA = cleanArtist(artist) || artist
     const scored: Array<{ url: string; score: number }> = []
@@ -198,13 +209,21 @@ export class ArtworkService {
     const seen = new Set<string>()
     return scored
       .sort((a, b) => b.score - a.score)
-      .map((s) => s.url)
-      .filter((u) => (seen.has(u) ? false : (seen.add(u), true)))
+      .filter((s) => (seen.has(s.url) ? false : (seen.add(s.url), true)))
+      .map((s) => ({ url: s.url, sameAlbumName: s.score >= 4 }))
   }
 
   /** A catalogue cover already confirmed to be this exact picture from the player. */
   public getVerifiedArtwork(title: string, artist: string, album: string | undefined, reference: string): string | undefined {
     return this.verifiedUrl.get(`${this.getKey(title, artist, album)}#${pictureSignature(reference)}`) ?? undefined
+  }
+
+  /**
+   * A public cover for places that cannot show the player's embedded picture (Discord):
+   * the player's own picture when found, else the official cover of the same-named album.
+   */
+  public getPublicArtwork(title: string, artist: string, album: string | undefined, reference: string): string | undefined {
+    return this.getVerifiedArtwork(title, artist, album, reference) ?? this.publicFallback.get(this.getKey(title, artist, album))
   }
 
   public static getInstance(): ArtworkService {

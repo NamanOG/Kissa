@@ -62,6 +62,14 @@ describe('ArtworkService.fetchArtworkFor', () => {
     expect(await service.fetchArtworkFor('Superhero', 'Metro Boomin', 'HEROES & VILLAINS', PLAYER_COVER)).toBe(other.replace('100x100bb', '1200x1200bb'))
   })
 
+  it('offers the same-named album cover for Discord when no picture matched (motion art, other edition)', async () => {
+    service.compareCovers = vi.fn(async () => false)
+    expect(await service.fetchArtworkFor('Young Metro', 'Metro Boomin', 'HEROES & VILLAINS', PLAYER_COVER)).toBeNull()
+    // The app keeps the player's picture; Discord gets the album's official cover, not Kissa's badge.
+    expect(service.getVerifiedArtwork('Young Metro', 'Metro Boomin', 'HEROES & VILLAINS', PLAYER_COVER)).toBeUndefined()
+    expect(service.getPublicArtwork('Young Metro', 'Metro Boomin', 'HEROES & VILLAINS', PLAYER_COVER)).toBe(hiRes)
+  })
+
   it('keeps the player cover when the comparison cannot run', async () => {
     service.compareCovers = vi.fn(async () => null)
     expect(await service.fetchArtworkFor('Superhero', 'Metro Boomin', 'HEROES & VILLAINS', PLAYER_COVER)).toBeNull()

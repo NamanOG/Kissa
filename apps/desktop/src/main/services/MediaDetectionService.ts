@@ -162,7 +162,9 @@ function formatSession(
   // have different art on different services). Without a cover from the player, the best
   // match found for the track is used.
   const artwork = ArtworkService.getInstance()
+  let publicArtworkUrl: string | undefined
   if (artworkDataUrl) {
+    publicArtworkUrl = artwork.getPublicArtwork(title, artist, album, artworkDataUrl)
     const verified = artwork.getVerifiedArtwork(title, artist, album, artworkDataUrl)
     if (verified) artworkDataUrl = verified
     else artwork.setCachedArtwork(title, artist, artworkDataUrl, album)
@@ -170,6 +172,7 @@ function formatSession(
     const cachedArtwork = artwork.getCachedArtwork(title, artist, album)
     if (cachedArtwork) artworkDataUrl = cachedArtwork
   }
+  if (!publicArtworkUrl && artworkDataUrl?.startsWith('https://')) publicArtworkUrl = artworkDataUrl
 
   const isPlaying = session.playback?.playbackStatus === PlaybackStatus.PLAYING // 4
 
@@ -180,6 +183,7 @@ function formatSession(
     artist,
     album,
     artworkDataUrl,
+    ...(publicArtworkUrl ? { publicArtworkUrl } : {}),
     isPlaying,
     canSeek: session.playback?.canSeek !== false,
     progress: Math.max(0, normalizeTime(session.timeline?.position || 0)),
@@ -479,22 +483,24 @@ export class MediaDetectionService {
       ArtworkService.getInstance()
         .fetchArtworkFor(payload.title, payload.artist, payload.album, ownCover)
         .then((fetchedUrl) => {
-          if (fetchedUrl && this.latestPayload) {
-            if (
-              this.latestPayload.title === currentTitle &&
-              this.latestPayload.artist === currentArtist &&
-              this.latestPayload.artworkDataUrl !== fetchedUrl &&
-              // Only replace the very picture that was checked, not a newer cover that arrived meanwhile.
-              (ownCover === undefined ? !this.latestPayload.artworkDataUrl?.startsWith('data:') : this.latestPayload.artworkDataUrl === ownCover)
-            ) {
-              this.latestPayload = {
-                ...this.latestPayload,
-                artworkDataUrl: fetchedUrl
-              }
-              this.lastPayloadJson = JSON.stringify(this.latestPayload)
-              this.broadcast(this.latestPayload)
-            }
+          const latest = this.latestPayload
+          if (!latest || latest.title !== currentTitle || latest.artist !== currentArtist) return
+          // Only the very picture that was checked, not a newer cover that arrived meanwhile.
+          const samePicture =
+            ownCover === undefined ? !latest.artworkDataUrl?.startsWith('data:') : latest.artworkDataUrl === ownCover
+          if (!samePicture) return
+          const publicArtworkUrl =
+            fetchedUrl ?? (ownCover ? ArtworkService.getInstance().getPublicArtwork(currentTitle, currentArtist, latest.album, ownCover) : undefined)
+          const next = {
+            ...latest,
+            ...(fetchedUrl ? { artworkDataUrl: fetchedUrl } : {}),
+            ...(publicArtworkUrl ? { publicArtworkUrl } : {})
           }
+          const json = JSON.stringify(next)
+          if (json === this.lastPayloadJson) return
+          this.latestPayload = next
+          this.lastPayloadJson = json
+          this.broadcast(next)
         })
         .catch(() => {
         })

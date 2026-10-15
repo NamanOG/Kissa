@@ -239,7 +239,12 @@ export class DiscordPresenceService {
     const details = fit(p.title)
     const state = fit(p.artist && p.artist !== 'Unknown Artist' ? p.artist : undefined)
     // Only a public cover Kissa matched to this exact album; an embedded image is never uploaded.
-    const art = p.artworkDataUrl && p.artworkDataUrl.startsWith('https://') ? p.artworkDataUrl : undefined
+    const art =
+      p.publicArtworkUrl && p.publicArtworkUrl.startsWith('https://')
+        ? p.publicArtworkUrl
+        : p.artworkDataUrl && p.artworkDataUrl.startsWith('https://')
+          ? p.artworkDataUrl
+          : undefined
     const album = fit(p.album && p.album !== p.title ? p.album : undefined)
 
     const activity: Record<string, unknown> = { type: 2, details }

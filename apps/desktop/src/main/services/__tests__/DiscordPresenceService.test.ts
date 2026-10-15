@@ -141,6 +141,18 @@ describe('DiscordPresenceService', () => {
     expect((sent[0]!.assets as Record<string, string>).large_image).toContain('mzstatic')
   })
 
+  it('uses the public copy of the cover when the player only has an embedded one', async () => {
+    const h = setup()
+    await flush()
+    h.service.onMedia(
+      track({ artworkDataUrl: 'data:image/jpeg;base64,AAAA', publicArtworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/x/1000x1000.jpg' })
+    )
+    await flush(5_000)
+    const assets = h.last().activities.at(-1)!.assets as Record<string, string>
+    expect(assets.large_image).toBe('https://e-cdns-images.dzcdn.net/images/cover/x/1000x1000.jpg')
+    expect(assets.small_image).toBe('https://kissa.glyphcode.studio/favicon.png')
+  })
+
   it('clears at once when the source switches to Spotify', async () => {
     const h = setup()
     await flush()
