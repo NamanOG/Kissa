@@ -144,7 +144,7 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
           <h1 className="font-serif text-[76px] font-medium leading-[1.02] tracking-[-0.02em] line-clamp-2">
             {album.album}
           </h1>
-          <p className="mt-4 font-serif text-[38px] italic opacity-75 line-clamp-1">{album.artist}</p>
+          <p className="mt-4 font-serif text-[38px] opacity-75 line-clamp-1">{album.artist}</p>
           <div className="mt-10 flex gap-20 border-t pt-8" style={{ borderColor: 'color-mix(in srgb, currentColor 16%, transparent)' }}>
             <Fact label="Played" value={plural(album.playCount, 'time')} />
             <Fact label="First played" value={monthYear(album.firstListened)} />
@@ -172,7 +172,7 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
               <div key={i} className="min-w-0">
                 <Cover src={a.artworkUrl} size={size} />
                 <p className="mt-4 truncate font-serif text-[24px] leading-tight">{a.album}</p>
-                <p className="mt-1 truncate font-serif text-[19px] italic opacity-65">{a.artist}</p>
+                <p className="mt-1 truncate font-serif text-[19px] opacity-65">{a.artist}</p>
               </div>
             ))}
           </div>
@@ -195,7 +195,7 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
             >
               {stats.totalAlbums}
             </span>
-            <span className="pb-4 font-serif text-[64px] italic leading-none">
+            <span className="pb-4 font-serif text-[64px] leading-none">
               {stats.totalAlbums === 1 ? 'record' : 'records'}
             </span>
           </div>
@@ -213,7 +213,7 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
               <h2 className="mt-4 font-serif text-[52px] font-medium leading-[1.04] tracking-[-0.015em] line-clamp-2">
                 {top.album}
               </h2>
-              <p className="mt-3 font-serif text-[30px] italic opacity-75 line-clamp-1">{top.artist}</p>
+              <p className="mt-3 font-serif text-[30px] opacity-75 line-clamp-1">{top.artist}</p>
               <p className="mt-5">
                 <Label>{plural(top.playCount, 'play')}</Label>
               </p>
@@ -243,7 +243,7 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
       {type === 'stats' && renderStats()}
 
       <div className="relative z-10 mt-12 flex items-baseline justify-between">
-        <span className="font-serif text-[30px] italic">Kissa</span>
+        <span className="font-serif text-[30px]">Kissa</span>
         <Label>{monthYear(Date.now())}</Label>
       </div>
     </div>

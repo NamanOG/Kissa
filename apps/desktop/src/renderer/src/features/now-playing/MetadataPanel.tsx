@@ -87,7 +87,7 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
                   {artist}
                 </p>
                 {showAlbum && (
-                  <p className="mt-0.5 font-kissa-editorial text-[0.95rem] italic text-dim line-clamp-1" title={album}>
+                  <p className="mt-0.5 font-kissa-editorial text-[0.95rem] text-dim line-clamp-1" title={album}>
                     {album}
                   </p>
                 )}
