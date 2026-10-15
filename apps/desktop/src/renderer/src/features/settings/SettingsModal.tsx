@@ -316,7 +316,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             className={cn(
-              'relative z-50 w-full max-w-[700px] max-h-[85vh] flex flex-col rounded-2xl overflow-hidden select-none border border-panel-line bg-[var(--deck-bg)] shadow-[var(--panel-shadow)] [transform:translateZ(0)]',
+              'relative z-50 w-full max-w-[820px] max-h-[88vh] flex flex-col rounded-2xl overflow-hidden select-none border border-panel-line bg-[var(--deck-bg)] shadow-[var(--panel-shadow)] [transform:translateZ(0)]',
               className
             )}
             onClick={(e) => e.stopPropagation()}
@@ -343,12 +343,12 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8 no-scrollbar overscroll-contain [transform:translateZ(0)]">
+            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-10 no-scrollbar min-[700px]:px-10 overscroll-contain [transform:translateZ(0)]">
               
               {settingsTab === 'room' && (
               <>
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-dim mb-3 tracking-[0.2em] uppercase">Listening Room</h4>
+                <h4 className="text-[11px] font-mono font-bold text-dim mb-3.5 tracking-[0.2em] uppercase">Listening Room</h4>
                 <div className="grid grid-cols-4 gap-x-4 gap-y-5">
                   {LISTENING_ENVIRONMENTS.map((env) => (
                     <ThemeCard
@@ -368,10 +368,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
               {settingsTab === 'playback' && (
               <>
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-dim mb-2.5 tracking-[0.2em] uppercase">The Deck</h4>
+                <h4 className="text-[11px] font-mono font-bold text-dim mb-3.5 tracking-[0.2em] uppercase">The Deck</h4>
                 <div className="rounded-2xl bg-ink/[0.03] border border-ink/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_3px_rgba(0,0,0,0.1)]">
                   
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
+                  <div className="flex items-center justify-between px-5 py-[18px] min-[600px]:px-7 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <span className="text-[13.5px] font-medium text-ink">Platter Speed</span>
                     <div className="flex items-center rounded-xl bg-ink/[0.05] p-1 border border-ink/10 shadow-inner gap-1">
                       <button
@@ -401,10 +401,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-ink/[0.02] transition-colors">
+                  <div className="flex items-center justify-between px-5 py-[18px] min-[600px]:px-7 hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col">
                       <span className="text-[13.5px] font-medium text-ink">Physical Feedback</span>
-                      <span className="text-[11.5px] text-dim mt-0.5">Physical needle thud and visual tonearm weight</span>
+                      <span className="text-[12px] leading-relaxed text-dim mt-1">Physical needle thud and visual tonearm weight</span>
                     </div>
                     <HardwareSwitch
                       checked={physicalFeedback}
@@ -417,14 +417,14 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
               </div>
 
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-dim mb-2.5 tracking-[0.2em] uppercase">Lyrics</h4>
+                <h4 className="text-[11px] font-mono font-bold text-dim mb-3.5 tracking-[0.2em] uppercase">Lyrics</h4>
                 <div className="rounded-2xl bg-ink/[0.03] border border-ink/[0.08] overflow-hidden flex flex-col">
                   <LyricsAppearanceRows />
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
+                  <div className="flex items-center justify-between px-5 py-[18px] min-[600px]:px-7 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col">
                       <span className="text-[13.5px] font-medium text-ink">Follow the Song</span>
-                      <span className="text-[11.5px] text-dim mt-0.5">Keep the line being sung in view</span>
+                      <span className="text-[12px] leading-relaxed text-dim mt-1">Keep the line being sung in view</span>
                     </div>
                     <HardwareSwitch
                       checked={autoScrollLyrics}
@@ -433,10 +433,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-ink/[0.02] transition-colors">
+                  <div className="flex items-center justify-between px-5 py-[18px] min-[600px]:px-7 hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col">
                       <span className="text-[13.5px] font-medium text-ink">Timing</span>
-                      <span className="text-[11.5px] text-dim mt-0.5">Nudge lyrics that run early or late (also in the lyrics view)</span>
+                      <span className="text-[12px] leading-relaxed text-dim mt-1">Nudge lyrics that run early or late (also in the lyrics view)</span>
                     </div>
                     <div className="flex items-center rounded-xl bg-ink/[0.05] p-1 border border-ink/10 shadow-inner gap-1.5">
                       <button
@@ -475,13 +475,13 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
               {settingsTab === 'system' && (
               <>
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-dim mb-2.5 tracking-[0.2em] uppercase">Windows</h4>
+                <h4 className="text-[11px] font-mono font-bold text-dim mb-3.5 tracking-[0.2em] uppercase">Windows</h4>
                 <div className="rounded-2xl bg-ink/[0.03] border border-ink/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)]">
                   
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
+                  <div className="flex items-center justify-between px-5 py-[18px] min-[600px]:px-7 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col">
                       <span className="text-[13.5px] font-medium text-ink">Always on Top (Mini Player)</span>
-                      <span className="text-[11.5px] text-dim mt-0.5">Keep the Mini Player visible above other windows</span>
+                      <span className="text-[12px] leading-relaxed text-dim mt-1">Keep the Mini Player visible above other windows</span>
                     </div>
                     <HardwareSwitch
                       checked={miniPlayerAlwaysOnTop}
@@ -490,10 +490,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
+                  <div className="flex items-center justify-between px-5 py-[18px] min-[600px]:px-7 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col">
                       <span className="text-[13.5px] font-medium text-ink">Start with Windows</span>
-                      <span className="text-[11.5px] text-dim mt-0.5">Open Kissa in the tray when you sign in</span>
+                      <span className="text-[12px] leading-relaxed text-dim mt-1">Open Kissa in the tray when you sign in</span>
                     </div>
                     <HardwareSwitch
                       checked={startWithWindows}
@@ -502,10 +502,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
+                  <div className="flex items-center justify-between px-5 py-[18px] min-[600px]:px-7 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col">
                       <span className="text-[13.5px] font-medium text-ink">Keep Running in Tray</span>
-                      <span className="text-[11.5px] text-dim mt-0.5">Closing the window keeps Kissa following your music</span>
+                      <span className="text-[12px] leading-relaxed text-dim mt-1">Closing the window keeps Kissa following your music</span>
                     </div>
                     <HardwareSwitch
                       checked={runInBackground}
@@ -514,10 +514,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
+                  <div className="flex items-center justify-between px-5 py-[18px] min-[600px]:px-7 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col pr-4">
                       <span className="text-[13.5px] font-medium text-ink">Windows Screensaver</span>
-                      <span className="text-[11.5px] text-dim mt-0.5">
+                      <span className="text-[12px] leading-relaxed text-dim mt-1">
                         {isScreensaverRegistered
                           ? '✓ Kissa is your Windows screensaver'
                           : showScreensaverSteps
@@ -546,10 +546,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
+                  <div className="flex items-center justify-between px-5 py-[18px] min-[600px]:px-7 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col pr-4">
                       <span className="text-[13.5px] font-medium text-ink">Windows Screensaver Settings</span>
-                      <span className="text-[11.5px] text-dim mt-0.5">
+                      <span className="text-[12px] leading-relaxed text-dim mt-1">
                         Configure Windows idle timeout, wait duration, and lock screen behavior
                       </span>
                     </div>
@@ -562,10 +562,10 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
+                  <div className="flex items-center justify-between px-5 py-[18px] min-[600px]:px-7 border-b border-ink/[0.06] hover:bg-ink/[0.02] transition-colors">
                     <div className="flex flex-col pr-4">
                       <span className="text-[13.5px] font-medium text-ink">Screensaver & Display Lyrics</span>
-                      <span className="text-[11.5px] text-dim mt-0.5">
+                      <span className="text-[12px] leading-relaxed text-dim mt-1">
                         Display synchronized lyrics alongside album art in Listening Display
                       </span>
                     </div>
@@ -576,7 +576,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     />
                   </div>
 
-                  <div className="flex items-center justify-between p-4 min-[600px]:px-5 hover:bg-ink/[0.02] transition-colors">
+                  <div className="flex items-center justify-between px-5 py-[18px] min-[600px]:px-7 hover:bg-ink/[0.02] transition-colors">
                     <span className="text-[13.5px] font-medium text-ink">Interactive Guide</span>
                     <button
                       type="button"
@@ -594,17 +594,17 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
               </div>
 
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-dim mb-2.5 tracking-[0.2em] uppercase">Sharing</h4>
+                <h4 className="text-[11px] font-mono font-bold text-dim mb-3.5 tracking-[0.2em] uppercase">Sharing</h4>
                 <div className="rounded-2xl bg-ink/[0.03] border border-ink/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)]">
                   <DiscordPresenceRow />
                 </div>
               </div>
 
               <div>
-                <h4 className="text-[11px] font-mono font-bold text-dim mb-2.5 tracking-[0.2em] uppercase">Application</h4>
+                <h4 className="text-[11px] font-mono font-bold text-dim mb-3.5 tracking-[0.2em] uppercase">Application</h4>
                 <div className="rounded-2xl bg-ink/[0.03] border border-ink/[0.08] overflow-hidden flex flex-col shadow-[inset_0_1px_4px_rgba(0,0,0,0.1)]">
                   
-                  <div className="flex flex-col p-4 min-[600px]:px-5 hover:bg-ink/[0.02] transition-colors gap-3">
+                  <div className="flex flex-col px-5 py-[18px] min-[600px]:px-7 hover:bg-ink/[0.02] transition-colors gap-3">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex flex-col">
                         <span className="text-[13.5px] font-medium text-ink">Software Version</span>

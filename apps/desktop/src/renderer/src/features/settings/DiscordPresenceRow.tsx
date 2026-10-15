@@ -70,11 +70,11 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
   const canShareStudy = Boolean(window.electron?.setDiscordShareStudy)
 
   return (
-    <div className="flex flex-col p-4 min-[600px]:px-5 hover:bg-ink/[0.02] transition-colors">
+    <div className="flex flex-col px-5 py-[18px] min-[600px]:px-7 hover:bg-ink/[0.02] transition-colors">
       <div className="flex items-center justify-between gap-4">
         <div className="flex flex-col">
           <span className="text-[13.5px] font-medium text-ink">Share on Discord</span>
-          <span className="text-[11.5px] text-dim mt-0.5 flex items-center gap-1.5" role="status">
+          <span className="text-[12px] leading-relaxed text-dim mt-1 flex items-center gap-1.5" role="status">
             {live && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-tone" aria-hidden="true" />}
             {stateText(status.state, status.shareSpotify)}
           </span>

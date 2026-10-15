@@ -7,8 +7,8 @@ import { cn } from '@renderer/utils/cn'
 import { greetingFor } from '@renderer/utils/greeting'
 
 const GROUP = 'rounded-2xl bg-ink/[0.03] border border-ink/[0.08] overflow-hidden flex flex-col'
-const ROW = 'flex items-center justify-between gap-4 p-4 min-[600px]:px-5'
-const HEADING = 'text-[11px] font-mono font-bold text-dim mb-2.5 tracking-[0.2em] uppercase'
+const ROW = 'flex items-center justify-between gap-4 px-5 py-[18px] min-[600px]:px-7'
+const HEADING = 'text-[11px] font-mono font-bold text-dim mb-3.5 tracking-[0.2em] uppercase'
 
 /** The colour of the record on the platter, and what Kissa calls you. */
 export const RoomPersonalSettings = memo((): React.JSX.Element => {
