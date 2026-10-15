@@ -271,6 +271,9 @@ Production artifacts are output to `apps/desktop/dist/`:
 - **The Fireplace Room:** A fifth Study Room: a cabin hearth whose flames sway, surge and throw sparks, with a real fire recording.
 - **Covers That Match Your Player:** Kissa keeps your player's own cover and only swaps in a sharper catalogue copy when it is the same picture (albums such as HEROES & VILLAINS have different art on different services).
 - **A New Opening:** Kissa's mark assembles itself when the app opens.
+- **Steadier Record:** Light and shadow no longer turn with the record, so it reads as a true circle.
+- **Share, Redone:** A clearer share dialog whose message links to Kissa on the Microsoft Store; a richer stats card; a record view on the Shelf lit by its cover.
+- **Updates in the Store Build:** Kissa tells you when the Microsoft Store has a newer version and opens the Store to update.
 - **Privacy:** `PRIVACY.md` covers Discord sharing, Study Room data and the website's cookieless visit counts.
 
 ### v4.2.0 — The Front Door
