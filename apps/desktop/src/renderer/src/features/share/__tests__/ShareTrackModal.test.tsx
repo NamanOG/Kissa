@@ -45,10 +45,11 @@ describe('ShareTrackModal & sharing utilities', () => {
       }
 
       const text = buildShareText(track)
-      expect(text).toContain('Listening to Karma Police by Radiohead\non Spotify with Kissa.')
-      expect(text).toContain('Find the track on Spotify:')
+      expect(text).toContain('Listening to Karma Police by Radiohead, on a turntable in Kissa.')
+      expect(text).toContain('Spotify: ')
       expect(text).toContain('https://open.spotify.com/search/Karma%20Police%20Radiohead')
-      expect(text).toContain('https://github.com/NamanOG/Kissa')
+      expect(text).toContain('https://apps.microsoft.com/detail/9p3n4x4wm80j')
+      expect(text).not.toContain('github.com')
     })
   })
 
@@ -65,10 +66,9 @@ describe('ShareTrackModal & sharing utilities', () => {
       render(<ShareTrackModal isOpen={true} onClose={vi.fn()} track={mockTrack} />)
 
       expect(screen.getByText('Share Track')).toBeInTheDocument()
-      expect(screen.getByText('Time')).toBeInTheDocument()
-      expect(screen.getByText('Pink Floyd')).toBeInTheDocument()
-      expect(screen.getByText('Apple Music · Following')).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /Copy Share Text/i })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'Time' })).toBeInTheDocument()
+      expect(screen.getAllByText(/Pink Floyd/).length).toBeGreaterThan(0)
+      expect(screen.getByRole('button', { name: /Copy message/i })).toBeInTheDocument()
     })
 
     it('copies share text to clipboard when clicking Copy Share Text', async () => {
@@ -79,7 +79,7 @@ describe('ShareTrackModal & sharing utilities', () => {
 
       render(<ShareTrackModal isOpen={true} onClose={vi.fn()} track={mockTrack} />)
 
-      const copyBtn = screen.getByRole('button', { name: /Copy Share Text/i })
+      const copyBtn = screen.getByRole('button', { name: /Copy message/i })
       fireEvent.click(copyBtn)
 
       expect(writeText).toHaveBeenCalledWith(expect.stringContaining('Listening to Time by Pink Floyd'))
