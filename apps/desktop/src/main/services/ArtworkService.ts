@@ -101,8 +101,9 @@ export class ArtworkService {
   private static instance: ArtworkService
   private cache = new Map<string, string>()
   private inFlight = new Map<string, Promise<string | null>>()
-  /** Per track: whether the catalogue cover was checked against the player's own (true = same picture). */
-  private verified = new Map<string, boolean>()
+  /** Per track and picture: the public copy of the player's cover, or null when there is none. */
+  private verifiedUrl = new Map<string, string | null>()
+  private matching = new Map<string, Promise<string | null>>()
   /** Replaceable in tests; compares the player's cover with a catalogue cover. */
   public compareCovers: (reference: string, candidate: string) => Promise<boolean | null> = (a, b) => coversMatch(a, b)
 
@@ -119,24 +120,91 @@ export class ArtworkService {
     // Keyed by the picture too: a player can report the new title a moment before the new
     // cover, and a verdict about the old picture must not stick to the new track.
     const key = `${this.getKey(title, artist, album)}#${pictureSignature(reference)}`
-    const known = this.verified.get(key)
-    if (known === false) return null
-    const url = await this.fetchArtwork(title, artist, album, false)
-    if (!url) return null
-    if (known === true) return url
-    const same = await this.compareCovers(reference, url)
-    if (same !== null) {
-      this.verified.set(key, same)
-      if (this.verified.size > 400) this.verified.delete(this.verified.keys().next().value as string)
+    const known = this.verifiedUrl.get(key)
+    if (known !== undefined) return known
+    const pending = this.matching.get(key)
+    if (pending) return pending
+    const work = this.findSamePicture(title, artist, album, reference).then((url) => {
+      if (url !== undefined) {
+        this.verifiedUrl.set(key, url)
+        if (this.verifiedUrl.size > 400) this.verifiedUrl.delete(this.verifiedUrl.keys().next().value as string)
+      }
+      return url ?? null
+    })
+    this.matching.set(key, work)
+    try {
+      return await work
+    } finally {
+      this.matching.delete(key)
     }
-    return same === true ? url : null
+  }
+
+  /**
+   * Looks through the catalogue entries for this song and album (iTunes and Deezer, album
+   * and song searches) and returns the first whose cover is the player's picture. The
+   * public copy is what Discord needs (it cannot show an embedded image), so trying
+   * several candidates matters: the exact album name is often listed under another
+   * edition, a deluxe, or a single with the same art. Undefined when no comparison could
+   * run (offline), null when none of them is the same picture.
+   */
+  private async findSamePicture(title: string, artist: string, album: string | undefined, reference: string): Promise<string | null | undefined> {
+    const candidates = await this.catalogueCandidates(title, artist, album)
+    let compared = false
+    for (const url of candidates.slice(0, 10)) {
+      const same = await this.compareCovers(reference, url)
+      if (same === null) continue
+      compared = true
+      if (same) {
+        console.log('[ArtworkService] cover matched', { title, url })
+        return url
+      }
+    }
+    console.log('[ArtworkService] no catalogue cover matches the player', { title, album, candidates: candidates.length })
+    return compared || candidates.length === 0 ? null : undefined
+  }
+
+  /** Catalogue covers for the song, best guesses first (same album name, then same artist). */
+  private async catalogueCandidates(title: string, artist: string, album: string | undefined): Promise<string[]> {
+    const cleanT = cleanTrackTitle(title) || title
+    const cleanA = cleanArtist(artist) || artist
+    const scored: Array<{ url: string; score: number }> = []
+    const add = (url: string | undefined, itemAlbum: string, itemArtist: string, itemTitle?: string): void => {
+      if (!url || !artistsMatch(artist, itemArtist)) return
+      let score = 0
+      if (album && albumsMatchExact(album, itemAlbum)) score += 4
+      else if (album && albumsMatch(album, itemAlbum)) score += 2
+      if (itemTitle && tracksMatch(title, itemTitle)) score += 1
+      scored.push({ url, score })
+    }
+    const getJson = async (url: string): Promise<any> => {
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(3_500) })
+        return res.ok ? await res.json() : null
+      } catch {
+        return null
+      }
+    }
+    const hi = (u?: string): string | undefined => u?.replace(/100x100bb\.(jpg|png|webp)/i, '1200x1200bb.$1')
+    const [itAlbums, itSongs, dzAlbums, dzTracks] = await Promise.all([
+      album ? getJson(`https://itunes.apple.com/search?term=${encodeURIComponent(`${album} ${cleanA}`)}&entity=album&limit=8`) : null,
+      getJson(`https://itunes.apple.com/search?term=${encodeURIComponent(`${cleanT} ${cleanA}`)}&entity=song&limit=10`),
+      album ? getJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(`${album} ${cleanA}`)}&limit=6`) : null,
+      getJson(`https://api.deezer.com/search?q=${encodeURIComponent(`${cleanT} ${cleanA}`)}&limit=8`)
+    ])
+    for (const r of itAlbums?.results ?? []) add(hi(r.artworkUrl100), r.collectionName ?? '', r.artistName ?? '')
+    for (const r of itSongs?.results ?? []) add(hi(r.artworkUrl100), r.collectionName ?? '', r.artistName ?? '', r.trackName)
+    for (const r of dzAlbums?.data ?? []) add(r.cover_xl || r.cover_big, r.title ?? '', r.artist?.name ?? '')
+    for (const r of dzTracks?.data ?? []) add(r.album?.cover_xl || r.album?.cover_big, r.album?.title ?? '', r.artist?.name ?? '', r.title)
+    const seen = new Set<string>()
+    return scored
+      .sort((a, b) => b.score - a.score)
+      .map((s) => s.url)
+      .filter((u) => (seen.has(u) ? false : (seen.add(u), true)))
   }
 
   /** A catalogue cover already confirmed to be this exact picture from the player. */
   public getVerifiedArtwork(title: string, artist: string, album: string | undefined, reference: string): string | undefined {
-    if (this.verified.get(`${this.getKey(title, artist, album)}#${pictureSignature(reference)}`) !== true) return undefined
-    const cached = this.cache.get(this.getKey(title, artist, album)) ?? this.cache.get(this.getCleanKey(title, artist, album))
-    return cached && cached.startsWith('http') ? cached : undefined
+    return this.verifiedUrl.get(`${this.getKey(title, artist, album)}#${pictureSignature(reference)}`) ?? undefined
   }
 
   public static getInstance(): ArtworkService {

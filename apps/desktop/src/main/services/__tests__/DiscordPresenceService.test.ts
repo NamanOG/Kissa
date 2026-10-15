@@ -121,11 +121,24 @@ describe('DiscordPresenceService', () => {
     const h = setup()
     await flush()
     h.service.onMedia(track({ artworkDataUrl: 'data:image/jpeg;base64,AAAA' }))
-    await flush(5_000)
+    await flush(8_000)
     const assets = h.last().activities.at(-1)!.assets as Record<string, string>
     // Kissa's badge stands in; the embedded image is never sent.
     expect(assets.large_image).toBe('https://kissa.glyphcode.studio/favicon.png')
     expect(JSON.stringify(assets)).not.toContain('data:')
+  })
+
+  it("waits for the cover's public copy instead of flashing Kissa's badge first", async () => {
+    const h = setup()
+    await flush()
+    h.service.onMedia(track({ title: 'NEW DROP', artworkDataUrl: 'data:image/jpeg;base64,AAAA' }))
+    await flush(2_000)
+    expect(h.last().activities.length).toBe(0)
+    h.service.onMedia(track({ title: 'NEW DROP', artworkDataUrl: 'https://is1-ssl.mzstatic.com/image/thumb/y/1200x1200bb.jpg' }))
+    await flush(5_000)
+    const sent = h.last().activities
+    expect(sent.length).toBe(1)
+    expect((sent[0]!.assets as Record<string, string>).large_image).toContain('mzstatic')
   })
 
   it('clears at once when the source switches to Spotify', async () => {

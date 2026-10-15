@@ -17,6 +17,8 @@ const MIN_SEND_INTERVAL_MS = 4_000
 const PAUSED_CLEAR_MS = 2 * 60 * 1000
 /** A position this far off the time bar Discord is showing counts as a seek. */
 const SEEK_TOLERANCE_MS = 3_000
+/** How long a new track waits for the public copy of its cover before showing without it. */
+const COVER_WAIT_MS = 6_000
 const RECONNECT_DELAYS_MS = [5_000, 10_000, 20_000, 40_000, 60_000]
 
 const KISSA_STORE_URL = 'https://apps.microsoft.com/detail/9p3n4x4wm80j'
@@ -71,6 +73,8 @@ interface Desired {
   paused: boolean
   /** A Study Room session, not a track. */
   study?: boolean
+  /** The player has a cover but its public copy is still being found. */
+  awaitingCover?: boolean
 }
 
 export class DiscordPresenceService {
@@ -80,6 +84,10 @@ export class DiscordPresenceService {
   /** Show a running Study Room session (on unless turned off; sharing itself is opt-in). */
   private shareStudy: boolean
   private study: StudyPresence | null = null
+  /** After a track change, how long to wait for the public copy of its cover before sending without it. */
+  private coverWaitUntil = 0
+  private coverTrack = ''
+  private coverTimer: ReturnType<typeof setTimeout> | null = null
   private client: PresenceClient | null = null
   private connecting = false
   private connected = false
@@ -189,6 +197,11 @@ export class DiscordPresenceService {
   /** Every normalized media update, from MediaDetectionService. */
   public onMedia(payload: SystemMediaPayload | null): void {
     this.latest = payload
+    const track = payload ? `${payload.title}|${payload.artist}|${payload.album}` : ''
+    if (track !== this.coverTrack) {
+      this.coverTrack = track
+      this.coverWaitUntil = this.now() + COVER_WAIT_MS
+    }
     if (payload && !payload.isPlaying && this.isShared(payload.sourceAppId)) {
       if (this.pausedSince === null) this.pausedSince = this.now()
     } else {
@@ -257,7 +270,8 @@ export class DiscordPresenceService {
     }
 
     const key = JSON.stringify([details, state, art, album, paused, Math.round(duration)])
-    return { key, activity, startMs, paused }
+    const awaitingCover = !art && Boolean(p.artworkDataUrl?.startsWith('data:'))
+    return { key, activity, startMs, paused, awaitingCover }
   }
 
   /**
@@ -309,6 +323,20 @@ export class DiscordPresenceService {
     if (!this.connected) {
       this.updateState()
       void this.ensureConnected()
+      return
+    }
+
+    // A new track's cover usually arrives a moment after its title (Kissa finds the public
+    // copy Discord needs). Wait briefly for it rather than flash Kissa's badge first.
+    if (next.awaitingCover && this.now() < this.coverWaitUntil) {
+      if (!this.coverTimer) {
+        this.coverTimer = setTimeout(() => {
+          this.coverTimer = null
+          this.reconcile()
+        }, this.coverWaitUntil - this.now() + 20)
+        this.coverTimer.unref?.()
+      }
+      this.updateState()
       return
     }
 

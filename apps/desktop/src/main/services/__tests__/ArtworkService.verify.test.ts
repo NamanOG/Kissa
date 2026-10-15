@@ -48,6 +48,20 @@ describe('ArtworkService.fetchArtworkFor', () => {
     expect(await service.fetchArtworkFor('Superhero', 'Metro Boomin', 'HEROES & VILLAINS', OTHER_PLAYER_COVER)).toBe(hiRes)
   })
 
+  it('tries other catalogue entries until one has the same picture', async () => {
+    const other = 'https://is1-ssl.mzstatic.com/image/thumb/edition/100x100bb.jpg'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.includes('entity=song')
+          ? new Response(JSON.stringify({ results: [{ trackName: 'Superhero', collectionName: 'HEROES & VILLAINS (Villains Version)', artistName: 'Metro Boomin', artworkUrl100: other }] }))
+          : itunesAlbum()
+      )
+    )
+    service.compareCovers = vi.fn(async (_ref: string, candidate: string) => candidate.includes('edition'))
+    expect(await service.fetchArtworkFor('Superhero', 'Metro Boomin', 'HEROES & VILLAINS', PLAYER_COVER)).toBe(other.replace('100x100bb', '1200x1200bb'))
+  })
+
   it('keeps the player cover when the comparison cannot run', async () => {
     service.compareCovers = vi.fn(async () => null)
     expect(await service.fetchArtworkFor('Superhero', 'Metro Boomin', 'HEROES & VILLAINS', PLAYER_COVER)).toBeNull()
