@@ -4,7 +4,7 @@ import type { SystemMediaPayload } from '../types/media'
 import type { LyricsRequest, LyricsResponse } from '../types/lyrics'
 import type { ShareExportOptions, SharePayload } from '../types/share'
 import type { UpdateStatusPayload, UpdateInstallResult } from '../types/update'
-import type { DiscordPresenceStatus } from '../types/discord'
+import type { DiscordPresenceStatus, StudyPresence } from '../types/discord'
 
 export interface KissaSystemMediaAPI {
   getSystemMedia: () => Promise<SystemMediaPayload | null>
@@ -45,6 +45,8 @@ export interface KissaSystemMediaAPI {
   setStudyKeepAwake: (on: boolean) => Promise<boolean>
   setDiscordPresenceEnabled: (enabled: boolean) => Promise<DiscordPresenceStatus>
   setDiscordShareSpotify: (on: boolean) => Promise<DiscordPresenceStatus>
+  setDiscordShareStudy: (on: boolean) => Promise<DiscordPresenceStatus>
+  setDiscordStudy: (study: StudyPresence | null) => void
   onDiscordPresenceChanged: (callback: (status: DiscordPresenceStatus) => void) => () => void
 }
 
@@ -143,6 +145,8 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
   setStudyKeepAwake: (on) => ipcRenderer.invoke('kissa:study-keep-awake', on),
   setDiscordPresenceEnabled: (enabled) => ipcRenderer.invoke('kissa:discord-set-enabled', enabled),
   setDiscordShareSpotify: (on) => ipcRenderer.invoke('kissa:discord-set-share-spotify', on),
+  setDiscordShareStudy: (on) => ipcRenderer.invoke('kissa:discord-set-share-study', on),
+  setDiscordStudy: (study) => ipcRenderer.send('kissa:discord-study', study),
   onDiscordPresenceChanged: (callback) => {
     const handler = (_event: unknown, status: DiscordPresenceStatus): void => callback(status)
     ipcRenderer.on('kissa:discord-status-changed', handler)

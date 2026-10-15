@@ -22,7 +22,7 @@ Each of those services handles requests under its own privacy policy.
 
 ## Sharing on Discord (off unless you turn it on)
 
-Kissa can show the track you are playing on your Discord profile. It is off by default, and Kissa asks before turning it on. When it is on, Kissa talks only to the Discord app running on your own PC, which publishes the activity to your profile: the track title, artist, album, a public cover image Kissa matched to the album, the time played, and a link to Kissa's Store page. Your friends and people in servers you share can see it, under Discord's own privacy policy. Apple Music is shared when this is on; Spotify is shared only if you also turn on **Also share Spotify**. Turning sharing off clears the activity at once.
+Kissa can show the track you are playing on your Discord profile. It is off by default, and Kissa asks before turning it on. When it is on, Kissa talks only to the Discord app running on your own PC, which publishes the activity to your profile: the track title, artist, album, a public cover image Kissa matched to the album, the time played, and a link to Kissa's Store page. Your friends and people in servers you share can see it, under Discord's own privacy policy. Apple Music is shared when this is on; Spotify is shared only if you also turn on **Also share Spotify**. While a Study Room session runs, the profile instead shows the room, the session's timer and how many of your steps are done, never what you are working on or the steps themselves; turn off **Show study sessions** to keep sessions off Discord. Turning sharing off clears the activity at once.
 
 ## Links you open yourself
 

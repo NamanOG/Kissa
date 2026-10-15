@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { useStudyStore } from '@renderer/stores/studyStore'
+import { useStudyStore, type StudyState } from '@renderer/stores/studyStore'
+import type { StudyPresence } from '../../../../types/discord'
 
 /**
  * Runs for the whole app (every view, mini player and tray), never inside a single view:
@@ -18,6 +19,25 @@ export function useStudyEngine(): void {
   }, [keepAwake])
   useEffect(() => () => void window.electron?.setStudyKeepAwake?.(false), [])
 
+  // Discord (when the person shares there) shows the room and the timer, never what they
+  // are working on. Sent only when something visible changes.
+  useEffect(() => {
+    let last = ''
+    const push = (): void => {
+      const presence = studyPresence(useStudyStore.getState())
+      const key = JSON.stringify(presence)
+      if (key === last) return
+      last = key
+      window.electron?.setDiscordStudy?.(presence)
+    }
+    push()
+    const unsubscribe = useStudyStore.subscribe(push)
+    return (): void => {
+      unsubscribe()
+      window.electron?.setDiscordStudy?.(null)
+    }
+  }, [])
+
   useEffect(() => {
     if (!hasSession) return
     const tick = (): void => {
@@ -28,6 +48,36 @@ export function useStudyEngine(): void {
     const id = window.setInterval(tick, 1000)
     return (): void => window.clearInterval(id)
   }, [hasSession])
+}
+
+const ROOM_NAMES: Record<string, string> = {
+  rain: 'Rain room',
+  snow: 'Snow room',
+  forest: 'Forest room',
+  night: 'Night room'
+}
+
+export function studyPresence(state: Pick<StudyState, 'active' | 'prefs'>): StudyPresence | null {
+  const session = state.active
+  if (!session) return null
+  const { segment } = session
+  const running = segment.runningSince !== null && !segment.ended && !session.interruption
+  const phase: StudyPresence['phase'] = !running ? 'paused' : segment.kind === 'break' ? 'break' : 'focus'
+  const tasks = session.tasks ?? []
+  const presence: StudyPresence = {
+    phase,
+    room: ROOM_NAMES[state.prefs.environment] ?? 'Study Room'
+  }
+  if (running && segment.runningSince !== null) {
+    if (segment.plannedMs !== null) presence.endsAt = segment.runningSince + segment.plannedMs - segment.elapsedBeforeMs
+    else presence.startedAt = segment.runningSince - segment.elapsedBeforeMs
+  }
+  if (segment.kind === 'focus') presence.round = session.focusBlocksDone + 1
+  if (tasks.length > 0) {
+    presence.tasksTotal = tasks.length
+    presence.tasksDone = tasks.filter((t) => t.done).length
+  }
+  return presence
 }
 
 function announceIfEnded(): void {

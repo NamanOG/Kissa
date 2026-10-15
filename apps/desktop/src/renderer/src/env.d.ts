@@ -22,7 +22,7 @@ declare module '*.svg' {
 import type { SystemMediaPayload } from '../../types/media'
 import type { LyricsRequest, LyricsResponse } from '../../types/lyrics'
 import type { UpdateStatusPayload, UpdateInstallResult } from '../../types/update'
-import type { DiscordPresenceStatus } from '../../types/discord'
+import type { DiscordPresenceStatus, StudyPresence } from '../../types/discord'
 
 export interface KissaSystemMediaAPI {
   getSystemMedia: () => Promise<SystemMediaPayload | null>
@@ -61,6 +61,8 @@ export interface KissaSystemMediaAPI {
   setStudyKeepAwake?: (on: boolean) => Promise<boolean>
   setDiscordPresenceEnabled: (enabled: boolean) => Promise<DiscordPresenceStatus>
   setDiscordShareSpotify?: (on: boolean) => Promise<DiscordPresenceStatus>
+  setDiscordShareStudy?: (on: boolean) => Promise<DiscordPresenceStatus>
+  setDiscordStudy?: (study: StudyPresence | null) => void
   onDiscordPresenceChanged?: (callback: (status: DiscordPresenceStatus) => void) => () => void
 }
 

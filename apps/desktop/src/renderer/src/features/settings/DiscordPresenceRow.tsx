@@ -17,6 +17,8 @@ function stateText(state: DiscordPresenceState, spotify: boolean): string {
       return 'Sharing what you play on your Discord profile'
     case 'paused':
       return 'Paused. The track clears after two minutes'
+    case 'studying':
+      return 'Sharing your Study Room session'
   }
 }
 
@@ -59,8 +61,13 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
     void window.electron.setDiscordShareSpotify?.(on).then(setStatus)
   }
 
-  const live = status.state === 'sharing' || status.state === 'paused'
+  const setShareStudy = (on: boolean): void => {
+    void window.electron.setDiscordShareStudy?.(on).then(setStatus)
+  }
+
+  const live = status.state === 'sharing' || status.state === 'paused' || status.state === 'studying'
   const canShareSpotify = Boolean(window.electron?.setDiscordShareSpotify)
+  const canShareStudy = Boolean(window.electron?.setDiscordShareStudy)
 
   return (
     <div className="flex flex-col p-4 min-[600px]:px-5 hover:bg-ink/[0.02] transition-colors">
@@ -84,8 +91,8 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
         <div className="mt-3 rounded-xl border border-ink/10 bg-ink/[0.04] p-3.5">
           <p className="text-[12px] leading-relaxed text-ink/90">
             While Kissa follows Apple Music, your Discord profile will show the song, artist, album
-            cover and time played, with a link to get Kissa. Friends and people in your servers can
-            see it.
+            cover and time played, with a link to get Kissa. During a Study Room session it shows the
+            room and its timer instead. Friends and people in your servers can see it.
           </p>
           <div className="mt-3 flex justify-end gap-2">
             <button
@@ -119,6 +126,23 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
             checked={status.shareSpotify}
             onChange={setShareSpotify}
             aria-label="Also share Spotify activity on Discord"
+          />
+        </div>
+      )}
+
+      {status.enabled && canShareStudy && (
+        <div className="mt-3 flex items-center justify-between gap-4 border-t border-ink/[0.06] pt-3">
+          <div className="flex flex-col">
+            <span className="text-[12.5px] font-medium text-ink">Show study sessions</span>
+            <span className="text-[11.5px] leading-relaxed text-dim mt-0.5">
+              While a session runs, your profile shows the room and its timer. What you are working
+              on stays private.
+            </span>
+          </div>
+          <HardwareSwitch
+            checked={status.shareStudy}
+            onChange={setShareStudy}
+            aria-label="Show Study Room sessions on Discord"
           />
         </div>
       )}

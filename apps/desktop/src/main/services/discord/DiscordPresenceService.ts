@@ -1,5 +1,5 @@
 import type { SystemMediaPayload } from '../../../types/media'
-import type { DiscordPresenceState, DiscordPresenceStatus } from '../../../types/discord'
+import type { DiscordPresenceState, DiscordPresenceStatus, StudyPresence } from '../../../types/discord'
 import { DiscordIpcClient } from './DiscordIpcClient'
 
 /**
@@ -32,8 +32,8 @@ export interface PresenceClient {
 }
 
 export interface PresenceSettingsStore {
-  load(): { enabled: boolean; shareSpotify?: boolean }
-  save(settings: { enabled: boolean; shareSpotify: boolean }): void
+  load(): { enabled: boolean; shareSpotify?: boolean; shareStudy?: boolean }
+  save(settings: { enabled: boolean; shareSpotify: boolean; shareStudy: boolean }): void
 }
 
 export interface DiscordPresenceOptions {
@@ -69,12 +69,17 @@ interface Desired {
   /** When the track started, for the time bar. Undefined while paused or unknown. */
   startMs?: number
   paused: boolean
+  /** A Study Room session, not a track. */
+  study?: boolean
 }
 
 export class DiscordPresenceService {
   private enabled: boolean
   /** Spotify can share itself; Kissa shares it too only when asked, for Kissa's card and Store link. */
   private shareSpotify: boolean
+  /** Show a running Study Room session (on unless turned off; sharing itself is opt-in). */
+  private shareStudy: boolean
+  private study: StudyPresence | null = null
   private client: PresenceClient | null = null
   private connecting = false
   private connected = false
@@ -107,12 +112,13 @@ export class DiscordPresenceService {
     const saved = options.settings.load()
     this.enabled = Boolean(saved.enabled)
     this.shareSpotify = saved.shareSpotify === true
+    this.shareStudy = saved.shareStudy !== false
     this.updateState()
     if (this.enabled && this.options.applicationId) void this.ensureConnected()
   }
 
   public getStatus(): DiscordPresenceStatus {
-    return { enabled: this.enabled, shareSpotify: this.shareSpotify, state: this.state }
+    return { enabled: this.enabled, shareSpotify: this.shareSpotify, shareStudy: this.shareStudy, state: this.state }
   }
 
   public onStatusChange(listener: (status: DiscordPresenceStatus) => void): () => void {
@@ -123,7 +129,7 @@ export class DiscordPresenceService {
   public setEnabled(enabled: boolean): DiscordPresenceStatus {
     if (enabled === this.enabled) return this.getStatus()
     this.enabled = enabled
-    this.options.settings.save({ enabled, shareSpotify: this.shareSpotify })
+    this.persist()
     if (enabled) {
       if (this.options.applicationId) void this.ensureConnected()
     } else {
@@ -150,10 +156,30 @@ export class DiscordPresenceService {
   public setShareSpotify(on: boolean): DiscordPresenceStatus {
     if (on === this.shareSpotify) return this.getStatus()
     this.shareSpotify = on
-    this.options.settings.save({ enabled: this.enabled, shareSpotify: on })
+    this.persist()
     this.onMedia(this.latest)
     this.updateState()
     return this.getStatus()
+  }
+
+  public setShareStudy(on: boolean): DiscordPresenceStatus {
+    if (on === this.shareStudy) return this.getStatus()
+    this.shareStudy = on
+    this.persist()
+    this.reconcile()
+    this.updateState()
+    return this.getStatus()
+  }
+
+  /** The running Study Room session from the window, or null when there is none. */
+  public setStudy(study: StudyPresence | null): void {
+    this.study = study
+    this.reconcile()
+    this.updateState()
+  }
+
+  private persist(): void {
+    this.options.settings.save({ enabled: this.enabled, shareSpotify: this.shareSpotify, shareStudy: this.shareStudy })
   }
 
   private isShared(sourceAppId: string | undefined): boolean {
@@ -189,6 +215,7 @@ export class DiscordPresenceService {
   }
 
   private desired(): Desired | null {
+    if (this.study && this.shareStudy) return this.studyDesired(this.study)
     const p = this.latest
     if (!p || !p.title || !this.isShared(p.sourceAppId)) return null
     if (p.title === 'Unknown Title') return null
@@ -231,6 +258,41 @@ export class DiscordPresenceService {
 
     const key = JSON.stringify([details, state, art, album, paused, Math.round(duration)])
     return { key, activity, startMs, paused }
+  }
+
+  /**
+   * A study session reads "Playing Kissa" with the room and a countdown (or time studied).
+   * The intention and steps stay private; only how many steps are done is shown. The song
+   * appears only when it comes from a player the person chose to share.
+   */
+  private studyDesired(s: StudyPresence): Desired {
+    const room = fit(s.room) ?? 'Study Room'
+    const details =
+      s.phase === 'break' ? `On a break · ${room}` : s.phase === 'paused' ? `Studying · ${room} (paused)` : `Studying · ${room}`
+    const p = this.latest
+    const song = p && p.isPlaying && p.title && p.title !== 'Unknown Title' && this.isShared(p.sourceAppId) ? p : null
+    const state = song
+      ? fit(`♪ ${song.title}${song.artist && song.artist !== 'Unknown Artist' ? ` · ${song.artist}` : ''}`)
+      : s.tasksTotal && s.tasksTotal > 0
+        ? `${Math.min(s.tasksDone ?? 0, s.tasksTotal)} of ${s.tasksTotal} steps done`
+        : s.phase === 'focus' && s.round
+          ? `Focus block ${s.round}`
+          : undefined
+
+    const activity: Record<string, unknown> = { type: 0, details: fit(details) }
+    if (state) activity.state = state
+    activity.assets = {
+      large_image: KISSA_BADGE_URL,
+      large_text: 'Kissa Study Room',
+      ...(this.useLinks ? { large_url: KISSA_STORE_URL } : {})
+    }
+    if (this.useButtons) activity.buttons = [{ label: 'Get Kissa for Windows', url: KISSA_STORE_URL }]
+    if (s.phase !== 'paused') {
+      if (s.endsAt && s.endsAt > this.now()) activity.timestamps = { end: Math.round(s.endsAt) }
+      else if (s.startedAt) activity.timestamps = { start: Math.round(s.startedAt) }
+    }
+    const key = JSON.stringify(['study', details, state, s.phase, s.endsAt ? Math.round(s.endsAt / 5000) : null, s.startedAt ? Math.round(s.startedAt / 5000) : null])
+    return { key, activity, paused: false, study: true }
   }
 
   private reconcile(): void {
@@ -401,7 +463,7 @@ export class DiscordPresenceService {
     else if (!this.connected) state = 'no-discord'
     else {
       const next = this.desired()
-      state = !next ? 'idle' : next.paused ? 'paused' : 'sharing'
+      state = !next ? 'idle' : next.study ? 'studying' : next.paused ? 'paused' : 'sharing'
     }
     if (state === this.state) return
     this.state = state

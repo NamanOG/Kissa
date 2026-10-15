@@ -1,5 +1,5 @@
 /**
- * Where music sharing on Discord stands, as the settings row explains it.
+ * Where sharing on Discord stands, as the settings row explains it.
  *
  * - off: the person has not turned sharing on.
  * - unconfigured: this build carries no Discord application ID.
@@ -7,12 +7,33 @@
  * - idle: connected; Kissa is not following a shared player (Apple Music, or Spotify when opted in) right now, so nothing is shown.
  * - sharing: the current track is on the profile.
  * - paused: the shared player is paused; the track stays briefly, without a time bar.
+ * - studying: a Study Room session is on the profile.
  */
-export type DiscordPresenceState = 'off' | 'unconfigured' | 'no-discord' | 'idle' | 'sharing' | 'paused'
+export type DiscordPresenceState = 'off' | 'unconfigured' | 'no-discord' | 'idle' | 'sharing' | 'paused' | 'studying'
 
 export interface DiscordPresenceStatus {
   enabled: boolean
   /** Also share Spotify sessions (off by default). */
   shareSpotify: boolean
+  /** Show a running Study Room session (on by default once sharing is on). */
+  shareStudy: boolean
   state: DiscordPresenceState
+}
+
+/**
+ * What the Study Room tells Discord about a running session. Never the intention, the
+ * steps' text or parked thoughts: only the room, the phase, its timing and a step count.
+ */
+export interface StudyPresence {
+  phase: 'focus' | 'break' | 'paused'
+  /** The room's name, e.g. "Rain room". */
+  room: string
+  /** Epoch ms when the current timed block ends (countdown on the profile). */
+  endsAt?: number
+  /** Epoch ms the current open block started (time studied on the profile). */
+  startedAt?: number
+  /** The focus block number, from 1. */
+  round?: number
+  tasksDone?: number
+  tasksTotal?: number
 }

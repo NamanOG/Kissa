@@ -45,7 +45,7 @@ function track(over: Partial<SystemMediaPayload> = {}): SystemMediaPayload {
 
 function setup(enabled = true, applicationId = '123456789', shareSpotify = false) {
   const clients: FakeClient[] = []
-  let saved: { enabled: boolean; shareSpotify?: boolean } = { enabled, shareSpotify }
+  let saved: { enabled: boolean; shareSpotify?: boolean; shareStudy?: boolean } = { enabled, shareSpotify }
   const createClient = (): FakeClient => {
     const c = new FakeClient()
     if (failNext) {
@@ -87,7 +87,7 @@ describe('DiscordPresenceService', () => {
     h.service.onMedia(track())
     await flush(10_000)
     expect(h.clients.length).toBe(0)
-    expect(h.service.getStatus()).toEqual({ enabled: false, shareSpotify: false, state: 'off' })
+    expect(h.service.getStatus()).toEqual({ enabled: false, shareSpotify: false, shareStudy: true, state: 'off' })
   })
 
   it('says so when the build has no Application ID', async () => {
@@ -146,10 +146,10 @@ describe('DiscordPresenceService', () => {
     await flush(5_000)
     expect(h.clients.length).toBe(1)
     expect(h.last().activities.some((a) => a?.details === 'Green Room')).toBe(false)
-    expect(h.service.getStatus()).toEqual({ enabled: true, shareSpotify: false, state: 'idle' })
+    expect(h.service.getStatus()).toEqual({ enabled: true, shareSpotify: false, shareStudy: true, state: 'idle' })
 
     const status = h.service.setShareSpotify(true)
-    expect(h.saved()).toEqual({ enabled: true, shareSpotify: true })
+    expect(h.saved()).toEqual({ enabled: true, shareSpotify: true, shareStudy: true })
     await flush(5_000)
     const a = h.last().activities.at(-1)!
     expect(a.details).toBe('Green Room')
@@ -175,7 +175,48 @@ describe('DiscordPresenceService', () => {
     const h = setup(true, '123456789', true)
     await flush()
     h.service.setEnabled(false)
-    expect(h.saved()).toEqual({ enabled: false, shareSpotify: true })
+    expect(h.saved()).toEqual({ enabled: false, shareSpotify: true, shareStudy: true })
+  })
+
+  it('shows a running study session instead of the track, without the intention', async () => {
+    const h = setup()
+    await flush()
+    h.service.onMedia(track())
+    await flush(5_000)
+    const endsAt = Date.now() + 25 * 60_000
+    h.service.setStudy({ phase: 'focus', room: 'Rain room', endsAt, round: 1, tasksDone: 1, tasksTotal: 3 })
+    await flush(5_000)
+    const a = h.last().activities.at(-1)!
+    expect(a.type).toBe(0)
+    expect(a.details).toBe('Studying · Rain room')
+    // The Apple Music song is shared, so it rides along on the study card.
+    expect(a.state).toBe('♪ Paper Lanterns · The Quiet Hours')
+    expect(a.timestamps).toEqual({ end: Math.round(endsAt) })
+    expect(a.buttons).toEqual([{ label: 'Get Kissa for Windows', url: 'https://apps.microsoft.com/detail/9p3n4x4wm80j' }])
+    expect(h.service.getStatus().state).toBe('studying')
+
+    // Spotify (not opted in) never appears on the study card; the step count does.
+    h.service.onMedia(track({ sourceAppId: 'Spotify.exe', title: 'Green Room' }))
+    await flush(5_000)
+    expect(h.last().activities.at(-1)!.state).toBe('1 of 3 steps done')
+
+    h.service.setStudy({ phase: 'break', room: 'Rain room', endsAt: Date.now() + 5 * 60_000 })
+    await flush(5_000)
+    expect(h.last().activities.at(-1)!.details).toBe('On a break · Rain room')
+
+    h.service.setStudy(null)
+    await flush(5_000)
+    expect(h.last().activities.at(-1)).toBeNull()
+  })
+
+  it('keeps study sessions off Discord when that switch is off', async () => {
+    const h = setup()
+    await flush()
+    h.service.setShareStudy(false)
+    expect(h.saved()).toEqual({ enabled: true, shareSpotify: false, shareStudy: false })
+    h.service.setStudy({ phase: 'focus', room: 'Night room', startedAt: Date.now() })
+    await flush(5_000)
+    expect(h.last().activities.some((x) => x && x.type === 0)).toBe(false)
   })
 
   it('coalesces a burst of skips into the last track', async () => {
@@ -236,7 +277,7 @@ describe('DiscordPresenceService', () => {
     expect(client.activities.at(-1)).toBeNull()
     expect(client.activities.some((a) => a?.details === 'Two')).toBe(false)
     expect(client.closed).toBe(true)
-    expect(h.saved()).toEqual({ enabled: false, shareSpotify: false })
+    expect(h.saved()).toEqual({ enabled: false, shareSpotify: false, shareStudy: true })
   })
 
   it('waits for Discord and reconnects with backoff, then shares', async () => {
