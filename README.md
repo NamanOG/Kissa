@@ -263,7 +263,11 @@ Production artifacts are output to `apps/desktop/dist/`:
 - **Study Room:** A full-window place to work with your record still turning. Four rooms (Rain, Snow, Forest, Night) are photographs with living weather on top, each with its own CC0 field recording and a volume slider. Set an intention and small steps, choose sittings and breaks, park stray thoughts, and review the session at the end. The clock survives sleep and restarts, and the screensaver waits while a session is running.
 - **Share on Discord:** Optional, off by default. Shows the Apple Music track on your Discord profile with its cover, a time bar, Kissa's badge and a Store link. Spotify can be shared too through a separate switch.
 - **Lyrics That Arrive:** Lyrics lookups now survive LRCLIB throttling and slow responses, reject results for the wrong song, and remember lyrics already found so a replay shows them at once.
-- **Lighter Deck:** Line-timed lyrics no longer repaint every frame, the tonearm only redraws when it moves, and the level meter runs at 30 frames a second.
+- **Study on Discord:** While a session runs, your Discord profile can show the room and its timer (never what you are working on), with a link to Kissa.
+- **Your Week:** My sessions shows the last seven days against your daily goal, with a streak.
+- **Lighter and Smoother:** On 120 and 144 Hz screens the record turns in 60 steps a second and nothing wakes the window faster than it can show; line-timed lyrics no longer repaint every frame; progress bars and the tonearm redraw only when they move. The Deck uses about a quarter of the processor time it did.
+- **A Bigger Record in the Study Room:** The record and sleeve grow with the window, and the setup fits small windows.
+- **Kissa's Own Sleeve:** The idle cover and record label are drawn from Kissa's logo.
 - **Privacy:** `PRIVACY.md` covers Discord sharing, Study Room data and the website's cookieless visit counts.
 
 ### v4.2.0 — The Front Door
