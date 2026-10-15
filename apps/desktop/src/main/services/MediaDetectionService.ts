@@ -157,13 +157,18 @@ function formatSession(
     }
   }
 
-  const cachedArtwork = ArtworkService.getInstance().getCachedArtwork(title, artist, album)
-  if (cachedArtwork && (cachedArtwork.startsWith('http://') || cachedArtwork.startsWith('https://'))) {
-    artworkDataUrl = cachedArtwork
-  } else if (artworkDataUrl) {
-    ArtworkService.getInstance().setCachedArtwork(title, artist, artworkDataUrl, album)
-  } else if (cachedArtwork) {
-    artworkDataUrl = cachedArtwork
+  // The player's own cover is what the listener sees in their player. A sharper catalogue
+  // copy replaces it only once it has been confirmed to be the same picture (many albums
+  // have different art on different services). Without a cover from the player, the best
+  // match found for the track is used.
+  const artwork = ArtworkService.getInstance()
+  if (artworkDataUrl) {
+    const verified = artwork.getVerifiedArtwork(title, artist, album, artworkDataUrl)
+    if (verified) artworkDataUrl = verified
+    else artwork.setCachedArtwork(title, artist, artworkDataUrl, album)
+  } else {
+    const cachedArtwork = artwork.getCachedArtwork(title, artist, album)
+    if (cachedArtwork) artworkDataUrl = cachedArtwork
   }
 
   const isPlaying = session.playback?.playbackStatus === PlaybackStatus.PLAYING // 4
@@ -443,21 +448,21 @@ export class MediaDetectionService {
   ): void {
     const payload = formatSession(session, volumeInfo || this.latestVolume, sampledAt)
 
-    // Preserve high-res web artwork if it's the exact same track and we already fetched it
+    // The player's own picture, if it sent one (formatSession already swapped in a verified
+    // sharper copy where there is one).
+    const ownCover = payload?.artworkDataUrl?.startsWith('data:') ? payload.artworkDataUrl : undefined
+
+    // Without a cover from the player, keep the web cover already found for this track.
     if (
       this.latestPayload &&
       payload &&
+      !payload.artworkDataUrl &&
       this.latestPayload.title?.trim().toLowerCase() === payload.title?.trim().toLowerCase() &&
       this.latestPayload.artist?.trim().toLowerCase() === payload.artist?.trim().toLowerCase() &&
       (this.latestPayload.album || '').trim().toLowerCase() === (payload.album || '').trim().toLowerCase() &&
       this.latestPayload.artworkDataUrl?.startsWith('http')
     ) {
       payload.artworkDataUrl = this.latestPayload.artworkDataUrl
-    } else if (payload && (!payload.artworkDataUrl || payload.artworkDataUrl.startsWith('data:'))) {
-      const cached = ArtworkService.getInstance().getCachedArtwork(payload.title, payload.artist, payload.album)
-      if (cached && cached.startsWith('http')) {
-        payload.artworkDataUrl = cached
-      }
     }
 
     const json = JSON.stringify(payload)
@@ -472,13 +477,15 @@ export class MediaDetectionService {
       const currentTitle = payload.title
       const currentArtist = payload.artist
       ArtworkService.getInstance()
-        .fetchArtwork(payload.title, payload.artist, payload.album, !payload.artworkDataUrl)
+        .fetchArtworkFor(payload.title, payload.artist, payload.album, ownCover)
         .then((fetchedUrl) => {
           if (fetchedUrl && this.latestPayload) {
             if (
               this.latestPayload.title === currentTitle &&
               this.latestPayload.artist === currentArtist &&
-              this.latestPayload.artworkDataUrl !== fetchedUrl
+              this.latestPayload.artworkDataUrl !== fetchedUrl &&
+              // Only replace the very picture that was checked, not a newer cover that arrived meanwhile.
+              (ownCover === undefined ? !this.latestPayload.artworkDataUrl?.startsWith('data:') : this.latestPayload.artworkDataUrl === ownCover)
             ) {
               this.latestPayload = {
                 ...this.latestPayload,

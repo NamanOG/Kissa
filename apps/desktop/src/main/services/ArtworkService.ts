@@ -1,3 +1,11 @@
+import { coversMatch } from './coverMatch'
+
+/** A cheap fingerprint of an embedded image: its length and a slice from its middle. */
+function pictureSignature(dataUrl: string): string {
+  const mid = Math.floor(dataUrl.length / 2)
+  return `${dataUrl.length}:${dataUrl.slice(mid, mid + 48)}`
+}
+
 function cleanTrackTitle(title: string): string {
   if (!title) return ''
   return title
@@ -93,6 +101,43 @@ export class ArtworkService {
   private static instance: ArtworkService
   private cache = new Map<string, string>()
   private inFlight = new Map<string, Promise<string | null>>()
+  /** Per track: whether the catalogue cover was checked against the player's own (true = same picture). */
+  private verified = new Map<string, boolean>()
+  /** Replaceable in tests; compares the player's cover with a catalogue cover. */
+  public compareCovers: (reference: string, candidate: string) => Promise<boolean | null> = (a, b) => coversMatch(a, b)
+
+  /**
+   * A sharper catalogue copy of the cover the player is showing, or null.
+   *
+   * With the player's own cover as `reference`, the catalogue cover is used only when it is
+   * the same picture: albums often have different art on different services, and the
+   * player's cover is the one the listener sees. Without a reference (the player gave no
+   * cover), any confident match is used, as before.
+   */
+  public async fetchArtworkFor(title: string, artist: string, album: string | undefined, reference?: string): Promise<string | null> {
+    if (!reference) return this.fetchArtwork(title, artist, album, true)
+    // Keyed by the picture too: a player can report the new title a moment before the new
+    // cover, and a verdict about the old picture must not stick to the new track.
+    const key = `${this.getKey(title, artist, album)}#${pictureSignature(reference)}`
+    const known = this.verified.get(key)
+    if (known === false) return null
+    const url = await this.fetchArtwork(title, artist, album, false)
+    if (!url) return null
+    if (known === true) return url
+    const same = await this.compareCovers(reference, url)
+    if (same !== null) {
+      this.verified.set(key, same)
+      if (this.verified.size > 400) this.verified.delete(this.verified.keys().next().value as string)
+    }
+    return same === true ? url : null
+  }
+
+  /** A catalogue cover already confirmed to be this exact picture from the player. */
+  public getVerifiedArtwork(title: string, artist: string, album: string | undefined, reference: string): string | undefined {
+    if (this.verified.get(`${this.getKey(title, artist, album)}#${pictureSignature(reference)}`) !== true) return undefined
+    const cached = this.cache.get(this.getKey(title, artist, album)) ?? this.cache.get(this.getCleanKey(title, artist, album))
+    return cached && cached.startsWith('http') ? cached : undefined
+  }
 
   public static getInstance(): ArtworkService {
     if (!ArtworkService.instance) {
