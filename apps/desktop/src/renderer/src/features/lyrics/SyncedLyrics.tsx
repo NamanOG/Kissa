@@ -190,6 +190,8 @@ export const SyncedLyrics = memo(
     const [lookupRound, setLookupRound] = useState(0)
     const autoRetriedRef = useRef(0)
     const [recoveryOpen, setRecoveryOpen] = useState(false)
+    // The screensaver and the Listening Display are for looking, not fixing: no options there.
+    const quietSurface = usePlayerStore((s) => s.isScreensaver || s.isListeningDisplay)
 
     const containerRef = useRef<HTMLDivElement>(null)
     const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -445,7 +447,7 @@ export const SyncedLyrics = memo(
           className
         )}
       >
-        {hasTrack && !lyricsSource && typeof window.electron?.chooseLyrics === 'function' && (
+        {hasTrack && !lyricsSource && !quietSurface && typeof window.electron?.chooseLyrics === 'function' && (
           <div className="flex shrink-0 justify-end px-6 pt-3">
             <button
               type="button"

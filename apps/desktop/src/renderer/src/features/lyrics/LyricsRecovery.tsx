@@ -204,8 +204,8 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
                   {item.artist} · {item.album || 'Album not listed'}
                 </p>
                 <p className="mt-2 font-mono text-xs text-tone">
-                  {Math.floor(item.duration / 60)}:
-                  {String(Math.round(item.duration % 60)).padStart(2, '0')} ·{' '}
+                  {Math.floor(Math.round(item.duration) / 60)}:
+                  {String(Math.round(item.duration) % 60).padStart(2, '0')} ·{' '}
                   {item.synced ? 'Timed' : 'Words only'}
                 </p>
               </div>

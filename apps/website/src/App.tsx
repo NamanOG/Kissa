@@ -18,7 +18,11 @@ export default function App() {
   const base = import.meta.env.BASE_URL
   const path = window.location.pathname.replace(base, '').replace(/\/$/, '')
   const page = featurePages.find((item) => item.slug === path)
-  if (page) return <><FeaturePage page={page} base={base} /><Analytics /></>
+  if (page) {
+    // The built page carries its own title; keep it when the app takes over in the browser.
+    if (typeof document !== 'undefined') document.title = page.title
+    return <><FeaturePage page={page} base={base} /><Analytics /></>
+  }
   return (
     <MotionConfig reducedMotion="user">
       <div id="top" />

@@ -187,7 +187,11 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
           style={{ height: isSquare ? 280 : 480 }}
         />
         <div className="flex items-end justify-between gap-12 border-t border-current/15 pt-8">
-          <Fact label="Steps done" value={`${study.stepsDone} of ${study.stepsTotal}`} />
+          {study.stepsTotal > 0 ? (
+            <Fact label="Steps done" value={`${study.stepsDone} of ${study.stepsTotal}`} />
+          ) : (
+            <Fact label="Room" value={room.label} />
+          )}
           {study.record && (
             <div className="min-w-0 max-w-[560px] text-right">
               <Label>On the turntable at the finish</Label>

@@ -388,10 +388,16 @@ export class LyricsService {
   }
 
   public getLyrics(request: LyricsRequest): Promise<LyricsResponse> {
-    validateRequest(request)
     const started = this.now()
     if (!request?.title?.trim() || !request.artist?.trim())
       return Promise.resolve(response('not-found'))
+    // Odd details from a player (no album, an unusual length) are "nothing found", never an
+    // error the lyrics view would be left waiting on.
+    try {
+      validateRequest({ ...request, album: request.album ?? '', duration: Number(request.duration) || 0 })
+    } catch {
+      return Promise.resolve(response('not-found'))
+    }
     if (request.title === 'Unknown Title' || request.artist === 'Unknown Artist') {
       return Promise.resolve(response('not-found'))
     }
