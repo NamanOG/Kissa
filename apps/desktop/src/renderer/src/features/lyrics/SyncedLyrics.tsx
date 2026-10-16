@@ -4,11 +4,13 @@ import { usePlayerStore } from '@renderer/stores/playerStore'
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
 import { LocateFixed, Minus, Play, Plus, Quote, RotateCw } from 'lucide-react'
 import { parseLrc, type LyricLine } from './lrc'
+import { LyricsRecovery } from './LyricsRecovery'
 
 export { parseLrc } from './lrc'
 export type { LyricLine, LyricToken } from './lrc'
 
-type LyricsStatus = 'loading' | 'synced' | 'plain' | 'instrumental' | 'unavailable' | 'unreachable' | 'waiting'
+type LyricsStatus =
+  'loading' | 'synced' | 'plain' | 'instrumental' | 'unavailable' | 'unreachable' | 'waiting'
 
 /** How long the source must hold a duration before lyrics are looked up with it. */
 const LOOKUP_SETTLE_MS = 350
@@ -49,7 +51,14 @@ interface LyricRowProps {
 const ROW_OPACITY = ['opacity-100', 'opacity-[0.38]', 'opacity-[0.24]', 'opacity-[0.16]'] as const
 
 const LyricRow = memo(
-  ({ line, index, distance, textClass, seekable, onLineClick }: LyricRowProps): React.JSX.Element => {
+  ({
+    line,
+    index,
+    distance,
+    textClass,
+    seekable,
+    onLineClick
+  }: LyricRowProps): React.JSX.Element => {
     const lineRef = useRef<HTMLParagraphElement>(null)
     const isActive = distance === 0
 
@@ -65,7 +74,10 @@ const LyricRow = memo(
       const spans = Array.from(el.querySelectorAll<HTMLElement>('.lyric-word'))
       const words = tokens.filter((t) => !t.isWhitespace)
 
-      if (line.timingType !== 'real' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (
+        line.timingType !== 'real' ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ) {
         spans.forEach((span) => span.style.setProperty('--word-progress', '100%'))
         return
       }
@@ -84,7 +96,8 @@ const LyricRow = memo(
           const { startTime, endTime } = words[i]
           let percent = 0
           if (time >= endTime) percent = 100
-          else if (time > startTime) percent = Math.round(((time - startTime) / (endTime - startTime)) * 100)
+          else if (time > startTime)
+            percent = Math.round(((time - startTime) / (endTime - startTime)) * 100)
 
           if (!jumped && percent < written[i]) continue
           if (percent === written[i]) continue
@@ -121,7 +134,10 @@ const LyricRow = memo(
                 ) : (
                   <span
                     key={i}
-                    className={cn('lyric-word inline-block pb-[0.1em]', isActive && 'lyric-word-active')}
+                    className={cn(
+                      'lyric-word inline-block pb-[0.1em]',
+                      isActive && 'lyric-word-active'
+                    )}
                   >
                     {token.text}
                   </span>
@@ -173,6 +189,7 @@ export const SyncedLyrics = memo(
     /** Bumped to look the current track up again ("Try again", or the automatic retry). */
     const [lookupRound, setLookupRound] = useState(0)
     const autoRetriedRef = useRef(0)
+    const [recoveryOpen, setRecoveryOpen] = useState(false)
 
     const containerRef = useRef<HTMLDivElement>(null)
     const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -189,6 +206,7 @@ export const SyncedLyrics = memo(
       setStatus(trackKey ? 'loading' : 'waiting')
       setLookupRound(0)
       autoRetriedRef.current = 0
+      setRecoveryOpen(false)
       if (containerRef.current) containerRef.current.scrollTop = 0
     }, [trackKey])
 
@@ -231,7 +249,9 @@ export const SyncedLyrics = memo(
               const storeTrack = usePlayerStore.getState().currentTrack
               if (storeTrack && !storeTrack.duration) {
                 usePlayerStore.setState((s) => ({
-                  currentTrack: s.currentTrack ? { ...s.currentTrack, duration: res.duration! } : null
+                  currentTrack: s.currentTrack
+                    ? { ...s.currentTrack, duration: res.duration! }
+                    : null
                 }))
               }
             }
@@ -312,7 +332,10 @@ export const SyncedLyrics = memo(
           const lineEnd = line.endTime ?? line.time + 6
           // Line finished and the next one is some way off: an instrumental break.
           if (next && next.time - lineEnd > 2.5 && time > lineEnd + 0.4) {
-            return [-1, next.time - time > 1 && next.time - lineEnd > INTERLUDE_SECONDS ? i + 1 : -1]
+            return [
+              -1,
+              next.time - time > 1 && next.time - lineEnd > INTERLUDE_SECONDS ? i + 1 : -1
+            ]
           }
           return [i, -1]
         }
@@ -368,7 +391,8 @@ export const SyncedLyrics = memo(
       const el = container.querySelector<HTMLElement>(`[data-lyric-idx="${target}"]`)
       if (!el) return
 
-      const top = el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop
+      const top =
+        el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop
       smoothScrollTo(Math.max(0, top - container.clientHeight * 0.42 + el.clientHeight / 2))
     }, [activeIndex, interludeBefore, autoScroll, userIsScrolling, smoothScrollTo])
 
@@ -415,7 +439,38 @@ export const SyncedLyrics = memo(
     )
 
     return (
-      <div className={cn('group/lyrics relative flex h-full w-full flex-col overflow-hidden select-none', className)}>
+      <div
+        className={cn(
+          'group/lyrics relative flex h-full w-full flex-col overflow-hidden select-none',
+          className
+        )}
+      >
+        {hasTrack && !lyricsSource && typeof window.electron?.chooseLyrics === 'function' && (
+          <div className="flex shrink-0 justify-end px-6 pt-3">
+            <button
+              type="button"
+              onClick={() => setRecoveryOpen(true)}
+              className="rounded-md px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-dim hover:text-ink focus-visible:outline focus-visible:outline-tone"
+            >
+              Lyrics options
+            </button>
+          </div>
+        )}
+        {recoveryOpen && (
+          <LyricsRecovery
+            key={`${trackKey}:${duration}`}
+            request={{ title: title ?? '', artist: artist ?? '', album: album ?? '', duration }}
+            onClose={() => setRecoveryOpen(false)}
+            onSaved={() => {
+              setRecoveryOpen(false)
+              setLyricsOffset(0)
+              setSyncedSource(null)
+              setPlainLines([])
+              setLookupRound((n) => n + 1)
+              setStatus('loading')
+            }}
+          />
+        )}
         {userIsScrolling && status === 'synced' && (
           <button
             type="button"
@@ -469,7 +524,8 @@ export const SyncedLyrics = memo(
           onTouchMove={handleUserScroll}
           className="no-scrollbar relative min-h-0 flex-1 overflow-y-auto px-6 py-12 min-[900px]:px-10"
           style={{
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
+            maskImage:
+              'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
             WebkitMaskImage:
               'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)'
           }}
@@ -479,7 +535,11 @@ export const SyncedLyrics = memo(
               {lyricLines.map((line, index) => (
                 <React.Fragment key={line.id}>
                   {index === interludeBefore && (
-                    <div className="flex h-8 items-center gap-2 px-3.5" aria-label="Instrumental" role="img">
+                    <div
+                      className="flex h-8 items-center gap-2 px-3.5"
+                      aria-label="Instrumental"
+                      role="img"
+                    >
                       {[0, 1, 2].map((dot) => (
                         <span
                           key={dot}
@@ -493,7 +553,9 @@ export const SyncedLyrics = memo(
                     line={line}
                     index={index}
                     distance={
-                      activeIndex < 0 ? 2 : (Math.min(3, Math.abs(index - activeIndex)) as 0 | 1 | 2 | 3)
+                      activeIndex < 0
+                        ? 2
+                        : (Math.min(3, Math.abs(index - activeIndex)) as 0 | 1 | 2 | 3)
                     }
                     textClass={textClass}
                     seekable={canSeek}
@@ -533,7 +595,9 @@ export const SyncedLyrics = memo(
           {status === 'loading' && (
             <div className="flex h-full flex-col items-center justify-center gap-3 py-24 text-center">
               <div className="h-5 w-5 rounded-full border-2 border-tone/30 border-t-tone motion-safe:animate-spin" />
-              <p className="font-mono text-xs uppercase tracking-[0.18em] text-dim">Finding lyrics…</p>
+              <p className="font-mono text-xs uppercase tracking-[0.18em] text-dim">
+                Finding lyrics…
+              </p>
             </div>
           )}
 
@@ -558,7 +622,10 @@ export const SyncedLyrics = memo(
           )}
 
           {status === 'unreachable' && (
-            <div className="flex h-full flex-col items-center justify-center gap-2 py-24 text-center" role="status">
+            <div
+              className="flex h-full flex-col items-center justify-center gap-2 py-24 text-center"
+              role="status"
+            >
               <p className="font-serif text-2xl text-ink opacity-80">Lyrics Unreachable</p>
               <p className="max-w-xs text-xs text-dim">
                 The lyrics library didn&apos;t answer. Kissa will try again shortly.
@@ -572,7 +639,10 @@ export const SyncedLyrics = memo(
 
           {status === 'waiting' && (
             <div className="flex h-full flex-col items-center justify-center gap-3 py-24 text-center">
-              <Quote className="mb-2 h-8 w-8 text-tone opacity-40 min-[900px]:h-10 min-[900px]:w-10" aria-hidden="true" />
+              <Quote
+                className="mb-2 h-8 w-8 text-tone opacity-40 min-[900px]:h-10 min-[900px]:w-10"
+                aria-hidden="true"
+              />
               <p className="font-serif text-2xl text-ink opacity-90 min-[900px]:text-3xl">
                 Waiting for Music
               </p>

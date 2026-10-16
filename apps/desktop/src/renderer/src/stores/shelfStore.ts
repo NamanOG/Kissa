@@ -16,6 +16,7 @@ export interface RecordEntry {
 export interface ShelfState {
   records: RecordEntry[]
   addOrUpdateRecord: (track: TrackInfo) => void
+  repairArtwork: (track: TrackInfo) => void
   removeRecord: (albumKey: string) => void
   clearShelf: () => void
 }
@@ -31,7 +32,8 @@ function normalizeKey(album: string, artist: string): string {
 export const IDLE_SOURCE_APP_ID = 'kissa-idle'
 const IDLE_RECORD_KEY = normalizeKey('Kissa', 'Listening Room')
 
-const BROWSER_SOURCE = /chrome|msedge|edge|firefox|brave|opera|vivaldi|comet|youtube|(^|[^a-z])(arc|browser)([^a-z]|$)/i
+const BROWSER_SOURCE =
+  /chrome|msedge|edge|firefox|brave|opera|vivaldi|comet|youtube|(^|[^a-z])(arc|browser)([^a-z]|$)/i
 
 /** Tabs and streams are not records: the shelf and its stats are for music players. */
 export function isBrowserTrack(track: Pick<TrackInfo, 'source' | 'sourceAppId'>): boolean {
@@ -42,51 +44,74 @@ export const useShelfStore = create<ShelfState>()(
   persist(
     (set) => ({
       records: [],
-      addOrUpdateRecord: (track) => set((state) => {
-        if (!track.album || !track.artist) return state // Ignore incomplete metadata
-        if (track.sourceAppId === IDLE_SOURCE_APP_ID) return state // Not a real listen
-        // A browser tab or video with no artist is not a record.
-        if (track.artist.trim().toLowerCase() === 'unknown artist') return state
-        if (isBrowserTrack(track)) return state
-        
-        const key = normalizeKey(track.album, track.artist)
-        const existingIdx = state.records.findIndex((r) => r.albumKey === key)
-        const now = Date.now()
+      // The current cover has passed the main-process ArtworkService/coverMatch path.
+      // Update old shelf art without recording an extra listen or changing recency.
+      repairArtwork: (track) =>
+        set((state) => {
+          if (
+            !track.album ||
+            !track.artist ||
+            !track.artworkUrl ||
+            (!track.artworkUrl.startsWith('data:image/') &&
+              !track.artworkUrl.startsWith('https://')) ||
+            track.sourceAppId === IDLE_SOURCE_APP_ID ||
+            isBrowserTrack(track)
+          )
+            return state
+          const key = normalizeKey(track.album, track.artist)
+          const index = state.records.findIndex((r) => r.albumKey === key)
+          if (index < 0 || state.records[index].artworkUrl === track.artworkUrl) return state
+          const records = [...state.records]
+          records[index] = { ...records[index], artworkUrl: track.artworkUrl }
+          return { records }
+        }),
+      addOrUpdateRecord: (track) =>
+        set((state) => {
+          if (!track.album || !track.artist) return state // Ignore incomplete metadata
+          if (track.sourceAppId === IDLE_SOURCE_APP_ID) return state // Not a real listen
+          // A browser tab or video with no artist is not a record.
+          if (track.artist.trim().toLowerCase() === 'unknown artist') return state
+          if (isBrowserTrack(track)) return state
 
-        if (existingIdx !== -1) {
-          const existing = state.records[existingIdx]
-          const isNewTrack = !existing.tracksEncountered.includes(track.title)
-          
-          const updated = {
-            ...existing,
-            lastListened: now,
-            playCount: existing.playCount + 1,
-            artworkUrl: track.artworkUrl ?? existing.artworkUrl,
-            tracksEncountered: isNewTrack 
-              ? [...existing.tracksEncountered, track.title]
-              : existing.tracksEncountered
+          const key = normalizeKey(track.album, track.artist)
+          const existingIdx = state.records.findIndex((r) => r.albumKey === key)
+          const now = Date.now()
+
+          if (existingIdx !== -1) {
+            const existing = state.records[existingIdx]
+            const isNewTrack = !existing.tracksEncountered.includes(track.title)
+
+            const updated = {
+              ...existing,
+              lastListened: now,
+              playCount: existing.playCount + 1,
+              artworkUrl: track.artworkUrl ?? existing.artworkUrl,
+              tracksEncountered: isNewTrack
+                ? [...existing.tracksEncountered, track.title]
+                : existing.tracksEncountered
+            }
+
+            const newRecords = [...state.records]
+            newRecords[existingIdx] = updated
+            return { records: newRecords }
+          } else {
+            const newRecord: RecordEntry = {
+              albumKey: key,
+              album: track.album,
+              artist: track.artist,
+              artworkUrl: track.artworkUrl,
+              firstListened: now,
+              lastListened: now,
+              playCount: 1,
+              tracksEncountered: [track.title]
+            }
+            return { records: [...state.records, newRecord] }
           }
-          
-          const newRecords = [...state.records]
-          newRecords[existingIdx] = updated
-          return { records: newRecords }
-        } else {
-          const newRecord: RecordEntry = {
-            albumKey: key,
-            album: track.album,
-            artist: track.artist,
-            artworkUrl: track.artworkUrl,
-            firstListened: now,
-            lastListened: now,
-            playCount: 1,
-            tracksEncountered: [track.title]
-          }
-          return { records: [...state.records, newRecord] }
-        }
-      }),
-      removeRecord: (albumKey) => set((state) => ({
-        records: state.records.filter(r => r.albumKey !== albumKey)
-      })),
+        }),
+      removeRecord: (albumKey) =>
+        set((state) => ({
+          records: state.records.filter((r) => r.albumKey !== albumKey)
+        })),
       clearShelf: () => set({ records: [] })
     }),
     {
@@ -99,7 +124,8 @@ export const useShelfStore = create<ShelfState>()(
         return {
           ...state,
           records: (state.records ?? []).filter(
-            (r) => r.albumKey !== IDLE_RECORD_KEY && r.artist.trim().toLowerCase() !== 'unknown artist'
+            (r) =>
+              r.albumKey !== IDLE_RECORD_KEY && r.artist.trim().toLowerCase() !== 'unknown artist'
           )
         } as ShelfState
       }

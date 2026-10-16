@@ -1,6 +1,7 @@
 import styles from './SiteFooter.module.css'
 import { ArrowOut } from './ui/Marks'
 import { GITHUB_URL } from '../lib/links'
+import { asset } from '../lib/asset'
 
 const LINKS = [
   { label: 'GitHub', href: GITHUB_URL },
@@ -34,6 +35,8 @@ export function SiteFooter() {
             &copy; {new Date().getFullYear()} Naman Bagdiya, GlyphCode
           </span>
           <ul className={styles.links} role="list">
+            <li><a href={asset('study-room/')}>Study Room</a></li>
+            <li><a href={asset('discord-music-status/')}>Discord status</a></li>
             {LINKS.map((l) => (
               <li key={l.href}>
                 <a href={l.href} target="_blank" rel="noopener noreferrer">

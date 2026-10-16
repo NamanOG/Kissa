@@ -4,7 +4,8 @@ import { SnowScene } from './SnowScene'
 import { ForestScene } from './ForestScene'
 import { NightScene } from './NightScene'
 import { FireplaceScene } from './FireplaceScene'
-// Photographs generated for Kissa with Figma AI (owned by GlyphCode); the weather is drawn on top.
+// Photographs generated for Kissa with Figma AI; Fireplace sharpened with OpenAI ImageGen.
+// The weather is drawn on top. See media/study/CREDITS.md for provenance.
 import rainPhoto from '@renderer/media/study/rain.jpg'
 import snowPhoto from '@renderer/media/study/snow.jpg'
 import forestPhoto from '@renderer/media/study/forest.jpg'

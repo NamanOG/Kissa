@@ -10,13 +10,13 @@ import { SceneBase, lerp, makeCanvas, rand } from './SceneBase'
  */
 
 /** The fire in the photograph, in fractions of its width and height (measured). */
-const FIRE = { u: 0.508, v: 0.5 }
+const FIRE = { u: 0.514, v: 0.51 }
 /** The region that moves: the flames and the air above them, inside the firebox. */
-const FLAME_BOX = { u0: 0.425, u1: 0.595, v0: 0.24, v1: 0.6 }
+const FLAME_BOX = { u0: 0.445, u1: 0.57, v0: 0.265, v1: 0.61 }
 /** Where the logs sit (the flames' base), as a fraction of the box height. */
 const BASE = 0.86
 /** The embers glowing under the grate. */
-const EMBERS = { u: 0.508, v: 0.585, ru: 0.075, rv: 0.025 }
+const EMBERS = { u: 0.514, v: 0.598, ru: 0.075, rv: 0.025 }
 const PHOTO_ZOOM = 1.04
 /** Rows the moving region is cut into (more is smoother, each is one drawImage). */
 const ROWS = 72

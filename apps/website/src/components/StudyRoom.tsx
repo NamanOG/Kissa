@@ -38,7 +38,7 @@ const FEATURES = [
   },
   {
     name: 'Sittings and breaks',
-    text: 'Choose 25, 50 or 90 minutes, or an open session, with breaks between. The clock keeps going through sleep and restarts.'
+    text: 'Choose 25, 50 or 90 minutes, or an open session, with breaks between. After sleep or a long absence, choose whether to resume or finish.'
   },
   {
     name: 'Small steps',
@@ -129,6 +129,7 @@ export function StudyRoom() {
             </li>
           ))}
         </ol>
+        <p className="guide-home-link"><a href={asset('study-room/')}>Step inside the Study Room →</a></p>
       </div>
     </section>
   )

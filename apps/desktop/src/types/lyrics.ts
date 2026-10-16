@@ -20,4 +20,24 @@ export interface LyricsResponse {
   plainLyrics: string | null
   instrumental: boolean
   duration?: number
+  /** A deliberate choice, kept separately from the expiring provider cache. */
+  source?: 'lrclib-choice' | 'lrc-import'
 }
+
+export interface LyricsCandidate {
+  id: number
+  title: string
+  artist: string
+  album: string
+  duration: number
+  synced: boolean
+  preview: string
+}
+
+export interface LyricsSearchResponse {
+  status: 'ok' | 'unavailable'
+  candidates: LyricsCandidate[]
+}
+
+export type LyricsChoice =
+  { kind: 'candidate'; id: number } | { kind: 'import'; text: string } | { kind: 'reset' }

@@ -1,5 +1,14 @@
-export type ShareType = 'album' | 'collection' | 'stats'
+export type ShareType = 'album' | 'collection' | 'stats' | 'study'
 export type AspectRatio = '4:5' | '1:1'
+
+/** Only public summary fields, never the intention, task text, notes or rating. */
+export interface StudyShareData {
+  room: 'rain' | 'snow' | 'forest' | 'night' | 'fireplace'
+  focusMinutes: number
+  stepsDone: number
+  stepsTotal: number
+  record?: { album: string; artist: string }
+}
 
 export interface AlbumShareData {
   album: string
@@ -25,6 +34,8 @@ export interface StatsShareData {
 }
 
 export interface SharePayload {
+  /** Passed explicitly because exports run in an isolated, ephemeral session. */
+  listenerName?: string
   type: ShareType
   data: any // AlbumShareData | AlbumShareData[] | StatsShareData
   aspectRatio: AspectRatio

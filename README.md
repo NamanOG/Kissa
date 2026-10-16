@@ -156,6 +156,7 @@ Kissa includes a dedicated Windows screensaver implementation that renders the f
 ### Synchronized Lyrics
 
 - Click the **Lyrics** button in the dock or press `L` to toggle the lyrics drawer.
+- If the lyrics are wrong or missing, open **Lyrics options**. Search for another LRCLIB match, or import/drop a UTF-8 `.lrc` file smaller than 256 KB. The choice stays with this recording on this PC; **Use automatic lyrics** removes it.
 - If lyrics appear slightly ahead of or behind external audio, use the `+` / `-` offset buttons in the lyrics panel to calibrate timing in 250ms increments.
 
 ### In-App Updates
@@ -263,6 +264,9 @@ Production artifacts are output to `apps/desktop/dist/`:
 - **Study Room:** A full-window place to work with your record still turning. Four rooms (Rain, Snow, Forest, Night) are photographs with living weather on top, each with its own CC0 field recording and a volume slider. Set an intention and small steps, choose sittings and breaks, park stray thoughts, and review the session at the end. The clock survives sleep and restarts, and the screensaver waits while a session is running.
 - **Share on Discord:** Optional, off by default. Shows the Apple Music track on your Discord profile with its cover, a time bar, Kissa's badge and a Store link. Spotify can be shared too through a separate switch.
 - **Lyrics That Arrive:** Lyrics lookups now survive LRCLIB throttling and slow responses, reject results for the wrong song, and remember lyrics already found so a replay shows them at once.
+- **Lyrics Recovery:** Choose another recording or import an LRC file, with a local choice remembered separately from the provider cache.
+- **Share a Sitting:** Preview a portrait or square card from the Study Room review, then copy or save it. It shows the room, focus minutes, step counts and the record at the finish, leaving your intention and notes private.
+- **Shelf Cover Repair:** Old album covers refresh from the current player's verified artwork without adding extra listens for cover or progress updates.
 - **Study on Discord:** While a session runs, your Discord profile can show the room and its timer (never what you are working on), with a link to Kissa.
 - **Your Week:** My sessions shows the last seven days against your daily goal, with a streak.
 - **Lighter and Smoother:** On 120 and 144 Hz screens the record turns in 60 steps a second and nothing wakes the window faster than it can show; line-timed lyrics no longer repaint every frame; progress bars and the tonearm redraw only when they move. The Deck uses about a quarter of the processor time it did.

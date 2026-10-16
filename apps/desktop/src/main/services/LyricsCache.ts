@@ -77,7 +77,8 @@ export class LyricsCache {
   }
 
   public set(key: string, value: LyricsResponse): void {
-    if (value.status !== 'synced' && value.status !== 'plain' && value.status !== 'instrumental') return
+    if (value.status !== 'synced' && value.status !== 'plain' && value.status !== 'instrumental')
+      return
     const entries = this.load()
     const at = this.now()
     entries.set(key, { value, savedAt: at, usedAt: at })
@@ -92,6 +93,11 @@ export class LyricsCache {
   public clear(): void {
     this.entries = new Map()
     this.flush()
+  }
+
+  public delete(key: string): void {
+    this.load().delete(key)
+    this.scheduleWrite()
   }
 
   /** Write any pending change now (used on quit). */
@@ -125,7 +131,11 @@ export class LyricsCache {
     if (!raw) return this.entries
     try {
       const parsed = JSON.parse(raw) as Partial<CacheFile>
-      if (parsed.version !== SCHEMA_VERSION || !parsed.entries || typeof parsed.entries !== 'object') {
+      if (
+        parsed.version !== SCHEMA_VERSION ||
+        !parsed.entries ||
+        typeof parsed.entries !== 'object'
+      ) {
         return this.entries
       }
       for (const [key, entry] of Object.entries(parsed.entries)) {

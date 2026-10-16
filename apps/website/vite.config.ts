@@ -2,6 +2,11 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 import faq from './src/data/faq.json'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { readFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import { featurePages } from './src/data/featurePages'
+import { FeaturePage } from './src/components/FeaturePage'
 
 const REPO = 'NamanOG/Kissa'
 const STORE_URL = 'https://apps.microsoft.com/detail/9p3n4x4wm80j'
@@ -101,8 +106,29 @@ function seo(): Plugin {
           `<?xml version="1.0" encoding="UTF-8"?>\n` +
           `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
           `  <url>\n    <loc>${SITE_URL}</loc>\n    <lastmod>${new Date().toISOString().slice(0, 10)}</lastmod>\n  </url>\n` +
+          featurePages.map((page) => `  <url><loc>${SITE_URL}${page.slug}/</loc></url>\n`).join('') +
           `</urlset>\n`
       })
+    },
+    writeBundle(output) {
+      const directory = output.dir ?? resolve(__dirname, 'dist')
+      const template = readFileSync(resolve(directory, 'index.html'), 'utf8')
+      const escape = (value: string) => value.replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;')
+      for (const page of featurePages) {
+        const url = `${SITE_URL}${page.slug}/`
+        const schema = JSON.stringify({ '@context': 'https://schema.org', '@type': 'WebPage', name: page.title, description: page.description, url, isPartOf: { '@id': `${SITE_URL}#website` }, about: { '@id': `${SITE_URL}#software` } }).replace(/</g, '\\u003c')
+        const html = template
+          .replace(/<title>[^<]*<\/title>/, `<title>${escape(page.title)}</title>`)
+          .replace(/(<meta\s+(?:name|property)="(?:description|og:description|twitter:description)"\s+content=")[^"]*"/g, `$1${escape(page.description)}"`)
+          .replace(/(<meta\s+(?:name|property)="(?:og:title|twitter:title)"\s+content=")[^"]*"/g, `$1${escape(page.title)}"`)
+          .replace(/(<link rel="canonical" href=")[^"]*"/, `$1${url}"`)
+          .replace(/(<meta property="og:url" content=")[^"]*"/, `$1${url}"`)
+          .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, `<script type="application/ld+json">${schema}</script>`)
+          .replace('<div id="root"></div>', `<div id="root">${renderToStaticMarkup(createElement(FeaturePage, { page, base: new URL(SITE_URL).pathname }))}</div>`)
+          .replace(/<noscript>[\s\S]*?<\/noscript>/, '')
+        mkdirSync(resolve(directory, page.slug), { recursive: true })
+        writeFileSync(resolve(directory, page.slug, 'index.html'), html)
+      }
     }
   }
 }

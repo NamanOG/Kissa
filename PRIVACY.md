@@ -5,6 +5,7 @@ Kissa is a desktop application that runs on your own PC. It has no accounts, no 
 ## What stays on your PC
 
 - Your settings, your record shelf (listening history), lyric timing adjustments, a cache of lyrics already found, and your Study Room sessions (intentions, steps, notes and times) are stored locally in your Windows user profile.
+- Chosen lyric matches and imported LRC text are remembered locally for that recording. Imported files are not uploaded. Use **Lyrics options > Use automatic lyrics** to remove a saved choice for the current recording.
 - Kissa reads what is currently playing from the Windows System Media Transport Controls (title, artist, album, artwork, playback position). That information is used to draw the turntable and is not uploaded anywhere.
 
 ## What Kissa requests from other services
@@ -13,7 +14,7 @@ To show lyrics and cover artwork, Kissa looks them up from public services. Thes
 
 | Service | Why | What is sent |
 | :--- | :--- | :--- |
-| [LRCLIB](https://lrclib.net) | Synced lyrics | Track title and artist, with album and duration where known |
+| [LRCLIB](https://lrclib.net) | Synced lyrics and alternate matches | Track title and artist, with album and duration where known; a search you enter and the ID of a match you choose |
 | iTunes Search API (Apple) | Cover artwork and track matching | A search term built from title and artist |
 | Deezer API | Cover artwork, as a fallback | A search term built from title and artist |
 | GitHub | Checking for and downloading updates | A request for the latest Kissa release |
@@ -27,6 +28,8 @@ Kissa can show the track you are playing on your Discord profile. It is off by d
 ## Links you open yourself
 
 The share feature can open a track in Spotify, Apple Music, TIDAL or YouTube. Those links open in your browser only when you choose them.
+
+Study sitting cards are rendered on your PC and saved or copied only when you choose. They include the room, focus minutes, step counts and the record on the turntable at the finish. They leave out your intention, step text, notes and reflection. Kissa does not post these cards anywhere.
 
 ## The website
 

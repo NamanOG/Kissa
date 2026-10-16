@@ -10,6 +10,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "test:seo": "node scripts/check-feature-pages.mjs",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

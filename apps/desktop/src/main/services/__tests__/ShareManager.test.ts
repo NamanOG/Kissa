@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { _test_sanitizeFilename as sanitizeFilename, _test_validateShareOptions as validateShareOptions } from '../ShareManager'
+import {
+  _test_sanitizeFilename as sanitizeFilename,
+  _test_validateShareOptions as validateShareOptions
+} from '../ShareManager'
 
 describe('ShareManager', () => {
   describe('sanitizeFilename', () => {
@@ -32,6 +35,35 @@ describe('ShareManager', () => {
   })
 
   describe('validateShareOptions', () => {
+    it('accepts a study summary and rejects invalid rooms or step counts', () => {
+      const data = {
+        room: 'forest',
+        focusMinutes: 25,
+        stepsDone: 2,
+        stepsTotal: 3,
+        record: { album: 'Album', artist: 'Artist' }
+      }
+      const options = { action: 'copy', payload: { type: 'study', aspectRatio: '1:1', data } }
+      expect(validateShareOptions(options)).toBe(true)
+      expect(
+        validateShareOptions({
+          ...options,
+          payload: { ...options.payload, data: { ...data, room: '../image' } }
+        })
+      ).toBe(false)
+      expect(
+        validateShareOptions({
+          ...options,
+          payload: { ...options.payload, data: { ...data, stepsDone: 4 } }
+        })
+      ).toBe(false)
+      expect(
+        validateShareOptions({
+          ...options,
+          payload: { ...options.payload, data: { ...data, focusMinutes: NaN } }
+        })
+      ).toBe(false)
+    })
     const validAlbumPayload = {
       action: 'save',
       payload: {

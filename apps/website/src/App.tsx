@@ -11,8 +11,14 @@ import { Sleeve } from './components/Sleeve'
 import { Faq } from './components/Faq'
 import { DownloadCta } from './components/DownloadCta'
 import { SiteFooter } from './components/SiteFooter'
+import { FeaturePage } from './components/FeaturePage'
+import { featurePages } from './data/featurePages'
 
 export default function App() {
+  const base = import.meta.env.BASE_URL
+  const path = window.location.pathname.replace(base, '').replace(/\/$/, '')
+  const page = featurePages.find((item) => item.slug === path)
+  if (page) return <><FeaturePage page={page} base={base} /><Analytics /></>
   return (
     <MotionConfig reducedMotion="user">
       <div id="top" />

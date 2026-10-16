@@ -8,20 +8,22 @@ const isKissaSMTCSession = (payload: SystemMediaPayload, currentStoreTrack: any)
   if (!payload.sourceAppId) {
     // Fallback if OS provides no identity: conservatively assume it's Kissa's echo
     // if the title and artist perfectly match our internal track.
-    return payload.title === currentStoreTrack?.title && payload.artist === currentStoreTrack?.artist
+    return (
+      payload.title === currentStoreTrack?.title && payload.artist === currentStoreTrack?.artist
+    )
   }
-  
+
   const lowerId = payload.sourceAppId.toLowerCase()
-  
+
   if (lowerId.includes('com.namanog.kissa') || lowerId.includes('kissa')) {
     return true
   }
-  
+
   if (lowerId.includes('electron')) {
     // In dev, multiple Electron apps might run. We use title as an additional sanity check.
     return payload.title === currentStoreTrack?.title
   }
-  
+
   return false
 }
 
@@ -91,9 +93,11 @@ export function useSystemMediaSync(): void {
       PlaybackClock.setMode(true) // External media mode
 
       const trackKey = `${payload.title}|${payload.artist || ''}|${payload.sourceAppId || ''}`
-      
+
       // Defensively verify the store wasn't externally reset (e.g., via Vite HMR or state hydration)
-      const storeMatchesPayload = currentStoreTrack?.title === payload.title && currentStoreTrack?.sourceAppId === payload.sourceAppId
+      const storeMatchesPayload =
+        currentStoreTrack?.title === payload.title &&
+        currentStoreTrack?.sourceAppId === payload.sourceAppId
       const isSameTrack = lastTrackKeyRef.current === trackKey && storeMatchesPayload
 
       if (!isSameTrack) {
@@ -117,16 +121,15 @@ export function useSystemMediaSync(): void {
         setIsPlaying(payload.isPlaying)
         setProgress(payload.progress || 0)
       } else {
-        const isCurrentPlaceholder = !currentStoreTrack?.artworkUrl || currentStoreTrack.artworkUrl === albumPlaceholder
         const isCurrentSameAsNew = currentStoreTrack?.artworkUrl === payload.artworkDataUrl
-        const isUpgradingFromDataToHttp = Boolean(currentStoreTrack?.artworkUrl?.startsWith('data:') && payload.artworkDataUrl?.startsWith('http'))
-        const shouldUpdateArtwork =
-          Boolean(payload.artworkDataUrl) &&
-          !isCurrentSameAsNew &&
-          (isCurrentPlaceholder || isUpgradingFromDataToHttp || !currentStoreTrack?.artworkUrl?.startsWith('http'))
+        // Main has already compared catalogue artwork with the player's picture.
+        // A later player picture is authoritative too, including HTTP -> embedded repairs.
+        const shouldUpdateArtwork = Boolean(payload.artworkDataUrl) && !isCurrentSameAsNew
 
-        const shouldUpdateArtist = Boolean(payload.artist) && payload.artist !== currentStoreTrack?.artist
-        const shouldUpdateAlbum = Boolean(payload.album) && payload.album !== currentStoreTrack?.album
+        const shouldUpdateArtist =
+          Boolean(payload.artist) && payload.artist !== currentStoreTrack?.artist
+        const shouldUpdateAlbum =
+          Boolean(payload.album) && payload.album !== currentStoreTrack?.album
 
         const canSeek = payload.canSeek !== false
         if (currentStoreTrack && (currentStoreTrack.canSeek !== false) !== canSeek) {
@@ -139,21 +142,23 @@ export function useSystemMediaSync(): void {
           usePlayerStore.setState((state) => ({
             currentTrack: state.currentTrack
               ? {
-                ...state.currentTrack,
-                artist: shouldUpdateArtist ? payload.artist! : state.currentTrack.artist,
-                album: shouldUpdateAlbum ? payload.album! : state.currentTrack.album,
-                artworkUrl: shouldUpdateArtwork ? payload.artworkDataUrl! : state.currentTrack.artworkUrl
-              }
+                  ...state.currentTrack,
+                  artist: shouldUpdateArtist ? payload.artist! : state.currentTrack.artist,
+                  album: shouldUpdateAlbum ? payload.album! : state.currentTrack.album,
+                  artworkUrl: shouldUpdateArtwork
+                    ? payload.artworkDataUrl!
+                    : state.currentTrack.artworkUrl
+                }
               : null
           }))
         }
 
         if (payload.duration > 0 && payload.duration !== currentStoreTrack?.duration) {
-          // If the new duration exactly matches the PREVIOUS track's duration, 
+          // If the new duration exactly matches the PREVIOUS track's duration,
           // and we already have a valid (>0) duration for the CURRENT track,
           // it is highly likely a delayed stale metadata broadcast. Ignore it.
-          const isLateStaleUpdate = 
-            payload.duration === prevTrackDurationRef.current && 
+          const isLateStaleUpdate =
+            payload.duration === prevTrackDurationRef.current &&
             (currentStoreTrack?.duration || 0) > 0
 
           if (!isLateStaleUpdate) {
@@ -174,7 +179,8 @@ export function useSystemMediaSync(): void {
         PlaybackClock.setSmtcPlaying(usePlayerStore.getState().isPlaying)
 
         // Seek cooldown check to prevent rubberbanding during external SMTC command processing
-        const seekCooldown = typeof window !== 'undefined' ? (window as any).__kissaSeekCooldown : null
+        const seekCooldown =
+          typeof window !== 'undefined' ? (window as any).__kissaSeekCooldown : null
         if (seekCooldown) {
           const elapsedSinceSeek = performance.now() - seekCooldown.timestamp
           const matchesTarget = Math.abs(payload.progress - seekCooldown.target) <= 2.0
@@ -189,7 +195,10 @@ export function useSystemMediaSync(): void {
 
         // While a play/pause sent from Kissa is still in flight, the source's reports
         // describe the old state; do not let them move the clock.
-        if (commandCooldownRef.current && payload.isPlaying !== usePlayerStore.getState().isPlaying) {
+        if (
+          commandCooldownRef.current &&
+          payload.isPlaying !== usePlayerStore.getState().isPlaying
+        ) {
           return
         }
 
@@ -199,7 +208,6 @@ export function useSystemMediaSync(): void {
           setProgress(payload.progress)
         }
       }
-
     }
 
     window.electron.getSystemMedia().then((initial) => {
@@ -242,4 +250,3 @@ export function useSystemMediaSync(): void {
     }
   }, [setTrack, setIsPlaying, setProgress])
 }
-

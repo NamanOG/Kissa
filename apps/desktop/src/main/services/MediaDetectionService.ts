@@ -10,7 +10,9 @@ import { ScreensaverSessionService } from './ScreensaverSessionService'
 
 function sendMediaKey(keyCode: number): void {
   try {
-    exec(`powershell -NoProfile -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]${keyCode})"`)
+    exec(
+      `powershell -NoProfile -Command "(New-Object -ComObject WScript.Shell).SendKeys([char]${keyCode})"`
+    )
   } catch (err) {
     console.warn('[MediaDetectionService] Failed to send media key:', err)
   }
@@ -103,7 +105,10 @@ function formatSession(
 
   // If the session is explicitly Closed (0) or Stopped (3), treat it as cleared.
   // This prevents zombie sessions from closed browsers persisting in the UI.
-  if (session.playback && (session.playback.playbackStatus === 0 || session.playback.playbackStatus === 3)) {
+  if (
+    session.playback &&
+    (session.playback.playbackStatus === 0 || session.playback.playbackStatus === 3)
+  ) {
     return null
   }
 
@@ -133,7 +138,7 @@ function formatSession(
   }
 
   let title = (session.media.title || '').trim()
-  
+
   // If the session has no title, consider it an empty/uninitialized session.
   // Apple Music and Spotify often create these when launched but not playing.
   if (!title) return null
@@ -213,7 +218,7 @@ export class MediaDetectionService {
   private isInternalAudioPlaying: boolean = false
   private readonly payloadListeners = new Set<(payload: SystemMediaPayload | null) => void>()
 
-  private constructor() { }
+  private constructor() {}
 
   public static getInstance(): MediaDetectionService {
     if (!MediaDetectionService.instance) {
@@ -223,7 +228,10 @@ export class MediaDetectionService {
   }
 
   public getVideoPlaybackState(): VideoPlaybackState {
-    if (!this.isWorkerHealthy || Date.now() - this.lastUpdateTimestamp > MediaDetectionService.FRESHNESS_WINDOW_MS) {
+    if (
+      !this.isWorkerHealthy ||
+      Date.now() - this.lastUpdateTimestamp > MediaDetectionService.FRESHNESS_WINDOW_MS
+    ) {
       return 'unknown'
     }
     return this.videoPlaybackState
@@ -234,7 +242,10 @@ export class MediaDetectionService {
       return true
     }
 
-    if (!this.isWorkerHealthy || Date.now() - this.lastUpdateTimestamp > MediaDetectionService.FRESHNESS_WINDOW_MS) {
+    if (
+      !this.isWorkerHealthy ||
+      Date.now() - this.lastUpdateTimestamp > MediaDetectionService.FRESHNESS_WINDOW_MS
+    ) {
       return false
     }
 
@@ -301,6 +312,7 @@ export class MediaDetectionService {
     // Lyrics found earlier are kept in the profile so they show at once after a restart.
     LyricsService.configure({
       cacheFile: join(electronApp.getPath('userData'), 'lyrics-cache.json'),
+      overridesFile: join(electronApp.getPath('userData'), 'lyrics-choices.json'),
       appVersion: electronApp.getVersion()
     })
 
@@ -313,6 +325,14 @@ export class MediaDetectionService {
     ipcMain.handle('kissa:get-lyrics', (_event, request: LyricsRequest) => {
       return LyricsService.getInstance().getLyrics(request)
     })
+    ipcMain.handle('kissa:search-lyrics', (_event, request: LyricsRequest, query: string) =>
+      LyricsService.getInstance().searchCandidates(request, query)
+    )
+    ipcMain.handle(
+      'kissa:choose-lyrics',
+      (_event, request: LyricsRequest, choice: import('../../types/lyrics').LyricsChoice) =>
+        LyricsService.getInstance().chooseLyrics(request, choice)
+    )
 
     ipcMain.handle('kissa:set-volume', (_event, vol: number) => {
       this.setVolume(vol)
@@ -347,7 +367,12 @@ export class MediaDetectionService {
     })
 
     ipcMain.handle('kissa:media-seek', (_event, positionSeconds: number) => {
-      if (typeof positionSeconds !== 'number' || isNaN(positionSeconds) || !isFinite(positionSeconds) || positionSeconds < 0) {
+      if (
+        typeof positionSeconds !== 'number' ||
+        isNaN(positionSeconds) ||
+        !isFinite(positionSeconds) ||
+        positionSeconds < 0
+      ) {
         return
       }
       if (this.worker && this.latestPayload) {
@@ -390,7 +415,11 @@ export class MediaDetectionService {
           this.isWorkerHealthy = true
           this.lastUpdateTimestamp = Date.now()
 
-          if (msg.videoState === 'detected' || msg.videoState === 'not_detected' || msg.videoState === 'unknown') {
+          if (
+            msg.videoState === 'detected' ||
+            msg.videoState === 'not_detected' ||
+            msg.videoState === 'unknown'
+          ) {
             this.videoPlaybackState = msg.videoState
           } else if (typeof msg.hasActiveVideoPlayback === 'boolean') {
             this.videoPlaybackState = msg.hasActiveVideoPlayback ? 'detected' : 'not_detected'
@@ -454,7 +483,9 @@ export class MediaDetectionService {
 
     // The player's own picture, if it sent one (formatSession already swapped in a verified
     // sharper copy where there is one).
-    const ownCover = payload?.artworkDataUrl?.startsWith('data:') ? payload.artworkDataUrl : undefined
+    const ownCover = payload?.artworkDataUrl?.startsWith('data:')
+      ? payload.artworkDataUrl
+      : undefined
 
     // Without a cover from the player, keep the web cover already found for this track.
     if (
@@ -463,7 +494,8 @@ export class MediaDetectionService {
       !payload.artworkDataUrl &&
       this.latestPayload.title?.trim().toLowerCase() === payload.title?.trim().toLowerCase() &&
       this.latestPayload.artist?.trim().toLowerCase() === payload.artist?.trim().toLowerCase() &&
-      (this.latestPayload.album || '').trim().toLowerCase() === (payload.album || '').trim().toLowerCase() &&
+      (this.latestPayload.album || '').trim().toLowerCase() ===
+        (payload.album || '').trim().toLowerCase() &&
       this.latestPayload.artworkDataUrl?.startsWith('http')
     ) {
       payload.artworkDataUrl = this.latestPayload.artworkDataUrl
@@ -487,10 +519,20 @@ export class MediaDetectionService {
           if (!latest || latest.title !== currentTitle || latest.artist !== currentArtist) return
           // Only the very picture that was checked, not a newer cover that arrived meanwhile.
           const samePicture =
-            ownCover === undefined ? !latest.artworkDataUrl?.startsWith('data:') : latest.artworkDataUrl === ownCover
+            ownCover === undefined
+              ? !latest.artworkDataUrl?.startsWith('data:')
+              : latest.artworkDataUrl === ownCover
           if (!samePicture) return
           const publicArtworkUrl =
-            fetchedUrl ?? (ownCover ? ArtworkService.getInstance().getPublicArtwork(currentTitle, currentArtist, latest.album, ownCover) : undefined)
+            fetchedUrl ??
+            (ownCover
+              ? ArtworkService.getInstance().getPublicArtwork(
+                  currentTitle,
+                  currentArtist,
+                  latest.album,
+                  ownCover
+                )
+              : undefined)
           const next = {
             ...latest,
             ...(fetchedUrl ? { artworkDataUrl: fetchedUrl } : {}),
@@ -502,8 +544,7 @@ export class MediaDetectionService {
           this.lastPayloadJson = json
           this.broadcast(next)
         })
-        .catch(() => {
-        })
+        .catch(() => {})
     }
   }
 
@@ -554,13 +595,14 @@ export class MediaDetectionService {
       try {
         this.worker.postMessage('stop')
         this.worker.terminate()
-      } catch {
-      }
+      } catch {}
       this.worker = null
     }
     if (ipcMain && typeof ipcMain.removeHandler === 'function') {
       ipcMain.removeHandler('kissa:get-system-media')
       ipcMain.removeHandler('kissa:get-lyrics')
+      ipcMain.removeHandler('kissa:search-lyrics')
+      ipcMain.removeHandler('kissa:choose-lyrics')
       ipcMain.removeHandler('kissa:set-volume')
       ipcMain.removeHandler('kissa:get-volume')
       ipcMain.removeHandler('kissa:media-play-pause')

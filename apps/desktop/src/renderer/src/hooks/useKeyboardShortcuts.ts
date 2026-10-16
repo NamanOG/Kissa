@@ -18,6 +18,7 @@ export function useKeyboardShortcuts(): void {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
       const store = usePlayerStore.getState()
+      if (document.querySelector('dialog[open]')) return
 
       if (e.key === 'F11' || e.code === 'F11') {
         e.preventDefault()
@@ -60,7 +61,12 @@ export function useKeyboardShortcuts(): void {
         }
       }
 
-      if ((e.key === 'd' || e.key === 'D' || e.code === 'KeyD') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      if (
+        (e.key === 'd' || e.key === 'D' || e.code === 'KeyD') &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.metaKey
+      ) {
         if (e.repeat) return
         e.preventDefault()
         e.stopPropagation()
@@ -77,7 +83,11 @@ export function useKeyboardShortcuts(): void {
       }
 
       // If a modal is open, prevent media hotkeys from conflicting (unless in screensaver or listening display mode)
-      if (!store.isScreensaver && !store.isListeningDisplay && (store.isOnboardingOpen || store.isSettingsOpen || store.isKeyboardHelpOpen)) {
+      if (
+        !store.isScreensaver &&
+        !store.isListeningDisplay &&
+        (store.isOnboardingOpen || store.isSettingsOpen || store.isKeyboardHelpOpen)
+      ) {
         if (e.key === 's' || e.key === 'S') {
           e.preventDefault()
           store.toggleSettings()

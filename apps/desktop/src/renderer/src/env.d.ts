@@ -18,15 +18,21 @@ declare module '*.svg' {
   export default src
 }
 
-
 import type { SystemMediaPayload } from '../../types/media'
-import type { LyricsRequest, LyricsResponse } from '../../types/lyrics'
+import type {
+  LyricsChoice,
+  LyricsRequest,
+  LyricsResponse,
+  LyricsSearchResponse
+} from '../../types/lyrics'
 import type { UpdateStatusPayload, UpdateInstallResult } from '../../types/update'
 import type { DiscordPresenceStatus, StudyPresence } from '../../types/discord'
 
 export interface KissaSystemMediaAPI {
   getSystemMedia: () => Promise<SystemMediaPayload | null>
   getLyrics: (request: LyricsRequest) => Promise<LyricsResponse | null>
+  searchLyrics: (request: LyricsRequest, query: string) => Promise<LyricsSearchResponse>
+  chooseLyrics: (request: LyricsRequest, choice: LyricsChoice) => Promise<LyricsResponse | null>
   onSystemMediaUpdate: (callback: (data: SystemMediaPayload | null) => void) => () => void
   getVolume: () => Promise<{ master: number; isMuted: boolean } | null>
   setProgress: (progress: number, mode?: 'normal' | 'paused' | 'error' | 'none') => Promise<void>
@@ -48,8 +54,19 @@ export interface KissaSystemMediaAPI {
   exitScreensaver: () => Promise<void>
   onScreensaverModeChanged?: (callback: (isScreensaver: boolean) => void) => () => void
   isScreensaverRegistered?: () => Promise<boolean>
-  registerScreensaver?: () => Promise<{ success: boolean; error?: string; path?: string; manual?: boolean }>
-  unregisterScreensaver?: () => Promise<{ success: boolean; removed: boolean; reason?: string; currentPath?: string; error?: string }>
+  registerScreensaver?: () => Promise<{
+    success: boolean
+    error?: string
+    path?: string
+    manual?: boolean
+  }>
+  unregisterScreensaver?: () => Promise<{
+    success: boolean
+    removed: boolean
+    reason?: string
+    currentPath?: string
+    error?: string
+  }>
   openScreensaverSettings?: () => Promise<{ success: boolean; error?: string }>
   getUpdateStatus?: () => Promise<UpdateStatusPayload>
   checkForUpdates?: () => Promise<UpdateStatusPayload>

@@ -1,5 +1,12 @@
-import type { LyricsOutcome, LyricsRequest, LyricsResponse } from '../../types/lyrics'
+import type {
+  LyricsChoice,
+  LyricsOutcome,
+  LyricsRequest,
+  LyricsResponse,
+  LyricsSearchResponse
+} from '../../types/lyrics'
 import { LyricsCache, createFileBackend } from './LyricsCache'
+import { LyricsOverrides } from './LyricsOverrides'
 
 const LRCLIB_BASE = 'https://lrclib.net/api'
 const ITUNES_SEARCH = 'https://itunes.apple.com/search'
@@ -35,8 +42,14 @@ export interface LRCLIBItem {
 export function cleanTrackTitle(title: string): string {
   if (!title) return ''
   return title
-    .replace(/\s*[\(\[](feat\.|ft\.|with|explicit|remastered|deluxe|version|bonus|live|single|anniversary|official|audio|video|edit|mono|stereo|expanded).*?[\)\]]/gi, '')
-    .replace(/\s*-\s*(feat\.|ft\.|with|explicit|remastered|deluxe|version|bonus|live|single|anniversary|official|audio|video|edit|mono|stereo|expanded).*$/gi, '')
+    .replace(
+      /\s*[\(\[](feat\.|ft\.|with|explicit|remastered|deluxe|version|bonus|live|single|anniversary|official|audio|video|edit|mono|stereo|expanded).*?[\)\]]/gi,
+      ''
+    )
+    .replace(
+      /\s*-\s*(feat\.|ft\.|with|explicit|remastered|deluxe|version|bonus|live|single|anniversary|official|audio|video|edit|mono|stereo|expanded).*$/gi,
+      ''
+    )
     .replace(/\s*-\s*(single|deluxe|remastered|live|mono|stereo)$/gi, '')
     .replace(/\s*-\s*\d{4}\s+remaster(ed)?.*$/gi, '')
     .replace(/\s*\(remastered(\s*\d+)?\)$/gi, '')
@@ -106,11 +119,24 @@ function artistMatches(want: string, got: string): boolean {
   const gotArtist = normalizeForMatch(got || '')
   if (!wantArtist || !gotArtist) return true
   if (wantArtist.includes(gotArtist) || gotArtist.includes(wantArtist)) return true
-  const wantWords = new Set(wantArtist.split(' ').filter((w) => w.length > 2 && !ARTIST_FILLER.has(w)))
+  const wantWords = new Set(
+    wantArtist.split(' ').filter((w) => w.length > 2 && !ARTIST_FILLER.has(w))
+  )
   return gotArtist.split(' ').some((w) => wantWords.has(w))
 }
 
-const ARTIST_FILLER = new Set(['the', 'and', 'feat', 'featuring', 'with', 'los', 'las', 'les', 'die', 'der'])
+const ARTIST_FILLER = new Set([
+  'the',
+  'and',
+  'feat',
+  'featuring',
+  'with',
+  'los',
+  'las',
+  'les',
+  'die',
+  'der'
+])
 
 /** A search can return other songs entirely; only keep results for this title and artist. */
 function isSameSong(item: LRCLIBItem, target: LyricsTarget): boolean {
@@ -128,11 +154,17 @@ function response(
   item?: Partial<LRCLIBItem>,
   fallbackDuration?: number
 ): LyricsResponse {
-  const duration = item?.duration && item.duration > 0 ? Math.round(item.duration) : fallbackDuration
+  const duration =
+    item?.duration && item.duration > 0 ? Math.round(item.duration) : fallbackDuration
   return {
     status,
     syncedLyrics: status === 'synced' ? item?.syncedLyrics || null : null,
-    plainLyrics: status === 'synced' || status === 'plain' ? (hasText(item?.plainLyrics) ? item!.plainLyrics! : null) : null,
+    plainLyrics:
+      status === 'synced' || status === 'plain'
+        ? hasText(item?.plainLyrics)
+          ? item!.plainLyrics!
+          : null
+        : null,
     instrumental: status === 'instrumental',
     duration: duration && duration > 0 ? duration : undefined
   }
@@ -180,13 +212,17 @@ export function pickBestLyricsResult(
 
   // 2. Words without timing. Timed lyrics from another cut are offered this way too:
   //    the words are right even though the timestamps are not.
-  const withWords = candidates.filter((item) => hasText(item.plainLyrics) || hasText(item.syncedLyrics))
+  const withWords = candidates.filter(
+    (item) => hasText(item.plainLyrics) || hasText(item.syncedLyrics)
+  )
   if (withWords.length > 0) {
     if (duration > 0) withWords.sort(byDuration)
     const best = withWords[0]
     return response('plain', {
       ...best,
-      plainLyrics: hasText(best.plainLyrics) ? best.plainLyrics : stripTimestamps(best.syncedLyrics || '')
+      plainLyrics: hasText(best.plainLyrics)
+        ? best.plainLyrics
+        : stripTimestamps(best.syncedLyrics || '')
     })
   }
 
@@ -207,9 +243,7 @@ export function parseRetryAfter(header: string | null, now: number): number | un
 }
 
 type Attempt =
-  | { kind: 'ok'; body: unknown }
-  | { kind: 'not-found' }
-  | { kind: 'transient'; offline?: boolean }
+  { kind: 'ok'; body: unknown } | { kind: 'not-found' } | { kind: 'transient'; offline?: boolean }
 
 interface LookupStats {
   requests: number
@@ -231,6 +265,48 @@ export interface LyricsServiceOptions {
   sleep?: (ms: number) => Promise<void>
   cache?: LyricsCache
   clientName?: string
+  overrides?: LyricsOverrides
+}
+
+function validateRequest(request: LyricsRequest): void {
+  if (
+    !request ||
+    [request.title, request.artist, request.album].some(
+      (v) => typeof v !== 'string' || v.length > 1000
+    ) ||
+    !request.title.trim() ||
+    !request.artist.trim() ||
+    !Number.isFinite(request.duration) ||
+    request.duration < 0
+  ) {
+    throw new Error('Invalid recording details')
+  }
+}
+
+const MAX_LYRICS_LENGTH = 256_000
+
+export function importedLyrics(text: string): LyricsResponse {
+  if (typeof text !== 'string' || text.length > MAX_LYRICS_LENGTH || text.includes('\u0000')) {
+    throw new Error('Choose an LRC file smaller than 256 KB.')
+  }
+  const lrc = text
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n?/g, '\n')
+    .trim()
+  // Metadata alone and empty timestamped lines are not lyrics.
+  if (
+    !/^\s*(?:\[\d{1,2}:[0-5]\d(?:\.\d{1,3})?\])+\s*\S/m.test(lrc) ||
+    !stripTimestamps(lrc).trim()
+  ) {
+    throw new Error('This file has no timed lyric lines. Choose a UTF-8 .lrc file.')
+  }
+  return {
+    status: 'synced',
+    syncedLyrics: lrc,
+    plainLyrics: stripTimestamps(lrc),
+    instrumental: false,
+    source: 'lrc-import'
+  }
 }
 
 function trackKey(request: LyricsRequest): string {
@@ -251,6 +327,8 @@ export class LyricsService {
   private readonly sleep: (ms: number) => Promise<void>
   private readonly cache: LyricsCache
   private readonly headers: Record<string, string>
+  private readonly overrides: LyricsOverrides
+  private readonly revisions = new Map<string, number>()
 
   /** Answers found this session, newest last. */
   private readonly memory = new Map<string, LyricsResponse>()
@@ -267,14 +345,22 @@ export class LyricsService {
     this.now = options.now ?? Date.now
     this.sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)))
     this.cache = options.cache ?? new LyricsCache(null)
+    this.overrides = options.overrides ?? new LyricsOverrides()
     const client = options.clientName ?? 'Kissa (https://github.com/NamanOG/Kissa)'
     this.headers = { 'Lrclib-Client': client, 'User-Agent': client }
   }
 
   /** Call once at start-up, before the first lookup, to keep lyrics across restarts. */
-  public static configure(options: { cacheFile?: string; appVersion?: string }): void {
+  public static configure(options: {
+    cacheFile?: string
+    overridesFile?: string
+    appVersion?: string
+  }): void {
     LyricsService.instance = new LyricsService({
       cache: new LyricsCache(options.cacheFile ? createFileBackend(options.cacheFile) : null),
+      overrides: new LyricsOverrides(
+        options.overridesFile ? createFileBackend(options.overridesFile) : null
+      ),
       clientName: `Kissa/${options.appVersion || 'dev'} (https://github.com/NamanOG/Kissa)`
     })
   }
@@ -302,13 +388,17 @@ export class LyricsService {
   }
 
   public getLyrics(request: LyricsRequest): Promise<LyricsResponse> {
+    validateRequest(request)
     const started = this.now()
-    if (!request?.title?.trim() || !request.artist?.trim()) return Promise.resolve(response('not-found'))
+    if (!request?.title?.trim() || !request.artist?.trim())
+      return Promise.resolve(response('not-found'))
     if (request.title === 'Unknown Title' || request.artist === 'Unknown Artist') {
       return Promise.resolve(response('not-found'))
     }
 
     const key = trackKey(request)
+    const chosen = this.overrides.get(key)
+    if (chosen) return Promise.resolve(chosen)
 
     const remembered = this.memory.get(key)
     if (remembered) {
@@ -335,12 +425,15 @@ export class LyricsService {
     if (pending) return pending
 
     const stats: LookupStats = { requests: 0, transient: 0 }
+    const revision = this.revisions.get(key)
     const lookup = this.lookup(request, stats)
       .catch((err): LyricsResponse => {
         console.warn('[LyricsService] Lookup failed unexpectedly:', err)
         return response('unavailable')
       })
       .then((result) => {
+        if (this.revisions.get(key) !== revision)
+          return this.overrides.get(key) ?? response('unavailable')
         this.inFlight.delete(key)
         if (result.status === 'not-found') {
           this.misses.set(key, this.now() + MISS_COOLDOWN_MS)
@@ -352,8 +445,99 @@ export class LyricsService {
         this.record(started, 'network', result.status, stats)
         return result
       })
+      .finally(() => {
+        if (this.inFlight.get(key) === lookup) this.inFlight.delete(key)
+      })
     this.inFlight.set(key, lookup)
     return lookup
+  }
+
+  /** Alternative recordings retain their own timing, with duration shown before choosing. */
+  public async searchCandidates(
+    request: LyricsRequest,
+    query: string
+  ): Promise<LyricsSearchResponse> {
+    validateRequest(request)
+    if (typeof query !== 'string' || !query.trim() || query.length > 500)
+      throw new Error('Enter a title and artist.')
+    if (this.blockedUntil > this.now()) return { status: 'unavailable', candidates: [] }
+    const attempt = await this.ask(
+      `${LRCLIB_BASE}/search?${new URLSearchParams({ q: query.trim() })}`,
+      new Set(),
+      this.now() + LOOKUP_DEADLINE_MS,
+      { requests: 0, transient: 0 }
+    )
+    if (attempt?.kind === 'transient') return { status: 'unavailable', candidates: [] }
+    const items =
+      attempt?.kind === 'ok' && Array.isArray(attempt.body) ? (attempt.body as LRCLIBItem[]) : []
+    const seen = new Set<number>()
+    return {
+      status: 'ok',
+      candidates: items
+        .filter((item) => {
+          if (
+            !Number.isSafeInteger(item.id) ||
+            item.id! <= 0 ||
+            seen.has(item.id!) ||
+            (!hasText(item.syncedLyrics) && !hasText(item.plainLyrics))
+          )
+            return false
+          seen.add(item.id!)
+          return true
+        })
+        .slice(0, 30)
+        .map((item) => ({
+          id: item.id!,
+          title: item.trackName || item.name || 'Untitled',
+          artist: item.artistName || '',
+          album: item.albumName || '',
+          duration: item.duration || 0,
+          synced: hasText(item.syncedLyrics),
+          preview: stripTimestamps(item.plainLyrics || item.syncedLyrics || '').slice(0, 220)
+        }))
+    }
+  }
+
+  public async chooseLyrics(
+    request: LyricsRequest,
+    choice: LyricsChoice
+  ): Promise<LyricsResponse | null> {
+    validateRequest(request)
+    const key = trackKey(request)
+    // Reserve the revision before any network work, so older choices cannot overwrite newer ones.
+    const revision = (this.revisions.get(key) ?? 0) + 1
+    this.revisions.set(key, revision)
+    let value: LyricsResponse | null
+    if (choice?.kind === 'reset') value = null
+    else if (choice?.kind === 'import') value = importedLyrics(choice.text)
+    else if (choice?.kind === 'candidate' && Number.isSafeInteger(choice.id) && choice.id > 0) {
+      if (this.blockedUntil > this.now())
+        throw new Error('The lyrics library is busy. Try again shortly.')
+      const attempt = await this.ask(
+        `${LRCLIB_BASE}/get/${choice.id}`,
+        new Set(),
+        this.now() + LOOKUP_DEADLINE_MS,
+        { requests: 0, transient: 0 }
+      )
+      const item = attempt?.kind === 'ok' ? (attempt.body as LRCLIBItem) : null
+      const found = item && fromRecord(item)
+      if (!found || (found.status !== 'synced' && found.status !== 'plain'))
+        throw new Error('That match is unavailable. Try another or import a file.')
+      if (
+        (found.syncedLyrics?.length ?? 0) > MAX_LYRICS_LENGTH ||
+        (found.plainLyrics?.length ?? 0) > MAX_LYRICS_LENGTH
+      )
+        throw new Error('That match is too large.')
+      // A selected cut's length is not evidence about the player's recording.
+      value = { ...found, duration: request.duration || undefined, source: 'lrclib-choice' }
+    } else throw new Error('Invalid lyrics choice')
+    if (this.revisions.get(key) !== revision) throw new Error('A newer lyrics choice was made.')
+    this.overrides.set(key, value)
+    this.memory.delete(key)
+    this.cache.delete(key)
+    this.misses.delete(key)
+    this.inFlight.delete(key)
+    return value
   }
 
   private remember(key: string, value: LyricsResponse): void {
@@ -365,7 +549,12 @@ export class LyricsService {
     }
   }
 
-  private record(started: number, from: LyricsLookupRecord['from'], outcome: LyricsOutcome, stats: LookupStats): void {
+  private record(
+    started: number,
+    from: LyricsLookupRecord['from'],
+    outcome: LyricsOutcome,
+    stats: LookupStats
+  ): void {
     const entry: LyricsLookupRecord = {
       at: started,
       ms: Math.max(0, this.now() - started),
@@ -448,11 +637,17 @@ export class LyricsService {
       steps.push(() => get(title, artist, '', duration))
       steps.push(() => get(cleanTitle, cleanArt, '', duration))
     }
-    steps.push(() => search(new URLSearchParams({ track_name: title, artist_name: artist }), duration))
-    steps.push(() => search(new URLSearchParams({ track_name: cleanTitle, artist_name: cleanArt }), duration))
+    steps.push(() =>
+      search(new URLSearchParams({ track_name: title, artist_name: artist }), duration)
+    )
+    steps.push(() =>
+      search(new URLSearchParams({ track_name: cleanTitle, artist_name: cleanArt }), duration)
+    )
     steps.push(() => search(new URLSearchParams({ q: `${cleanTitle} ${cleanArt}` }), duration))
     steps.push(() =>
-      words ? Promise.resolve<StepResult>('continue') : search(new URLSearchParams({ q: `${title} ${artist}` }), duration)
+      words
+        ? Promise.resolve<StepResult>('continue')
+        : search(new URLSearchParams({ q: `${title} ${artist}` }), duration)
     )
 
     // LRCLIB refuses some requests under load (429 with Retry-After) while answering the
@@ -503,7 +698,12 @@ export class LyricsService {
    * One LRCLIB request, honouring Retry-After for 429/5xx. Null when this exact request
    * was already made during the lookup.
    */
-  private async ask(url: string, asked: Set<string>, deadline: number, stats: LookupStats): Promise<Attempt | null> {
+  private async ask(
+    url: string,
+    asked: Set<string>,
+    deadline: number,
+    stats: LookupStats
+  ): Promise<Attempt | null> {
     if (asked.has(url)) return null
     asked.add(url)
 
@@ -520,7 +720,8 @@ export class LyricsService {
       } catch {
         // Offline or timed out: one more try if there is time, after a short pause.
         stats.transient++
-        if (attempt >= 1 || this.now() + 1500 >= deadline) return { kind: 'transient', offline: true }
+        if (attempt >= 1 || this.now() + 1500 >= deadline)
+          return { kind: 'transient', offline: true }
         await this.sleep(500)
         continue
       }
@@ -555,7 +756,11 @@ export class LyricsService {
     }
   }
 
-  private async durationFromItunes(title: string, artist: string, deadline: number): Promise<number | null> {
+  private async durationFromItunes(
+    title: string,
+    artist: string,
+    deadline: number
+  ): Promise<number | null> {
     const remaining = deadline - this.now()
     if (remaining < 500) return null
     try {

@@ -1,5 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { SharePayload, AlbumShareData, StatsShareData } from '../../../../types/share'
+import {
+  SharePayload,
+  AlbumShareData,
+  StatsShareData,
+  StudyShareData
+} from '../../../../types/share'
+import { environmentInfo } from '../study/scenes'
 import { extractColorsFromImage, AdaptivePalette } from '../../hooks/useAdaptiveColor'
 import { cn } from '../../utils/cn'
 import { usePlayerStore } from '../../stores/playerStore'
@@ -34,7 +40,8 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
   const [palette, setPalette] = useState<AdaptivePalette | null>(null)
   const [imagesLoaded, setImagesLoaded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const listenerName = usePlayerStore((s) => s.listenerName)
+  const savedName = usePlayerStore((s) => s.listenerName)
+  const listenerName = payload.listenerName ?? savedName
 
   const { type, data, aspectRatio } = payload
 
@@ -122,7 +129,9 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
       }
     }
 
-    return () => { mounted = false }
+    return () => {
+      mounted = false
+    }
   }, [primaryArtwork, type, data, isExport])
 
   const isSquare = aspectRatio === '1:1'
@@ -131,7 +140,8 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
   const owner = possessive(listenerName)
   const monthYear = (time: number): string =>
     new Date(time).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
-  const plural = (count: number, word: string): string => `${count} ${word}${count === 1 ? '' : 's'}`
+  const plural = (count: number, word: string): string =>
+    `${count} ${word}${count === 1 ? '' : 's'}`
 
   const renderAlbum = (): React.JSX.Element => {
     const album = data as AlbumShareData
@@ -145,10 +155,48 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
             {album.album}
           </h1>
           <p className="mt-4 font-serif text-[38px] opacity-75 line-clamp-1">{album.artist}</p>
-          <div className="mt-10 flex gap-20 border-t pt-8" style={{ borderColor: 'color-mix(in srgb, currentColor 16%, transparent)' }}>
+          <div
+            className="mt-10 flex gap-20 border-t pt-8"
+            style={{ borderColor: 'color-mix(in srgb, currentColor 16%, transparent)' }}
+          >
             <Fact label="Played" value={plural(album.playCount, 'time')} />
             <Fact label="First played" value={monthYear(album.firstListened)} />
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  const renderStudy = (): React.JSX.Element => {
+    const study = data as StudyShareData
+    const room = environmentInfo(study.room)
+    return (
+      <div className="relative z-10 flex flex-1 flex-col justify-between gap-10">
+        <div>
+          <Label>A sitting in the {room.label} room</Label>
+          <h1 className="mt-6 font-serif text-[100px] leading-none tracking-[-0.025em]">
+            {study.focusMinutes} minutes
+            <br />
+            of focus.
+          </h1>
+        </div>
+        <img
+          src={room.photo}
+          alt={`${room.label} Study Room`}
+          className="w-full rounded-md object-cover"
+          style={{ height: isSquare ? 280 : 480 }}
+        />
+        <div className="flex items-end justify-between gap-12 border-t border-current/15 pt-8">
+          <Fact label="Steps done" value={`${study.stepsDone} of ${study.stepsTotal}`} />
+          {study.record && (
+            <div className="min-w-0 max-w-[560px] text-right">
+              <Label>On the turntable at the finish</Label>
+              <p className="mt-4 font-serif text-[38px] leading-tight line-clamp-2">
+                {study.record.album}
+              </p>
+              <p className="mt-2 text-[22px] opacity-65 truncate">{study.record.artist}</p>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -167,7 +215,10 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
           <Label>{plural(albums.length, 'album')}</Label>
         </p>
         <div className="flex flex-1 items-center justify-center">
-          <div className="grid gap-x-8 gap-y-9" style={{ gridTemplateColumns: `repeat(${columns}, ${size}px)` }}>
+          <div
+            className="grid gap-x-8 gap-y-9"
+            style={{ gridTemplateColumns: `repeat(${columns}, ${size}px)` }}
+          >
             {albums.map((a, i) => (
               <div key={i} className="min-w-0">
                 <Cover src={a.artworkUrl} size={size} />
@@ -187,11 +238,16 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
     return (
       <div className="relative z-10 flex flex-1 flex-col justify-between">
         <div>
-          <Label>{owner ? `${owner} listening` : 'Listening'} · since {monthYear(stats.firstListenDate)}</Label>
+          <Label>
+            {owner ? `${owner} listening` : 'Listening'} · since {monthYear(stats.firstListenDate)}
+          </Label>
           <div className="mt-6 flex items-end gap-6">
             <span
               className="font-serif font-medium leading-[0.82] tracking-[-0.04em]"
-              style={{ fontSize: isSquare ? 260 : stats.runnersUp?.length ? 250 : 340, color: accent }}
+              style={{
+                fontSize: isSquare ? 260 : stats.runnersUp?.length ? 250 : 340,
+                color: accent
+              }}
             >
               {stats.totalAlbums}
             </span>
@@ -199,13 +255,18 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
               {stats.totalAlbums === 1 ? 'record' : 'records'}
             </span>
           </div>
-          <div className="mt-12 flex gap-16 border-t pt-8" style={{ borderColor: 'color-mix(in srgb, currentColor 16%, transparent)' }}>
+          <div
+            className="mt-12 flex gap-16 border-t pt-8"
+            style={{ borderColor: 'color-mix(in srgb, currentColor 16%, transparent)' }}
+          >
             <Fact label="Artists" value={String(stats.uniqueArtists)} />
             <Fact label="Plays" value={String(stats.totalPlays)} />
             {stats.topArtist && (
               <div className="flex min-w-0 flex-col gap-2">
                 <Label>Most played artist</Label>
-                <span className="truncate font-serif text-[40px] leading-none">{stats.topArtist.name}</span>
+                <span className="truncate font-serif text-[40px] leading-none">
+                  {stats.topArtist.name}
+                </span>
               </div>
             )}
           </div>
@@ -233,8 +294,12 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
                   {stats.runnersUp.slice(0, 4).map((a, i) => (
                     <div key={i} className="min-w-0">
                       <Cover src={a.artworkUrl} size={204} />
-                      <p className="mt-3 truncate font-serif text-[22px] leading-tight">{a.album}</p>
-                      <p className="mt-1 truncate font-mono text-[14px] uppercase tracking-[0.16em] opacity-55">{plural(a.playCount, 'play')}</p>
+                      <p className="mt-3 truncate font-serif text-[22px] leading-tight">
+                        {a.album}
+                      </p>
+                      <p className="mt-1 truncate font-mono text-[14px] uppercase tracking-[0.16em] opacity-55">
+                        {plural(a.playCount, 'play')}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -249,20 +314,26 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
   return (
     <div
       ref={containerRef}
-      className={cn('relative flex flex-col overflow-hidden p-[84px]', isSquare ? 'h-[1080px] w-[1080px]' : 'h-[1350px] w-[1080px]')}
+      className={cn(
+        'relative flex flex-col overflow-hidden p-[84px]',
+        isSquare ? 'h-[1080px] w-[1080px]' : 'h-[1350px] w-[1080px]'
+      )}
       style={{ backgroundColor: palette?.deckBg ?? '#12100d', color: ink }}
     >
       {/* One soft light, taken from the cover. No frames, no vignette. */}
       {palette && (
         <div
           className="pointer-events-none absolute -left-[20%] -top-[30%] h-[90%] w-[110%] rounded-full opacity-25"
-          style={{ background: `radial-gradient(closest-side, ${palette.ambientPrimary} 0%, transparent 100%)` }}
+          style={{
+            background: `radial-gradient(closest-side, ${palette.ambientPrimary} 0%, transparent 100%)`
+          }}
         />
       )}
 
       {type === 'album' && renderAlbum()}
       {type === 'collection' && renderCollection()}
       {type === 'stats' && renderStats()}
+      {type === 'study' && renderStudy()}
 
       <div className="relative z-10 mt-12 flex items-baseline justify-between">
         <span className="flex items-baseline gap-5">

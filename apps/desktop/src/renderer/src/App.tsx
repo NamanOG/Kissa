@@ -37,7 +37,7 @@ function KissaApp(): React.JSX.Element {
   const isFullscreen = usePlayerStore((s) => s.isFullscreen)
   const isListeningDisplay = usePlayerStore((s) => s.isListeningDisplay)
   const theme = usePlayerStore((s) => s.theme)
-  
+
   const isScreensaver = usePlayerStore((s) => s.isScreensaver)
   const setIsScreensaver = usePlayerStore((s) => s.setIsScreensaver)
   const [isScreensaverReady, setIsScreensaverReady] = useState<boolean>(false)
@@ -56,12 +56,27 @@ function KissaApp(): React.JSX.Element {
   useStudyEngine()
 
   const addOrUpdateRecord = useShelfStore((s) => s.addOrUpdateRecord)
-  
+  const repairArtwork = useShelfStore((s) => s.repairArtwork)
+  const recordingKey = currentTrack
+    ? JSON.stringify([
+        currentTrack.title,
+        currentTrack.artist,
+        currentTrack.album,
+        currentTrack.sourceAppId
+      ])
+    : ''
+
   useEffect(() => {
     if (currentTrack && currentTrack.album && currentTrack.artist) {
       addOrUpdateRecord(currentTrack)
     }
-  }, [currentTrack, addOrUpdateRecord])
+    // Progress, duration and artwork updates are the same listen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recordingKey, addOrUpdateRecord])
+
+  useEffect(() => {
+    if (currentTrack) repairArtwork(currentTrack)
+  }, [currentTrack, repairArtwork])
 
   useEffect(() => {
     if (typeof window !== 'undefined' && (window as any).electron) {
@@ -141,122 +156,124 @@ function KissaApp(): React.JSX.Element {
               <Sidebar />
 
               <ContentArea>
-              <div className="relative flex-1 min-h-0 w-full overflow-hidden">
-        <AnimatePresence mode="wait">
-          {activeView === 'deck' && (
-            /* Vinyl deck and listening room */
-            <motion.div
-              key="deck-view"
-              initial={{ opacity: 0, scale: 0.985 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.985 }}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              className={cn(
-                'absolute inset-0 grid min-h-0 overflow-hidden transform-gpu',
-                showSideLyrics
-                  ? 'grid-cols-1 min-[900px]:grid-cols-[minmax(280px,0.9fr)_minmax(320px,1.4fr)] min-[1100px]:grid-cols-[minmax(260px,0.8fr)_minmax(320px,1.4fr)_minmax(260px,0.8fr)]'
-                  : 'grid-cols-1 min-[900px]:grid-cols-[minmax(280px,0.9fr)_minmax(340px,1.5fr)] min-[1200px]:grid-cols-[minmax(320px,1fr)_minmax(400px,1.7fr)]'
-              )}
-            >
-              <aside className="min-h-0 flex flex-col justify-center overflow-y-auto no-scrollbar transform-gpu">
-                <MetadataPanel />
-              </aside>
+                <div className="relative flex-1 min-h-0 w-full overflow-hidden">
+                  <AnimatePresence mode="wait">
+                    {activeView === 'deck' && (
+                      /* Vinyl deck and listening room */
+                      <motion.div
+                        key="deck-view"
+                        initial={{ opacity: 0, scale: 0.985 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.985 }}
+                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        className={cn(
+                          'absolute inset-0 grid min-h-0 overflow-hidden transform-gpu',
+                          showSideLyrics
+                            ? 'grid-cols-1 min-[900px]:grid-cols-[minmax(280px,0.9fr)_minmax(320px,1.4fr)] min-[1100px]:grid-cols-[minmax(260px,0.8fr)_minmax(320px,1.4fr)_minmax(260px,0.8fr)]'
+                            : 'grid-cols-1 min-[900px]:grid-cols-[minmax(280px,0.9fr)_minmax(340px,1.5fr)] min-[1200px]:grid-cols-[minmax(320px,1fr)_minmax(400px,1.7fr)]'
+                        )}
+                      >
+                        <aside className="min-h-0 flex flex-col justify-center overflow-y-auto no-scrollbar transform-gpu">
+                          <MetadataPanel />
+                        </aside>
 
-              <section className="min-h-0 flex items-center justify-center p-2 min-[900px]:p-4 overflow-hidden transform-gpu">
-                <div className="w-full flex items-center justify-center">
-                  <TurntableEngine />
+                        <section className="min-h-0 flex items-center justify-center p-2 min-[900px]:p-4 overflow-hidden transform-gpu">
+                          <div className="w-full flex items-center justify-center">
+                            <TurntableEngine />
+                          </div>
+                        </section>
+
+                        {showSideLyrics && (
+                          <motion.div
+                            initial={{ opacity: 0, x: 16 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 16 }}
+                            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                            className="hidden min-[1100px]:flex flex-col min-h-0 px-6 py-6 mt-10 mb-2 mr-4 rounded-[36px] border border-panel-line bg-[var(--panel-bg)] shadow-[var(--panel-shadow)]"
+                          >
+                            <div className="flex items-center justify-between pb-3 shrink-0 border-b border-panel-line">
+                              <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] font-bold text-dim">
+                                SIDE LYRICS
+                              </span>
+                              <button
+                                type="button"
+                                onClick={toggleSideLyrics}
+                                className="w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-ui ease-primary cursor-pointer text-dim hover:text-ink hover:bg-ink/[0.08]"
+                                title="Close Side Lyrics"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <div className="relative flex-1 min-h-0">
+                              <SyncedLyrics />
+                            </div>
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    )}
+
+                    {activeView === 'lyrics' && (
+                      /* Immersive lyrics view */
+                      <motion.div
+                        key="lyrics-view"
+                        initial={{ opacity: 0, scale: 0.985 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.985 }}
+                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        className="absolute inset-0 grid grid-cols-1 min-[900px]:grid-cols-[minmax(0,0.65fr)_minmax(280px,0.35fr)] overflow-hidden transform-gpu"
+                      >
+                        <div className="relative h-full min-h-0 flex flex-col px-4 min-[900px]:px-10 py-6 min-[900px]:py-8">
+                          <SyncedLyrics isLargeView />
+                        </div>
+                        <div className="hidden min-[900px]:flex flex-col items-center justify-center p-8 mt-10 mb-2 mr-4 rounded-[36px] border border-panel-line bg-[var(--panel-bg)] shadow-[var(--panel-shadow)]">
+                          <div className="relative w-full max-w-[280px] aspect-square flex items-center justify-center">
+                            <VinylEngine
+                              albumArt={currentTrack?.artworkUrl ?? albumPlaceholder}
+                              className="w-full h-full drop-shadow-[0_16px_26px_rgba(14,9,7,0.3)]"
+                            />
+                          </div>
+
+                          <div className="mt-8 w-full px-4 text-center">
+                            <h2
+                              className="font-serif text-2xl font-medium line-clamp-1 tracking-tight text-ink"
+                              title={currentTrack?.title}
+                            >
+                              {currentTrack?.title ?? '—'}
+                            </h2>
+                            <p className="mt-1 text-sm line-clamp-1 text-dim">
+                              {currentTrack?.artist ?? '—'}
+                            </p>
+                            {currentTrack?.album && currentTrack.album !== currentTrack.title && (
+                              <p className="mt-0.5 text-xs line-clamp-1 text-dim opacity-80">
+                                {currentTrack.album}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {activeView === 'shelf' && (
+                      /* Record shelf */
+                      <motion.div
+                        key="shelf-view"
+                        initial={{ opacity: 0, scale: 0.985 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.985 }}
+                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        className="absolute inset-0 z-10"
+                      >
+                        <RecordShelfView />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              </section>
+              </ContentArea>
+            </div>
 
-              {showSideLyrics && (
-                <motion.div
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 16 }}
-                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                  className="hidden min-[1100px]:flex flex-col min-h-0 px-6 py-6 mt-10 mb-2 mr-4 rounded-[36px] border border-panel-line bg-[var(--panel-bg)] shadow-[var(--panel-shadow)]"
-                >
-                  <div className="flex items-center justify-between pb-3 shrink-0 border-b border-panel-line">
-                    <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] font-bold text-dim">
-                      SIDE LYRICS
-                    </span>
-                    <button
-                      type="button"
-                      onClick={toggleSideLyrics}
-                      className="w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-ui ease-primary cursor-pointer text-dim hover:text-ink hover:bg-ink/[0.08]"
-                      title="Close Side Lyrics"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="relative flex-1 min-h-0">
-                    <SyncedLyrics />
-                  </div>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-          
-          {activeView === 'lyrics' && (
-            /* Immersive lyrics view */
-            <motion.div
-              key="lyrics-view"
-              initial={{ opacity: 0, scale: 0.985 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.985 }}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute inset-0 grid grid-cols-1 min-[900px]:grid-cols-[minmax(0,0.65fr)_minmax(280px,0.35fr)] overflow-hidden transform-gpu"
-            >
-              <div className="relative h-full min-h-0 flex flex-col px-4 min-[900px]:px-10 py-6 min-[900px]:py-8">
-                <SyncedLyrics isLargeView />
-              </div>
-              <div
-                className="hidden min-[900px]:flex flex-col items-center justify-center p-8 mt-10 mb-2 mr-4 rounded-[36px] border border-panel-line bg-[var(--panel-bg)] shadow-[var(--panel-shadow)]"
-              >
-                <div className="relative w-full max-w-[280px] aspect-square flex items-center justify-center">
-                  <VinylEngine
-                    albumArt={currentTrack?.artworkUrl ?? albumPlaceholder}
-                    className="w-full h-full drop-shadow-[0_16px_26px_rgba(14,9,7,0.3)]"
-                  />
-                </div>
-
-                <div className="mt-8 w-full px-4 text-center">
-                  <h2
-                    className="font-serif text-2xl font-medium line-clamp-1 tracking-tight text-ink"
-                    title={currentTrack?.title}
-                  >
-                    {currentTrack?.title ?? '—'}
-                  </h2>
-                  <p className="mt-1 text-sm line-clamp-1 text-dim">{currentTrack?.artist ?? '—'}</p>
-                  {currentTrack?.album && currentTrack.album !== currentTrack.title && (
-                    <p className="mt-0.5 text-xs line-clamp-1 text-dim opacity-80">{currentTrack.album}</p>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {activeView === 'shelf' && (
-            /* Record shelf */
-            <motion.div
-              key="shelf-view"
-              initial={{ opacity: 0, scale: 0.985 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.985 }}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute inset-0 z-10"
-            >
-              <RecordShelfView />
-            </motion.div>
-          )}
-        </AnimatePresence>
-              </div>
-            </ContentArea>
-          </div>
-
-          <ControlDock />
-        </motion.div>
-      )}
+            <ControlDock />
+          </motion.div>
+        )}
       </AnimatePresence>
       {!isScreensaver && <SettingsModal />}
 
