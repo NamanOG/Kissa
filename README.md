@@ -25,7 +25,7 @@
 
 ---
 
-Kissa is a desktop music player and companion inspired by Japan's iconic *Jazz Kissa* (ジャズ喫茶) — intimate spaces built around attentive listening, analog warmth, and atmosphere.
+Kissa is a music vinyl player for windows, inspired by Japan's iconic *Jazz Kissa* (ジャズ喫茶) — intimate spaces built around attentive listening, analog warmth, and atmosphere.
 
 Rather than competing with your music library or acting as another web streaming wrapper, Kissa turns your Windows desktop into a quiet listening space. It centers your listening around a physical turntable, an archival record shelf, ambient lighting environments, synchronized lyrics, and tactile hardware-inspired controls.
 
