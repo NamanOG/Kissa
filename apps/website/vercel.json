@@ -1,4 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "vite"
+  "framework": "vite",
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "kissa-player.vercel.app" }],
+      "destination": "https://kissa.glyphcode.studio/$1",
+      "permanent": true
+    }
+  ]
 }
