@@ -632,6 +632,10 @@ export class UpdateService {
     })
 
     ipcMain.handle('kissa:open-store-page', () => this.openStorePage())
+    // The Store's own "rate and review" page for Kissa (a fixed address, never from the page).
+    ipcMain.handle('kissa:open-store-review', () =>
+      shell.openExternal('ms-windows-store://review/?ProductId=9P3N4X4WM80J').catch(() => this.openStorePage())
+    )
 
     this.startStoreUpdateWatch()
   }

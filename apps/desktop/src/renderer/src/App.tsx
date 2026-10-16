@@ -25,6 +25,7 @@ import { ShareExportMount } from './features/share/ShareExportMount'
 import { ListeningRoom } from './features/listening-room'
 import { ListeningDisplay } from './features/listening-room/ListeningDisplay'
 import { StartupExperience } from './features/startup/StartupExperience'
+import { GrowthPrompts } from './features/growth/GrowthPrompts'
 import { StudyRoom, useStudyEngine } from './features/study'
 
 function KissaApp(): React.JSX.Element {
@@ -262,6 +263,8 @@ function KissaApp(): React.JSX.Element {
       {!isScreensaver && <OnboardingModal />}
 
       {!isScreensaver && <KeyboardHelpOverlay />}
+
+      {hasStarted && !isScreensaver && <GrowthPrompts />}
 
       {!hasStarted && isScreensaver === false && (
         <StartupExperience onComplete={() => setHasStarted(true)} />

@@ -41,6 +41,7 @@ export interface KissaSystemMediaAPI {
   cancelUpdate: () => Promise<UpdateStatusPayload>
   installUpdate: () => Promise<UpdateInstallResult>
   openStorePage: () => Promise<void>
+  openStoreReview: () => Promise<void>
   onUpdateStatusChanged: (callback: (status: UpdateStatusPayload) => void) => () => void
   getDiscordPresence: () => Promise<DiscordPresenceStatus>
   setStudyKeepAwake: (on: boolean) => Promise<boolean>
@@ -134,6 +135,7 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
   cancelUpdate: () => ipcRenderer.invoke('kissa:cancel-update'),
   installUpdate: () => ipcRenderer.invoke('kissa:install-update'),
   openStorePage: () => ipcRenderer.invoke('kissa:open-store-page'),
+  openStoreReview: () => ipcRenderer.invoke('kissa:open-store-review'),
   onUpdateStatusChanged: (callback) => {
     const handler = (_event: unknown, status: UpdateStatusPayload): void => {
       callback(status)
