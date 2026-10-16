@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { HardwareSwitch } from '@renderer/components/ui/HardwareSwitch'
 import { usePlayerStore } from '@renderer/stores/playerStore'
+import { useStudyStore } from '@renderer/stores/studyStore'
 import { LISTENING_ENVIRONMENTS } from './themes'
 import { ThemeCard } from './ThemeCard'
 import { SegmentedTabs } from '@renderer/components/ui/SegmentedTabs'
@@ -22,6 +23,7 @@ export interface SettingsModalProps {
  */
 export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX.Element | null => {
   const isSettingsOpen = usePlayerStore((s) => s.isSettingsOpen)
+  const isStudyActive = useStudyStore((s) => s.active !== null)
   const toggleSettings = usePlayerStore((s) => s.toggleSettings)
   const currentTheme = usePlayerStore((s) => s.theme)
   const setTheme = usePlayerStore((s) => s.setTheme)
@@ -745,6 +747,26 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     )}
                   </div>
 
+                  <div className="flex items-center justify-between gap-4 border-t border-ink/[0.06] px-5 py-[18px] min-[600px]:px-7">
+                    <div>
+                      <p className="text-[13.5px] font-medium text-ink">What&apos;s new</p>
+                      <p className="mt-0.5 text-[11.5px] text-dim">
+                        {isStudyActive ? 'Available after your sitting' : 'Read this version’s release notes'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={isStudyActive}
+                      onClick={() => {
+                        usePlayerStore.getState().setIsSettingsOpen(false)
+                        usePlayerStore.getState().setActiveView('deck')
+                        usePlayerStore.getState().setIsWhatsNewOpen(true)
+                      }}
+                      className="shrink-0 cursor-pointer rounded-xl border border-ink/10 bg-ink/[0.06] px-3.5 py-1.5 text-[12px] font-bold text-ink transition-colors hover:bg-ink/[0.12] focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone active:scale-95 disabled:cursor-default disabled:opacity-50"
+                    >
+                      View changes
+                    </button>
+                  </div>
                   <AboutRow />
                 </div>
               </div>

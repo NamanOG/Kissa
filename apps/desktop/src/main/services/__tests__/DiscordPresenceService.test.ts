@@ -213,9 +213,14 @@ describe('DiscordPresenceService', () => {
     await flush(5_000)
     const a = h.last().activities.at(-1)!
     expect(a.type).toBe(0)
-    expect(a.details).toBe('Studying · Rain room')
+    expect(a.details).toBe('Focusing · Rain room')
     // The Apple Music song is shared, so it rides along on the study card.
-    expect(a.state).toBe('♪ Paper Lanterns · The Quiet Hours')
+    expect(a.state).toBe('Paper Lanterns · The Quiet Hours')
+    expect(a.assets).toMatchObject({
+      large_image: 'https://is1-ssl.mzstatic.com/image/thumb/x/1200x1200bb.jpg',
+      large_text: 'Night Shift',
+      small_image: 'https://kissa.glyphcode.studio/favicon.png'
+    })
     expect(a.timestamps).toEqual({ end: Math.round(endsAt) })
     expect(a.buttons).toEqual([{ label: 'Get Kissa for Windows', url: 'https://apps.microsoft.com/detail/9p3n4x4wm80j' }])
     expect(h.service.getStatus().state).toBe('studying')
@@ -224,6 +229,8 @@ describe('DiscordPresenceService', () => {
     h.service.onMedia(track({ sourceAppId: 'Spotify.exe', title: 'Green Room' }))
     await flush(5_000)
     expect(h.last().activities.at(-1)!.state).toBe('1 of 3 steps done')
+    expect(h.last().activities.at(-1)!.assets).toMatchObject({ large_image: 'https://kissa.glyphcode.studio/favicon.png' })
+    expect(JSON.stringify(h.last().activities.at(-1))).not.toContain('mzstatic')
 
     h.service.setStudy({ phase: 'break', room: 'Rain room', endsAt: Date.now() + 5 * 60_000 })
     await flush(5_000)
@@ -232,6 +239,48 @@ describe('DiscordPresenceService', () => {
     h.service.setStudy(null)
     await flush(5_000)
     expect(h.last().activities.at(-1)).toBeNull()
+  })
+
+  it('refreshes a study cover when its public match arrives after the title', async () => {
+    const h = setup()
+    await flush()
+    h.service.onMedia(track({ artworkDataUrl: 'data:image/jpeg;base64,AAAA' }))
+    h.service.setStudy({ phase: 'focus', room: 'Rain room', endsAt: Date.now() + 60_000 })
+    await flush(5_000)
+    expect(h.last().activities.at(-1)!.assets).toMatchObject({ large_image: 'https://kissa.glyphcode.studio/favicon.png' })
+    const count = h.last().activities.length
+    h.service.onMedia(track({ artworkDataUrl: 'data:image/jpeg;base64,AAAA', publicArtworkUrl: 'https://example.com/cover.jpg' }))
+    await flush(5_000)
+    expect(h.last().activities).toHaveLength(count + 1)
+    expect(h.last().activities.at(-1)!.assets).toMatchObject({ large_image: 'https://example.com/cover.jpg' })
+    expect(JSON.stringify(h.last().activities.at(-1))).not.toContain('data:image')
+  })
+
+  it('drops the study album cover and song when Spotify sharing is turned off', async () => {
+    const h = setup(true, '123456789', true)
+    await flush()
+    h.service.onMedia(track({ sourceAppId: 'Spotify.exe' }))
+    h.service.setStudy({ phase: 'focus', room: 'Forest room', round: 2 })
+    await flush(5_000)
+    expect(h.last().activities.at(-1)!.assets).toMatchObject({ large_image: track().artworkDataUrl })
+    h.service.setShareSpotify(false)
+    await flush(5_000)
+    const activity = h.last().activities.at(-1)!
+    expect(activity.state).toBe('Focus block 2')
+    expect(JSON.stringify(activity)).not.toContain('Paper Lanterns')
+    expect(activity.assets).toMatchObject({ large_image: 'https://kissa.glyphcode.studio/favicon.png' })
+  })
+
+  it('keeps the study cover on a paused sitting without a running timer', async () => {
+    const h = setup()
+    await flush()
+    h.service.onMedia(track())
+    h.service.setStudy({ phase: 'paused', room: 'Rain room', endsAt: Date.now() + 60_000 })
+    await flush(5_000)
+    const activity = h.last().activities.at(-1)!
+    expect(activity.details).toBe('Study paused · Rain room')
+    expect(activity.timestamps).toBeUndefined()
+    expect(activity.assets).toMatchObject({ large_image: track().artworkDataUrl })
   })
 
   it('keeps study sessions off Discord when that switch is off', async () => {

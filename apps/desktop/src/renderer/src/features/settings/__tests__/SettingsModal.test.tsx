@@ -62,6 +62,15 @@ describe('SettingsModal Windows Screensaver integration', () => {
     ).toBeInTheDocument()
   })
 
+  it('opens release notes from System settings without leaving Settings over them', async () => {
+    usePlayerStore.setState({ isWhatsNewOpen: false })
+    render(<SettingsModal />)
+    fireEvent.click(screen.getByRole('button', { name: 'View changes' }))
+    expect(usePlayerStore.getState().isSettingsOpen).toBe(false)
+    expect(usePlayerStore.getState().isWhatsNewOpen).toBe(true)
+    expect(usePlayerStore.getState().activeView).toBe('deck')
+  })
+
   it('handles registration flow when clicking Set as Windows Screensaver', async () => {
     render(<SettingsModal />)
 

@@ -46,7 +46,8 @@ const FIRST_ASK_DELAY_MS = 45_000
  */
 export function GrowthPrompts(): React.JSX.Element | null {
   const reduced = useReducedMotion()
-  const [whatsNew, setWhatsNew] = useState(false)
+  const whatsNew = usePlayerStore((s) => s.isWhatsNewOpen)
+  const setWhatsNew = usePlayerStore((s) => s.setIsWhatsNewOpen)
   const [version, setVersion] = useState('')
   const [askRating, setAskRating] = useState(false)
   const busy = usePlayerStore(
@@ -56,6 +57,7 @@ export function GrowthPrompts(): React.JSX.Element | null {
 
   useEffect(() => {
     let alive = true
+    let ratingTimer: number | undefined
     const now = Date.now()
     const state = loadGrowth(now)
     state.launches += 1
@@ -64,19 +66,22 @@ export function GrowthPrompts(): React.JSX.Element | null {
       const v = (await window.electron?.getAppVersion?.().catch(() => '')) || ''
       if (!alive) return
       const { show, next } = whatsNewDecision(state, v, firstRun)
-      saveGrowth(next)
+      // Do not consume the update notice while it is blocked by another screen.
+      // Fresh installs still establish their baseline without showing release notes.
+      saveGrowth(show ? { ...next, lastSeenVersion: state.lastSeenVersion } : next)
       setVersion(v)
       if (show) setWhatsNew(true)
       const status = await window.electron?.getUpdateStatus?.().catch(() => null)
       if (!alive || !status?.isStoreManaged || show) return
       if (shouldAskForRating(next, Date.now())) {
-        window.setTimeout(() => alive && setAskRating(true), FIRST_ASK_DELAY_MS)
+        ratingTimer = window.setTimeout(() => alive && setAskRating(true), FIRST_ASK_DELAY_MS)
       }
     })()
     return (): void => {
       alive = false
+      window.clearTimeout(ratingTimer)
     }
-  }, [])
+  }, [setWhatsNew])
 
   const answerRating = (answer: 'rate' | 'later' | 'never'): void => {
     setAskRating(false)
@@ -86,6 +91,12 @@ export function GrowthPrompts(): React.JSX.Element | null {
 
   const showWhatsNew = whatsNew && !busy && !studying
   const showRating = askRating && !whatsNew && !busy && !studying
+
+  useEffect(() => {
+    if (!showWhatsNew || !version) return
+    const state = loadGrowth(Date.now())
+    saveGrowth({ ...state, lastSeenVersion: version })
+  }, [showWhatsNew, version])
 
   return createPortal(
     <>

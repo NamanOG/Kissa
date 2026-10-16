@@ -122,7 +122,7 @@ Kissa includes a dedicated Windows screensaver implementation that renders the f
 
 ### How It Works
 
-1. **Supervisor (`Kissa.scr`):** A lightweight C# .NET 8 native Windows executable that receives Windows screensaver arguments (`/s`, `/c`, `/p`). On `/s`, it spawns `Kissa.exe --screensaver` and waits for the child process to terminate.
+1. **Supervisor (`Kissa.scr`):** A lightweight C# .NET 10 native Windows executable that receives Windows screensaver arguments (`/s`, `/c`, `/p`). On `/s`, it spawns `Kissa.exe --screensaver` and waits for the child process to terminate.
 2. **Renderer (`Kissa.exe --screensaver`):** Electron initializes directly into the `ListeningDisplay` component with user chrome stripped. Audio hooks listen for wake input (mouse movement exceeding threshold, key press, or click) and exit cleanly.
 3. **Safe Registry Management:** Screensaver registration is strictly opt-in via **Settings → Windows Screensaver**:
    - Updates `HKCU\Control Panel\Desktop\SCRNSAVE.EXE`.
@@ -178,8 +178,8 @@ Kissa includes a dedicated Windows screensaver implementation that renders the f
 | **Desktop Shell** | Electron 39 | Windows desktop lifecycle, native window management, multi-process IPC |
 | **Build Tooling** | `electron-vite` / Vite 7 | Fast development HMR and production bundling |
 | **User Interface** | React 19 + TypeScript | UI component architecture and strict type safety |
-| **Native SMTC Helper** | C# .NET 8 (`smtc-helper.exe`) | WinRT `Windows.Media.Control` integration for external media discovery and seeking |
-| **Screensaver Supervisor** | C# .NET 8 (`Kissa.scr`) | Native Windows screensaver protocol bridge (`/s`, `/c`, `/p`) |
+| **Native SMTC Helper** | C# .NET 10 (`smtc-helper.exe`) | WinRT `Windows.Media.Control` integration for external media discovery and seeking |
+| **Screensaver Supervisor** | C# .NET 10 (`Kissa.scr`) | Native Windows screensaver protocol bridge (`/s`, `/c`, `/p`) |
 | **State Management** | Zustand 5 | Application state, player store, and user preferences |
 | **Styling** | TailwindCSS v3 + CSS Variables | Hardware design system, typography tokens, and atmospheric themes |
 | **Motion & Animation** | Web Animations API + Framer Motion 12 | Smooth 60 FPS vinyl rotation, tonearm physics, and UI transitions |
@@ -205,7 +205,7 @@ Kissa includes a dedicated Windows screensaver implementation that renders the f
 - Windows 10 or Windows 11 (64-bit)
 - Node.js `>= 20.0.0`
 - npm `>= 10.0.0`
-- .NET 8 SDK (required to compile `smtc-helper` and `KissaScreensaver`)
+- .NET 10 SDK (required to compile the current `smtc-helper` and `KissaScreensaver` projects)
 
 ### Local Setup
 
@@ -216,6 +216,10 @@ cd Kissa
 
 # Install dependencies
 npm install
+
+# Build the bundled Windows helpers before the first development run
+npm run build:smtc
+npm run build:screensaver
 
 # Start development mode
 npm run dev
@@ -248,6 +252,9 @@ npm run build:unpack
 ```bash
 # Package production installer and portable binary
 npm run build:win
+
+# Build the separate Microsoft Store upload package (does not publish)
+npm run build:store
 ```
 
 Production artifacts are output to `apps/desktop/dist/`:

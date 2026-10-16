@@ -68,6 +68,7 @@ export interface PlayerState {
   isSettingsOpen: boolean
   settingsTab: SettingsTab
   isOnboardingOpen: boolean
+  isWhatsNewOpen: boolean
   needleSound: boolean
   physicalFeedback: boolean
   autoScrollLyrics: boolean
@@ -113,6 +114,7 @@ export interface PlayerState {
   setSettingsTab: (tab: SettingsTab) => void
   toggleSettings: () => void
   setIsOnboardingOpen: (open: boolean) => void
+  setIsWhatsNewOpen: (open: boolean) => void
   toggleOnboarding: () => void
   setNeedleSound: (enabled: boolean) => void
   setPhysicalFeedback: (enabled: boolean) => void
@@ -221,6 +223,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   isSettingsOpen: false,
   settingsTab: 'room',
   isOnboardingOpen: getInitialOnboarding(),
+  isWhatsNewOpen: false,
   needleSound: true,
   physicalFeedback: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_physical_feedback') !== 'false' : true,
   autoScrollLyrics: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_auto_scroll_lyrics') !== 'false' : true,
@@ -359,6 +362,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     }
     set({ isOnboardingOpen })
   },
+  setIsWhatsNewOpen: (isWhatsNewOpen) => set({ isWhatsNewOpen }),
   toggleOnboarding: () =>
     set((state) => {
       const next = !state.isOnboardingOpen

@@ -65,6 +65,13 @@ function fit(text: string | undefined): string | undefined {
   return padded.length > 128 ? `${padded.slice(0, 127)}…` : padded
 }
 
+/** Discord needs a public image URL; embedded/local covers must never be uploaded. */
+function publicCover(payload: SystemMediaPayload | null): string | undefined {
+  if (payload?.publicArtworkUrl?.startsWith('https://')) return payload.publicArtworkUrl
+  if (payload?.artworkDataUrl?.startsWith('https://')) return payload.artworkDataUrl
+  return undefined
+}
+
 interface Desired {
   key: string
   activity: Record<string, unknown>
@@ -239,12 +246,7 @@ export class DiscordPresenceService {
     const details = fit(p.title)
     const state = fit(p.artist && p.artist !== 'Unknown Artist' ? p.artist : undefined)
     // Only a public cover Kissa matched to this exact album; an embedded image is never uploaded.
-    const art =
-      p.publicArtworkUrl && p.publicArtworkUrl.startsWith('https://')
-        ? p.publicArtworkUrl
-        : p.artworkDataUrl && p.artworkDataUrl.startsWith('https://')
-          ? p.artworkDataUrl
-          : undefined
+    const art = publicCover(p)
     const album = fit(p.album && p.album !== p.title ? p.album : undefined)
 
     const activity: Record<string, unknown> = { type: 2, details }
@@ -280,18 +282,18 @@ export class DiscordPresenceService {
   }
 
   /**
-   * A study session reads "Playing Kissa" with the room and a countdown (or time studied).
+   * A study session keeps the room and focus timer beside the shared song's cover.
    * The intention and steps stay private; only how many steps are done is shown. The song
    * appears only when it comes from a player the person chose to share.
    */
   private studyDesired(s: StudyPresence): Desired {
     const room = fit(s.room) ?? 'Study Room'
     const details =
-      s.phase === 'break' ? `On a break · ${room}` : s.phase === 'paused' ? `Studying · ${room} (paused)` : `Studying · ${room}`
+      s.phase === 'break' ? `On a break · ${room}` : s.phase === 'paused' ? `Study paused · ${room}` : `Focusing · ${room}`
     const p = this.latest
     const song = p && p.isPlaying && p.title && p.title !== 'Unknown Title' && this.isShared(p.sourceAppId) ? p : null
     const state = song
-      ? fit(`♪ ${song.title}${song.artist && song.artist !== 'Unknown Artist' ? ` · ${song.artist}` : ''}`)
+      ? fit(`${song.title}${song.artist && song.artist !== 'Unknown Artist' ? ` · ${song.artist}` : ''}`)
       : s.tasksTotal && s.tasksTotal > 0
         ? `${Math.min(s.tasksDone ?? 0, s.tasksTotal)} of ${s.tasksTotal} steps done`
         : s.phase === 'focus' && s.round
@@ -300,17 +302,28 @@ export class DiscordPresenceService {
 
     const activity: Record<string, unknown> = { type: 0, details: fit(details) }
     if (state) activity.state = state
-    activity.assets = {
-      large_image: KISSA_BADGE_URL,
-      large_text: 'Kissa Study Room',
-      ...(this.useLinks ? { large_url: KISSA_STORE_URL } : {})
-    }
+    const art = publicCover(song)
+    const album = song?.album && song.album !== song.title ? fit(song.album) : undefined
+    activity.assets = art
+      ? {
+          large_image: art,
+          large_text: album ?? fit(song?.title),
+          small_image: KISSA_BADGE_URL,
+          small_text: 'Kissa Study Room',
+          ...(this.useLinks ? { small_url: KISSA_STORE_URL } : {})
+        }
+      : {
+          large_image: KISSA_BADGE_URL,
+          large_text: 'Kissa Study Room',
+          ...(this.useLinks ? { large_url: KISSA_STORE_URL } : {})
+        }
     if (this.useButtons) activity.buttons = [{ label: 'Get Kissa for Windows', url: KISSA_STORE_URL }]
     if (s.phase !== 'paused') {
       if (s.endsAt && s.endsAt > this.now()) activity.timestamps = { end: Math.round(s.endsAt) }
       else if (s.startedAt) activity.timestamps = { start: Math.round(s.startedAt) }
     }
-    const key = JSON.stringify(['study', details, state, s.phase, s.endsAt ? Math.round(s.endsAt / 5000) : null, s.startedAt ? Math.round(s.startedAt / 5000) : null])
+    // Covers often arrive after track metadata. Include them so a later match refreshes the card.
+    const key = JSON.stringify(['study', details, state, art, album, s.phase, s.endsAt ? Math.round(s.endsAt / 5000) : null, s.startedAt ? Math.round(s.startedAt / 5000) : null])
     return { key, activity, paused: false, study: true }
   }
 
