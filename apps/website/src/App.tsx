@@ -6,6 +6,7 @@ import { Waveline } from './components/Waveline'
 import { PluckString } from './components/ui/PluckString'
 import { Modes } from './components/Modes'
 import { Rooms } from './components/Rooms'
+import { StudyRoom } from './components/StudyRoom'
 import { Sleeve } from './components/Sleeve'
 import { Faq } from './components/Faq'
 import { DownloadCta } from './components/DownloadCta'
@@ -24,6 +25,8 @@ export default function App() {
         <Modes />
         <PluckString />
         <Rooms />
+        <PluckString />
+        <StudyRoom />
         <Sleeve />
         <Faq />
         <PluckString />

@@ -13,6 +13,8 @@ interface TangibleHeadingProps {
   className?: string
   id?: string
   delay?: number
+  /** The element to render; the hero's tagline is a paragraph under the page's h1. */
+  as?: 'h1' | 'h2' | 'p'
 }
 
 /**
@@ -24,7 +26,7 @@ interface TangibleHeadingProps {
  * width and weight axes per letter; nothing runs on touch devices or under
  * reduced motion, and the heading stays a normal <h1> for assistive tech.
  */
-export function TangibleHeading({ lines, className, id, delay = 0 }: TangibleHeadingProps) {
+export function TangibleHeading({ lines, className, id, delay = 0, as: Tag = 'h1' }: TangibleHeadingProps) {
   const reduced = useReducedMotion()
   const rootRef = useRef<HTMLHeadingElement>(null)
 
@@ -73,7 +75,7 @@ export function TangibleHeading({ lines, className, id, delay = 0 }: TangibleHea
   }, [reduced])
 
   return (
-    <h1 ref={rootRef} className={className} id={id} aria-label={lines.join(' ')}>
+    <Tag ref={rootRef as React.RefObject<HTMLHeadingElement & HTMLParagraphElement>} className={className} id={id} aria-label={lines.join(' ')}>
       {lines.map((line, i) => (
         <span
           key={i}
@@ -99,6 +101,6 @@ export function TangibleHeading({ lines, className, id, delay = 0 }: TangibleHea
           </motion.span>
         </span>
       ))}
-    </h1>
+    </Tag>
   )
 }

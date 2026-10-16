@@ -6,6 +6,7 @@ import { asset } from '../lib/asset'
 const NAV_ITEMS = [
   { label: 'Modes', id: 'modes' },
   { label: 'Rooms', id: 'rooms' },
+  { label: 'Study', id: 'study' },
   { label: 'Features', id: 'notes' }
 ]
 

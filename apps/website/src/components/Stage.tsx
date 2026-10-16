@@ -326,11 +326,11 @@ export function Stage() {
         </div>
 
         <Chapter progress={progress} index={0} active={step === 0} className={styles.hero}>
-          <p className={`label ${styles.kicker}`}>
+          <h1 className={`label ${styles.kicker}`}>
             <Seal />
             Kissa <span className={styles.dash} /> A vinyl player for Windows
-          </p>
-          <TangibleHeading className={styles.heroTitle} lines={['Music,', 'made tangible.']} delay={0.1} />
+          </h1>
+          <TangibleHeading as="h2" className={styles.heroTitle} lines={['Music,', 'made tangible.']} delay={0.1} />
           <motion.div
             className={styles.heroBody}
             initial={reduced ? false : { opacity: 0, y: 16 }}

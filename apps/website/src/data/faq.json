@@ -8,6 +8,14 @@
     "a": "Yes. Kissa reads the Windows system media session, so it picks up Spotify, Apple Music, TIDAL, local media players and music playing in Chromium-based browsers. There is nothing to connect and no account to sign in to."
   },
   {
+    "q": "Does Kissa have a study or focus mode?",
+    "a": "Yes. The Study Room is a full-window room for focused work with your music still on the turntable. Choose Rain, Snow, Forest, Night or Fireplace, each with a real field recording, set a sitting of 25, 50 or 90 minutes with breaks, break your task into small steps, and see your week against a daily goal."
+  },
+  {
+    "q": "Can Kissa show what I am listening to on Discord?",
+    "a": "Yes, if you turn it on. Kissa can show the Apple Music track you are playing, and Spotify too if you choose, on your Discord profile with its cover. During a study session it shows the room and the timer instead, never what you are working on. It is off until you switch it on in Settings."
+  },
+  {
     "q": "Is Kissa free?",
     "a": "Yes. Kissa is free, with no ads, no account and no telemetry. The source code is public on GitHub so anyone can see what it does."
   },

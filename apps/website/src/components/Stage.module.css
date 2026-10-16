@@ -150,6 +150,9 @@
 }
 
 .kicker {
+  /* The page's h1: keeps the label's look, not the display heading's. */
+  font-stretch: normal;
+  line-height: 1.4;
   display: flex;
   align-items: center;
   gap: var(--space-3);

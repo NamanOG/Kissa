@@ -21,9 +21,9 @@ function structuredData() {
       '@type': 'SoftwareApplication',
       '@id': `${SITE_URL}#software`,
       name: 'Kissa',
-      alternateName: 'Kissa vinyl player',
+      alternateName: ['Kissa vinyl player', 'Kissa: Vinyl Player for Windows'],
       description:
-        'A free vinyl player for Windows that turns whatever is playing in Spotify, Apple Music, TIDAL or a local player into a record on a desktop turntable, with a draggable tonearm, synced lyrics and eight listening rooms.',
+        'A free vinyl player for Windows that turns whatever is playing in Spotify, Apple Music, TIDAL or a local player into a record on a desktop turntable, with a draggable tonearm, synced lyrics, eight listening rooms and a Study Room for focused work.',
       applicationCategory: 'MultimediaApplication',
       applicationSubCategory: 'Music player',
       operatingSystem: 'Windows 10, Windows 11',
@@ -41,7 +41,10 @@ function structuredData() {
         'Eight listening rooms',
         'Fullscreen listening display',
         'Native Windows screensaver',
-        'Record shelf of listening history'
+        'Record shelf of listening history',
+        'Study Room with five calm rooms, real nature recordings and a focus timer',
+        'Weekly study view with a daily goal',
+        'Optional Discord status for music and study sessions'
       ],
       author: { '@id': `${SITE_URL}#author` }
     },
