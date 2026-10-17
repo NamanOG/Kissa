@@ -116,6 +116,14 @@ export function Modes() {
                 <span className="label">0{i + 1}</span>
                 <h3 className={styles.name}>{mode.name}</h3>
                 <p className={styles.desc}>{mode.description}</p>
+                <img
+                  className={styles.mobilePreview}
+                  src={asset(`media/modes/${mode.clip}.webp`)}
+                  alt={`Kissa in ${mode.name} mode`}
+                  width={1280}
+                  height={720}
+                  loading="lazy"
+                />
               </li>
             ))}
           </ol>

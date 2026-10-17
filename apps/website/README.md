@@ -25,6 +25,8 @@ The page is a short scrollytelling sequence carried by the Kissa record itself. 
 
 Section boundaries are `ui/PluckString`: hairlines that bow and ring like a string when the pointer crosses them.
 
+At widths up to 860px, the hero and its four explanations use normal document flow, with the record below the download actions. Each mode pairs its description with a lazy-loaded app screenshot instead of pinning a shared video over the text. Desktop keeps the scroll-driven stage and mode videos. The Study Room preview preserves the entire 16:9 app window and is limited by both content width and the available desktop viewport height.
+
 Motion references (from the UI Reference System): `PluckString`, `TangibleHeading` and `Waveline` adapt Fancy Components' Elastic Line, Variable Font Cursor Proximity and Marquee Along SVG Path. All of it is disabled under `prefers-reduced-motion`, and pointer effects are off on touch devices.
 
 Design rules: flat colour for the interface (no decorative gradients, glows or textures), copper as the single accent, hierarchy from type, space and thin rules. Gradients appear only inside `ui/Vinyl` and `ui/Tonearm`, where they render physical materials.
@@ -34,6 +36,7 @@ Design rules: flat colour for the interface (no decorative gradients, glows or t
 - **Site URL**: set once in `vite.config.ts` (`SITE_URL`, or the `KISSA_SITE_URL` environment variable). The canonical link, social preview image, `robots.txt`, `sitemap.xml`, structured data and the asset base path are all derived from it.
 - **Deploy**: Vercel builds and publishes `apps/website` on every push to `main`. The live address is https://kissa.glyphcode.studio/.
 - **Structured data**: `SoftwareApplication` (Store link, price) and `FAQPage` are generated at build time; the FAQ text comes from `src/data/faq.json`, which also feeds the visible FAQ section.
+- **Link preview**: `public/og-kissa-deck.png` is the original 1920×1080 app screenshot, kept lossless for Open Graph, Twitter/X and structured data. Its metadata dimensions match the image; capture processing does not overwrite this hand-picked asset.
 - **Files in `public/`** must be referenced through `asset()` (`src/lib/asset.ts`) so they resolve under a sub-path such as `/Kissa/`.
 - **Media**: `python scripts/process-captures.py` turns the recordings in `captures/` into the clips, stills and link-preview card under `public/`.
 - **Rooms**: `python scripts/sync-rooms.py` regenerates `src/data/rooms.ts` from the desktop app's `themes.ts`; run it when the app's rooms change.

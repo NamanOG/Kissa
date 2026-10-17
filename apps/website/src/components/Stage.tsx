@@ -68,12 +68,13 @@ interface ChapterProps {
   progress: MotionValue<number>
   index: number
   active: boolean
+  compact: boolean
   className?: string
   children: React.ReactNode
 }
 
 /** One layer of copy that fades in for its fifth of the scroll, then out. */
-function Chapter({ progress, index, active, className = '', children }: ChapterProps) {
+function Chapter({ progress, index, active, compact, className = '', children }: ChapterProps) {
   const [a, b] = range(index)
   const first = index === 0
   const last = index === STEPS - 1
@@ -86,9 +87,10 @@ function Chapter({ progress, index, active, className = '', children }: ChapterP
   return (
     <motion.div
       className={`${styles.chapter} ${className}`}
-      style={{ opacity, y }}
-      data-active={active}
-      aria-hidden={active ? undefined : true}
+      style={compact ? { opacity: 1, y: 0 } : { opacity, y }}
+      data-active={compact || active}
+      aria-hidden={compact || active ? undefined : true}
+      inert={!compact && !active}
     >
       <div className={`container ${styles.chapterInner}`}>{children}</div>
     </motion.div>
@@ -112,7 +114,7 @@ export function Stage() {
   const [source, setSource] = useState(0)
   const [lyric, setLyric] = useState(0)
   const [time, setTime] = useState('0:00')
-  const [compact, setCompact] = useState(false)
+  const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 860px)').matches)
 
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 860px)')
@@ -127,9 +129,9 @@ export function Stage() {
 
   /* The deck starts large beside the headline, then settles for the story. */
   const intro = range(0)
-  const scale = useTransform(progress, intro, compact ? [1.25, 1] : [1.15, 1])
-  const x = useTransform(progress, intro, compact ? ['0%', '0%'] : ['5%', '0%'])
-  const y = useTransform(progress, intro, compact ? ['160%', '0%'] : ['12%', '0%'])
+  const scale = useTransform(progress, intro, [1.15, 1])
+  const x = useTransform(progress, intro, ['5%', '0%'])
+  const y = useTransform(progress, intro, ['12%', '0%'])
 
   /* Step 2 - the listening ring draws itself around the label. */
   const listenLength = useTransform(progress, [0.4, 0.56], [0, 1])
@@ -153,13 +155,14 @@ export function Stage() {
   const [dragging, setDragging] = useState(false)
 
   const renderArm = () => {
-    const deg = held.current ?? armAngle.get()
+    const deg = compact ? ARM_OUTER_GROOVE : held.current ?? armAngle.get()
     // Lifted (scaled up a touch, as the app does) until the stylus lands.
-    const lift = grip.current ? 1.025 : held.current === null && progress.get() < NEEDLE_DOWN ? 1.015 : 1
+    const lift = compact ? 1 : grip.current ? 1.025 : held.current === null && progress.get() < NEEDLE_DOWN ? 1.015 : 1
     if (armRef.current) armRef.current.style.transform = `rotate(${deg}deg) scale(${lift})`
   }
 
   useMotionValueEvent(armAngle, 'change', (deg) => {
+    if (compact) return
     // Hand the arm back to scroll once scrolling has caught up with it.
     if (held.current !== null && !grip.current && Math.abs(deg - held.current) < 0.6) held.current = null
     renderArm()
@@ -237,6 +240,7 @@ export function Stage() {
   }
 
   useMotionValueEvent(progress, 'change', (v) => {
+    if (compact) return
     setStep(Math.min(STEPS - 1, Math.max(0, Math.floor(v * STEPS + 0.02))))
 
     const [a1, b1] = range(1)
@@ -296,7 +300,7 @@ export function Stage() {
     <section ref={sectionRef} className={styles.stage} aria-label="Kissa, and how it works">
       <div className={styles.sticky}>
         <div className={styles.deckSlot} aria-hidden="true">
-          <motion.div className={styles.deck} style={{ scale, x, y }}>
+          <motion.div className={styles.deck} style={compact ? { scale: 1, x: 0, y: 0 } : { scale, x, y }}>
             <Vinyl ref={spinRef} platter strobeRef={strobeRef} />
 
             <svg viewBox="0 0 400 400" className={styles.overlay}>
@@ -307,7 +311,7 @@ export function Stage() {
               />
             </svg>
 
-            <Tonearm ref={armRef} className={styles.tonearm}>
+            <Tonearm ref={armRef} className={styles.tonearm} angle={compact ? ARM_OUTER_GROOVE : undefined}>
               <div
                 className={`${styles.grip} ${dragging ? styles.gripHeld : ''}`}
                 onPointerDown={onGrab}
@@ -318,14 +322,14 @@ export function Stage() {
               />
             </Tonearm>
 
-            <motion.p className={styles.status} style={{ opacity: statusOpacity }}>
+            <motion.p className={styles.status} style={{ opacity: compact ? 1 : statusOpacity }}>
               <span className={styles.statusDot} />
-              {status}
+              {compact ? <>Your music <i /> 33⅓ RPM</> : status}
             </motion.p>
           </motion.div>
         </div>
 
-        <Chapter progress={progress} index={0} active={step === 0} className={styles.hero}>
+        <Chapter progress={progress} index={0} active={step === 0} compact={compact} className={styles.hero}>
           <h1 className={`label ${styles.kicker}`}>
             <Seal />
             Kissa <span className={styles.dash} /> A vinyl player for Windows
@@ -350,7 +354,7 @@ export function Stage() {
           </motion.div>
         </Chapter>
 
-        <Chapter progress={progress} index={1} active={step === 1}>
+        <Chapter progress={progress} index={1} active={step === 1} compact={compact}>
           <span className="label">01 &nbsp;Play</span>
           <h2 className={styles.stepTitle}>
             Play music the way <em>you already do.</em>
@@ -360,7 +364,7 @@ export function Stage() {
           </p>
         </Chapter>
 
-        <Chapter progress={progress} index={2} active={step === 2}>
+        <Chapter progress={progress} index={2} active={step === 2} compact={compact}>
           <span className="label">02 &nbsp;Listen</span>
           <h2 className={styles.stepTitle}>
             Kissa listens <em>to Windows.</em>
@@ -371,18 +375,19 @@ export function Stage() {
           </p>
         </Chapter>
 
-        <Chapter progress={progress} index={3} active={step === 3}>
+        <Chapter progress={progress} index={3} active={step === 3} compact={compact}>
           <span className="label">03 &nbsp;Turn</span>
           <h2 className={styles.stepTitle}>
             The needle drops. <em>The record turns.</em>
           </h2>
           <p className={styles.stepBody}>
-            A platter with real inertia and a tonearm that tracks the song. Drag the needle anywhere to seek, the way
-            this page is doing now.
+            A platter with real inertia and a tonearm that tracks the song. {compact
+              ? 'In the app, drag the needle anywhere to seek.'
+              : 'Drag the needle anywhere to seek, the way this page is doing now.'}
           </p>
         </Chapter>
 
-        <Chapter progress={progress} index={4} active={step === 4}>
+        <Chapter progress={progress} index={4} active={step === 4} compact={compact}>
           <span className="label">04 &nbsp;Stay</span>
           <h2 className={styles.stepTitle}>
             Lyrics, <em>in time.</em>
@@ -392,10 +397,10 @@ export function Stage() {
               className={styles.lyrics}
               role="list"
               aria-label="Example of synced lyric lines"
-              style={{ '--line': lyric } as React.CSSProperties}
+              style={{ '--line': compact ? 1 : lyric } as React.CSSProperties}
             >
               {LYRICS.map((line, i) => (
-                <li key={line} data-distance={Math.min(3, Math.abs(i - lyric))}>
+                <li key={line} data-distance={Math.min(3, Math.abs(i - (compact ? 1 : lyric)))}>
                   {line}
                 </li>
               ))}

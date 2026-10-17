@@ -106,8 +106,15 @@
 }
 
 @media (max-width: 640px) {
+  .nav {
+    padding-inline: var(--space-3);
+    top: var(--space-3);
+  }
+
   .bar {
-    padding-left: var(--space-3);
+    width: 100%;
+    max-width: 28rem;
+    padding-left: var(--space-2);
     gap: 0;
   }
 
@@ -116,11 +123,27 @@
   }
 
   .brand {
+    justify-content: center;
+    min-width: 2.25rem;
+    min-height: 2.75rem;
+    margin-right: 0;
+  }
+
+  .links {
+    flex: 1;
+    justify-content: center;
     margin-right: var(--space-1);
   }
 
   .link {
-    padding: 0 var(--space-2);
+    height: 2.75rem;
+    padding-inline: clamp(0.25rem, 1.6vw, 0.5rem);
+    font-size: 0.8125rem;
+  }
+
+  /* Active markers must not change the width of the mobile navigation. */
+  .disc {
+    display: none;
   }
 
   /* Features is reachable by scrolling; keep the bar to what fits */

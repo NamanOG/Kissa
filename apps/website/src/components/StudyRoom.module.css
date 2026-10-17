@@ -16,12 +16,15 @@
   gap: var(--space-5);
 }
 
-/* Viewer: the app itself, full width */
+/* Keep the complete app window and its controls visible together, even on
+   shorter desktop displays. The screenshot determines the frame's height. */
 
 .viewer {
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
+  width: min(100%, 1100px, calc((100svh - var(--nav-height) - 10rem) * 16 / 9));
+  margin-inline: auto;
 }
 
 .frame {
@@ -38,7 +41,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   opacity: 0;
   transition: opacity 1.1s var(--ease-out);
 }
@@ -62,7 +65,7 @@
 }
 
 .tab {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 var(--space-5);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
@@ -135,10 +138,28 @@
   .header {
     grid-template-columns: 1fr;
   }
+
+  .viewer {
+    width: 100%;
+  }
+
+  .controls {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 520px) {
   .features {
     grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+
+  .tabs {
+    gap: var(--space-2);
+  }
+
+  .tab {
+    padding-inline: var(--space-3);
   }
 }

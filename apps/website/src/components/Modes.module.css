@@ -45,6 +45,10 @@
   max-width: 34ch;
 }
 
+.mobilePreview {
+  display: none;
+}
+
 /* Pinned screen */
 
 .screen {
@@ -113,23 +117,35 @@
     gap: 0;
   }
 
-  /* Screen pins under the nav; the list scrolls beneath it */
+  /* Each explanation keeps its own preview on phones. A pinned screen
+     consumes too much of a short viewport and separates copy from its mode. */
   .screen {
-    order: -1;
-    top: calc(var(--nav-height) + var(--space-4));
-    height: auto;
-    z-index: 1;
-    margin-top: var(--space-10);
-    padding-bottom: var(--space-4);
-    background: var(--color-bg);
+    display: none;
   }
 
   .list {
-    padding-block: 4vh 12vh;
+    padding-block: var(--space-10) var(--space-12);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
   }
 
   .item {
     justify-content: flex-start;
-    min-height: 34vh;
+    min-height: 0;
+    opacity: 1;
+  }
+
+  .desc {
+    max-width: 42ch;
+  }
+
+  .mobilePreview {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-top: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
   }
 }

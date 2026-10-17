@@ -35,8 +35,8 @@ function structuredData() {
       url: SITE_URL,
       downloadUrl: STORE_URL,
       installUrl: STORE_URL,
-      screenshot: `${SITE_URL}og.jpg`,
-      image: `${SITE_URL}og.jpg`,
+      screenshot: `${SITE_URL}og-kissa-deck.png`,
+      image: `${SITE_URL}og-kissa-deck.png`,
       isAccessibleForFree: true,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
       featureList: [

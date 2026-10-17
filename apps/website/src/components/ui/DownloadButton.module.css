@@ -3,6 +3,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-3);
+  max-width: 100%;
 }
 
 .button {
@@ -71,4 +72,26 @@
   letter-spacing: 0.06em;
   color: var(--color-fg-subtle);
   padding-left: var(--space-2);
+}
+
+@media (max-width: 640px) {
+  .lg .button {
+    max-width: 100%;
+    min-height: 3.25rem;
+    height: auto;
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-2);
+    white-space: normal;
+  }
+
+  .glyph {
+    flex-shrink: 0;
+    margin-left: 0;
+    padding-left: var(--space-2);
+  }
+
+  .sm .button {
+    min-height: 2.75rem;
+    padding-inline: var(--space-3);
+  }
 }

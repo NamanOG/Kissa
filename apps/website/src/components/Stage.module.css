@@ -278,27 +278,66 @@
   filter: blur(1px);
 }
 
-/* Small screens: deck above, copy below */
+/* Small screens: let content set the height. The desktop's pinned layers
+   cannot share a phone viewport without obscuring the copy and actions. */
 
 @media (max-width: 860px) {
+  .stage {
+    height: auto;
+    padding-top: calc(var(--nav-height) + var(--space-8));
+    padding-bottom: var(--space-12);
+  }
+
+  .sticky {
+    position: relative;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: clip;
+  }
+
   .deckSlot {
-    inset: calc(var(--nav-height) + 1.5rem) 0 auto 0;
-    height: 40svh;
+    position: relative;
+    inset: auto;
+    order: 1;
+    padding-block: var(--space-12) var(--space-20);
   }
 
   .deck {
-    --d: min(31svh, 58vw);
-    margin-right: calc(var(--d) * 0.36);
+    --d: min(60vw, 22rem);
+    margin-right: calc(var(--d) * 0.42);
+    will-change: auto;
+  }
+
+  .grip,
+  .overlay {
+    display: none;
   }
 
   .chapter {
-    align-items: flex-end;
-    padding-bottom: 3.5rem;
+    position: relative;
+    inset: auto;
+    order: 2;
+    padding-block: var(--space-8);
+    will-change: auto;
   }
 
   .chapter.hero {
-    align-items: flex-start;
-    padding-top: calc(var(--nav-height) + 2.5rem);
+    order: 0;
+    padding-block: 0;
+  }
+
+  .chapter:not(.hero) .chapterInner {
+    padding-top: var(--space-6);
+    position: relative;
+  }
+
+  .chapter:not(.hero) .chapterInner::before {
+    content: '';
+    position: absolute;
+    inset: 0 var(--gutter) auto;
+    height: 1px;
+    background: var(--color-border);
   }
 
   .chapter:not(.hero) .chapterInner > * {
@@ -307,5 +346,43 @@
 
   .chapterInner {
     gap: var(--space-4);
+  }
+
+  .kicker {
+    gap: var(--space-2);
+    max-width: 34rem;
+  }
+
+  .heroTitle {
+    font-size: clamp(2.25rem, 10.2vw, 4.5rem);
+  }
+
+  .heroBody {
+    gap: var(--space-6);
+  }
+
+  .heroBody :global(.lead) {
+    max-width: 38ch;
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .textLink {
+    height: 2.75rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .kicker {
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+  }
+
+  .dash {
+    width: var(--space-3);
+    flex-shrink: 0;
   }
 }
