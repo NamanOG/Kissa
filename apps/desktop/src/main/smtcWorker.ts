@@ -1,6 +1,7 @@
 import { parentPort, workerData } from 'worker_threads'
 import { spawn, type ChildProcess } from 'child_process'
 import { StringDecoder } from 'string_decoder'
+import { HelperRestartPolicy } from './helperRestartPolicy'
 
 const helperPath = workerData?.helperPath
 
@@ -9,6 +10,9 @@ if (!helperPath) {
 }
 
 let helperProcess: ChildProcess | null = null
+let stopping = false
+let restartTimer: ReturnType<typeof setTimeout> | null = null
+const restartPolicy = new HelperRestartPolicy()
 
 function startHelper(): void {
   try {
@@ -46,7 +50,11 @@ function startHelper(): void {
       }
     })
 
-    helperProcess.on('exit', () => {
+    helperProcess.on('error', (err) => {
+      parentPort?.postMessage({ type: 'error', error: `[Helper] Could not start: ${err.name}` })
+    })
+
+    helperProcess.on('exit', (code, signal) => {
       buffer += stdoutDecoder.end()
       if (buffer.trim()) {
         try {
@@ -58,6 +66,19 @@ function startHelper(): void {
         }
       }
       helperProcess = null
+      if (stopping) return
+
+      // Exit codes are what Windows Error Reporting files crashes under (0xC0000374 is heap
+      // corruption, 0xE0434352 an unhandled .NET exception), so report them as hex.
+      const exitCode = typeof code === 'number' ? `0x${(code >>> 0).toString(16).toUpperCase()}` : null
+      const delay = restartPolicy.nextDelay(Date.now())
+      parentPort?.postMessage({ type: 'helper-exit', exitCode, signal, restartInMs: delay })
+      if (delay !== null) {
+        restartTimer = setTimeout(() => {
+          restartTimer = null
+          if (!stopping) startHelper()
+        }, delay)
+      }
     })
   } catch (err) {
     if (parentPort) {
@@ -70,6 +91,8 @@ startHelper()
 
 parentPort?.on('message', (msg) => {
   if (msg === 'stop') {
+    stopping = true
+    if (restartTimer) clearTimeout(restartTimer)
     if (helperProcess && helperProcess.stdin) {
       try {
         helperProcess.stdin.write('stop\n', 'utf-8')

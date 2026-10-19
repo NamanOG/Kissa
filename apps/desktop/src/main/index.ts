@@ -9,6 +9,8 @@ import { ScreensaverRegistryService } from './services/ScreensaverRegistryServic
 import { StorePackageService } from './services/StorePackageService'
 import { startDiscordPresence, stopDiscordPresence } from './services/discord'
 import { startStudyKeepAwake, stopStudyKeepAwake } from './services/StudyKeepAwake'
+import { DiagnosticsLog } from './services/DiagnosticsLog'
+import { join } from 'path'
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
@@ -39,10 +41,34 @@ if (!gotSingleInstanceLock) {
       electronApp.setAppUserModelId('com.namanog.kissa')
     }
 
+    // Local record of crashes and hangs (codes only, never uploaded): see DiagnosticsLog.
+    const diagnostics = DiagnosticsLog.useFile(join(app.getPath('userData'), 'diagnostics.log'))
+    diagnostics.record('app-start', { version: app.getVersion(), store: isStorePackage })
+    app.on('child-process-gone', (_, details) => {
+      diagnostics.record('child-process-gone', {
+        type: details.type,
+        reason: details.reason,
+        exitCode: details.exitCode
+      })
+    })
+    app.on('render-process-gone', (_, __, details) => {
+      diagnostics.record('render-process-gone', { reason: details.reason, exitCode: details.exitCode })
+    })
+
     // Default open or close DevTools by F12 in development
     // and ignore CommandOrControl + R in production.
     app.on('browser-window-created', (_, window) => {
       optimizer.watchWindowShortcuts(window)
+      let unresponsiveSince = 0
+      window.on('unresponsive', () => {
+        unresponsiveSince = Date.now()
+        diagnostics.record('window-unresponsive')
+      })
+      window.on('responsive', () => {
+        if (!unresponsiveSince) return
+        diagnostics.record('window-responsive', { afterMs: Date.now() - unresponsiveSince })
+        unresponsiveSince = 0
+      })
     })
 
     // Start background system media detection (Apple Music, Spotify, etc.)

@@ -181,6 +181,22 @@ namespace SmtcHelper
                 return;
             }
 
+            // Last resort: name the failure (code and type only, no track details) on stderr
+            // before the runtime ends the process, so the app can record why the helper stopped.
+            AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            {
+                if (e.ExceptionObject is Exception ex)
+                {
+                    Console.Error.WriteLine($"[Helper] Fatal: 0x{ex.HResult:X8} {ex.GetType().Name}");
+                    Console.Error.Flush();
+                }
+            };
+            TaskScheduler.UnobservedTaskException += (_, e) =>
+            {
+                Console.Error.WriteLine($"[Helper] Unobserved task: 0x{e.Exception.HResult:X8}");
+                e.SetObserved();
+            };
+
             try
             {
                 Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -686,14 +702,63 @@ namespace SmtcHelper
             Console.Error.WriteLine(diagnostic);
         }
 
-        private static async void OnCurrentSessionChanged(GlobalSystemMediaTransportControlsSessionManager sender, CurrentSessionChangedEventArgs args)
+        // WinRT raises these on the thread pool. An exception escaping an async void handler
+        // ends the whole helper, and unsubscribing from a session whose player has just closed
+        // throws routinely (RPC_E_DISCONNECTED / RPC_S_SERVER_UNAVAILABLE). Every handler goes
+        // through here so one failed update is logged and the next one carries on.
+        private static async void RunHandlerSafely(Func<Task> work, string name)
         {
-            await UpdateCurrentSessionAsync();
+            try
+            {
+                await work();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[Helper] {name} failed: 0x{ex.HResult:X8} {ex.GetType().Name}");
+            }
         }
 
-        private static async void OnSessionsChanged(GlobalSystemMediaTransportControlsSessionManager sender, SessionsChangedEventArgs args)
+        private static void OnCurrentSessionChanged(GlobalSystemMediaTransportControlsSessionManager sender, CurrentSessionChangedEventArgs args)
         {
-            await UpdateCurrentSessionAsync();
+            RunHandlerSafely(UpdateCurrentSessionAsync, nameof(OnCurrentSessionChanged));
+        }
+
+        private static void OnSessionsChanged(GlobalSystemMediaTransportControlsSessionManager sender, SessionsChangedEventArgs args)
+        {
+            RunHandlerSafely(UpdateCurrentSessionAsync, nameof(OnSessionsChanged));
+        }
+
+        private static void DetachSession(GlobalSystemMediaTransportControlsSession session)
+        {
+            try
+            {
+                session.MediaPropertiesChanged -= OnMediaPropertiesChanged;
+                session.PlaybackInfoChanged -= OnPlaybackInfoChanged;
+                session.TimelinePropertiesChanged -= OnTimelinePropertiesChanged;
+            }
+            catch (Exception ex)
+            {
+                // The player has gone; there is nothing left to unsubscribe from.
+                Console.Error.WriteLine($"[Helper] Detach failed: 0x{ex.HResult:X8}");
+            }
+        }
+
+        private static bool AttachSession(GlobalSystemMediaTransportControlsSession session)
+        {
+            try
+            {
+                session.MediaPropertiesChanged += OnMediaPropertiesChanged;
+                session.PlaybackInfoChanged += OnPlaybackInfoChanged;
+                session.TimelinePropertiesChanged += OnTimelinePropertiesChanged;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // The 200 ms poll still reads this session, so updates continue without events.
+                Console.Error.WriteLine($"[Helper] Attach failed: 0x{ex.HResult:X8}");
+                DetachSession(session);
+                return false;
+            }
         }
 
         private static async Task UpdateCurrentSessionAsync()
@@ -710,34 +775,30 @@ namespace SmtcHelper
 
             if (oldSession != null && oldSession != newSession)
             {
-                oldSession.MediaPropertiesChanged -= OnMediaPropertiesChanged;
-                oldSession.PlaybackInfoChanged -= OnPlaybackInfoChanged;
-                oldSession.TimelinePropertiesChanged -= OnTimelinePropertiesChanged;
+                DetachSession(oldSession);
             }
 
             if (newSession != null && oldSession != newSession)
             {
-                newSession.MediaPropertiesChanged += OnMediaPropertiesChanged;
-                newSession.PlaybackInfoChanged += OnPlaybackInfoChanged;
-                newSession.TimelinePropertiesChanged += OnTimelinePropertiesChanged;
+                AttachSession(newSession);
             }
 
             await BroadcastStateAsync(true);
         }
 
-        private static async void OnMediaPropertiesChanged(GlobalSystemMediaTransportControlsSession sender, MediaPropertiesChangedEventArgs args)
+        private static void OnMediaPropertiesChanged(GlobalSystemMediaTransportControlsSession sender, MediaPropertiesChangedEventArgs args)
         {
-            await BroadcastStateAsync(true);
+            RunHandlerSafely(() => BroadcastStateAsync(true), nameof(OnMediaPropertiesChanged));
         }
 
-        private static async void OnPlaybackInfoChanged(GlobalSystemMediaTransportControlsSession sender, PlaybackInfoChangedEventArgs args)
+        private static void OnPlaybackInfoChanged(GlobalSystemMediaTransportControlsSession sender, PlaybackInfoChangedEventArgs args)
         {
-            await BroadcastStateAsync(true);
+            RunHandlerSafely(() => BroadcastStateAsync(true), nameof(OnPlaybackInfoChanged));
         }
 
-        private static async void OnTimelinePropertiesChanged(GlobalSystemMediaTransportControlsSession sender, TimelinePropertiesChangedEventArgs args)
+        private static void OnTimelinePropertiesChanged(GlobalSystemMediaTransportControlsSession sender, TimelinePropertiesChangedEventArgs args)
         {
-            await BroadcastStateAsync(false);
+            RunHandlerSafely(() => BroadcastStateAsync(false), nameof(OnTimelinePropertiesChanged));
         }
 
         private static async Task BroadcastStateAsync(bool force)
@@ -752,16 +813,12 @@ namespace SmtcHelper
                     {
                         if (_currentSession != null)
                         {
-                            _currentSession.MediaPropertiesChanged -= OnMediaPropertiesChanged;
-                            _currentSession.PlaybackInfoChanged -= OnPlaybackInfoChanged;
-                            _currentSession.TimelinePropertiesChanged -= OnTimelinePropertiesChanged;
+                            DetachSession(_currentSession);
                         }
                         _currentSession = session;
                         if (_currentSession != null)
                         {
-                            _currentSession.MediaPropertiesChanged += OnMediaPropertiesChanged;
-                            _currentSession.PlaybackInfoChanged += OnPlaybackInfoChanged;
-                            _currentSession.TimelinePropertiesChanged += OnTimelinePropertiesChanged;
+                            AttachSession(_currentSession);
                         }
                     }
                 }

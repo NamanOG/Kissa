@@ -7,6 +7,7 @@ import { LyricsService } from './LyricsService'
 import { Worker } from 'worker_threads'
 import { join } from 'path'
 import { ScreensaverSessionService } from './ScreensaverSessionService'
+import { DiagnosticsLog } from './DiagnosticsLog'
 
 function sendMediaKey(keyCode: number): void {
   try {
@@ -432,6 +433,24 @@ export class MediaDetectionService {
             }
           }
           this.processSessionUpdate(msg.session, msg.volume, msg.timestamp)
+          ScreensaverSessionService.getInstance().onPlaybackStateChanged(
+            this.isMusicPlaying(),
+            this.getVideoPlaybackState()
+          )
+        } else if (msg.type === 'helper-exit') {
+          // Only the exit code and signal: enough to match a Windows crash report, nothing
+          // about what was playing.
+          console.warn(
+            `[MediaDetectionService] Media helper stopped (exit ${msg.exitCode ?? 'none'}, signal ${msg.signal ?? 'none'}); ` +
+              (msg.restartInMs === null ? 'not restarting again this session.' : `restarting in ${msg.restartInMs} ms.`)
+          )
+          DiagnosticsLog.get()?.record('helper-exit', {
+            exitCode: msg.exitCode,
+            signal: msg.signal,
+            restartInMs: msg.restartInMs
+          })
+          this.isWorkerHealthy = false
+          this.videoPlaybackState = 'unknown'
           ScreensaverSessionService.getInstance().onPlaybackStateChanged(
             this.isMusicPlaying(),
             this.getVideoPlaybackState()
