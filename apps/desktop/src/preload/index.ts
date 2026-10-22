@@ -9,7 +9,7 @@ import type {
 } from '../types/lyrics'
 import type { ShareExportOptions, SharePayload } from '../types/share'
 import type { UpdateStatusPayload, UpdateInstallResult } from '../types/update'
-import type { DiscordPresenceStatus, StudyPresence } from '../types/discord'
+import type { DiscordPresenceStatus, StudyPresence, YouTubeMusicConnectorStatus } from '../types/discord'
 
 export interface KissaSystemMediaAPI {
   getSystemMedia: () => Promise<SystemMediaPayload | null>
@@ -27,6 +27,7 @@ export interface KissaSystemMediaAPI {
   toggleMiniPlayer: (isMini: boolean, alwaysOnTop?: boolean) => Promise<void>
   setFullScreen: (value: boolean) => Promise<boolean>
   onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void
+  onWindowVisibility: (callback: (visible: boolean) => void) => () => void
   syncSettings: (settings: any) => Promise<void>
   setStartup: (enabled: boolean) => Promise<void>
   setProgress: (progress: number, mode?: 'normal' | 'paused' | 'error' | 'none') => Promise<void>
@@ -67,6 +68,12 @@ export interface KissaSystemMediaAPI {
   setDiscordShareSpotify: (on: boolean) => Promise<DiscordPresenceStatus>
   setDiscordShareStudy: (on: boolean) => Promise<DiscordPresenceStatus>
   setDiscordStudy: (study: StudyPresence | null) => void
+  setDiscordShareYouTubeMusic: (on: boolean) => Promise<DiscordPresenceStatus>
+  getYouTubeMusicConnector: () => Promise<YouTubeMusicConnectorStatus>
+  beginYouTubeMusicPairing: () => Promise<YouTubeMusicConnectorStatus>
+  cancelYouTubeMusicPairing: () => Promise<YouTubeMusicConnectorStatus>
+  forgetYouTubeMusicConnector: () => Promise<YouTubeMusicConnectorStatus>
+  onYouTubeMusicConnectorChanged: (callback: (status: YouTubeMusicConnectorStatus) => void) => () => void
   onDiscordPresenceChanged: (callback: (status: DiscordPresenceStatus) => void) => () => void
 }
 
@@ -117,6 +124,13 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
     ipcRenderer.on('kissa:fullscreen-changed', handler)
     return (): void => {
       ipcRenderer.removeListener('kissa:fullscreen-changed', handler)
+    }
+  },
+  onWindowVisibility: (callback) => {
+    const handler = (_event: unknown, visible: boolean): void => callback(visible)
+    ipcRenderer.on('kissa:window-visibility', handler)
+    return (): void => {
+      ipcRenderer.removeListener('kissa:window-visibility', handler)
     }
   },
   syncSettings: (settings) => ipcRenderer.invoke('kissa:sync-settings', settings),
@@ -172,6 +186,18 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
   setDiscordShareSpotify: (on) => ipcRenderer.invoke('kissa:discord-set-share-spotify', on),
   setDiscordShareStudy: (on) => ipcRenderer.invoke('kissa:discord-set-share-study', on),
   setDiscordStudy: (study) => ipcRenderer.send('kissa:discord-study', study),
+  setDiscordShareYouTubeMusic: (on) => ipcRenderer.invoke('kissa:discord-set-share-ytmusic', on),
+  getYouTubeMusicConnector: () => ipcRenderer.invoke('kissa:ytmusic-status'),
+  beginYouTubeMusicPairing: () => ipcRenderer.invoke('kissa:ytmusic-begin-pairing'),
+  cancelYouTubeMusicPairing: () => ipcRenderer.invoke('kissa:ytmusic-cancel-pairing'),
+  forgetYouTubeMusicConnector: () => ipcRenderer.invoke('kissa:ytmusic-forget'),
+  onYouTubeMusicConnectorChanged: (callback) => {
+    const handler = (_event: unknown, status: YouTubeMusicConnectorStatus): void => callback(status)
+    ipcRenderer.on('kissa:ytmusic-status-changed', handler)
+    return (): void => {
+      ipcRenderer.removeListener('kissa:ytmusic-status-changed', handler)
+    }
+  },
   onDiscordPresenceChanged: (callback) => {
     const handler = (_event: unknown, status: DiscordPresenceStatus): void => callback(status)
     ipcRenderer.on('kissa:discord-status-changed', handler)

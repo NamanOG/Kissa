@@ -20,6 +20,7 @@ import { AlbumSleeve } from '@renderer/features/now-playing/AlbumSleeve'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
 import { StudyWindowScene } from './StudyWindowScene'
 import { StudyRoomView } from './StudyRoomView'
+import { PressingPicker } from '../editions/PressingPicker'
 import { ENVIRONMENTS, environmentInfo } from './scenes'
 
 /**
@@ -78,7 +79,7 @@ export function StudyRoom(): React.JSX.Element {
       transition={{ duration: reduceMotion ? 0 : 0.6, ease: [0.22, 1, 0.36, 1] }}
       className="absolute inset-0 z-0 overflow-hidden bg-black [--rec-h:clamp(210px,min(48vh,31vw),500px)]"
       role="region"
-      aria-label="Study Room"
+      aria-label="Focus Room"
     >
       <StudyWindowScene className="absolute inset-0" />
 
@@ -90,7 +91,7 @@ export function StudyRoom(): React.JSX.Element {
       >
         <div className="flex items-center gap-5">
           <span className="font-kissa-chassis text-[11px] font-bold uppercase tracking-[0.26em] text-white/60">
-            Study Room
+            Focus Room
           </span>
           <div
             role="radiogroup"
@@ -106,7 +107,7 @@ export function StudyRoom(): React.JSX.Element {
                 title={env.keepsTime}
                 onClick={() => setPrefs({ environment: env.id })}
                 className={cn(
-                  'h-8 rounded-full px-3.5 font-sans text-[12px] font-medium uppercase tracking-[0.08em] transition-colors cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone',
+                  'h-8 rounded-full px-3.5 font-sans text-[13px] font-medium transition-colors cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone',
                   env.id === info.id ? 'bg-white/15 text-white' : 'text-white/50 hover:text-white'
                 )}
               >
@@ -116,6 +117,7 @@ export function StudyRoom(): React.JSX.Element {
           </div>
         </div>
         <div className="flex items-center gap-0.5 app-region-no-drag">
+          <PressingPicker />
           <button
             type="button"
             className={ICON_BUTTON}
@@ -161,7 +163,7 @@ export function StudyRoom(): React.JSX.Element {
             type="button"
             className={ICON_BUTTON}
             onClick={leave}
-            aria-label="Leave the Study Room"
+            aria-label="Leave the Focus Room"
             title="Leave (Esc)"
           >
             <X className="h-4 w-4" />
@@ -234,20 +236,31 @@ function RecordCorner(): React.JSX.Element {
         </motion.div>
       </div>
       <div className="mt-8 flex w-full flex-col items-center text-center">
-        <p
-          className="font-kissa-editorial line-clamp-2 text-[clamp(1.6rem,2.2vw,2.2rem)] leading-tight text-white [text-shadow:0_2px_18px_rgba(0,0,0,0.6)]"
-          title={track?.title}
-        >
-          {idle ? 'Nothing playing' : track?.title}
-        </p>
-        {!idle && (
+        {/*
+          Over a bright photograph a wide, faint shadow spreads too thin to darken the thin serif
+          strokes. A soft local shade sits behind just these lines, plus a tight shadow on the
+          glyphs themselves; the photograph stays untouched elsewhere.
+        */}
+        <div className="relative isolate flex w-full flex-col items-center">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-x-6 -inset-y-5 -z-10 bg-[radial-gradient(closest-side,rgba(8,6,5,0.42),rgba(8,6,5,0.18)_60%,transparent)]"
+          />
           <p
-            className="mt-2 line-clamp-1 font-kissa-chassis text-[12px] font-bold uppercase tracking-[0.22em] text-tone [text-shadow:0_1px_12px_rgba(0,0,0,0.7)]"
-            title={track?.artist}
+            className="font-kissa-editorial line-clamp-2 text-[clamp(1.6rem,2.2vw,2.2rem)] leading-tight text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.55),0_2px_18px_rgba(0,0,0,0.6)]"
+            title={track?.title}
           >
-            {track?.artist}
+            {idle ? 'Nothing playing' : track?.title}
           </p>
-        )}
+          {!idle && (
+            <p
+              className="mt-2 line-clamp-1 text-[15px] text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,0.6),0_1px_12px_rgba(0,0,0,0.7)]"
+              title={track?.artist}
+            >
+              {track?.artist}
+            </p>
+          )}
+        </div>
         <div
           className={cn(GLASS, 'mt-6 flex items-center gap-2 px-2 py-1.5')}
           role="group"

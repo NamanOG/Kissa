@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { VinylEngine } from './features/vinyl'
 import albumPlaceholder from './media/placeholder-album.png'
@@ -27,10 +27,15 @@ import { ListeningDisplay } from './features/listening-room/ListeningDisplay'
 import { StartupExperience } from './features/startup/StartupExperience'
 import { GrowthPrompts } from './features/growth/GrowthPrompts'
 import { StudyRoom, useStudyEngine } from './features/study'
+import { EditionEditor } from './features/editions/EditionEditor'
+import { SupportKissaLink } from './features/support/SupportKissaLink'
+import { useEditionsStore } from './stores/editionsStore'
 
 function KissaApp(): React.JSX.Element {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const activeView = usePlayerStore((s) => s.activeView)
+  const isEditionEditorOpen = useEditionsStore((s) => s.isEditorOpen)
+  const reduceMotion = useReducedMotion()
   const showSideLyrics = usePlayerStore((s) => s.showSideLyrics)
   const toggleSideLyrics = usePlayerStore((s) => s.toggleSideLyrics)
   const isMiniPlayer = usePlayerStore((s) => s.isMiniPlayer)
@@ -173,8 +178,27 @@ function KissaApp(): React.JSX.Element {
                             : 'grid-cols-1 min-[900px]:grid-cols-[minmax(280px,0.9fr)_minmax(340px,1.5fr)] min-[1200px]:grid-cols-[minmax(320px,1fr)_minmax(400px,1.7fr)]'
                         )}
                       >
+                        {/* Quiet and always in the same place; hidden until the support page is live. */}
+                        <SupportKissaLink className="absolute right-6 top-12 z-20" />
+
                         <aside className="min-h-0 flex flex-col justify-center overflow-y-auto no-scrollbar transform-gpu">
-                          <MetadataPanel />
+                          {/*
+                            A short slide and fade between the track details and the editor:
+                            transform and opacity only, once per open or close, so it costs
+                            nothing while the record turns. Reduced motion keeps only the fade.
+                          */}
+                          <AnimatePresence mode="wait" initial={false}>
+                            <motion.div
+                              key={isEditionEditorOpen ? 'edition' : 'metadata'}
+                              initial={{ opacity: 0, x: reduceMotion ? 0 : -14 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: reduceMotion ? 0 : -10 }}
+                              transition={{ duration: reduceMotion ? 0.12 : 0.22, ease: [0.22, 1, 0.36, 1] }}
+                              className="flex min-h-0 flex-col justify-center"
+                            >
+                              {isEditionEditorOpen ? <EditionEditor /> : <MetadataPanel />}
+                            </motion.div>
+                          </AnimatePresence>
                         </aside>
 
                         <section className="min-h-0 flex items-center justify-center p-2 min-[900px]:p-4 overflow-hidden transform-gpu">
@@ -189,7 +213,8 @@ function KissaApp(): React.JSX.Element {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 16 }}
                             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                            className="hidden min-[1100px]:flex flex-col min-h-0 px-6 py-6 mt-10 mb-2 mr-4 rounded-[36px] border border-panel-line bg-[var(--panel-bg)] shadow-[var(--panel-shadow)]"
+                            // Starts below the Support pill (top-12, about 40 px tall) so the pill never sits on the card's close button.
+                            className="hidden min-[1100px]:flex flex-col min-h-0 px-6 py-6 mt-[6.5rem] mb-2 mr-4 rounded-[36px] border border-panel-line bg-[var(--panel-bg)] shadow-[var(--panel-shadow)]"
                           >
                             <div className="flex items-center justify-between pb-3 shrink-0 border-b border-panel-line">
                               <span className="font-mono text-[9.5px] uppercase tracking-[0.22em] font-bold text-dim">
@@ -233,9 +258,9 @@ function KissaApp(): React.JSX.Element {
                             />
                           </div>
 
-                          <div className="mt-8 w-full px-4 text-center">
+                          <div className="mt-[calc(2rem-0.14em)] w-full px-4 text-center">
                             <h2
-                              className="font-serif text-2xl font-medium line-clamp-1 tracking-tight text-ink"
+                              className="px-[0.2em] pt-[0.14em] font-serif text-2xl font-medium leading-[1.15] line-clamp-2 text-balance tracking-[-0.01em] text-ink"
                               title={currentTrack?.title}
                             >
                               {currentTrack?.title ?? '—'}

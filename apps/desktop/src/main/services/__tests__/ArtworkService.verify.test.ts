@@ -76,6 +76,59 @@ describe('ArtworkService.fetchArtworkFor', () => {
   })
 })
 
+describe('ArtworkService long-session behaviour', () => {
+  let service: ArtworkService
+  let clock = 0
+  beforeEach(() => {
+    service = new (ArtworkService as unknown as { new (): ArtworkService })()
+    clock = 1_000_000
+    service.now = () => clock
+  })
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('does not repeat a lookup that found nothing on every update', async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ results: [], data: [] }), { status: 200 }))
+    vi.stubGlobal('fetch', fetch)
+    // The app asks about once a second while a track with no catalogue match plays.
+    for (let i = 0; i < 30; i++) {
+      expect(await service.fetchArtworkFor('Obscure Demo', 'Nobody', 'Basement Tapes')).toBeNull()
+      clock += 1_000
+    }
+    const firstRound = fetch.mock.calls.length
+    expect(firstRound).toBeGreaterThan(0)
+    expect(firstRound).toBeLessThanOrEqual(7)
+    // Much later it is worth one more try.
+    clock += 31 * 60_000
+    await service.fetchArtworkFor('Obscure Demo', 'Nobody', 'Basement Tapes')
+    expect(fetch.mock.calls.length).toBe(firstRound * 2)
+  })
+
+  it('retries soon after a network failure, not every second', async () => {
+    let online = false
+    const fetch = vi.fn(async () => {
+      if (!online) throw new TypeError('fetch failed')
+      return itunesAlbum()
+    })
+    vi.stubGlobal('fetch', fetch)
+    expect(await service.fetchArtworkFor('Superhero', 'Metro Boomin', 'HEROES & VILLAINS')).toBeNull()
+    const offlineCalls = fetch.mock.calls.length
+    clock += 10_000
+    expect(await service.fetchArtworkFor('Superhero', 'Metro Boomin', 'HEROES & VILLAINS')).toBeNull()
+    expect(fetch.mock.calls.length).toBe(offlineCalls)
+    online = true
+    clock += 25_000
+    expect(await service.fetchArtworkFor('Superhero', 'Metro Boomin', 'HEROES & VILLAINS')).toContain('1200x1200bb')
+  })
+
+  it('stays bounded over many distinct tracks', () => {
+    for (let i = 0; i < 1_000; i++) {
+      service.setCachedArtwork(`Track ${i} (Remastered)`, `Artist ${i}`, `data:image/jpeg;base64,${i}`, `Album ${i}`)
+    }
+    expect(service.cachedEntryCount).toBeLessThanOrEqual(200)
+    expect(service.getCachedArtwork('Track 999 (Remastered)', 'Artist 999', 'Album 999')).toBe('data:image/jpeg;base64,999')
+  })
+})
+
 describe('coverDistance', () => {
   const px = (r: number, g: number, b: number, n = 4): Uint8Array => {
     const out = new Uint8Array(n * 4)

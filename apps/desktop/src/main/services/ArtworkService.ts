@@ -126,10 +126,14 @@ export class ArtworkService {
     if (known !== undefined) return known
     const pending = this.matching.get(key)
     if (pending) return pending
+    if (this.isRecentMiss(`match|${key}`)) return null
     const work = this.findSamePicture(title, artist, album, reference).then((url) => {
       if (url !== undefined) {
         this.verifiedUrl.set(key, url)
         if (this.verifiedUrl.size > 400) this.verifiedUrl.delete(this.verifiedUrl.keys().next().value as string)
+      } else {
+        // No comparison could run (offline): try again shortly rather than every second.
+        this.recordMiss(`match|${key}`, true)
       }
       return url ?? null
     })
@@ -254,13 +258,51 @@ export class ArtworkService {
     this.enforceCacheLimit()
   }
 
+  /**
+   * Each track is stored under two keys (raw and cleaned), and embedded covers can be
+   * hundreds of kilobytes, so trim until back under the limit. Removing one entry per
+   * write let the cache grow by about one cover for every new track in a long session.
+   */
   private enforceCacheLimit(): void {
-    if (this.cache.size > 200) {
+    while (this.cache.size > ArtworkService.CACHE_LIMIT) {
       const oldestKey = this.cache.keys().next().value
-      if (oldestKey) {
-        this.cache.delete(oldestKey)
-      }
+      if (oldestKey === undefined) break
+      this.cache.delete(oldestKey)
     }
+  }
+
+  private static readonly CACHE_LIMIT = 200
+
+  /**
+   * Lookups that found nothing, and until when not to repeat them. The app asks again on
+   * every helper update (about once a second while playing), so without this a track with
+   * no catalogue match, or an offline PC, repeated the whole round of requests each time.
+   */
+  private misses = new Map<string, number>()
+  public now: () => number = () => Date.now()
+  private static readonly RETRY_AFTER_NOT_FOUND_MS = 30 * 60_000
+  private static readonly RETRY_AFTER_NETWORK_MS = 30_000
+
+  private isRecentMiss(key: string): boolean {
+    const until = this.misses.get(key)
+    if (until === undefined) return false
+    if (this.now() < until) return true
+    this.misses.delete(key)
+    return false
+  }
+
+  private recordMiss(key: string, networkFailed: boolean): void {
+    this.misses.delete(key)
+    this.misses.set(
+      key,
+      this.now() + (networkFailed ? ArtworkService.RETRY_AFTER_NETWORK_MS : ArtworkService.RETRY_AFTER_NOT_FOUND_MS)
+    )
+    while (this.misses.size > 400) this.misses.delete(this.misses.keys().next().value as string)
+  }
+
+  /** For tests and diagnostics: how many cover entries are held. */
+  public get cachedEntryCount(): number {
+    return this.cache.size
   }
 
   /**
@@ -290,8 +332,14 @@ export class ArtworkService {
     if (this.inFlight.has(key)) {
       return this.inFlight.get(key)!
     }
+    if (this.isRecentMiss(`find|${key}|${allowTrackMatch}`)) return null
 
-    const fetchPromise = this.performFetchArtwork(title, artist, album, key, cleanKey, allowTrackMatch)
+    const fetchPromise = this.performFetchArtwork(title, artist, album, key, cleanKey, allowTrackMatch).then(
+      ({ url, networkFailed }) => {
+        if (!url) this.recordMiss(`find|${key}|${allowTrackMatch}`, networkFailed)
+        return url
+      }
+    )
     this.inFlight.set(key, fetchPromise)
     this.inFlight.set(cleanKey, fetchPromise)
 
@@ -310,7 +358,19 @@ export class ArtworkService {
     key: string,
     cleanKey: string,
     allowTrackMatch: boolean
-  ): Promise<string | null> {
+  ): Promise<{ url: string | null; networkFailed: boolean }> {
+    let networkFailed = false
+    const fetch = async (input: string, init?: RequestInit): Promise<Response> => {
+      try {
+        const res = await globalThis.fetch(input, init)
+        if (!res.ok) networkFailed = true
+        return res
+      } catch (err) {
+        networkFailed = true
+        throw err
+      }
+    }
+    const found = (url: string): { url: string; networkFailed: boolean } => ({ url, networkFailed })
     const cleanT = cleanTrackTitle(title)
     const cleanA = cleanArtist(artist)
     const validArtist = cleanA && cleanA.toLowerCase() !== 'unknown artist' ? cleanA : ''
@@ -341,7 +401,7 @@ export class ArtworkService {
                 this.cache.set(key, highRes)
                 this.cache.set(cleanKey, highRes)
                 this.enforceCacheLimit()
-                return highRes
+                return found(highRes)
               }
             }
           }
@@ -377,7 +437,7 @@ export class ArtworkService {
               this.cache.set(key, highRes)
               this.cache.set(cleanKey, highRes)
               this.enforceCacheLimit()
-              return highRes
+              return found(highRes)
             }
           }
         }
@@ -401,7 +461,7 @@ export class ArtworkService {
                   this.cache.set(key, cover)
                   this.cache.set(cleanKey, cover)
                   this.enforceCacheLimit()
-                  return cover
+                  return found(cover)
                 }
               }
             }
@@ -443,7 +503,7 @@ export class ArtworkService {
                 this.cache.set(key, cover)
                 this.cache.set(cleanKey, cover)
                 this.enforceCacheLimit()
-                return cover
+                return found(cover)
               }
             }
           }
@@ -452,7 +512,7 @@ export class ArtworkService {
       }
     }
 
-    return null
+    return { url: null, networkFailed }
   }
 
   private getKey(title: string, artist: string, album?: string): string {

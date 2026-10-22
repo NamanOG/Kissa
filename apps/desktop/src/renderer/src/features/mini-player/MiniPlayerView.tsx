@@ -21,6 +21,25 @@ export const MiniPlayerView = (): React.JSX.Element => {
   const duration = currentTrack?.duration ?? 0
 
   const [showQueue, setShowQueue] = useState(false)
+
+  // A track from another player (Apple Music, Spotify…) is driven through Windows media
+  // controls, the same way the main dock and full screen do it; the local queue is only for
+  // Kissa's own playback.
+  const handlePlayPause = (): void => {
+    togglePlayPause()
+    if (currentTrack?.sourceAppId && window.electron?.mediaPlayPause) {
+      window.__kissaMediaCommandCooldown?.()
+      window.electron.mediaPlayPause()
+    }
+  }
+  const handlePrev = (): void => {
+    if (currentTrack?.sourceAppId && window.electron?.mediaPrev) window.electron.mediaPrev()
+    else playPrev()
+  }
+  const handleNext = (): void => {
+    if (currentTrack?.sourceAppId && window.electron?.mediaNext) window.electron.mediaNext()
+    else playNext()
+  }
   
   const fillRef = useRef<HTMLDivElement>(null)
 
@@ -76,6 +95,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
         <button
           type="button"
           onClick={() => toggleMiniPlayer()}
+          aria-label="Restore window"
           className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors duration-ui ease-primary cursor-pointer app-region-no-drag text-dim hover:text-ink hover:bg-ink/[0.05]"
           title="Restore Window"
         >
@@ -108,6 +128,8 @@ export const MiniPlayerView = (): React.JSX.Element => {
           <button
             type="button"
             onClick={() => setShowQueue(!showQueue)}
+            aria-label={showQueue ? "Hide queue" : "Show queue"}
+            aria-pressed={showQueue}
             className={cn(
               'w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-ui ease-primary cursor-pointer',
               showQueue
@@ -120,14 +142,18 @@ export const MiniPlayerView = (): React.JSX.Element => {
 
           <div className="flex items-center justify-center gap-4">
             <button
-              onClick={() => playPrev()}
+              type="button"
+              onClick={handlePrev}
+              aria-label="Previous track"
               className="w-9 h-9 rounded-full flex items-center justify-center transition-[color,background-color,transform] duration-ui ease-primary cursor-pointer active:scale-95 text-ink hover:bg-ink/[0.06]"
             >
               <SkipBack className="w-4 h-4 fill-current" />
             </button>
 
             <button
-              onClick={() => togglePlayPause()}
+              type="button"
+              onClick={handlePlayPause}
+              aria-label={isPlaying ? "Pause" : "Play"}
               className="w-12 h-12 rounded-full flex items-center justify-center transition-transform duration-ui ease-primary cursor-pointer active:scale-95 bg-ink text-[var(--surface)] shadow-md"
             >
               {isPlaying ? (
@@ -138,7 +164,9 @@ export const MiniPlayerView = (): React.JSX.Element => {
             </button>
 
             <button
-              onClick={() => playNext()}
+              type="button"
+              onClick={handleNext}
+              aria-label="Next track"
               className="w-9 h-9 rounded-full flex items-center justify-center transition-[color,background-color,transform] duration-ui ease-primary cursor-pointer active:scale-95 text-ink hover:bg-ink/[0.06]"
             >
               <SkipForward className="w-4 h-4 fill-current" />
@@ -161,7 +189,9 @@ export const MiniPlayerView = (): React.JSX.Element => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-kissa-editorial text-lg text-ink">Up Next</h3>
               <button
+                type="button"
                 onClick={() => setShowQueue(false)}
+                aria-label="Close queue"
                 className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/10 dark:hover:bg-white/10"
               >
                 <X className="w-4 h-4" />

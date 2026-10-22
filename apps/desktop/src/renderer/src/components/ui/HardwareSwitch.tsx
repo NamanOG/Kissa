@@ -12,9 +12,9 @@ export interface HardwareSwitchProps {
 }
 
 /**
- * Precision physical audio equipment rocker/slide switch.
- * Features a milled recessed chassis well, a tactile actuator,
- * and a micro-jewel LED indicator that engages on active state.
+ * Kissa's one on/off switch: a slim track that fills with the room's accent when on, and a
+ * small turned knob with one soft highlight and a contact shadow. No glow, no LED. Used
+ * everywhere a setting turns on or off, so the app speaks one language.
  */
 export const HardwareSwitch = memo(
   ({
@@ -52,46 +52,22 @@ export const HardwareSwitch = memo(
         onClick={handleToggle}
         onKeyDown={handleKeyDown}
         className={cn(
-          'group relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-[5px] p-[2px]',
-          'bg-[#0e0a08] border border-black/70 shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.85),0_0.5px_0.5px_rgba(255,255,255,0.04)]',
-          'transition-colors duration-micro ease-primary',
-          'focus:outline-none focus-visible:ring-1 focus-visible:ring-tone',
+          'group relative inline-flex h-[22px] w-[38px] shrink-0 cursor-pointer items-center rounded-full p-[3px]',
+          'shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),inset_0_1px_2px_rgba(0,0,0,0.45)]',
+          'transition-colors duration-200 ease-primary',
+          checked ? 'bg-tone' : 'bg-ink/[0.12]',
+          'focus:outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-ink/70',
           disabled && 'opacity-40 cursor-not-allowed',
           className
         )}
       >
-        <div
-          className="absolute inset-[2px] rounded-[3px] pointer-events-none transition-colors duration-micro"
-          style={{
-            backgroundColor: checked ? 'rgba(224, 142, 69, 0.08)' : 'transparent'
-          }}
+        <motion.span
+          aria-hidden="true"
+          animate={{ x: checked ? 16 : 0 }}
+          transition={{ type: 'spring', stiffness: 700, damping: 40, mass: 0.6 }}
+          className="block h-4 w-4 rounded-full shadow-[0_1px_2px_rgba(0,0,0,0.45),0_0_0_0.5px_rgba(0,0,0,0.25)] transition-transform duration-100 group-active:scale-95"
+          style={{ background: 'radial-gradient(circle at 38% 30%, #ffffff 0%, #f1ece4 45%, #d8d0c3 100%)' }}
         />
-
-        <motion.div
-          animate={{
-            x: checked ? 18 : 0
-          }}
-          transition={{
-            type: 'spring',
-            stiffness: 700,
-            damping: 38,
-            mass: 0.6
-          }}
-          className={cn(
-            'relative h-4.5 w-5 rounded-[3px] border border-black/80 flex items-center justify-center',
-            'bg-gradient-to-b from-[#2e241e] via-[#201813] to-[#140e0b]',
-            'shadow-[0_1px_2.5px_rgba(0,0,0,0.8),inset_0_0.6px_0.6px_rgba(255,255,255,0.1),inset_0_-0.6px_0.6px_rgba(0,0,0,0.5)]',
-            'group-active:scale-[0.97] transition-transform duration-instant'
-          )}
-        >
-          <div
-            className="w-1.5 h-1.5 rounded-full border border-black/80 transition-colors duration-micro ease-primary"
-            style={{
-              backgroundColor: checked ? 'var(--accent)' : '#16110e',
-              boxShadow: checked ? '0 0 6px var(--accent)' : 'none'
-            }}
-          />
-        </motion.div>
       </button>
     )
   }

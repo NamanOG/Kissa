@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Kissa for YouTube Music</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin: 0; width: 280px; padding: 16px; font: 13px/1.45 system-ui, sans-serif; background: #15100d; color: #efe6d8; }
+      h1 { margin: 0 0 4px; font-size: 14px; font-weight: 600; }
+      p { margin: 0 0 12px; color: #b4a796; }
+      label { display: block; margin-bottom: 6px; color: #b4a796; font-size: 12px; }
+      input { width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 10px; border: 1px solid #3a2f29; background: #1e1713; color: #efe6d8; font: 600 18px/1 ui-monospace, monospace; letter-spacing: 0.3em; }
+      input:focus-visible, button:focus-visible { outline: 2px solid #d7a76c; outline-offset: 2px; }
+      button { margin-top: 10px; width: 100%; padding: 8px; border: 0; border-radius: 10px; background: #d7a76c; color: #15100d; font-weight: 700; cursor: pointer; }
+      button.secondary { background: transparent; border: 1px solid #3a2f29; color: #efe6d8; }
+      #message { min-height: 18px; margin-top: 10px; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Kissa for YouTube Music</h1>
+    <p id="intro">Lets the Kissa app on this PC show what you play on music.youtube.com, and share it on Discord if you choose. Nothing else is read.</p>
+    <form id="pair-form">
+      <label for="code">Pairing code from Kissa (Settings → System → Share on Discord → Also share YouTube Music)</label>
+      <input id="code" inputmode="numeric" autocomplete="off" maxlength="6" pattern="\d{6}" />
+      <button type="submit">Pair</button>
+    </form>
+    <button id="forget" class="secondary" hidden>Unpair</button>
+    <p id="message" role="status" aria-live="polite"></p>
+    <script src="popup.js"></script>
+  </body>
+</html>

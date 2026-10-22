@@ -21,9 +21,10 @@ export class TrayManager {
     if (this.tray) return
 
     try {
-      const iconPath = join(__dirname, '../../resources/icon.png')
-      const icon = nativeImage.createFromPath(iconPath)
-      this.tray = new Tray(icon.resize({ width: 16, height: 16 }))
+      // Multi-size ICO from build/generate_store_assets.py: Windows takes the 16, 20, 24 or 32 px frame
+      // for the display scale instead of a 16 px image shrunk from the 512 px artwork.
+      const iconPath = join(__dirname, '../../resources/icon.ico')
+      this.tray = new Tray(nativeImage.createFromPath(iconPath))
       
       this.tray.setToolTip('Kissa')
       

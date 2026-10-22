@@ -18,6 +18,28 @@ export function attachFullscreenEventSync(
   })
 }
 
+/**
+ * Tells the page whether its window can be seen. Minimising, or hiding to the tray, leaves
+ * document.hidden false on Windows, so the page would otherwise keep drawing purely visual
+ * work (Moving light) that nobody can see. Only visual work listens to this: playback, media
+ * detection and the Study clock keep running.
+ */
+export function attachVisibilityEventSync(
+  window: Pick<BrowserWindow, 'isDestroyed' | 'on' | 'webContents' | 'isVisible' | 'isMinimized'>
+): void {
+  const send = (): void => {
+    if (window.isDestroyed()) return
+    window.webContents.send('kissa:window-visibility', window.isVisible() && !window.isMinimized())
+  }
+  // 'focus' is a safety net: a window brought back by something other than win.show() (for
+  // example another program) emits no 'show', but it does take focus when the user reaches it.
+  for (const event of ['minimize', 'restore', 'hide', 'show', 'maximize', 'unmaximize', 'focus'] as const) {
+    window.on(event as 'minimize', send)
+  }
+  // A reloaded page (or one that loaded while hidden in the tray) learns the current state.
+  window.webContents.on('did-finish-load', send)
+}
+
 export function setupWindowEvents(window: BrowserWindow, isHidden: boolean = false): void {
   window.on('ready-to-show', () => {
     if (!isHidden) {
@@ -39,6 +61,7 @@ export function setupWindowEvents(window: BrowserWindow, isHidden: boolean = fal
   })
 
   attachFullscreenEventSync(window)
+  attachVisibilityEventSync(window)
 
   window.on('close', (event) => {
     const wm = WindowManager.getInstance()

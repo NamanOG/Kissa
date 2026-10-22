@@ -37,6 +37,7 @@ describe('windowEvents - openExternal Security', () => {
       hide: vi.fn(),
       webContents: {
         send: vi.fn(),
+        on: vi.fn(),
         setWindowOpenHandler: vi.fn((handler) => {
           capturedHandler = handler
         })
@@ -67,5 +68,22 @@ describe('windowEvents - openExternal Security', () => {
 
     expect(handler({ url: 'smb://server/share' })).toEqual({ action: 'deny' })
     expect(shell.openExternal).not.toHaveBeenCalled()
+  })
+
+  it('wires window visibility to the page, so Moving light stops when minimised or in the tray', () => {
+    const events: string[] = []
+    const contentEvents: string[] = []
+    const mockWindow = {
+      on: vi.fn((e: string) => events.push(e)),
+      show: vi.fn(),
+      isVisible: vi.fn().mockReturnValue(true),
+      isMinimized: vi.fn().mockReturnValue(false),
+      isDestroyed: vi.fn().mockReturnValue(false),
+      hide: vi.fn(),
+      webContents: { send: vi.fn(), on: vi.fn((e: string) => contentEvents.push(e)), setWindowOpenHandler: vi.fn() }
+    } as any
+    setupWindowEvents(mockWindow, false)
+    expect(events).toEqual(expect.arrayContaining(['minimize', 'restore', 'hide', 'show']))
+    expect(contentEvents).toContain('did-finish-load')
   })
 })

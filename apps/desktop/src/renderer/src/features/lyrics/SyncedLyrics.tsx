@@ -23,7 +23,7 @@ const INTERLUDE_SECONDS = 5
 const AUTO_RETRY_MS = [3_000, 10_000, 30_000, 60_000]
 
 const RETRY_BUTTON_CLASS =
-  'mt-4 flex items-center gap-1.5 rounded-full border border-panel-line bg-[var(--panel-bg)] px-3.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-tone shadow-[var(--panel-shadow)] transition-colors hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone'
+  'mt-4 flex items-center gap-1.5 rounded-full border border-panel-line bg-[var(--panel-bg)] px-3.5 py-1.5 text-[12.5px] font-medium text-tone shadow-[var(--panel-shadow)] transition-colors hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone'
 
 const SIZE_CLASSES = {
   large: {
@@ -452,7 +452,7 @@ export const SyncedLyrics = memo(
             <button
               type="button"
               onClick={() => setRecoveryOpen(true)}
-              className="rounded-md px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-dim hover:text-ink focus-visible:outline focus-visible:outline-tone"
+              className="rounded-md px-3 py-2 text-[12.5px] text-dim hover:text-ink focus-visible:outline focus-visible:outline-tone"
             >
               Lyrics options
             </button>
@@ -477,7 +477,7 @@ export const SyncedLyrics = memo(
           <button
             type="button"
             onClick={() => setUserIsScrolling(false)}
-            className="absolute bottom-6 right-6 z-30 flex items-center gap-1.5 rounded-full border border-panel-line bg-[var(--panel-bg)] px-3.5 py-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-tone shadow-[var(--panel-shadow)] transition-colors hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
+            className="absolute bottom-6 right-6 z-30 flex items-center gap-1.5 rounded-full border border-panel-line bg-[var(--panel-bg)] px-3.5 py-1.5 text-[12.5px] font-medium text-tone shadow-[var(--panel-shadow)] transition-colors hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
           >
             <LocateFixed className="h-3 w-3" aria-hidden="true" />
             <span>Current line</span>
@@ -570,7 +570,7 @@ export const SyncedLyrics = memo(
 
           {status === 'plain' && (
             <div className="py-10">
-              <p className="mb-8 px-3.5 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-dim">
+              <p className="mb-8 px-3.5 text-[12.5px] text-dim">
                 Lyrics · not timed for this recording
               </p>
               <div className="space-y-3">
@@ -597,7 +597,7 @@ export const SyncedLyrics = memo(
           {status === 'loading' && (
             <div className="flex h-full flex-col items-center justify-center gap-3 py-24 text-center">
               <div className="h-5 w-5 rounded-full border-2 border-tone/30 border-t-tone motion-safe:animate-spin" />
-              <p className="font-mono text-xs uppercase tracking-[0.18em] text-dim">
+              <p className="text-[13px] text-dim">
                 Finding lyrics…
               </p>
             </div>

@@ -13,7 +13,8 @@ vi.mock('framer-motion', async () => {
         <div className={className} onClick={onClick}>
           {children}
         </div>
-      )
+      ),
+      span: ({ children, className }: any) => <span className={className}>{children}</span>
     }
   }
 })
@@ -53,12 +54,12 @@ describe('SettingsModal Windows Screensaver integration', () => {
   it('renders Set as Windows Screensaver when not registered', async () => {
     render(<SettingsModal />)
 
-    expect(screen.getByText('Windows Screensaver')).toBeInTheDocument()
+    expect(screen.getByText('Screensaver')).toBeInTheDocument()
 
-    const setButton = await screen.findByRole('button', { name: 'Set as Windows Screensaver' })
+    const setButton = await screen.findByRole('button', { name: 'Use Kissa' })
     expect(setButton).toBeInTheDocument()
     expect(
-      screen.getByText('Kissa can run as your Windows screensaver, using the Listening Display experience.')
+      screen.getByText('Kissa can be your Windows screensaver, showing the Listening Display.')
     ).toBeInTheDocument()
   })
 
@@ -74,7 +75,7 @@ describe('SettingsModal Windows Screensaver integration', () => {
   it('handles registration flow when clicking Set as Windows Screensaver', async () => {
     render(<SettingsModal />)
 
-    const setButton = await screen.findByRole('button', { name: 'Set as Windows Screensaver' })
+    const setButton = await screen.findByRole('button', { name: 'Use Kissa' })
     fireEvent.click(setButton)
 
     await waitFor(() => {
@@ -82,7 +83,7 @@ describe('SettingsModal Windows Screensaver integration', () => {
     })
 
     expect(
-      await screen.findByRole('button', { name: 'Remove Kissa Screensaver' })
+      await screen.findByRole('button', { name: 'Stop using Kissa' })
     ).toBeInTheDocument()
     expect(screen.getByText('✓ Kissa is your Windows screensaver')).toBeInTheDocument()
   })
@@ -91,7 +92,7 @@ describe('SettingsModal Windows Screensaver integration', () => {
     isScreensaverRegisteredMock.mockResolvedValue(true)
     render(<SettingsModal />)
 
-    const removeButton = await screen.findByRole('button', { name: 'Remove Kissa Screensaver' })
+    const removeButton = await screen.findByRole('button', { name: 'Stop using Kissa' })
     fireEvent.click(removeButton)
 
     await waitFor(() => {
@@ -99,7 +100,7 @@ describe('SettingsModal Windows Screensaver integration', () => {
     })
 
     expect(
-      await screen.findByRole('button', { name: 'Set as Windows Screensaver' })
+      await screen.findByRole('button', { name: 'Use Kissa' })
     ).toBeInTheDocument()
   })
 
@@ -107,7 +108,7 @@ describe('SettingsModal Windows Screensaver integration', () => {
     usePlayerStore.setState({ screensaverLyrics: false })
     render(<SettingsModal />)
 
-    expect(screen.getByText('Screensaver & Display Lyrics')).toBeInTheDocument()
+    expect(screen.getByText('Lyrics on the screensaver')).toBeInTheDocument()
     const toggleButton = screen.getByRole('switch', { name: 'Toggle Screensaver Lyrics' })
     expect(toggleButton).toBeInTheDocument()
 
@@ -121,7 +122,7 @@ describe('SettingsModal Windows Screensaver integration', () => {
   it('renders and invokes Open Windows Screensaver Settings button', async () => {
     render(<SettingsModal />)
 
-    const openButton = await screen.findByRole('button', { name: 'Open Windows Screensaver Settings' })
+    const openButton = await screen.findByRole('button', { name: 'Open Windows settings' })
     expect(openButton).toBeInTheDocument()
 
     fireEvent.click(openButton)
@@ -191,7 +192,7 @@ describe('SettingsModal In-App Update System', () => {
 
     render(<SettingsModal />)
 
-    const checkBtn = await screen.findByRole('button', { name: 'Check for Updates' })
+    const checkBtn = await screen.findByRole('button', { name: 'Check for updates' })
     expect(checkBtn).toBeInTheDocument()
 
     fireEvent.click(checkBtn)
@@ -240,9 +241,9 @@ describe('SettingsModal In-App Update System', () => {
     render(<SettingsModal />)
 
     expect(await screen.findByText(/Kissa v4\.1\.0 is available/)).toBeInTheDocument()
-    const downloadBtn = screen.getByRole('button', { name: 'Download Update' })
+    const downloadBtn = screen.getByRole('button', { name: 'Download update' })
     expect(downloadBtn).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'View Release' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Release notes' })).toBeInTheDocument()
 
     fireEvent.click(downloadBtn)
     await waitFor(() => {
@@ -303,14 +304,14 @@ describe('SettingsModal In-App Update System', () => {
     render(<SettingsModal />)
 
     expect(await screen.findByText('Update ready to install')).toBeInTheDocument()
-    const installBtn = screen.getByRole('button', { name: 'Restart & Install' })
+    const installBtn = screen.getByRole('button', { name: 'Restart and install' })
 
     fireEvent.click(installBtn)
     expect(
       screen.getByText('Restart Kissa now to apply update? Active playback will stop.')
     ).toBeInTheDocument()
 
-    const confirmBtn = screen.getByRole('button', { name: 'Restart Now' })
+    const confirmBtn = screen.getByRole('button', { name: 'Restart now' })
     fireEvent.click(confirmBtn)
 
     await waitFor(() => {
@@ -342,7 +343,7 @@ describe('SettingsModal In-App Update System', () => {
     render(<SettingsModal />)
 
     expect(await screen.findByText('Portable update downloaded to Downloads')).toBeInTheDocument()
-    const showBtn = screen.getByRole('button', { name: 'Show in Folder' })
+    const showBtn = screen.getByRole('button', { name: 'Show in folder' })
     expect(showBtn).toBeInTheDocument()
 
     fireEvent.click(showBtn)
@@ -366,9 +367,9 @@ describe('SettingsModal In-App Update System', () => {
     render(<SettingsModal />)
 
     expect(await screen.findByText('Download interrupted by network failure')).toBeInTheDocument()
-    const retryBtn = screen.getByRole('button', { name: 'Try Again' })
+    const retryBtn = screen.getByRole('button', { name: 'Try again' })
     expect(retryBtn).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'View Release' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Release notes' })).toBeInTheDocument()
 
     fireEvent.click(retryBtn)
     await waitFor(() => {
@@ -434,9 +435,9 @@ describe('SettingsModal startup and background switches', () => {
 
     render(<SettingsModal />)
 
-    expect(await screen.findByText('Version 4.1.0 · Updated by Microsoft Store')).toBeInTheDocument()
+    expect(await screen.findByText('4.1.0 · updated by the Microsoft Store')).toBeInTheDocument()
     // It can ask the Store, but never downloads an installer itself.
-    expect(screen.getByRole('button', { name: 'Check for Updates' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Check for updates' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Download Update/ })).not.toBeInTheDocument()
   })
 })

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { usePlayerStore, AppTheme } from '@renderer/stores/playerStore'
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
+import { useEditionsStore } from '@renderer/stores/editionsStore'
 
 const THEMES: AppTheme[] = [
   'quiet-room',
@@ -155,6 +156,13 @@ export function useKeyboardShortcuts(): void {
       if (e.key === 's' || e.key === 'S' || e.code === 'KeyS') {
         e.preventDefault()
         store.toggleSettings()
+        return
+      }
+
+      if ((e.key === 'e' || e.key === 'E' || e.code === 'KeyE') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (store.isListeningDisplay || store.isScreensaver) return
+        e.preventDefault()
+        useEditionsStore.getState().showEditor()
         return
       }
 

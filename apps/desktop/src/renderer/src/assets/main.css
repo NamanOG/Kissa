@@ -2,12 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: 'Inter';
-  src: url('./fonts/InterVariable.woff2') format('woff2');
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
+/*
+ * Labels that read like engraving on hi-fi gear (DECK, NOW PLAYING, 33 RPM): Archivo set wide,
+ * with tabular figures so times and values never jitter.
+ */
+.font-mono {
+  font-stretch: 118%;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Moving light: no backdrop blur over the moving colour (it would be recomputed every frame).
+   The panels keep their own tinted background, so they stay legible. */
+:root[data-moving-light] .backdrop-blur-2xl,
+:root[data-moving-light] .backdrop-blur-3xl,
+:root[data-moving-light] .backdrop-blur-xl {
+  backdrop-filter: none;
+}
+
+/* Support Kissa: a slow breath of the album's colour. Opacity only, on a tiny layer. */
+.kissa-glow {
+  opacity: 0.35;
+  animation: kissa-glow 5.5s ease-in-out infinite alternate;
+}
+@keyframes kissa-glow {
+  from { opacity: 0.18; }
+  to { opacity: 0.7; }
+}
+/* Hidden or minimised window: nothing moves (set by Background.tsx). */
+:root[data-window-hidden] .kissa-glow {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kissa-glow {
+    animation: none;
+  }
 }
 @layer base {
   :root {
@@ -93,23 +121,15 @@
 @property --adaptive-highlight-y { syntax: '<percentage>'; inherits: true; initial-value: 50%; }
 
 @layer base {
-  :root {
-    transition: 
-      --panel-bg 1.5s ease-in-out,
-      --panel-border 1.5s ease-in-out,
-      --deck-bg 1.5s ease-in-out,
-      --deck-border 1.5s ease-in-out,
-      --dock-bg 1.5s ease-in-out,
-      --dock-border 1.5s ease-in-out,
-      --accent 1.5s ease-in-out,
-      --surface 1.5s ease-in-out,
-      --on-surface 1.5s ease-in-out,
-      --muted 1.5s ease-in-out,
-      --adaptive-panel-bg 1.5s ease-in-out,
-      --adaptive-deck-bg 1.5s ease-in-out,
-      --adaptive-accent 1.5s ease-in-out,
-      --adaptive-on-surface 1.5s ease-in-out,
-      --adaptive-muted 1.5s ease-in-out,
+  /*
+   * Theme and Match Album colours change instantly at the root. Transitioning these inherited
+   * properties on :root made every element in the app recalculate its style on every frame of
+   * the fade (20 to 75 ms a frame measured in development), which stalled the record and the
+   * window after each track change. Surfaces fade their own backgrounds (paint only), and only
+   * the ambient background layer crossfades these colours.
+   */
+  .adaptive-ambient {
+    transition:
       --adaptive-base-temp 1.5s ease-in-out,
       --adaptive-ambient-primary 1.5s ease-in-out,
       --adaptive-ambient-secondary 1.5s ease-in-out,
@@ -120,6 +140,11 @@
       --adaptive-secondary-y 1.5s ease-in-out,
       --adaptive-highlight-x 1.5s ease-in-out,
       --adaptive-highlight-y 1.5s ease-in-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .adaptive-ambient {
+      transition: none;
+    }
   }
 
   html,
@@ -174,4 +199,39 @@
     --duration-artwork: 150ms;
     --duration-ambient: 300ms;
   }
+}
+
+/* Settings: grouped rows, like a panel of the deck (SettingsModal, PersonalSettings).
+   In the components layer so a row can still be changed with utilities (flex-col, items-stretch). */
+@layer components {
+.kissa-set-heading {
+  margin: 0 0 10px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.kissa-set-group {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--on-surface) 3.5%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--on-surface) 7%, transparent),
+    inset 0 1px 0 rgba(255, 235, 210, 0.05);
+}
+.kissa-set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 15px 20px;
+  border-bottom: 1px solid color-mix(in srgb, var(--on-surface) 6%, transparent);
+}
+.kissa-set-row:last-child {
+  border-bottom: 0;
+}
 }

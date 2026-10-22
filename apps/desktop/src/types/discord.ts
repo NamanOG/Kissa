@@ -17,6 +17,8 @@ export interface DiscordPresenceStatus {
   shareSpotify: boolean
   /** Show a running Study Room session (on by default once sharing is on). */
   shareStudy: boolean
+  /** Share YouTube Music played in a browser, via the paired Kissa connector (off by default). */
+  shareYouTubeMusic: boolean
   state: DiscordPresenceState
 }
 
@@ -36,4 +38,15 @@ export interface StudyPresence {
   round?: number
   tasksDone?: number
   tasksTotal?: number
+}
+
+/** The local link to the Kissa connector for YouTube Music, as the settings row shows it. */
+export interface YouTubeMusicConnectorStatus {
+  /** Kissa is listening for the connector (only while YouTube Music sharing is on). */
+  listening: boolean
+  paired: boolean
+  /** The connector is reporting YouTube Music right now. */
+  connected: boolean
+  /** A code to type into the connector, while pairing. */
+  pairing: { code: string; expiresAt: number } | null
 }

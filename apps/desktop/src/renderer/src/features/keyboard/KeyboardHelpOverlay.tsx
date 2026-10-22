@@ -1,4 +1,5 @@
-import React, { memo } from 'react'
+import React, { memo, useRef } from 'react'
+import { useDialogFocus } from '../../hooks/useDialogFocus'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { X } from 'lucide-react'
@@ -6,6 +7,8 @@ import { X } from 'lucide-react'
 export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
   const isOpen = usePlayerStore((s) => s.isKeyboardHelpOpen)
   const toggle = usePlayerStore((s) => s.toggleKeyboardHelp)
+  const panelRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(panelRef, isOpen)
 
   const shortcuts = [
     { key: 'Space', action: 'Play / Pause' },
@@ -17,6 +20,7 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
     { key: 'F11', action: 'Toggle Fullscreen' },
     { key: 'D', action: 'Start Listening Display' },
     { key: 'S', action: 'Open Settings' },
+    { key: 'E', action: 'Change your turntable (Kissa Edition)' },
     { key: '↑ / ↓', action: 'Volume ±5%' },
     { key: '?', action: 'Toggle this overlay' },
     { key: 'Esc', action: 'Close modals' }
@@ -34,6 +38,10 @@ export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
           onClick={toggle}
         >
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Keyboard shortcuts"
             className="relative w-full max-w-[420px] bg-[var(--deck-bg)] border border-white/[0.1] rounded-2xl p-8 overflow-hidden select-none shadow-[0_24px_64px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)]"
             initial={{ scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}

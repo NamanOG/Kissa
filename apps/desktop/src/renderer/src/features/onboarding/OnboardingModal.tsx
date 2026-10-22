@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+import { useDialogFocus } from '../../hooks/useDialogFocus'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { ArrowLeft, ArrowRight, X } from 'lucide-react'
 import { usePlayerStore, VINYL_COLORS } from '@renderer/stores/playerStore'
@@ -49,6 +50,8 @@ const FIELD_LABEL = 'mb-2.5 block font-mono text-[10.5px] font-semibold uppercas
 
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) => {
   const isOpen = usePlayerStore((s) => s.isOnboardingOpen)
+  const panelRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(panelRef, isOpen)
   const setIsOpen = usePlayerStore((s) => s.setIsOnboardingOpen)
   const theme = usePlayerStore((s) => s.theme)
   const setTheme = usePlayerStore((s) => s.setTheme)
@@ -103,6 +106,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
       />
 
       <motion.div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label="Kissa guide"

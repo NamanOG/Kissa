@@ -3,9 +3,12 @@ import { SkipBack, SkipForward, Play, Pause, Minimize2, Quote, Aperture, Disc } 
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { RoomDimmer } from '../controls/RoomDimmer'
 import { cn } from '@renderer/utils/cn'
+import { MovingLightToggle } from '../background/MovingLightToggle'
 
 export interface FullscreenControlsProps {
   isVisible: boolean
+  /** Keep the controls shown while keyboard focus is inside them. */
+  onHold?: (hold: boolean) => void
   showLyrics?: boolean
   onToggleLyrics?: () => void
   canShowLyrics?: boolean
@@ -13,6 +16,7 @@ export interface FullscreenControlsProps {
 
 export const FullscreenControls = memo(({ 
   isVisible, 
+  onHold,
   showLyrics = false, 
   onToggleLyrics, 
   canShowLyrics = true 
@@ -58,6 +62,10 @@ export const FullscreenControls = memo(({
         "absolute inset-0 z-50 flex flex-col justify-between p-6 min-[900px]:p-12",
         isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
       )}
+      onFocus={() => onHold?.(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) onHold?.(false)
+      }}
       style={{
         transitionProperty: 'opacity',
         transitionDuration: 'var(--duration-ui, 280ms)',
@@ -65,11 +73,12 @@ export const FullscreenControls = memo(({
       }}
     >
       <div className="flex justify-end gap-3">
+        <MovingLightToggle variant="fullscreen" />
         <button
           type="button"
           aria-label="Enter Listening Display"
           onClick={() => setIsListeningDisplay(true)}
-          className="h-10 px-4 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 active:scale-95 transition-[transform,color,background-color] duration-150 text-[13px] font-medium tracking-wide uppercase font-sans"
+          className="h-10 px-4 rounded-full flex items-center justify-center text-white/55 hover:text-white hover:bg-white/10 active:scale-95 transition-[transform,color,background-color] duration-150 text-[13px] font-medium font-sans focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
         >
           <Disc className="w-4 h-4 mr-2" />
           Display

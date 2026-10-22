@@ -129,6 +129,7 @@ namespace SmtcHelper
         private static string _prevTrackArtist = "";
         private static string _prevTrackAlbum = "";
         private static DateTime _trackChangeTime = DateTime.MinValue;
+        private static DateTime _lastThumbnailReadTime = DateTime.MinValue;
         private static int _lastVolume = -1;
         private static GlobalSystemMediaTransportControlsSession? _authoritySession;
         private static GlobalSystemMediaTransportControlsSession? _challengerSession;
@@ -876,6 +877,7 @@ namespace SmtcHelper
                     _cachedThumbnailBase64 = null;
                     _cachedThumbnailSettled = false;
                     _trackChangeTime = DateTime.UtcNow;
+                    _lastThumbnailReadTime = DateTime.MinValue;
 
                     // Schedule delayed retries during track transition to capture the thumbnail
                     // as soon as the media player (e.g. Apple Music / Spotify) finishes updating SMTC.
@@ -895,10 +897,19 @@ namespace SmtcHelper
                 }
 
                 string? thumbnailBase64 = _cachedThumbnailBase64;
-                bool shouldReadThumbnail = (thumbnailBase64 == null) || (force && !_cachedThumbnailSettled);
+                DateTime readNow = DateTime.UtcNow;
+                double msSinceChange = (readNow - _trackChangeTime).TotalMilliseconds;
+                // Player events (force) always reread: Apple Music raises one when its picture
+                // finally changes, and a settled cover must not block that late update.
+                bool shouldReadThumbnail = force || ThumbnailOwnership.ShouldPollReread(
+                    _cachedThumbnailSettled,
+                    thumbnailBase64 != null,
+                    msSinceChange,
+                    (readNow - _lastThumbnailReadTime).TotalMilliseconds);
 
                 if (shouldReadThumbnail && mediaProps?.Thumbnail != null)
                 {
+                    _lastThumbnailReadTime = readNow;
                     try
                     {
                         using var cts = new CancellationTokenSource(1500);
@@ -913,24 +924,25 @@ namespace SmtcHelper
                             {
                                 string readBase64 = Convert.ToBase64String(bytes);
 
-                                bool isStalePrevThumbnail = !_cachedThumbnailSettled &&
-                                    !string.IsNullOrEmpty(_prevTrackThumbnailBase64) &&
-                                    readBase64 == _prevTrackThumbnailBase64 &&
-                                    (DateTime.UtcNow - _trackChangeTime).TotalMilliseconds < 1000 &&
-                                    (!string.Equals(rawTitle, _prevTrackTitle, StringComparison.OrdinalIgnoreCase) ||
-                                     !string.Equals(rawArtist, _prevTrackArtist, StringComparison.OrdinalIgnoreCase) ||
-                                     (!string.IsNullOrEmpty(currentAlbum) && !string.IsNullOrEmpty(_prevTrackAlbum) && !string.Equals(currentAlbum, _prevTrackAlbum, StringComparison.OrdinalIgnoreCase)));
+                                var verdict = ThumbnailOwnership.Judge(
+                                    readBase64, _prevTrackThumbnailBase64,
+                                    rawTitle, rawArtist, currentAlbum,
+                                    _prevTrackTitle, _prevTrackArtist, _prevTrackAlbum,
+                                    msSinceChange);
 
-                                if (isStalePrevThumbnail)
-                                {
-                                    // The OS SMTC has not swapped the stream yet; do not lock in the stale thumbnail.
-                                    thumbnailBase64 = null;
-                                }
-                                else
+                                if (verdict == ThumbnailVerdict.Accept || verdict == ThumbnailVerdict.AcceptProvisional)
                                 {
                                     _cachedThumbnailBase64 = readBase64;
                                     thumbnailBase64 = readBase64;
-                                    _cachedThumbnailSettled = true;
+                                    _cachedThumbnailSettled = verdict == ThumbnailVerdict.Accept;
+                                }
+                                else
+                                {
+                                    // Still the previous track's picture: show none rather than the
+                                    // wrong one, and keep reading until the player swaps it.
+                                    _cachedThumbnailBase64 = null;
+                                    thumbnailBase64 = null;
+                                    _cachedThumbnailSettled = false;
                                 }
                             }
                         }
@@ -949,7 +961,9 @@ namespace SmtcHelper
                 // The cover is the bulk of a message (often 100 KB+). Send it when it changes
                 // and otherwise say "same as before"; the app keeps the last one it was given.
                 bool thumbnailChanged = thumbnailBase64 != _lastSentThumbnail;
-                bool sendThumbnail = thumbnailBase64 != null && (thumbnailChanged || force);
+                // Only when it differs from the last one sent: player events now reread the cover
+                // (pause, play), and resending the same 100 KB each time would be wasted work.
+                bool sendThumbnail = thumbnailBase64 != null && thumbnailChanged;
                 string thumb = sendThumbnail ? JsonEscape(thumbnailBase64!) : "null";
                 string thumbUnchanged = (thumbnailBase64 != null && !sendThumbnail) ? "true" : "false";
                 

@@ -57,7 +57,7 @@ export function SegmentedTabs<T extends string>({
       role={kind === 'tabs' ? 'tablist' : 'radiogroup'}
       aria-label={label}
       className={cn(
-        'inline-flex select-none items-center gap-0.5 rounded-xl border border-ink/10 bg-ink/[0.05] p-1',
+        'inline-flex select-none items-center gap-0.5 rounded-full border border-ink/[0.14] p-[3px]',
         className
       )}
     >
@@ -76,9 +76,9 @@ export function SegmentedTabs<T extends string>({
             onClick={() => onChange(tab.id)}
             onKeyDown={(e) => onKeyDown(e, index)}
             className={cn(
-              'relative cursor-pointer rounded-lg font-kissa-chassis font-semibold uppercase tracking-[0.12em] outline-none transition-colors duration-micro',
-              'focus-visible:ring-1 focus-visible:ring-tone',
-              size === 'md' ? 'px-3.5 py-1.5 text-[11px]' : 'min-w-[44px] px-3 py-1.5 text-[10.5px]',
+              'relative cursor-pointer rounded-full font-medium outline-none transition-colors duration-micro',
+              'focus-visible:outline focus-visible:outline-1 focus-visible:outline-ink/60',
+              size === 'md' ? 'h-7 px-4 text-[13px]' : 'h-[26px] min-w-[44px] px-3 text-[12.5px]',
               selected ? 'text-ink' : 'text-dim hover:text-ink'
             )}
           >
@@ -87,7 +87,7 @@ export function SegmentedTabs<T extends string>({
                 layoutId={plateId}
                 aria-hidden="true"
                 transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 34 }}
-                className="absolute inset-0 rounded-lg border border-ink/10 bg-ink/[0.1] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                className="absolute inset-0 rounded-full bg-ink/[0.11]"
               />
             )}
             <span className="relative">{tab.label}</span>

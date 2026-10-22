@@ -90,9 +90,23 @@ function normalizeTime(raw: number | undefined | null): number {
 }
 
 import { ArtworkService } from './ArtworkService'
+import { judgeCover, type CoverOwner } from './coverOwnership'
 
 /** The last cover the helper sent. It only resends the image when it changes. */
 let lastThumbnailDataUrl: string | undefined
+/** The last player cover accepted as a track's own, and that track. */
+let lastCoverOwner: CoverOwner | undefined
+/** The track now playing (title, artist, album, player) and when it started. */
+let currentTrackKey = ''
+let currentTrackSince = 0
+
+/** Forget what the previous helper sent (a restarted helper starts from scratch). */
+export function resetHelperCoverState(): void {
+  lastThumbnailDataUrl = undefined
+  lastCoverOwner = undefined
+  currentTrackKey = ''
+  currentTrackSince = 0
+}
 
 function formatSession(
   session: any,
@@ -169,11 +183,27 @@ function formatSession(
   // match found for the track is used.
   const artwork = ArtworkService.getInstance()
   let publicArtworkUrl: string | undefined
+  let rememberCover = true
+  const trackKey = `${title}|${artist}|${album}|${session.sourceAppId ?? ''}`.toLowerCase()
+  if (trackKey !== currentTrackKey) {
+    currentTrackKey = trackKey
+    currentTrackSince = Date.now()
+  }
+  if (artworkDataUrl?.startsWith('data:')) {
+    const verdict = judgeCover(
+      lastCoverOwner,
+      { cover: artworkDataUrl, title, artist, album },
+      Date.now() - currentTrackSince
+    )
+    if (verdict === 'stale') artworkDataUrl = undefined
+    else if (verdict === 'unproven') rememberCover = false
+    else lastCoverOwner = { cover: artworkDataUrl, title, artist, album }
+  }
   if (artworkDataUrl) {
     publicArtworkUrl = artwork.getPublicArtwork(title, artist, album, artworkDataUrl)
     const verified = artwork.getVerifiedArtwork(title, artist, album, artworkDataUrl)
     if (verified) artworkDataUrl = verified
-    else artwork.setCachedArtwork(title, artist, artworkDataUrl, album)
+    else if (rememberCover) artwork.setCachedArtwork(title, artist, artworkDataUrl, album)
   } else {
     const cachedArtwork = artwork.getCachedArtwork(title, artist, album)
     if (cachedArtwork) artworkDataUrl = cachedArtwork
@@ -212,6 +242,8 @@ export class MediaDetectionService {
   private lastPayloadJson: string | null = null
   /** Embedded cover last sent to each window, so position updates do not carry it again. */
   private readonly artworkSentTo = new Map<number, string>()
+  /** Pages whose reloads are watched, so their record of the sent cover can be reset. */
+  private readonly watchedContents = new Set<number>()
   private latestVolume: { master: number; isMuted: boolean } = { master: 100, isMuted: false }
   private videoPlaybackState: VideoPlaybackState = 'unknown'
   private lastUpdateTimestamp: number = 0
@@ -449,6 +481,7 @@ export class MediaDetectionService {
             signal: msg.signal,
             restartInMs: msg.restartInMs
           })
+          resetHelperCoverState()
           this.isWorkerHealthy = false
           this.videoPlaybackState = 'unknown'
           ScreensaverSessionService.getInstance().onPlaybackStateChanged(
@@ -531,11 +564,22 @@ export class MediaDetectionService {
     if (payload && payload.title && payload.artist && needsWebArtwork) {
       const currentTitle = payload.title
       const currentArtist = payload.artist
+      const currentAlbum = payload.album || ''
+      const currentSource = payload.sourceAppId
       ArtworkService.getInstance()
         .fetchArtworkFor(payload.title, payload.artist, payload.album, ownCover)
         .then((fetchedUrl) => {
           const latest = this.latestPayload
-          if (!latest || latest.title !== currentTitle || latest.artist !== currentArtist) return
+          // A lookup answers for one recording from one player: another edition of the
+          // song, or the same song in another app, must not take this result.
+          if (
+            !latest ||
+            latest.title !== currentTitle ||
+            latest.artist !== currentArtist ||
+            (latest.album || '') !== currentAlbum ||
+            latest.sourceAppId !== currentSource
+          )
+            return
           // Only the very picture that was checked, not a newer cover that arrived meanwhile.
           const samePicture =
             ownCover === undefined
@@ -586,6 +630,17 @@ export class MediaDetectionService {
       if (win.isDestroyed() || !win.webContents) continue
       const id = win.webContents.id
       const artwork = payload?.artworkDataUrl
+      if (!this.watchedContents.has(id)) {
+        // A reloaded page (or a renderer restarted after a crash) has lost the cover it
+        // was sent, so it must be sent in full again rather than marked "unchanged".
+        this.watchedContents.add(id)
+        const contents = win.webContents
+        contents.on('did-start-loading', () => this.artworkSentTo.delete(id))
+        contents.once('destroyed', () => {
+          this.artworkSentTo.delete(id)
+          this.watchedContents.delete(id)
+        })
+      }
 
       // An embedded cover can be hundreds of kilobytes. Send it once per window and
       // mark later updates "unchanged"; the preload bridge puts it back.

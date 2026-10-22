@@ -57,15 +57,25 @@ export function isNewer(a: string, b: string): boolean {
   return false
 }
 
+/** The feature release a version belongs to: 4.3.1 and 4.3.0 are both 4.3. */
+function featureRelease(v: string): string {
+  const [major = 0, minor = 0] = parts(v)
+  return `${major}.${minor}`
+}
+
 /**
- * "What's new" shows once per new version for people who already used Kissa. A fresh
- * install sees the guide instead, so its first version counts as seen.
+ * "What's new" shows once per new feature release for people who already used Kissa. A
+ * fresh install sees the guide instead, so its first version counts as seen. Maintenance
+ * updates (4.3.0 to 4.3.1) carry no new notes, so they do not show the last ones again;
+ * someone arriving from an older release still sees them.
  */
 export function whatsNewDecision(state: GrowthState, version: string, firstRun: boolean): { show: boolean; next: GrowthState } {
   if (!version) return { show: false, next: state }
   if (state.lastSeenVersion === version) return { show: false, next: state }
   if (firstRun) return { show: false, next: { ...state, lastSeenVersion: version } }
-  const show = state.lastSeenVersion === null || isNewer(version, state.lastSeenVersion)
+  const show =
+    state.lastSeenVersion === null ||
+    isNewer(featureRelease(version), featureRelease(state.lastSeenVersion))
   return { show, next: { ...state, lastSeenVersion: version } }
 }
 

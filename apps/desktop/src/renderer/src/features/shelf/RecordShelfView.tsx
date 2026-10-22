@@ -7,6 +7,18 @@ import { Disc3, X, Share, Trash2 } from 'lucide-react'
 import { cn } from '../../utils/cn'
 import { SharePreviewModal } from '../share/SharePreviewModal'
 import { SharePayload, StatsShareData, AlbumShareData } from '../../../../types/share'
+import { RecordCrate } from './RecordCrate'
+
+type ShelfLayout = 'grid' | 'crate'
+const LAYOUT_KEY = 'kissa_shelf_layout'
+
+function readLayout(): ShelfLayout {
+  try {
+    return localStorage.getItem(LAYOUT_KEY) === 'crate' ? 'crate' : 'grid'
+  } catch {
+    return 'grid'
+  }
+}
 
 type SortOption = 'recent' | 'added' | 'played' | 'alpha'
 
@@ -22,6 +34,16 @@ export const RecordShelfView = memo(() => {
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null)
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedForShare, setSelectedForShare] = useState<Set<string>>(new Set())
+  const [layout, setLayoutState] = useState<ShelfLayout>(readLayout)
+  const [crateKey, setCrateKey] = useState<string | null>(null)
+  const setLayout = (next: ShelfLayout): void => {
+    setLayoutState(next)
+    try {
+      localStorage.setItem(LAYOUT_KEY, next)
+    } catch {
+      // Storage unavailable: the choice lasts for this visit.
+    }
+  }
 
   const sortedRecords = useMemo(() => {
     const arr = [...records]
@@ -87,28 +109,33 @@ export const RecordShelfView = memo(() => {
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       className="relative flex flex-col h-full w-full transform-gpu overflow-hidden mx-auto"
     >
-      <header className="flex flex-col min-[1000px]:flex-row min-[1000px]:items-end justify-between shrink-0 mb-6 px-10 min-[900px]:px-16 pt-10 gap-8">
+      <header className="flex flex-col min-[1100px]:flex-row min-[1100px]:items-end justify-between shrink-0 mb-5 px-8 min-[1100px]:px-16 pt-8 min-[1100px]:pt-10 gap-5 min-[1100px]:gap-8">
         <div>
           <h1 className="font-serif text-3xl min-[900px]:text-4xl font-medium tracking-tight text-ink flex items-center gap-3">
             <Disc3 className="w-8 h-8 opacity-40" />
             {listenerName.trim() ? `${possessive(listenerName)} Records` : 'My Records'}
           </h1>
-          <p className="font-kissa-chassis uppercase tracking-[0.2em] text-[10px] mt-3 text-dim/80">
-            {records.length} {records.length === 1 ? 'RECORD' : 'RECORDS'}
+          <p className="mt-2 text-[13px] text-dim">
+            {records.length} {records.length === 1 ? 'record' : 'records'}
           </p>
         </div>
         
         {records.length > 0 && (
-          <div className="flex flex-wrap items-center gap-8 border-b border-ink/10 pb-2">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-ink/10 pb-2">
             {!selectionMode ? (
               <>
-                <div className="flex items-center gap-6">
+                <div role="radiogroup" aria-label="Shelf layout" className="flex items-center gap-6">
+                  <SortTab active={layout === 'grid'} onClick={() => setLayout('grid')} label="Grid" radio indicator="layout-indicator" />
+                  <SortTab active={layout === 'crate'} onClick={() => setLayout('crate')} label="Crate" radio indicator="layout-indicator" />
+                </div>
+                <div className="flex items-center gap-6 pl-6 border-l border-ink/10">
                   <SortTab active={sort === 'recent'} onClick={() => setSort('recent')} label="Recent" />
                   <SortTab active={sort === 'added'} onClick={() => setSort('added')} label="Added" />
-                  <SortTab active={sort === 'played'} onClick={() => setSort('played')} label="Most Played" />
+                  <SortTab active={sort === 'played'} onClick={() => setSort('played')} label="Most played" />
                   <SortTab active={sort === 'alpha'} onClick={() => setSort('alpha')} label="A-Z" />
                 </div>
-                <div className="flex items-center gap-4 pl-6 border-l border-ink/10">
+                {/* Set apart by space, not a rule: a rule would start the new line when the bar wraps. */}
+                <div className="ml-auto flex items-center gap-4 pb-[9px]">
                   <button 
                     type="button" 
                     onClick={() => setSelectionMode(true)}
@@ -217,11 +244,22 @@ export const RecordShelfView = memo(() => {
             Play something in Spotify, Apple Music or TIDAL. Each album you listen to is kept here.
           </p>
         </div>
+      ) : layout === 'crate' && !selectionMode ? (
+        <div className="flex-1 w-full min-h-0">
+          <RecordCrate
+            records={sortedRecords}
+            currentKey={crateKey}
+            onCurrentChange={setCrateKey}
+            onOpen={(key) => setSelectedAlbum(key)}
+          />
+        </div>
       ) : (
         <div className="flex-1 w-full min-h-0 overflow-y-auto overflow-x-hidden no-scrollbar pb-32">
           <div 
-            className="grid gap-x-10 min-[900px]:gap-x-12 gap-y-16 px-10 min-[900px]:px-16 pb-32 max-w-[2400px] mx-auto w-full"
-            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}
+            className="grid gap-x-8 min-[1100px]:gap-x-12 gap-y-12 min-[1100px]:gap-y-16 px-8 min-[1100px]:px-16 pt-2 pb-32 max-w-[2400px] mx-auto w-full"
+            // Columns come from the room available: three at the smallest window, more as it grows,
+            // so covers stay record-sized instead of poster-sized.
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(170px, 100%), 1fr))' }}
           >
             <AnimatePresence>
               {sortedRecords.map((record) => (
@@ -313,7 +351,7 @@ export const RecordShelfView = memo(() => {
                 </div>
 
                 <h2 className="mt-9 font-kissa-editorial text-[30px] font-normal leading-[1.08] text-ink text-balance">{selectedRecord.album}</h2>
-                <p className="mt-2 text-[12px] font-bold uppercase tracking-[0.2em] text-tone">{selectedRecord.artist}</p>
+                <p className="mt-2 text-[15px] text-tone">{selectedRecord.artist}</p>
 
                 <dl className="mt-8 grid grid-cols-3 border-y border-ink/[0.08] py-5">
                   <div>
@@ -332,7 +370,7 @@ export const RecordShelfView = memo(() => {
 
                 {selectedRecord.tracksEncountered.length > 0 && (
                   <div className="mt-8">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-dim">Songs you have played</p>
+                    <p className="text-[12.5px] font-medium text-dim">Songs you have played</p>
                     <ol className="mt-3">
                       {selectedRecord.tracksEncountered.map((t, i) => (
                         <li key={i} className="flex items-baseline gap-4 border-b border-ink/[0.05] py-2.5 last:border-b-0">
@@ -393,22 +431,25 @@ function shelfDate(time: number): string {
   return d.toLocaleDateString(undefined, d.getFullYear() === today.getFullYear() ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function SortTab({ active, onClick, label }: { active: boolean, onClick: () => void, label: string }) {
+function SortTab({ active, onClick, label, radio, indicator = 'sort-indicator' }: { active: boolean, onClick: () => void, label: string, radio?: boolean, indicator?: string }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="relative pb-[9px] group"
+      role={radio ? 'radio' : undefined}
+      aria-checked={radio ? active : undefined}
+      aria-pressed={radio ? undefined : active}
+      className="relative pb-[9px] group cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-tone rounded-sm"
     >
       <span className={cn(
-        "font-kissa-chassis text-[10px] uppercase tracking-[0.15em] transition-colors duration-ui",
-        active ? "text-ink font-semibold" : "text-dim/60 group-hover:text-dim font-medium"
+        "text-[13px] transition-colors duration-ui",
+        active ? "text-ink font-medium" : "text-dim group-hover:text-ink"
       )}>
         {label}
       </span>
       {active && (
         <motion.div 
-          layoutId="sort-indicator"
+          layoutId={indicator}
           className="absolute left-0 right-0 bottom-0 h-[2px] bg-tone shadow-[0_0_8px_var(--accent)]" 
         />
       )}
@@ -422,7 +463,25 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
                              currentTrack?.artist?.toLowerCase() === record.artist.toLowerCase()
 
   return (
-    <div className={cn("flex flex-col relative group cursor-pointer", isSelected ? "z-20" : "hover:z-20")} onClick={onClick}>
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={`${record.album} by ${record.artist}`}
+      aria-pressed={selectionMode ? isSelectedForShare : undefined}
+      aria-expanded={selectionMode ? undefined : isSelected}
+      className={cn(
+        "flex flex-col relative group cursor-pointer rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-tone",
+        isSelected ? "z-20" : "hover:z-20"
+      )}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
+    >
       <div 
         className={cn(
           "relative w-full aspect-square transform-gpu transition-[transform,box-shadow,border-color] duration-content ease-primary rounded-sm shadow-[0_8px_24px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.15),inset_1px_0_0_rgba(255,255,255,0.1)]",
@@ -479,7 +538,7 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
         <h3 className="font-serif text-[16px] leading-snug font-medium tracking-tight text-ink truncate">
           {record.album}
         </h3>
-        <p className="font-kissa-chassis text-[9.5px] uppercase tracking-[0.15em] mt-1 text-dim truncate">
+        <p className="mt-1 text-[13px] text-dim truncate">
           {record.artist}
         </p>
       </div>

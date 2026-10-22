@@ -3,6 +3,8 @@ import { BackgroundLayer } from './BackgroundLayer'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { LISTENING_ENVIRONMENTS } from '../settings/themes'
 import { AnimatePresence, motion } from 'framer-motion'
+import { AmbientDrift } from './AmbientDrift'
+import { FluidAmbient } from './FluidAmbient'
 
 export const GradientLayer = memo(() => {
   const currentThemeId = usePlayerStore((s) => s.theme)
@@ -10,9 +12,10 @@ export const GradientLayer = memo(() => {
     LISTENING_ENVIRONMENTS.find((e) => e.id === currentThemeId) ?? LISTENING_ENVIRONMENTS[0]
   
   const artworkUrl = usePlayerStore((s) => s.currentTrack?.artworkUrl)
+  const ambientMotion = usePlayerStore((s) => s.ambientMotion)
 
   return (
-    <BackgroundLayer className="overflow-hidden">
+    <BackgroundLayer className="overflow-hidden adaptive-ambient">
       <div
         className="absolute inset-0"
         style={{
@@ -21,7 +24,17 @@ export const GradientLayer = memo(() => {
         }}
       />
 
-      {currentThemeId === 'adaptive' ? (
+      {currentThemeId === 'adaptive' && ambientMotion && artworkUrl ? (
+        // Moving light: one renderer for Home and full screen (this layer sits under both).
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.95 }}
+          transition={{ duration: 1.2, ease: 'easeInOut' }}
+          className="absolute inset-0 pointer-events-none"
+        >
+          <FluidAmbient artworkUrl={artworkUrl} />
+        </motion.div>
+      ) : currentThemeId === 'adaptive' ? (
         <AnimatePresence>
           {artworkUrl && (
             <motion.div
@@ -31,15 +44,9 @@ export const GradientLayer = memo(() => {
               exit={{ opacity: 0 }}
               transition={{ duration: 1.5, ease: "easeInOut" }}
               className="absolute inset-0 pointer-events-none"
-              style={{
-                backgroundImage: `url(${artworkUrl})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                // Massive blur to destroy objects/shapes, saturate to preserve color, scale to avoid edge bleeding
-                filter: 'blur(100px) saturate(1.8) contrast(1.1)',
-                transform: 'scale(1.2)' 
-              }}
-            />
+            >
+              <AmbientDrift artworkUrl={artworkUrl} />
+            </motion.div>
           )}
         </AnimatePresence>
       ) : (
@@ -56,14 +63,18 @@ export const GradientLayer = memo(() => {
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: currentThemeId === 'adaptive' 
-            ? 'radial-gradient(ellipse 95% 90% at 50% 50%, rgba(0,0,0,0.4) 10%, rgba(0,0,0,0.7) 65%, rgba(0,0,0,0.95) 100%)'
+          background: currentThemeId === 'adaptive'
+            ? ambientMotion
+              ? // Lighter, so the flowing colour shows; still dark enough at the edges. A soft shade on the
+                // left keeps the title, album and duration readable when the cover's colours are light.
+                'linear-gradient(to right, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.28) 30%, rgba(0,0,0,0) 55%), radial-gradient(ellipse 110% 100% at 50% 50%, rgba(0,0,0,0.12) 20%, rgba(0,0,0,0.32) 70%, rgba(0,0,0,0.6) 100%)'
+              : 'radial-gradient(ellipse 95% 90% at 50% 50%, rgba(0,0,0,0.4) 10%, rgba(0,0,0,0.7) 65%, rgba(0,0,0,0.95) 100%)'
             : 'radial-gradient(ellipse 85% 80% at 50% 50%, transparent 55%, rgba(0,0,0,0.45) 100%)',
           transition: 'background 1500ms cubic-bezier(0.22, 1, 0.36, 1)'
         }}
       />
       
-      {currentThemeId === 'adaptive' && (
+      {currentThemeId === 'adaptive' && !(ambientMotion && artworkUrl) && (
         <div
           className="absolute inset-0 pointer-events-none"
           style={{

@@ -1,103 +1,76 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useMechanicalTick } from '../useMechanicalTick'
 
 describe('useMechanicalTick', () => {
-  const mockOscillator = {
-    connect: vi.fn(),
-    start: vi.fn(),
-    stop: vi.fn(),
-    type: '',
-    frequency: {
-      setValueAtTime: vi.fn(),
-      exponentialRampToValueAtTime: vi.fn()
-    }
-  }
-
-  const mockGainNode = {
-    connect: vi.fn(),
-    gain: {
-      setValueAtTime: vi.fn(),
-      linearRampToValueAtTime: vi.fn(),
-      exponentialRampToValueAtTime: vi.fn()
-    }
-  }
-
-  const mockFilterNode = {
-    connect: vi.fn(),
-    type: '',
-    frequency: {
-      value: 0
-    }
-  }
+  const started = vi.fn()
 
   class MockAudioContext {
     state = 'running'
-    resume = vi.fn().mockResolvedValue(undefined)
-    createOscillator = vi.fn().mockReturnValue(mockOscillator)
-    createGain = vi.fn().mockReturnValue(mockGainNode)
-    createBiquadFilter = vi.fn().mockReturnValue(mockFilterNode)
+    sampleRate = 48000
     destination = {}
-    currentTime = 0
+    resume = vi.fn().mockResolvedValue(undefined)
+    createBuffer = vi.fn((_ch: number, length: number) => {
+      const data = new Float32Array(length)
+      return { getChannelData: () => data }
+    })
+    createBufferSource = vi.fn(() => ({ buffer: null, connect: vi.fn(), start: started }))
+    createGain = vi.fn(() => ({ gain: { value: 1 }, connect: vi.fn() }))
+    decodeAudioData = vi.fn(async () => ({ duration: 0.03 }))
+  }
+  // The tick is a recording: fetched and decoded once, then played from memory.
+  const settle = async (): Promise<void> => {
+    for (let i = 0; i < 3; i++) await new Promise((r) => setTimeout(r, 0))
   }
 
-  beforeEach(() => {
+  let now = 1000
+  beforeEach(async () => {
+    vi.resetModules()
+    started.mockClear()
     vi.stubGlobal('AudioContext', MockAudioContext)
-    
-    // Clear last tick state since it's a module level variable we don't have direct access to,
-    // we use mock performance.now() to control the time completely.
-    let currentTime = 1000
-    vi.spyOn(performance, 'now').mockImplementation(() => currentTime)
-    
-    ;(global as any).advanceTime = (ms: number) => {
-      currentTime += ms
-    }
+    vi.stubGlobal('fetch', vi.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(8) })))
+    now = 1000
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
   })
 
   afterEach(() => {
-    vi.clearAllMocks()
+    vi.unstubAllGlobals()
     vi.restoreAllMocks()
-    delete (global as any).advanceTime
   })
 
-  it('plays a synthesized mechanical tick when called', () => {
+  it('plays the tick recording through one buffer source, decoding it only once', async () => {
+    const { useMechanicalTick } = await import('../useMechanicalTick')
     const { result } = renderHook(() => useMechanicalTick())
-    
-    result.current() // Call playTick
-    
-    // Since we create a new instance, we should spy on the prototype or just check if the mockOscillator methods were called
-    expect(mockOscillator.start).toHaveBeenCalled()
-    expect(mockOscillator.stop).toHaveBeenCalled()
+    result.current()
+    await settle()
+    expect(started).toHaveBeenCalledTimes(1)
+    now += 100
+    result.current()
+    expect(started).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1)
   })
 
-  it('throttles calls within the 35ms window', () => {
+  it('throttles calls within the 35ms window', async () => {
+    const { useMechanicalTick } = await import('../useMechanicalTick')
     const { result } = renderHook(() => useMechanicalTick())
-    
-    result.current() // Initial call
-    expect(mockOscillator.start).toHaveBeenCalledTimes(1)
-    
-    ;(global as any).advanceTime(10)
     result.current()
-    expect(mockOscillator.start).toHaveBeenCalledTimes(1)
-    
-    ;(global as any).advanceTime(30) // total 40ms since first call
-    
+    await settle()
+    now += 10
     result.current()
-    expect(mockOscillator.start).toHaveBeenCalledTimes(2)
+    expect(started).toHaveBeenCalledTimes(1)
+    now += 30
+    result.current()
+    expect(started).toHaveBeenCalledTimes(2)
   })
 
-  it('silently catches errors if AudioContext fails (e.g. autoplay block)', () => {
+  it('silently does nothing if audio is unavailable (e.g. autoplay block)', async () => {
     class FailingAudioContext {
       constructor() {
         throw new Error('Not allowed')
       }
     }
     vi.stubGlobal('AudioContext', FailingAudioContext)
-    
+    const { useMechanicalTick } = await import('../useMechanicalTick')
     const { result } = renderHook(() => useMechanicalTick())
-    
-    expect(() => {
-      result.current()
-    }).not.toThrow()
+    expect(() => result.current()).not.toThrow()
   })
 })

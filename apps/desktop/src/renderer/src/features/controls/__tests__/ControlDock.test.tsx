@@ -48,4 +48,15 @@ describe('ControlDock component', () => {
     fireEvent.click(displayBtn)
     expect(usePlayerStore.getState().isListeningDisplay).toBe(true)
   })
+
+  it('shows no stale position when the new source reports no length', () => {
+    const { rerender } = render(<ControlDock />)
+    expect(screen.getByRole('group', { name: 'Track position' })).toHaveTextContent('5:37')
+    usePlayerStore.setState({ currentTrack: { title: 'Live', artist: 'Radio', album: '', duration: 0 } })
+    rerender(<ControlDock />)
+    const group = screen.getByRole('group', { name: 'Track position' })
+    expect(group).toHaveTextContent('0:00')
+    expect(group).toHaveTextContent('–:––')
+    expect(group).not.toHaveTextContent('5:37')
+  })
 })

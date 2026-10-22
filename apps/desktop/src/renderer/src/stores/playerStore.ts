@@ -17,10 +17,55 @@ export type AppTheme =
   | 'sunday-morning'
   | 'adaptive'
 
-/** The colour of the record on the platter. 'match' follows the room's accent. */
-export type VinylColor = 'black' | 'oxblood' | 'amber' | 'forest' | 'cobalt' | 'smoke' | 'match'
-export const VINYL_COLORS: VinylColor[] = ['black', 'oxblood', 'amber', 'forest', 'cobalt', 'smoke', 'match']
-export type SettingsTab = 'room' | 'playback' | 'system'
+export const APP_THEMES: AppTheme[] = [
+  'quiet-room',
+  'dusty-record',
+  'jazz-bar',
+  'midnight-apartment',
+  'rainy-window',
+  'hifi-library',
+  'concrete-vinyl',
+  'sunday-morning',
+  'adaptive'
+]
+
+/**
+ * The record on the platter. 'match' follows the room's accent; 'album' is made for the album
+ * that is playing (features/vinyl/albumPressing.ts), an opt-in choice; 'marble' and 'split' are
+ * special pressings (Kissa Editions). Older saved choices are all still valid.
+ */
+export type VinylColor =
+  | 'black'
+  | 'oxblood'
+  | 'amber'
+  | 'forest'
+  | 'cobalt'
+  | 'smoke'
+  | 'match'
+  | 'album'
+  | 'marble'
+  | 'split'
+  | 'oxbloodMarble'
+  | 'midnightMarble'
+  | 'tortoise'
+  | 'splatter'
+export const VINYL_COLORS: VinylColor[] = [
+  'black',
+  'oxblood',
+  'amber',
+  'forest',
+  'cobalt',
+  'smoke',
+  'match',
+  'album',
+  'marble',
+  'oxbloodMarble',
+  'midnightMarble',
+  'tortoise',
+  'splatter',
+  'split'
+]
+export type SettingsTab = 'room' | 'playback' | 'lyrics' | 'system'
 export type LyricsSize = 's' | 'm' | 'l'
 export type LyricsFace = 'sans' | 'serif'
 
@@ -72,6 +117,8 @@ export interface PlayerState {
   needleSound: boolean
   physicalFeedback: boolean
   autoScrollLyrics: boolean
+  /** Match the album: let the cover colours drift slowly behind the room (off by default). */
+  ambientMotion: boolean
   lyricsOffset: number
   lyricsSize: LyricsSize
   lyricsFace: LyricsFace
@@ -119,6 +166,7 @@ export interface PlayerState {
   setNeedleSound: (enabled: boolean) => void
   setPhysicalFeedback: (enabled: boolean) => void
   setAutoScrollLyrics: (enabled: boolean) => void
+  setAmbientMotion: (enabled: boolean) => void
   setLyricsOffset: (offset: number) => void
   setLyricsSize: (size: LyricsSize) => void
   setLyricsFace: (face: LyricsFace) => void
@@ -224,9 +272,15 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   settingsTab: 'room',
   isOnboardingOpen: getInitialOnboarding(),
   isWhatsNewOpen: false,
-  needleSound: true,
+  // "Turntable sounds": the needle and the deck's controls. Earlier versions tied the needle to
+  // Physical feedback, so someone who had turned that off keeps the needle quiet.
+  needleSound:
+    typeof localStorage !== 'undefined'
+      ? (localStorage.getItem('kissa_turntable_sounds') ?? (localStorage.getItem('kissa_physical_feedback') === 'false' ? 'false' : 'true')) !== 'false'
+      : true,
   physicalFeedback: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_physical_feedback') !== 'false' : true,
   autoScrollLyrics: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_auto_scroll_lyrics') !== 'false' : true,
+  ambientMotion: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_ambient_motion') === 'true' : false,
   lyricsSize: readChoice('kissa_lyrics_size', ['s', 'm', 'l'] as const, 'm'),
   lyricsFace: readChoice('kissa_lyrics_face', ['sans', 'serif'] as const, 'sans'),
   listenerName: typeof localStorage !== 'undefined' ? (localStorage.getItem('kissa_listener_name') || '').slice(0, 24) : '',
@@ -371,12 +425,19 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       }
       return { isOnboardingOpen: next }
     }),
-  setNeedleSound: (needleSound) => set({ needleSound }),
+  setNeedleSound: (needleSound) => {
+    save('kissa_turntable_sounds', needleSound.toString())
+    set({ needleSound })
+  },
   setPhysicalFeedback: (physicalFeedback) => {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('kissa_physical_feedback', physicalFeedback.toString())
     }
     set({ physicalFeedback })
+  },
+  setAmbientMotion: (ambientMotion) => {
+    save('kissa_ambient_motion', ambientMotion.toString())
+    set({ ambientMotion })
   },
   setAutoScrollLyrics: (autoScrollLyrics) => {
     save('kissa_auto_scroll_lyrics', autoScrollLyrics.toString())

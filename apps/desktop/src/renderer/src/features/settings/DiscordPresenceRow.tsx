@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { HardwareSwitch } from '@renderer/components/ui/HardwareSwitch'
 import type { DiscordPresenceState, DiscordPresenceStatus } from '../../../../types/discord'
+import { YouTubeMusicConnectorRow } from './YouTubeMusicConnectorRow'
 
-function stateText(state: DiscordPresenceState, spotify: boolean): string {
-  const players = spotify ? 'Apple Music or Spotify' : 'Apple Music'
+function stateText(state: DiscordPresenceState, spotify: boolean, youtubeMusic = false): string {
+  const players = [
+    'Apple Music',
+    ...(spotify ? ['Spotify'] : []),
+    ...(youtubeMusic ? ['YouTube Music'] : [])
+  ].join(spotify && youtubeMusic ? ', ' : ' or ').replace(/, ([^,]*)$/, ' or $1')
   switch (state) {
     case 'off':
       return 'Show the track you are playing on your Discord profile, with a link to Kissa'
@@ -18,7 +23,7 @@ function stateText(state: DiscordPresenceState, spotify: boolean): string {
     case 'paused':
       return 'Paused. The track clears after two minutes'
     case 'studying':
-      return 'Sharing your Study Room session'
+      return 'Sharing your focus session'
   }
 }
 
@@ -70,13 +75,13 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
   const canShareStudy = Boolean(window.electron?.setDiscordShareStudy)
 
   return (
-    <div className="flex flex-col px-5 py-[18px] min-[600px]:px-7 hover:bg-ink/[0.02] transition-colors">
+    <div className="kissa-set-row flex-col items-stretch gap-0">
       <div className="flex items-center justify-between gap-4">
         <div className="flex flex-col">
-          <span className="text-[13.5px] font-medium text-ink">Share on Discord</span>
-          <span className="text-[12px] leading-relaxed text-dim mt-1 flex items-center gap-1.5" role="status">
+          <span className="text-[14px] font-medium text-ink">Share on Discord</span>
+          <span className="mt-0.5 text-[12.5px] leading-relaxed text-dim flex items-center gap-1.5" role="status">
             {live && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-tone" aria-hidden="true" />}
-            {stateText(status.state, status.shareSpotify)}
+            {stateText(status.state, status.shareSpotify, status.shareYouTubeMusic)}
           </span>
         </div>
         <HardwareSwitch
@@ -91,21 +96,21 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
         <div className="mt-3 rounded-xl border border-ink/10 bg-ink/[0.04] p-3.5">
           <p className="text-[12px] leading-relaxed text-ink/90">
             While Kissa follows Apple Music, your Discord profile will show the song, artist, album
-            cover and time played, with a link to get Kissa. During a Study Room session it shows the
+            cover and time played, with a link to get Kissa. During a focus session it shows the
             room and its timer instead. Friends and people in your servers can see it.
           </p>
           <div className="mt-3 flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="px-3.5 py-1.5 rounded-xl bg-ink/[0.06] hover:bg-ink/[0.12] text-ink text-[12px] font-bold transition-colors cursor-pointer border border-ink/10 active:scale-95"
+              className="h-8 px-4 rounded-full border border-ink/[0.16] text-[12.5px] font-medium text-ink transition-colors hover:bg-ink/[0.07] hover:border-ink/25 cursor-pointer active:translate-y-px"
             >
               Not now
             </button>
             <button
               type="button"
               onClick={() => setEnabled(true)}
-              className="px-4 py-1.5 rounded-xl bg-tone text-[var(--surface)] text-[12px] font-bold transition-colors cursor-pointer shadow-[0_2px_12px_var(--accent)] shadow-black/30 active:scale-95"
+              className="h-8 px-4 rounded-full bg-ink text-[var(--surface)] text-[12.5px] font-semibold transition-opacity hover:opacity-90 cursor-pointer active:translate-y-px"
             >
               Share on Discord
             </button>
@@ -130,10 +135,12 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
         </div>
       )}
 
+      {status.enabled && <YouTubeMusicConnectorRow status={status} onStatus={setStatus} />}
+
       {status.enabled && canShareStudy && (
         <div className="mt-3 flex items-center justify-between gap-4 border-t border-ink/[0.06] pt-3">
           <div className="flex flex-col">
-            <span className="text-[12.5px] font-medium text-ink">Show study sessions</span>
+            <span className="text-[12.5px] font-medium text-ink">Show focus sessions</span>
             <span className="text-[11.5px] leading-relaxed text-dim mt-0.5">
               While a session runs, your profile shows the room and its timer. What you are working
               on stays private.
@@ -142,7 +149,7 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
           <HardwareSwitch
             checked={status.shareStudy}
             onChange={setShareStudy}
-            aria-label="Show Study Room sessions on Discord"
+            aria-label="Show focus sessions on Discord"
           />
         </div>
       )}

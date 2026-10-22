@@ -45,16 +45,16 @@ function useNow(active: boolean): number {
 }
 
 const EYEBROW = 'font-kissa-chassis text-[11px] font-bold uppercase tracking-[0.24em] text-tone'
-const SOFT_LABEL = 'font-mono text-[10px] uppercase tracking-[0.2em] text-white/65'
+const SOFT_LABEL = 'text-[12.5px] text-white/70'
 // Kissa's immersive controls (the Listening Room's language): glass pills, quiet
 // uppercase sans labels, the room's accent for the one primary action.
 const PRIMARY_BUTTON =
-  'inline-flex h-10 items-center justify-center gap-2 rounded-full bg-tone px-5 font-sans text-[12.5px] font-semibold uppercase tracking-[0.08em] text-[var(--surface)] shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-transform active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone'
+  'inline-flex h-10 items-center justify-center gap-2 rounded-full bg-tone px-5 font-sans text-[13.5px] font-semibold text-[var(--surface)] shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-transform active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone'
 const QUIET_BUTTON =
-  'inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 font-sans text-[12.5px] font-medium uppercase tracking-[0.08em] text-white/60 transition-[color,background-color,transform] hover:bg-white/10 hover:text-white active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone'
+  'inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 font-sans text-[13.5px] font-medium text-white/60 transition-[color,background-color,transform] hover:bg-white/10 hover:text-white active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone'
 const CHIP = (selected: boolean): string =>
   cn(
-    'h-8 rounded-full px-3.5 font-sans text-[12px] font-medium uppercase tracking-[0.08em] transition-colors cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone',
+    'h-8 rounded-full px-3.5 font-sans text-[13px] font-medium transition-colors cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone',
     selected ? 'bg-white/20 text-white' : 'text-white/75 hover:bg-white/[0.08] hover:text-white'
   )
 
@@ -69,7 +69,7 @@ export function StudyRoomView(): React.JSX.Element {
 
   return (
     <section
-      aria-label="Study journal"
+      aria-label="Focus journal"
       className="flex h-full w-full flex-col select-none text-white [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]"
     >
       <AnimatePresence mode="wait" initial={false}>
@@ -114,7 +114,7 @@ function SetupPage(): React.JSX.Element {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1 pb-6 [mask-image:linear-gradient(to_bottom,#000_calc(100%-24px),transparent)]">
-      <span className={EYEBROW}>New session</span>
+      <span className={EYEBROW}>New focus session</span>
       <h1 className="font-kissa-editorial mt-3 text-[clamp(2.3rem,min(4vw,7vh),3.6rem)] font-normal leading-[1.02] tracking-[-0.01em] text-balance">
         {greetingFor(new Date(), listenerName)}
       </h1>
@@ -142,7 +142,7 @@ function SetupPage(): React.JSX.Element {
 
         <div className="flex flex-wrap gap-x-10 gap-y-8">
           <div className="flex flex-col gap-3">
-            <span className={SOFT_LABEL}>Sitting</span>
+            <span className={SOFT_LABEL}>Session length</span>
             <div role="radiogroup" aria-label="Session length" className="flex flex-wrap gap-1.5">
               {([25, 50, 90, 0] as LengthChoice[]).map((m) => (
                 <button
@@ -183,7 +183,7 @@ function SetupPage(): React.JSX.Element {
             onChange={(keepScreenAwake) => setPrefs({ keepScreenAwake })}
             aria-label="Keep the screen on during sessions"
           />
-          Keep the screen on while studying
+          Keep the screen on during a focus session
         </label>
 
         <div className="mt-1 flex items-center gap-5">
@@ -197,7 +197,7 @@ function SetupPage(): React.JSX.Element {
               className="font-sans text-[13px] font-semibold text-white/70 hover:text-white cursor-pointer"
               onClick={() => setShowHistory(true)}
             >
-              My sessions
+              My focus sessions
             </button>
           )}
         </div>
@@ -662,7 +662,7 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1 pb-6 [mask-image:linear-gradient(to_bottom,#000_calc(100%-24px),transparent)]">
-      <span className={EYEBROW}>Sitting finished</span>
+      <span className={EYEBROW}>Focus session finished</span>
       <h1 className="font-kissa-editorial mt-2 text-[clamp(2rem,3vw,2.75rem)] font-normal leading-[1.05]">
         {formatMinutes(focus)} of focus
       </h1>
@@ -758,7 +758,7 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
             }
           >
             <Share2 size={15} aria-hidden="true" />
-            Share sitting
+            Share session
           </button>
         )}
         <button
@@ -776,7 +776,7 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
       </div>
       {tooShort && (
         <p className="font-sans mt-3 text-[12px] text-white/45">
-          Sittings under a minute are not kept.
+          Sessions under a minute are not kept.
         </p>
       )}
       {sharePayload && (
@@ -822,7 +822,7 @@ function HistoryPage({
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `kissa-study-sessions-${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `kissa-focus-sessions-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
@@ -837,7 +837,7 @@ function HistoryPage({
         ← Back
       </button>
       <h1 className="font-kissa-editorial mt-3 text-[clamp(1.8rem,2.6vw,2.4rem)] font-normal">
-        My sessions
+        My focus sessions
       </h1>
       <p className="font-sans mt-1 text-[13px] text-white/45">
         {formatMinutes(weekFocus)} in the last seven days

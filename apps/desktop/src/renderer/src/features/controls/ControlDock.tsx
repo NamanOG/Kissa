@@ -3,6 +3,7 @@ import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { Quote, Disc, AudioLines } from 'lucide-react'
 import { SleepTimer } from './SleepTimer'
+import { MovingLightToggle } from '../background/MovingLightToggle'
 import { RoomDimmer } from './RoomDimmer'
 
 /** Format seconds as m:ss */
@@ -47,6 +48,13 @@ const Scrubber = memo(() => {
   useEffect(() => {
     let lastSecond = -1
     let lastPx = -1
+    // A source that reports no length (a live stream, system audio): clear the previous
+    // track's position instead of leaving its time and bar on screen.
+    if (duration <= 0) {
+      setDisplayTime(0)
+      if (fillRef.current) fillRef.current.style.transform = 'scaleX(0)'
+      if (thumbRef.current) thumbRef.current.style.transform = 'translate3d(-5px, -50%, 0)'
+    }
 
     return PlaybackClock.subscribe((time) => {
       if (isDraggingRef.current) return // Ignore clock updates while user is scrubbing
@@ -165,7 +173,7 @@ const Scrubber = memo(() => {
       </div>
 
       <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0 text-dim">
-        {formatTime(duration)}
+        {duration > 0 ? formatTime(duration) : '–:––'}
       </span>
     </div>
   )
@@ -227,7 +235,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             }
           }}
           aria-label="Previous track"
-          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-dim hover:text-ink"
+          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-dim hover:text-ink -m-2 p-2 rounded-full"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4 min-[900px]:h-[18px] min-[900px]:w-[18px] fill-current -translate-x-[1px]">
             <path d="M16 6.14v11.72c0 .77-.84 1.25-1.5.86l-9.8-5.86c-.64-.38-.64-1.34 0-1.72l9.8-5.86c.66-.39 1.5.09 1.5.86z" />
@@ -281,7 +289,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             }
           }}
           aria-label="Next track"
-          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-dim hover:text-ink"
+          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-dim hover:text-ink -m-2 p-2 rounded-full"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4 min-[900px]:h-[18px] min-[900px]:w-[18px] fill-current translate-x-[1px]">
             <path d="M8 6.14v11.72c0 .77.84 1.25 1.5.86l9.8-5.86c.64-.38.64-1.34 0-1.72L9.5 5.28C8.84 4.89 8 5.37 8 6.14z" />
@@ -367,6 +375,8 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             {currentTrack?.source || 'System Audio'}
           </span>
         </div>
+
+        <MovingLightToggle variant="dock" />
 
         <button
           type="button"

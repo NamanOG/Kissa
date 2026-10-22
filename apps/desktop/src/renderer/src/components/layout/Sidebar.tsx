@@ -2,9 +2,20 @@ import React from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { Quote, Settings, HelpCircle, Keyboard, Minimize2, Maximize2, Disc3, BookOpen } from 'lucide-react'
+import { useEditionsStore } from '@renderer/stores/editionsStore'
+
+/** A turntable seen from above (plinth, record, tonearm), drawn like the lucide icons beside it. */
+const TurntableIcon = ({ className, strokeWidth = 1.5 }: { className?: string; strokeWidth?: number }): React.JSX.Element => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <rect x="2.5" y="4" width="19" height="16" rx="2.5" />
+    <circle cx="10.5" cy="12" r="5.5" />
+    <circle cx="10.5" cy="12" r="1" />
+    <path d="M18.5 6.5v6.5l-3 3" />
+  </svg>
+)
 import { useStudyStore } from '@renderer/stores/studyStore'
 import { motion, useReducedMotion } from 'framer-motion'
-import kissaLogo from '@renderer/media/kissa_logo.png'
+import { brandMarkSrc, brandMarkSrcSet } from '@renderer/utils/brandMark'
 
 /** Marks the open view. One element, shared across the three destinations, so it glides. */
 function NavMarker(): React.JSX.Element {
@@ -36,6 +47,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const isKeyboardHelpOpen = usePlayerStore((s) => s.isKeyboardHelpOpen)
     const toggleKeyboardHelp = usePlayerStore((s) => s.toggleKeyboardHelp)
     const isMiniPlayer = usePlayerStore((s) => s.isMiniPlayer)
+    const isEditionEditorOpen = useEditionsStore((s) => s.isEditorOpen)
+    const showEditionEditor = useEditionsStore((s) => s.showEditor)
     const hasUpdateAvailable = usePlayerStore((s) => s.hasUpdateAvailable)
 
     // A small mark on Settings while a newer Kissa is waiting (download or Store update).
@@ -76,9 +89,9 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
           >
             {activeView === 'deck' && <NavMarker />}
             <div className={cn("relative w-7 h-7 min-[900px]:w-8 min-[900px]:h-8 rounded-full overflow-hidden shadow-sm transition-opacity", activeView === 'deck' ? "border border-white/20 opacity-100" : "border border-white/5 opacity-60")}>
-              <img src={kissaLogo} alt="Kissa" className="w-full h-full object-cover" draggable={false} />
+              <img src={brandMarkSrc} srcSet={brandMarkSrcSet} sizes="(min-width: 900px) 30px, 26px" alt="Kissa" className="w-full h-full object-cover" draggable={false} />
             </div>
-            <span className="font-mono text-[9px] min-[900px]:text-[10px] tracking-widest font-medium uppercase mt-0.5">
+            <span className="text-[11px] min-[900px]:text-[11.5px] font-medium mt-0.5">
               Deck
             </span>
           </button>
@@ -95,7 +108,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
           >
             {activeView === 'lyrics' && <NavMarker />}
             <Quote className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={activeView === 'lyrics' ? 2 : 1.5} />
-            <span className="font-mono text-[9px] min-[900px]:text-[10px] tracking-widest font-medium uppercase">
+            <span className="text-[11px] min-[900px]:text-[11.5px] font-medium">
               Lyrics
             </span>
           </button>
@@ -112,7 +125,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
           >
             {activeView === 'shelf' && <NavMarker />}
             <Disc3 className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4 transition-transform duration-200 ease-out group-hover:rotate-[15deg]" strokeWidth={activeView === 'shelf' ? 2 : 1.5} />
-            <span className="font-mono text-[9px] min-[900px]:text-[10px] tracking-widest font-medium uppercase">
+            <span className="text-[11px] min-[900px]:text-[11.5px] font-medium">
               Shelf
             </span>
           </button>
@@ -124,7 +137,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
               "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
               activeView === 'study' ? "text-tone" : "text-dim hover:text-ink"
             )}
-            title={isStudying ? 'Study Room (session running)' : 'Study Room'}
+            title={isStudying ? 'Focus Room (focus session running)' : 'Focus Room'}
           >
             {activeView === 'study' && <NavMarker />}
             <span className="relative">
@@ -133,13 +146,30 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                 <span aria-hidden="true" className="absolute -top-0.5 -right-1 h-1.5 w-1.5 rounded-full bg-tone" />
               )}
             </span>
-            <span className="font-mono text-[9px] min-[900px]:text-[10px] tracking-widest font-medium uppercase">
-              Study
+            <span className="text-[11px] min-[900px]:text-[11.5px] font-medium">
+              Focus
             </span>
           </button>
         </nav>
 
         <div className="mt-auto w-full flex flex-col items-center gap-2 [@media(max-height:760px)]:gap-0">
+          <button
+            type="button"
+            onClick={showEditionEditor}
+            className={cn(
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              isEditionEditorOpen ? "text-tone" : "text-dim hover:text-ink"
+            )}
+            title="Your turntable (E)"
+            aria-label="Your turntable"
+            aria-expanded={isEditionEditorOpen}
+          >
+            {isEditionEditorOpen && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone shadow-[0_0_8px_var(--accent)]" />
+            )}
+            <TurntableIcon className="w-4 h-4" strokeWidth={isEditionEditorOpen ? 2 : 1.5} />
+          </button>
+
           <button
             type="button"
             onClick={() => usePlayerStore.getState().toggleMiniPlayer()}

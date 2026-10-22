@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import { useDialogFocus } from '../../hooks/useDialogFocus'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Check, Copy, ExternalLink, Link2 } from 'lucide-react'
@@ -73,6 +74,8 @@ type Copied = 'message' | 'link' | null
  * The message links to the song in the player it came from and to Kissa on the Store.
  */
 export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClose, track }) => {
+  const panelRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(panelRef, isOpen)
   const [copied, setCopied] = useState<Copied>(null)
 
   useEffect(() => {
@@ -123,6 +126,7 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
           />
 
           <motion.div
+            ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="share-title"
@@ -163,7 +167,7 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
                   <p id="share-title" className="font-mono text-[10.5px] uppercase tracking-[0.24em] text-tone">
                     Share Track
                   </p>
-                  <h2 className="mt-2 line-clamp-2 font-kissa-editorial text-[26px] font-normal leading-[1.1] text-ink">{track.title}</h2>
+                  <h2 className="mt-[calc(0.5rem-0.14em)] pt-[0.14em] line-clamp-2 font-kissa-editorial text-[26px] font-normal leading-[1.1] text-ink">{track.title}</h2>
                   <p className="mt-1.5 truncate text-[13.5px] text-ink/80">{track.artist}</p>
                   {track.album && track.album !== track.title && (
                     <p className="mt-0.5 truncate text-[12.5px] text-dim">{track.album}</p>

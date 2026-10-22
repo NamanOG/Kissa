@@ -71,7 +71,7 @@ describe('StudyRoomView', { timeout: 20_000 }, () => {
     const [record] = useStudyStore.getState().history
     expect(record).toMatchObject({ intention: 'Read chapter 4', rating: 'focused', intentionDone: true, })
     expect(record.focusMs).toBeGreaterThanOrEqual(60_000)
-    expect(screen.getByText('My sessions')).toBeInTheDocument()
+    expect(screen.getByText('My focus sessions')).toBeInTheDocument()
   })
 
   it('asks to resume or finish after time it could not observe', async () => {

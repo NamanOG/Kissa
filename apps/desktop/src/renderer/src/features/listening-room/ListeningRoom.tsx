@@ -10,7 +10,7 @@ import { ListeningDisplay } from './ListeningDisplay'
 
 export const ListeningRoom = memo((): React.JSX.Element => {
   const prefersReducedMotion = useReducedMotion()
-  const { isVisible, handlePointerMove } = useAutoHide()
+  const { isVisible, handlePointerMove, setHold } = useAutoHide()
   const [showLyrics, setShowLyrics] = useState(false)
   const [isLargeScreen, setIsLargeScreen] = useState(true)
 
@@ -67,6 +67,7 @@ export const ListeningRoom = memo((): React.JSX.Element => {
       <FullscreenProgress />
       <FullscreenControls 
         isVisible={isVisible} 
+        onHold={setHold}
         showLyrics={lyricsActive} 
         onToggleLyrics={() => setShowLyrics(!showLyrics)}
         canShowLyrics={isLargeScreen}

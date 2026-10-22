@@ -2,6 +2,7 @@ import React, { memo, useEffect, useRef, useState } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
+import { needleContact, needleLift, registerTonearm } from '@renderer/utils/needleSounds'
 
 export interface TonearmAssemblyProps {
   className?: string
@@ -38,6 +39,10 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
   const transitionStartRef = useRef<number>(0)
   const startAngleRef = useRef<number>(REST_ANGLE)
   const startScaleRef = useRef<number>(1.015)
+
+  // While this arm is on screen it decides when the needle is heard: at its visible landing
+  // and departure (utils/needleSounds).
+  useEffect(() => registerTonearm(), [])
 
   const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 
@@ -83,6 +88,8 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
         startAngleRef.current = armAngleRef.current
         startScaleRef.current = armScaleRef.current
       } else if ((isPaused || isStopped) && ['PLAYING', 'LOWERING', 'MOVING_TO_RECORD', 'LIFTING', 'SWEEPING'].includes(armStateRef.current)) {
+        // The arm starts to rise: the stylus leaves the groove (silent if it never landed).
+        needleLift()
         armStateRef.current = 'RETURNING'
         transitionStartRef.current = timestamp
         startAngleRef.current = armAngleRef.current
@@ -108,6 +115,8 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
         nextScale = startScaleRef.current + (1.0 - startScaleRef.current) * progress
         if (progress >= 1) {
           armStateRef.current = 'PLAYING'
+          // The stylus touches the record at the end of the lowering.
+          needleContact()
         }
       } else if (armStateRef.current === 'PLAYING') {
         nextAngle = targetGrooveAngle
@@ -259,7 +268,11 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
     while (angleDelta > 180) angleDelta -= 360
     while (angleDelta < -180) angleDelta += 360
     
-    if (Math.abs(angleDelta) > 0.6) movedRef.current = true
+    if (Math.abs(angleDelta) > 0.6 && !movedRef.current) {
+      movedRef.current = true
+      // Picking the arm up off the record lifts the stylus. (A click without a drag does not.)
+      needleLift()
+    }
     const newAngle = dragContextRef.current.startArmAngle + angleDelta
     const clampedAngle = Math.max(-2, Math.min(42, newAngle))
     dragAngleRef.current = clampedAngle

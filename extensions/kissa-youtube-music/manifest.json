@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Kissa for YouTube Music",
+  "short_name": "Kissa",
+  "description": "Show what you play on YouTube Music in the Kissa app for Windows, and on Discord through Kissa. Reads nothing else.",
+  "version": "1.0.0",
+  "minimum_chrome_version": "116",
+  "homepage_url": "https://kissa.glyphcode.studio/",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["http://127.0.0.1:47321/*", "http://127.0.0.1:47322/*", "http://127.0.0.1:47323/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://music.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Kissa for YouTube Music",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
+  }
+}

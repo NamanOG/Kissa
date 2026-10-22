@@ -67,7 +67,7 @@ export function studyPresence(state: Pick<StudyState, 'active' | 'prefs'>): Stud
   const tasks = session.tasks ?? []
   const presence: StudyPresence = {
     phase,
-    room: ROOM_NAMES[state.prefs.environment] ?? 'Study Room'
+    room: ROOM_NAMES[state.prefs.environment] ?? 'Focus Room'
   }
   if (running && segment.runningSince !== null) {
     if (segment.plannedMs !== null) presence.endsAt = segment.runningSince + segment.plannedMs - segment.elapsedBeforeMs
@@ -97,7 +97,7 @@ function announceIfEnded(): void {
     : 'Break is over. Back to it when you are ready.'
   if (typeof document !== 'undefined' && (document.hidden || !document.hasFocus()) && 'Notification' in window) {
     try {
-      new Notification('Kissa Study Room', { body, silent: true })
+      new Notification('Kissa Focus Room', { body, silent: true })
     } catch {
       // Notifications unavailable: the room itself shows the state.
     }

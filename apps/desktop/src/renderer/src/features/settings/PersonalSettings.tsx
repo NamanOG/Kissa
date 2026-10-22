@@ -1,14 +1,18 @@
 import React, { memo } from 'react'
-import { Check } from 'lucide-react'
 import { usePlayerStore, VINYL_COLORS } from '@renderer/stores/playerStore'
-import { VINYL_PRESSINGS } from '@renderer/features/vinyl/VinylBase'
+import { VINYL_PRESSINGS, pressingGroups, pressingSwatch } from '@renderer/features/vinyl/VinylBase'
 import { SegmentedTabs } from '@renderer/components/ui/SegmentedTabs'
+import { useEditionsStore } from '@renderer/stores/editionsStore'
+import { FINISH_PALETTES } from '@renderer/features/editions/editions'
 import { cn } from '@renderer/utils/cn'
 import { greetingFor } from '@renderer/utils/greeting'
+import { Heart } from 'lucide-react'
+import { SUPPORT_PAGE_URL, openSupportPage } from '@renderer/features/support/SupportKissaLink'
 
-const GROUP = 'rounded-2xl bg-ink/[0.03] border border-ink/[0.08] overflow-hidden flex flex-col'
-const ROW = 'flex items-center justify-between gap-4 px-5 py-[18px] min-[600px]:px-7'
-const HEADING = 'text-[11px] font-mono font-bold text-dim mb-3.5 tracking-[0.2em] uppercase'
+// Shared with SettingsModal; styled in assets/main.css (Settings).
+const GROUP = 'kissa-set-group'
+const ROW = 'kissa-set-row'
+const HEADING = 'kissa-set-heading'
 
 /** The colour of the record on the platter, and what Kissa calls you. */
 export const RoomPersonalSettings = memo((): React.JSX.Element => {
@@ -17,54 +21,74 @@ export const RoomPersonalSettings = memo((): React.JSX.Element => {
   const listenerName = usePlayerStore((s) => s.listenerName)
   const setListenerName = usePlayerStore((s) => s.setListenerName)
 
+  const finish = useEditionsStore((s) => s.finish)
+  const editions = useEditionsStore((s) => s.editions)
+  const openEditionEditor = useEditionsStore((s) => s.showEditor)
+
   return (
     <div>
       <h4 className={HEADING}>Make it yours</h4>
       <div className={GROUP}>
-        <div className={cn(ROW, 'border-b border-ink/[0.06]')}>
+        <div className={ROW}>
           <div className="flex flex-col">
-            <span className="text-[13.5px] font-medium text-ink">Pressing</span>
-            <span className="mt-0.5 text-[11.5px] text-dim">{VINYL_PRESSINGS[vinylColor].name}</span>
+            <span className="text-[14px] font-medium text-ink">Your turntable</span>
+            <span className="mt-0.5 text-[12.5px] leading-relaxed text-dim">
+              {FINISH_PALETTES[finish].name} finish
+              {editions.length > 0 ? ` · ${editions.length} saved` : ''}
+            </span>
           </div>
-          <div role="radiogroup" aria-label="Record colour" className="flex items-center gap-2">
-            {VINYL_COLORS.map((color) => {
-              const pressing = VINYL_PRESSINGS[color]
-              const selected = color === vinylColor
-              return (
-                <button
-                  key={color}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  aria-label={pressing.name}
-                  title={pressing.name}
-                  onClick={() => setVinylColor(color)}
-                  className={cn(
-                    'relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full outline-none transition-transform duration-micro active:scale-95',
-                    'focus-visible:ring-1 focus-visible:ring-tone focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
-                    selected ? 'ring-[1.5px] ring-tone ring-offset-2 ring-offset-[var(--surface)]' : 'hover:scale-105'
-                  )}
-                  style={{
-                    background: `radial-gradient(circle, ${pressing.inner} 0%, ${pressing.outer} 100%)`,
-                    boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.12), 0 2px 6px rgba(0,0,0,0.5)'
-                  }}
-                >
-                  <span className="h-2.5 w-2.5 rounded-full bg-tone shadow-[inset_0_0_0_1px_rgba(0,0,0,0.4)]" />
-                  {selected && (
-                    <Check aria-hidden="true" className="absolute h-3 w-3 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]" strokeWidth={3} />
-                  )}
-                </button>
-              )
-            })}
+          <button
+            type="button"
+            onClick={openEditionEditor}
+            className="shrink-0 h-8 px-4 rounded-full border border-ink/[0.16] text-[12.5px] font-medium text-ink transition-colors hover:bg-ink/[0.07] hover:border-ink/25 cursor-pointer active:translate-y-px focus-visible:outline focus-visible:outline-1 focus-visible:outline-ink/70"
+          >
+            Open
+          </button>
+        </div>
+        <div className={ROW}>
+          <div className="flex flex-col">
+            <span className="text-[14px] font-medium text-ink">Pressing</span>
+            <span className="mt-0.5 text-[12.5px] leading-relaxed text-dim">{VINYL_PRESSINGS[vinylColor].name}</span>
+          </div>
+          <div role="radiogroup" aria-label="Record colour" className="flex flex-col items-end gap-2">
+            {pressingGroups(VINYL_COLORS).map((group) => (
+              <div key={group.label} className="flex items-center gap-1.5" aria-label={group.label} role="group">
+                {group.colors.map((color) => {
+                  const pressing = VINYL_PRESSINGS[color]
+                  const selected = color === vinylColor
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      aria-label={pressing.name}
+                      title={pressing.name}
+                      onClick={() => setVinylColor(color)}
+                      className={cn(
+                        'relative flex h-7 w-7 cursor-pointer items-center justify-center rounded-full outline-none transition-[box-shadow] duration-150',
+                        'focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-ink/70',
+                        selected
+                          ? 'shadow-[0_0_0_1.5px_var(--on-surface)]'
+                          : 'shadow-[0_0_0_1px_rgba(255,255,255,0.12)] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.4)]'
+                      )}
+                      style={{ background: pressingSwatch(color) }}
+                    >
+                      <span className="h-[7px] w-[7px] rounded-full bg-[#d9cdb8]" />
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
           </div>
         </div>
 
         <div className={ROW}>
           <label htmlFor="kissa-listener-name" className="flex flex-col">
-            <span className="text-[13.5px] font-medium text-ink">Your name</span>
-            <span className="mt-0.5 text-[11.5px] text-dim">
+            <span className="text-[14px] font-medium text-ink">Your name</span>
+            <span className="mt-0.5 text-[12.5px] leading-relaxed text-dim">
               {listenerName.trim()
-                ? `“${greetingFor(new Date(), listenerName)}” — on the deck, the shelf and share cards`
+                ? `“${greetingFor(new Date(), listenerName)}” on the deck, the shelf and share cards`
                 : 'Kissa greets you by it and names your shelf'}
             </span>
           </label>
@@ -78,7 +102,7 @@ export const RoomPersonalSettings = memo((): React.JSX.Element => {
             autoComplete="off"
             spellCheck={false}
             style={{ backgroundColor: 'color-mix(in srgb, var(--on-surface) 6%, transparent)' }}
-            className="w-[170px] shrink-0 select-text appearance-none rounded-xl border border-ink/10 px-3 py-1.5 text-[13px] text-ink outline-none placeholder:text-dim/60 focus-visible:border-tone"
+            className="h-8 w-[180px] shrink-0 select-text appearance-none rounded-full border border-ink/[0.16] px-3.5 text-[13px] text-ink outline-none transition-colors placeholder:text-dim/60 focus-visible:border-ink/50"
           />
         </div>
       </div>
@@ -96,8 +120,8 @@ export const LyricsAppearanceRows = memo((): React.JSX.Element => {
 
   return (
     <>
-      <div className={cn(ROW, 'border-b border-ink/[0.06]')}>
-        <span className="text-[13.5px] font-medium text-ink">Text Size</span>
+      <div className={ROW}>
+        <span className="text-[14px] font-medium text-ink">Text size</span>
         <SegmentedTabs
           kind="radio"
           size="sm"
@@ -111,9 +135,9 @@ export const LyricsAppearanceRows = memo((): React.JSX.Element => {
           ]}
         />
       </div>
-      <div className={cn(ROW, 'border-b border-ink/[0.06]')}>
+      <div className={ROW}>
         <div className="flex flex-col">
-          <span className="text-[13.5px] font-medium text-ink">Typeface</span>
+          <span className="text-[14px] font-medium text-ink">Typeface</span>
           <span
             className={cn(
               'mt-0.5 text-[13px] text-dim',
@@ -147,19 +171,39 @@ export const AboutRow = memo((): React.JSX.Element => {
     else window.open(url, '_blank', 'noopener,noreferrer')
   }
   return (
-    <div className={cn(ROW, 'border-t border-ink/[0.06]')}>
+    <>
+    {SUPPORT_PAGE_URL && (
+      <div className={ROW}>
+        <div className="flex flex-col">
+          <span className="text-[14px] font-medium text-ink">Support Kissa</span>
+          <span className="mt-0.5 text-[12.5px] leading-relaxed text-dim">
+            If Kissa is part of your day, you can help keep it going. Opens Kissa&apos;s website.
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => openSupportPage()}
+          className="shrink-0 inline-flex h-8 items-center gap-1.5 px-4 rounded-full border border-tone/40 text-[12.5px] font-medium text-ink transition-colors hover:border-tone/70 cursor-pointer active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
+        >
+          <Heart aria-hidden="true" className="h-3 w-3 fill-tone text-tone" strokeWidth={1.75} />
+          Support Kissa
+        </button>
+      </div>
+    )}
+    <div className={ROW}>
       <div className="flex flex-col">
-        <span className="text-[13.5px] font-medium text-ink">Kissa</span>
-        <span className="mt-0.5 text-[11.5px] text-dim">Made by GlyphCode · free to use</span>
+        <span className="text-[14px] font-medium text-ink">Kissa</span>
+        <span className="mt-0.5 text-[12.5px] leading-relaxed text-dim">Made by GlyphCode. Free, with nothing locked.</span>
       </div>
       <button
         type="button"
         onClick={() => open('https://github.com/NamanOG/Kissa')}
-        className="shrink-0 cursor-pointer rounded-xl border border-ink/10 bg-ink/[0.06] px-3.5 py-1.5 text-[12px] font-bold text-ink transition-colors hover:bg-ink/[0.12] active:scale-95"
+        className="shrink-0 h-8 px-4 rounded-full border border-ink/[0.16] text-[12.5px] font-medium text-ink transition-colors hover:bg-ink/[0.07] hover:border-ink/25 cursor-pointer active:translate-y-px focus-visible:outline focus-visible:outline-1 focus-visible:outline-ink/70"
       >
         View on GitHub
       </button>
     </div>
+    </>
   )
 })
 AboutRow.displayName = 'AboutRow'

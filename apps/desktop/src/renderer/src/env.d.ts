@@ -9,6 +9,10 @@ declare module '*.png' {
   const src: string
   export default src
 }
+declare module '*.wav' {
+  const src: string
+  export default src
+}
 declare module '*.mp3' {
   const src: string
   export default src
@@ -26,7 +30,7 @@ import type {
   LyricsSearchResponse
 } from '../../types/lyrics'
 import type { UpdateStatusPayload, UpdateInstallResult } from '../../types/update'
-import type { DiscordPresenceStatus, StudyPresence } from '../../types/discord'
+import type { DiscordPresenceStatus, StudyPresence, YouTubeMusicConnectorStatus } from '../../types/discord'
 
 export interface KissaSystemMediaAPI {
   getSystemMedia: () => Promise<SystemMediaPayload | null>
@@ -50,6 +54,7 @@ export interface KissaSystemMediaAPI {
   toggleMiniPlayer?: (isMini: boolean, alwaysOnTop?: boolean) => Promise<void>
   setFullScreen: (value: boolean) => Promise<boolean>
   onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void
+  onWindowVisibility?: (callback: (visible: boolean) => void) => () => void
   isScreensaver: () => Promise<boolean>
   exitScreensaver: () => Promise<void>
   onScreensaverModeChanged?: (callback: (isScreensaver: boolean) => void) => () => void
@@ -82,6 +87,12 @@ export interface KissaSystemMediaAPI {
   setDiscordShareSpotify?: (on: boolean) => Promise<DiscordPresenceStatus>
   setDiscordShareStudy?: (on: boolean) => Promise<DiscordPresenceStatus>
   setDiscordStudy?: (study: StudyPresence | null) => void
+  setDiscordShareYouTubeMusic?: (on: boolean) => Promise<DiscordPresenceStatus>
+  getYouTubeMusicConnector?: () => Promise<YouTubeMusicConnectorStatus>
+  beginYouTubeMusicPairing?: () => Promise<YouTubeMusicConnectorStatus>
+  cancelYouTubeMusicPairing?: () => Promise<YouTubeMusicConnectorStatus>
+  forgetYouTubeMusicConnector?: () => Promise<YouTubeMusicConnectorStatus>
+  onYouTubeMusicConnectorChanged?: (callback: (status: YouTubeMusicConnectorStatus) => void) => () => void
   onDiscordPresenceChanged?: (callback: (status: DiscordPresenceStatus) => void) => () => void
 }
 

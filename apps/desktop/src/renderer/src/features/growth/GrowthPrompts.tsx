@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
+import { useDialogFocus } from '../../hooks/useDialogFocus'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { BookOpen, Flame, Gauge, Image as ImageIcon, MessageCircle, Star, X } from 'lucide-react'
+import { Disc3, Gauge, Layers, Library, Star, Volume2, X } from 'lucide-react'
+import { useEditionsStore } from '@renderer/stores/editionsStore'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { useStudyStore } from '@renderer/stores/studyStore'
 import { afterRatingAnswer, loadGrowth, saveGrowth, shouldAskForRating, whatsNewDecision } from './growth'
@@ -11,29 +13,29 @@ const EASE = [0.22, 1, 0.36, 1] as const
 /** This version's notes. Keep them short: what someone will notice, not how it was built. */
 const WHATS_NEW: Array<{ icon: React.ComponentType<{ className?: string }>; title: string; text: string }> = [
   {
-    icon: BookOpen,
-    title: 'The Study Room',
-    text: 'A full-window room to work in with the record turning: Rain, Snow, Forest, Night and Fireplace, each with a real recording, a session timer and your week at a glance.'
+    icon: Disc3,
+    title: 'Your turntable',
+    text: 'Choose a finish (Original walnut, Porcelain lacquer or brushed Studio Silver) and a record pressing, and save the looks you like. Open it from the sidebar, the nameplate on the deck, or the E key.'
   },
   {
-    icon: Flame,
-    title: 'A fire that moves',
-    text: 'The new Fireplace room has living flames, drifting sparks and a crackling hearth.'
+    icon: Layers,
+    title: 'Special pressings',
+    text: 'Marble in three colours, Tortoiseshell and Splatter, alongside the plain colours. You can change the record from the Focus Room too.'
   },
   {
-    icon: MessageCircle,
-    title: 'Share on Discord',
-    text: 'Show what you are playing, or that you are studying, on your Discord profile. Off until you turn it on in Settings.'
+    icon: Library,
+    title: 'The Record Crate',
+    text: 'Flip through your Shelf one sleeve at a time, like a crate of records, with the wheel or arrow keys.'
   },
   {
-    icon: ImageIcon,
-    title: 'Covers that match',
-    text: 'Kissa keeps the cover your player shows, and lyrics arrive faster even when the lyrics library is busy.'
+    icon: Volume2,
+    title: 'Crisper controls',
+    text: 'The power switch, speed keys, Start and Stop and the needle now have short, mechanical sounds modelled on real parts.'
   },
   {
     icon: Gauge,
-    title: 'Lighter and smoother',
-    text: 'Far less work for your PC on high refresh rate screens, and a steadier record.'
+    title: 'Smoother track changes',
+    text: 'Changing songs with Match the album no longer makes the app stutter. A new Moving light option lets the album colours drift slowly behind the room.'
   }
 ]
 
@@ -90,6 +92,8 @@ export function GrowthPrompts(): React.JSX.Element | null {
   }
 
   const showWhatsNew = whatsNew && !busy && !studying
+  const whatsNewRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(whatsNewRef, Boolean(showWhatsNew))
   const showRating = askRating && !whatsNew && !busy && !studying
 
   useEffect(() => {
@@ -111,6 +115,7 @@ export function GrowthPrompts(): React.JSX.Element | null {
               onClick={() => setWhatsNew(false)}
             />
             <motion.div
+              ref={whatsNewRef}
               role="dialog"
               aria-modal="true"
               aria-labelledby="whats-new-title"
@@ -129,7 +134,7 @@ export function GrowthPrompts(): React.JSX.Element | null {
                 <X className="h-4 w-4" />
               </button>
               <div className="px-9 pb-2 pt-9">
-                <p className="font-mono text-[10.5px] uppercase tracking-[0.24em] text-tone">What&apos;s new{version ? ` in ${version}` : ''}</p>
+                <p className="text-[12.5px] font-medium text-tone">What&apos;s new{version ? ` in ${version}` : ''}</p>
                 <h2 id="whats-new-title" className="mt-3 font-kissa-editorial text-[34px] font-normal leading-[1.05] text-ink">
                   New in the listening room
                 </h2>
@@ -152,16 +157,16 @@ export function GrowthPrompts(): React.JSX.Element | null {
                   type="button"
                   onClick={() => {
                     setWhatsNew(false)
-                    usePlayerStore.getState().setActiveView('study')
+                    useEditionsStore.getState().showEditor()
                   }}
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-ink/10 bg-ink/[0.05] px-5 text-[12.5px] font-semibold text-ink transition-colors hover:bg-ink/[0.1] cursor-pointer"
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-ink/[0.16] px-5 text-[13px] font-medium text-ink transition-colors hover:bg-ink/[0.07] cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
                 >
-                  Open the Study Room
+                  Choose your turntable
                 </button>
                 <button
                   type="button"
                   onClick={() => setWhatsNew(false)}
-                  className="inline-flex h-11 items-center justify-center rounded-full bg-tone px-6 text-[12.5px] font-bold text-[var(--surface)] cursor-pointer active:scale-[0.98]"
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-ink px-6 text-[13px] font-semibold text-[var(--surface)] cursor-pointer transition-opacity hover:opacity-90 active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
                 >
                   Back to the music
                 </button>

@@ -15,6 +15,18 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
+
+/**
+ * The full text as a hover tooltip only when the line is actually cut short. A tooltip on text
+ * that is already fully visible just floats a stray box over the room.
+ */
+function titleIfClipped(e: { currentTarget: HTMLElement }): void {
+  const el = e.currentTarget
+  const clipped = el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1
+  if (clipped) el.title = el.textContent ?? ''
+  else el.removeAttribute('title')
+}
+
 export interface MetadataPanelProps {
   className?: string
 }
@@ -77,17 +89,17 @@ export const MetadataPanel = memo(({ className }: MetadataPanelProps) => {
             ) : (
               <>
                 <h1
-                  className="mt-2 pb-1 font-kissa-editorial text-[clamp(1.5rem,2.4vw,2.8rem)] font-medium leading-[1.1] tracking-[-0.025em] text-ink line-clamp-2 text-balance"
+                  className="mt-[calc(0.5rem-0.14em)] pt-[0.14em] font-kissa-editorial text-[clamp(1.5rem,2.4vw,2.8rem)] font-medium leading-[1.1] tracking-[-0.025em] text-ink line-clamp-2 text-balance"
                   style={{ textShadow: 'var(--typography-glow)' }}
-                  title={title}
+                  onMouseEnter={titleIfClipped}
                 >
                   {title}
                 </h1>
-                <p className="mt-2 font-kissa-editorial text-[1.1rem] font-medium text-ink/80 line-clamp-1" title={artist}>
+                <p className="mt-2 font-kissa-editorial text-[1.1rem] font-medium text-ink/80 line-clamp-1" onMouseEnter={titleIfClipped}>
                   {artist}
                 </p>
                 {showAlbum && (
-                  <p className="mt-0.5 font-kissa-editorial text-[0.95rem] text-dim line-clamp-1" title={album}>
+                  <p className="mt-0.5 font-kissa-editorial text-[0.95rem] text-dim line-clamp-1" onMouseEnter={titleIfClipped}>
                     {album}
                   </p>
                 )}

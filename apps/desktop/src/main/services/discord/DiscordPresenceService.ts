@@ -34,8 +34,8 @@ export interface PresenceClient {
 }
 
 export interface PresenceSettingsStore {
-  load(): { enabled: boolean; shareSpotify?: boolean; shareStudy?: boolean }
-  save(settings: { enabled: boolean; shareSpotify: boolean; shareStudy: boolean }): void
+  load(): { enabled: boolean; shareSpotify?: boolean; shareStudy?: boolean; shareYouTubeMusic?: boolean }
+  save(settings: { enabled: boolean; shareSpotify: boolean; shareStudy: boolean; shareYouTubeMusic: boolean }): void
 }
 
 export interface DiscordPresenceOptions {
@@ -90,6 +90,11 @@ export class DiscordPresenceService {
   private shareSpotify: boolean
   /** Show a running Study Room session (on unless turned off; sharing itself is opt-in). */
   private shareStudy: boolean
+  /** YouTube Music in a browser, reported only by the paired Kissa connector (off by default). */
+  private shareYouTubeMusic: boolean
+  /** The connector's latest verified state, kept apart from Windows' media sessions. */
+  private ytm: SystemMediaPayload | null = null
+  private ytmPausedSince: number | null = null
   private study: StudyPresence | null = null
   /** After a track change, how long to wait for the public copy of its cover before sending without it. */
   private coverWaitUntil = 0
@@ -128,12 +133,19 @@ export class DiscordPresenceService {
     this.enabled = Boolean(saved.enabled)
     this.shareSpotify = saved.shareSpotify === true
     this.shareStudy = saved.shareStudy !== false
+    this.shareYouTubeMusic = saved.shareYouTubeMusic === true
     this.updateState()
     if (this.enabled && this.options.applicationId) void this.ensureConnected()
   }
 
   public getStatus(): DiscordPresenceStatus {
-    return { enabled: this.enabled, shareSpotify: this.shareSpotify, shareStudy: this.shareStudy, state: this.state }
+    return {
+      enabled: this.enabled,
+      shareSpotify: this.shareSpotify,
+      shareStudy: this.shareStudy,
+      shareYouTubeMusic: this.shareYouTubeMusic,
+      state: this.state
+    }
   }
 
   public onStatusChange(listener: (status: DiscordPresenceStatus) => void): () => void {
@@ -186,6 +198,45 @@ export class DiscordPresenceService {
     return this.getStatus()
   }
 
+  public setShareYouTubeMusic(on: boolean): DiscordPresenceStatus {
+    if (on === this.shareYouTubeMusic) return this.getStatus()
+    this.shareYouTubeMusic = on
+    this.persist()
+    this.reconcile()
+    this.updateState()
+    return this.getStatus()
+  }
+
+  /**
+   * The YouTube Music connector's verified state, or null when there is none (tab closed,
+   * page left, connector silent). This is the only way YouTube Music reaches Discord.
+   */
+  public onYouTubeMusic(payload: SystemMediaPayload | null): void {
+    this.ytm = payload
+    if (payload && !payload.isPlaying) {
+      if (this.ytmPausedSince === null) this.ytmPausedSince = this.now()
+    } else {
+      this.ytmPausedSince = null
+    }
+    if (!this.enabled) return
+    this.reconcile()
+    this.updateState()
+  }
+
+  /**
+   * The one source on the profile. A playing native player the person shares wins; then
+   * YouTube Music when shared and playing; a paused source is shown only if nothing plays.
+   */
+  private active(): { payload: SystemMediaPayload; pausedSince: number | null } | null {
+    const native = this.latest && this.isShared(this.latest.sourceAppId) ? this.latest : null
+    const ytm = this.shareYouTubeMusic ? this.ytm : null
+    if (native?.isPlaying) return { payload: native, pausedSince: null }
+    if (ytm?.isPlaying) return { payload: ytm, pausedSince: null }
+    if (native) return { payload: native, pausedSince: this.pausedSince }
+    if (ytm) return { payload: ytm, pausedSince: this.ytmPausedSince }
+    return null
+  }
+
   /** The running Study Room session from the window, or null when there is none. */
   public setStudy(study: StudyPresence | null): void {
     this.study = study
@@ -194,7 +245,12 @@ export class DiscordPresenceService {
   }
 
   private persist(): void {
-    this.options.settings.save({ enabled: this.enabled, shareSpotify: this.shareSpotify, shareStudy: this.shareStudy })
+    this.options.settings.save({
+      enabled: this.enabled,
+      shareSpotify: this.shareSpotify,
+      shareStudy: this.shareStudy,
+      shareYouTubeMusic: this.shareYouTubeMusic
+    })
   }
 
   private isShared(sourceAppId: string | undefined): boolean {
@@ -236,12 +292,13 @@ export class DiscordPresenceService {
 
   private desired(): Desired | null {
     if (this.study && this.shareStudy) return this.studyDesired(this.study)
-    const p = this.latest
-    if (!p || !p.title || !this.isShared(p.sourceAppId)) return null
+    const source = this.active()
+    const p = source?.payload
+    if (!p || !p.title) return null
     if (p.title === 'Unknown Title') return null
 
     const paused = !p.isPlaying
-    if (paused && this.pausedSince !== null && this.now() - this.pausedSince >= PAUSED_CLEAR_MS) return null
+    if (paused && source.pausedSince !== null && this.now() - source.pausedSince >= PAUSED_CLEAR_MS) return null
 
     const details = fit(p.title)
     const state = fit(p.artist && p.artist !== 'Unknown Artist' ? p.artist : undefined)
@@ -287,11 +344,11 @@ export class DiscordPresenceService {
    * appears only when it comes from a player the person chose to share.
    */
   private studyDesired(s: StudyPresence): Desired {
-    const room = fit(s.room) ?? 'Study Room'
+    const room = fit(s.room) ?? 'Focus Room'
     const details =
-      s.phase === 'break' ? `On a break · ${room}` : s.phase === 'paused' ? `Study paused · ${room}` : `Focusing · ${room}`
-    const p = this.latest
-    const song = p && p.isPlaying && p.title && p.title !== 'Unknown Title' && this.isShared(p.sourceAppId) ? p : null
+      s.phase === 'break' ? `On a break · ${room}` : s.phase === 'paused' ? `Focus paused · ${room}` : `Focusing · ${room}`
+    const p = this.active()?.payload
+    const song = p && p.isPlaying && p.title && p.title !== 'Unknown Title' ? p : null
     const state = song
       ? fit(`${song.title}${song.artist && song.artist !== 'Unknown Artist' ? ` · ${song.artist}` : ''}`)
       : s.tasksTotal && s.tasksTotal > 0
@@ -309,12 +366,12 @@ export class DiscordPresenceService {
           large_image: art,
           large_text: album ?? fit(song?.title),
           small_image: KISSA_BADGE_URL,
-          small_text: 'Kissa Study Room',
+          small_text: 'Kissa Focus Room',
           ...(this.useLinks ? { small_url: KISSA_STORE_URL } : {})
         }
       : {
           large_image: KISSA_BADGE_URL,
-          large_text: 'Kissa Study Room',
+          large_text: 'Kissa Focus Room',
           ...(this.useLinks ? { large_url: KISSA_STORE_URL } : {})
         }
     if (this.useButtons) activity.buttons = [{ label: 'Get Kissa for Windows', url: KISSA_STORE_URL }]
@@ -477,8 +534,9 @@ export class DiscordPresenceService {
 
   private schedulePausedClear(): void {
     this.cancelPausedTimer()
-    if (this.pausedSince === null || !this.enabled) return
-    const remaining = this.pausedSince + PAUSED_CLEAR_MS - this.now()
+    const pausedSince = this.active()?.pausedSince ?? null
+    if (pausedSince === null || !this.enabled) return
+    const remaining = pausedSince + PAUSED_CLEAR_MS - this.now()
     if (remaining <= 0) return
     this.pausedTimer = setTimeout(() => {
       this.pausedTimer = null

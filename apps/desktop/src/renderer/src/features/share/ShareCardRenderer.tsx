@@ -146,12 +146,19 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
   const renderAlbum = (): React.JSX.Element => {
     const album = data as AlbumShareData
     return (
-      <div className="relative z-10 flex flex-1 flex-col justify-between">
-        <div className="flex justify-center">
-          <Cover src={album.artworkUrl} size={isSquare ? 560 : 800} />
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+        {/* The cover takes whatever height the title, artist and facts leave, so a long title
+            shrinks the cover instead of running underneath it. */}
+        <div className="flex min-h-0 flex-1 justify-center pb-10">
+          <div
+            className="aspect-square h-full overflow-hidden rounded-[6px] bg-black/40 shadow-[0_30px_70px_rgba(0,0,0,0.55)]"
+            style={{ maxHeight: isSquare ? 560 : 800, maxWidth: isSquare ? 560 : 800 }}
+          >
+            {album.artworkUrl && <img src={album.artworkUrl} className="h-full w-full object-cover" alt="" />}
+          </div>
         </div>
-        <div>
-          <h1 className="font-serif text-[76px] font-medium leading-[1.02] tracking-[-0.02em] line-clamp-2">
+        <div className="shrink-0">
+          <h1 className="font-serif text-[76px] font-medium leading-[1.1] tracking-[-0.02em] line-clamp-2">
             {album.album}
           </h1>
           <p className="mt-4 font-serif text-[38px] opacity-75 line-clamp-1">{album.artist}</p>
@@ -173,7 +180,7 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
     return (
       <div className="relative z-10 flex flex-1 flex-col justify-between gap-10">
         <div>
-          <Label>A sitting in the {room.label} room</Label>
+          <Label>A focus session in the {room.label} room</Label>
           <h1 className="mt-6 font-serif text-[100px] leading-none tracking-[-0.025em]">
             {study.focusMinutes} minutes
             <br />
@@ -182,7 +189,7 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
         </div>
         <img
           src={room.photo}
-          alt={`${room.label} Study Room`}
+          alt={`${room.label} Focus Room`}
           className="w-full rounded-md object-cover"
           style={{ height: isSquare ? 280 : 480 }}
         />

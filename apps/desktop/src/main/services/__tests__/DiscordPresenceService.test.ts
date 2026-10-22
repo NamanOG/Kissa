@@ -8,6 +8,7 @@ import {
 } from '../discord/DiscordPresenceService'
 import { FrameDecoder, encodeFrame } from '../discord/DiscordIpcClient'
 import type { SystemMediaPayload } from '../../../types/media'
+import { youTubeMusicPayload } from '../discord'
 
 const APPLE = 'AppleInc.AppleMusicWin_nzyj5cx40ttqa!App'
 
@@ -45,7 +46,7 @@ function track(over: Partial<SystemMediaPayload> = {}): SystemMediaPayload {
 
 function setup(enabled = true, applicationId = '123456789', shareSpotify = false) {
   const clients: FakeClient[] = []
-  let saved: { enabled: boolean; shareSpotify?: boolean; shareStudy?: boolean } = { enabled, shareSpotify }
+  let saved: { enabled: boolean; shareSpotify?: boolean; shareStudy?: boolean; shareYouTubeMusic?: boolean } = { enabled, shareSpotify }
   const createClient = (): FakeClient => {
     const c = new FakeClient()
     if (failNext) {
@@ -87,7 +88,7 @@ describe('DiscordPresenceService', () => {
     h.service.onMedia(track())
     await flush(10_000)
     expect(h.clients.length).toBe(0)
-    expect(h.service.getStatus()).toEqual({ enabled: false, shareSpotify: false, shareStudy: true, state: 'off' })
+    expect(h.service.getStatus()).toEqual({ enabled: false, shareSpotify: false, shareStudy: true, shareYouTubeMusic: false, state: 'off' })
   })
 
   it('says so when the build has no Application ID', async () => {
@@ -171,10 +172,10 @@ describe('DiscordPresenceService', () => {
     await flush(5_000)
     expect(h.clients.length).toBe(1)
     expect(h.last().activities.some((a) => a?.details === 'Green Room')).toBe(false)
-    expect(h.service.getStatus()).toEqual({ enabled: true, shareSpotify: false, shareStudy: true, state: 'idle' })
+    expect(h.service.getStatus()).toEqual({ enabled: true, shareSpotify: false, shareStudy: true, shareYouTubeMusic: false, state: 'idle' })
 
     const status = h.service.setShareSpotify(true)
-    expect(h.saved()).toEqual({ enabled: true, shareSpotify: true, shareStudy: true })
+    expect(h.saved()).toEqual({ enabled: true, shareSpotify: true, shareStudy: true, shareYouTubeMusic: false })
     await flush(5_000)
     const a = h.last().activities.at(-1)!
     expect(a.details).toBe('Green Room')
@@ -200,7 +201,7 @@ describe('DiscordPresenceService', () => {
     const h = setup(true, '123456789', true)
     await flush()
     h.service.setEnabled(false)
-    expect(h.saved()).toEqual({ enabled: false, shareSpotify: true, shareStudy: true })
+    expect(h.saved()).toEqual({ enabled: false, shareSpotify: true, shareStudy: true, shareYouTubeMusic: false })
   })
 
   it('shows a running study session instead of the track, without the intention', async () => {
@@ -278,7 +279,7 @@ describe('DiscordPresenceService', () => {
     h.service.setStudy({ phase: 'paused', room: 'Rain room', endsAt: Date.now() + 60_000 })
     await flush(5_000)
     const activity = h.last().activities.at(-1)!
-    expect(activity.details).toBe('Study paused · Rain room')
+    expect(activity.details).toBe('Focus paused · Rain room')
     expect(activity.timestamps).toBeUndefined()
     expect(activity.assets).toMatchObject({ large_image: track().artworkDataUrl })
   })
@@ -287,7 +288,7 @@ describe('DiscordPresenceService', () => {
     const h = setup()
     await flush()
     h.service.setShareStudy(false)
-    expect(h.saved()).toEqual({ enabled: true, shareSpotify: false, shareStudy: false })
+    expect(h.saved()).toEqual({ enabled: true, shareSpotify: false, shareStudy: false, shareYouTubeMusic: false })
     h.service.setStudy({ phase: 'focus', room: 'Night room', startedAt: Date.now() })
     await flush(5_000)
     expect(h.last().activities.some((x) => x && x.type === 0)).toBe(false)
@@ -351,7 +352,7 @@ describe('DiscordPresenceService', () => {
     expect(client.activities.at(-1)).toBeNull()
     expect(client.activities.some((a) => a?.details === 'Two')).toBe(false)
     expect(client.closed).toBe(true)
-    expect(h.saved()).toEqual({ enabled: false, shareSpotify: false, shareStudy: true })
+    expect(h.saved()).toEqual({ enabled: false, shareSpotify: false, shareStudy: true, shareYouTubeMusic: false })
   })
 
   it('waits for Discord and reconnects with backoff, then shares', async () => {
@@ -446,5 +447,114 @@ describe('Discord IPC framing', () => {
       { op: 1, data: { cmd: 'SET_ACTIVITY', nonce: 'n1' } },
       { op: 3, data: { ping: 'Ünïcode' } }
     ])
+  })
+})
+
+describe('DiscordPresenceService and YouTube Music', () => {
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+
+  const ytm = (over: Partial<SystemMediaPayload> = {}): SystemMediaPayload =>
+    youTubeMusicPayload({
+      title: 'Nights',
+      artist: 'Frank Ocean',
+      album: 'Blonde',
+      artworkUrl: 'https://lh3.googleusercontent.com/cover=w544-h544',
+      isPlaying: true,
+      position: 40,
+      duration: 307,
+      receivedAt: Date.now(),
+      ...(over as object)
+    } as never)!
+
+  /** What Windows reports for any browser tab: one app id for every site. */
+  const browserTab = (title: string): SystemMediaPayload =>
+    track({ sourceAppId: 'Chrome', sourceAppName: 'Chrome', title, artist: 'Rick Astley', album: '', artworkDataUrl: undefined })
+
+  it('never shares browser media from Windows, even with YouTube Music sharing on', async () => {
+    const h = setup()
+    await flush()
+    h.service.setShareYouTubeMusic(true)
+    h.service.onMedia(browserTab('Rick Astley - Never Gonna Give You Up (Official Video)'))
+    await flush(10_000)
+    expect(h.last().activities.filter(Boolean)).toEqual([])
+    expect(h.service.getStatus().state).toBe('idle')
+  })
+
+  it('shares YouTube Music from the connector only when opted in', async () => {
+    const h = setup()
+    await flush()
+    h.service.onYouTubeMusic(ytm())
+    await flush(10_000)
+    expect(h.last().activities.filter(Boolean)).toEqual([])
+
+    h.service.setShareYouTubeMusic(true)
+    await flush(5_000)
+    const activity = h.last().activities.at(-1)!
+    expect(activity).toMatchObject({ type: 2, details: 'Nights', state: 'Frank Ocean' })
+    expect((activity.assets as Record<string, unknown>).large_image).toBe('https://lh3.googleusercontent.com/cover=w544-h544')
+    expect(h.saved()).toMatchObject({ shareYouTubeMusic: true })
+  })
+
+  it('keeps one card: a playing Apple Music track wins over YouTube Music', async () => {
+    const h = setup()
+    await flush()
+    h.service.setShareYouTubeMusic(true)
+    h.service.onYouTubeMusic(ytm())
+    h.service.onMedia(track())
+    await flush(5_000)
+    expect(h.last().activities.at(-1)!.details).toBe('Paper Lanterns')
+    // Apple Music pauses: the playing YouTube Music track takes over.
+    h.service.onMedia(track({ isPlaying: false }))
+    await flush(5_000)
+    expect(h.last().activities.at(-1)!.details).toBe('Nights')
+  })
+
+  it('clears when the connector goes away (tab closed, page left, connection lost)', async () => {
+    const h = setup()
+    await flush()
+    h.service.setShareYouTubeMusic(true)
+    h.service.onYouTubeMusic(ytm())
+    await flush(5_000)
+    expect(h.last().activities.at(-1)).not.toBeNull()
+    h.service.onYouTubeMusic(null)
+    await flush(5_000)
+    expect(h.last().activities.at(-1)).toBeNull()
+  })
+
+  it('turning the option off removes YouTube Music at once', async () => {
+    const h = setup()
+    await flush()
+    h.service.setShareYouTubeMusic(true)
+    h.service.onYouTubeMusic(ytm())
+    await flush(5_000)
+    h.service.setShareYouTubeMusic(false)
+    await flush(5_000)
+    expect(h.last().activities.at(-1)).toBeNull()
+  })
+
+  it('a paused YouTube Music track clears after two minutes', async () => {
+    const h = setup()
+    await flush()
+    h.service.setShareYouTubeMusic(true)
+    h.service.onYouTubeMusic(ytm({ isPlaying: false }))
+    await flush(5_000)
+    expect(h.service.getStatus().state).toBe('paused')
+    await flush(2 * 60_000)
+    expect(h.last().activities.at(-1)).toBeNull()
+  })
+
+  it('during a study session, shows the YouTube Music song only when it is shared', async () => {
+    const study = { phase: 'focus' as const, room: 'Rain room', startedAt: Date.now() }
+    const h = setup()
+    await flush()
+    h.service.setStudy(study)
+    h.service.onYouTubeMusic(ytm())
+    h.service.onMedia(browserTab('Some video'))
+    await flush(5_000)
+    expect(h.last().activities.at(-1)!.state).toBeUndefined()
+    h.service.setShareYouTubeMusic(true)
+    await flush(5_000)
+    expect(h.last().activities.at(-1)!.state).toBe('Nights · Frank Ocean')
   })
 })

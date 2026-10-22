@@ -6,6 +6,7 @@ import { Platter } from './Platter'
 import { Slipmat } from './Slipmat'
 import { TonearmAssembly } from './TonearmAssembly'
 import { MechanicalControls } from './MechanicalControls'
+import { DeckNameplate } from '../editions/DeckNameplate'
 import { VinylEngine } from '../vinyl'
 import type { VinylEngineProps } from '../vinyl/types'
 
@@ -29,7 +30,7 @@ export const TurntableEngine = memo(
         <TurntableShadow />
 
         <div
-          className="relative w-full aspect-[10/6.8] pointer-events-none"
+          className="relative w-full aspect-[10/7] pointer-events-none"
           style={{
             transform: 'rotateX(13deg) rotateY(-0.8deg)',
             transformStyle: 'preserve-3d'
@@ -39,10 +40,14 @@ export const TurntableEngine = memo(
             <div
               className="absolute flex items-center justify-center pointer-events-none"
               style={{
+                // The plinth is drawn in a 1000 x 700 box with the platter well centred at
+                // (420, 325), radius 285. The deck now has that exact 10:7 shape, so the SVG
+                // scales evenly and this square sits precisely in the well: 570 / 700 = 81.43%
+                // tall, its centre 325 / 700 = 46.43% down.
                 left: '13.5%',
-                top: '5%',
+                top: '5.714%',
                 width: '57%',
-                height: '84%'
+                height: '81.43%'
               }}
             >
               <div className="relative w-full h-0 pb-[100%]">
@@ -69,6 +74,7 @@ export const TurntableEngine = memo(
             />
 
             <MechanicalControls />
+            <DeckNameplate />
           </TurntableBase>
         </div>
       </div>

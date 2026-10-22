@@ -22,7 +22,7 @@ export function StudyChip({ className, onOpen }: { className?: string; onOpen?: 
   const remaining = segmentRemaining(segment, now)
   const time = formatClock(remaining ?? segmentElapsed(segment, now))
   const label = session.interruption
-    ? 'Study paused'
+    ? 'Focus paused'
     : segment.ended
       ? segment.kind === 'focus'
         ? 'Block done'
@@ -30,8 +30,8 @@ export function StudyChip({ className, onOpen }: { className?: string; onOpen?: 
       : segment.kind === 'break'
         ? 'Break'
         : isRunning(session)
-          ? 'Studying'
-          : 'Study paused'
+          ? 'Focusing'
+          : 'Focus paused'
 
   const content = (
     <>
@@ -49,7 +49,7 @@ export function StudyChip({ className, onOpen }: { className?: string; onOpen?: 
   )
 
   return onOpen ? (
-    <button type="button" onClick={onOpen} className={cn(classes, 'cursor-pointer hover:text-ink')} title="Open the Study Room">
+    <button type="button" onClick={onOpen} className={cn(classes, 'cursor-pointer hover:text-ink')} title="Open the Focus Room">
       {content}
     </button>
   ) : (

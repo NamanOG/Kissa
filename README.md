@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-4.3.0-blue?style=flat-square" alt="Version 4.3.0" />
+  <img src="https://img.shields.io/badge/Version-4.4.0-blue?style=flat-square" alt="Version 4.4.0" />
   <img src="https://img.shields.io/badge/Electron-39-blue?style=flat-square&logo=electron" alt="Electron 39" />
   <img src="https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-Strict-blue?style=flat-square&logo=typescript" alt="TypeScript" />
@@ -259,12 +259,30 @@ npm run build:store
 
 Production artifacts are output to `apps/desktop/dist/`:
 
-- `Kissa-Setup-4.3.0.exe`
-- `Kissa-Portable-4.3.0.exe`
+- `Kissa-Setup-4.4.0.exe`
+- `Kissa-Portable-4.4.0.exe`
 
 ---
 
 ## Version History
+
+### v4.4.0 — Your turntable
+
+- **Your turntable (Kissa Editions):** Choose a finish (Original walnut, Porcelain satin lacquer or brushed Studio Silver with black anodised controls) and a record pressing, then save the looks you like. Open it from the sidebar, the nameplate on the deck, Settings, or the E key.
+- **Special pressings:** Green, Oxblood and Midnight Marble, Tortoiseshell and Splatter alongside the plain colours. The Focus Room has its own record picker.
+- **The Record Crate:** Flip through your Shelf like a crate of records, one sleeve at a time, with the mouse wheel or arrow keys.
+- **Crisper controls:** The power switch, speed keys, Start/Stop, Match Album and the needle have short mechanical sounds modelled on real parts.
+- **A calmer, clearer Kissa:** Redesigned Settings, one family of switches and buttons, and two typefaces (Newsreader and Archivo) used with clear roles.
+- **Smoother track changes:** With Match the album, changing songs no longer makes the app stutter. An optional Moving light lets the album colours drift slowly behind the room.
+- **Support Kissa:** A link on the Deck and in Settings opens a page on Kissa's website for anyone who wants to help. Kissa stays completely free, with nothing locked.
+
+### v4.3.1 — Maintenance
+
+- **Covers Stay With Their Song:** Some players report a new song a few seconds before its picture. Kissa no longer keeps the previous song's cover for the rest of the track, or remembers that picture as the new song's cover.
+- **Media Detection Recovers:** If Kissa's background media reader stops, it now restarts on its own (up to three times in ten minutes) instead of leaving playback untracked until Kissa is reopened.
+- **Less Repeated Work:** A cover search that finds nothing, or fails while offline, is no longer repeated every second, and the in-memory cover cache stays within its limit during long sessions.
+- **Lighter Deck:** A background layer that had no visible effect has been removed. While a song plays with the Deck on screen, Kissa now uses noticeably less processor time.
+- **Local Diagnostics:** A small file on your PC records crashes and freezes by event name and code only. Nothing is uploaded.
 
 ### v4.3.0 — The Study Room
 

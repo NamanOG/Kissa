@@ -14,7 +14,8 @@ export const getWindowConfig = (): BrowserWindowConstructorOptions => ({
   autoHideMenuBar: true,
   titleBarStyle: 'hidden',
   titleBarOverlay: { color: '#00000000', symbolColor: '#ffffff' },
-  icon: join(__dirname, '../../resources/icon.png'),
+  // Multi-size ICO (build/generate_store_assets.py): Windows picks the frame for the display scale.
+  icon: join(__dirname, '../../resources/icon.ico'),
   webPreferences: {
     preload: join(__dirname, '../preload/index.js'),
     sandbox: false,

@@ -32,7 +32,8 @@ describe('ListeningRoom', () => {
   it('keeps long titles within a bounded, clamped metadata layout', () => {
     render(<ListeningRoom />)
 
-    expect(screen.getByRole('heading')).toHaveClass('max-w-full', 'line-clamp-2')
+    // Bounded to the window and to a readable measure, and clamped to two lines.
+    expect(screen.getByRole('heading')).toHaveClass('max-w-[min(100%,26em)]', 'line-clamp-2')
   })
 
   it('renders safely without a current track', () => {

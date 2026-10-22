@@ -48,7 +48,7 @@ export const DisplayMetadata = memo(({ className, align = 'left' }: DisplayMetad
         >
           <h1
             className={cn(
-              'max-w-full font-serif text-[clamp(2rem,3.5vw,4.5rem)] font-medium leading-[1.1] pb-2 tracking-[-0.02em] text-ink line-clamp-2 drop-shadow-lg',
+              '-mt-[0.14em] pt-[0.14em] max-w-full font-serif text-[clamp(2rem,3.5vw,4.5rem)] font-medium leading-[1.1] mb-2 tracking-[-0.02em] text-ink line-clamp-2 drop-shadow-lg',
               isCenter ? 'text-center' : 'text-left'
             )}
             title={title}
