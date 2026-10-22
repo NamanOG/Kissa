@@ -52,6 +52,8 @@ declare module '*.webp' {
 interface ImportMetaEnv {
   /** The base path the site is served from, e.g. "/" or "/Kissa/". */
   readonly BASE_URL: string
+  /** '1' in a local preview build of /support/ with placeholder details. */
+  readonly VITE_SUPPORT_PREVIEW?: string
 }
 
 interface ImportMeta {

@@ -8,6 +8,8 @@
 @import './tokens.css';
 @import './reset.css';
 @import './guides.css';
+@import './support.css';
+@import './not-found.css';
 
 /* Base */
 

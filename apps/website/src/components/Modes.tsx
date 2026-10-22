@@ -15,7 +15,7 @@ const MODES = [
   {
     id: 'fullscreen',
     name: 'Fullscreen Room',
-    description: 'Desktop clutter fades away. A gently lit turntable and a quiet clock take the whole screen.',
+    description: 'Desktop clutter fades away. The album cover takes the whole screen, lit softly in its own colours.',
     clip: 'fullscreen'
   },
   {
@@ -37,9 +37,15 @@ const MODES = [
     clip: 'screensaver-lyrics'
   },
   {
+    id: 'crate',
+    name: 'Record Crate',
+    description: 'Your records on a wall you flip through, the front one sliding out of its sleeve. Drag, scroll or use the arrow keys.',
+    clip: 'crate'
+  },
+  {
     id: 'shelf',
     name: 'Record Shelf',
-    description: 'Recent listening kept as a crate of records. Flip through sleeves and revisit past sessions.',
+    description: 'Everything you have played, as a grid of sleeves. Open any record for its details, plays and a card to share.',
     clip: 'shelf'
   }
 ]
@@ -94,11 +100,11 @@ export function Modes() {
     <section id="modes" className={styles.section} aria-labelledby="modes-heading">
       <div className="container">
         <header className={styles.header}>
-          <span className="label">Six modes</span>
+          <span className="label">Seven modes</span>
           <RevealHeading
             id="modes-heading"
             className="section-title"
-            lines={['Six ways to sit', '*with a record.*']}
+            lines={['Seven ways to sit', '*with a record.*']}
           />
         </header>
 

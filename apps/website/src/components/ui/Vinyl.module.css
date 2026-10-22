@@ -167,8 +167,8 @@
     rgba(215, 167, 108, 0.04) 262deg,
     transparent 278deg
   );
-  -webkit-mask-image: radial-gradient(circle at center, transparent 14%, #000 15%, #000 96%, transparent 98%);
-  mask-image: radial-gradient(circle at center, transparent 14%, #000 15%, #000 96%, transparent 98%);
+  -webkit-mask-image: radial-gradient(circle at center, transparent 14.5%, #000 26%, #000 96%, transparent 98%);
+  mask-image: radial-gradient(circle at center, transparent 14.5%, #000 26%, #000 96%, transparent 98%);
 }
 
 .reflectionCross {
@@ -187,8 +187,8 @@
     rgba(255, 240, 215, 0.05) 348deg,
     transparent 360deg
   );
-  -webkit-mask-image: radial-gradient(circle at center, transparent 14%, #000 15%, #000 96%, transparent 98%);
-  mask-image: radial-gradient(circle at center, transparent 14%, #000 15%, #000 96%, transparent 98%);
+  -webkit-mask-image: radial-gradient(circle at center, transparent 14.5%, #000 26%, #000 96%, transparent 98%);
+  mask-image: radial-gradient(circle at center, transparent 14.5%, #000 26%, #000 96%, transparent 98%);
 }
 
 /* Polished steel spindle */

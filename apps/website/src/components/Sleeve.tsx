@@ -16,23 +16,27 @@ const SIDES = [
       { no: 'A1', name: 'Tonearm seeking', note: 'Drag the needle across the groove to move through the track.' },
       { no: 'A2', name: '33⅓ and 45', note: 'Two speeds, with real spin-up and coast-down.' },
       { no: 'A3', name: 'Synced lyrics', note: 'Line by line, and word by word where the source allows.' },
-      { no: 'A4', name: 'Match Album', note: 'Room light drawn from the colours of the current cover.' }
+      { no: 'A4', name: 'Your turntable', note: 'Walnut, Porcelain or Studio Silver, with coloured and marbled pressings. Save the looks you like.' },
+      { no: 'A5', name: 'Match the Album', note: 'An optional record pressed in the colours of the cover. Classic black stays the default.' },
+      { no: 'A6', name: 'Real turntable sounds', note: 'Recorded needle drops and soft mechanical keys. One switch turns them off.' }
     ]
   },
   {
     name: 'Side B',
     title: 'The room',
     tracks: [
-      { no: 'B1', name: 'Listening Display', note: 'Fullscreen, as a turntable or a 12-inch cover on a stand.' },
-      { no: 'B2', name: 'Screensaver', note: 'A native Windows screensaver that keeps the record turning.' },
-      { no: 'B3', name: 'Record Shelf', note: 'Your listening history, kept as a crate of sleeves.' },
-      { no: 'B4', name: 'Quiet by default', note: 'Lives in the system tray, and updates only when you say so.' }
+      { no: 'B1', name: 'Match Album light', note: 'The room is lit by the colours of the current cover.' },
+      { no: 'B2', name: 'Moving light', note: 'Turn it on and the cover’s colours drift slowly behind the room.' },
+      { no: 'B3', name: 'Listening Display', note: 'Fullscreen, as a turntable or a 12-inch cover on a stand.' },
+      { no: 'B4', name: 'Screensaver', note: 'A native Windows screensaver that keeps the record turning.' },
+      { no: 'B5', name: 'Record Shelf', note: 'Your listening history: flip through the crate, or see it as a grid.' },
+      { no: 'B6', name: 'Quiet by default', note: 'Lives in the system tray, and updates through the Microsoft Store.' }
     ]
   }
 ]
 
 /**
- * Sleeve - the feature list as the back of an LP: two sides, eight tracks.
+ * Sleeve - the feature list as the back of an LP: two sides, six tracks each.
  * As the section scrolls in, the record slides out of its sleeve.
  */
 export function Sleeve() {

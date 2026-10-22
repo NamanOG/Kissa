@@ -10,7 +10,7 @@
     <title>Kissa | Free Vinyl Player for Windows 10 &amp; 11</title>
     <meta
       name="description"
-      content="Kissa is a free vinyl player for Windows 10 and 11. It turns what you play in Spotify, Apple Music or TIDAL into a record on a turntable, with synced lyrics, listening rooms and a Study Room."
+      content="Kissa is a free vinyl player for Windows 10 and 11. It turns what you play in Spotify, Apple Music or TIDAL into a record on a turntable, with synced lyrics, listening rooms and a Focus Room."
     />
     <meta name="author" content="Naman Bagdiya (GlyphCode)" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -44,8 +44,12 @@
     <meta name="twitter:image:alt" content="Kissa playing a record on its desktop turntable, with the album cover and track details beside it" />
 
     <!-- Icons -->
-    <link rel="icon" type="image/svg+xml" href="/kissa-logo.svg" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <!-- Tab icons: the app's small-size mark at each exact size (scripts/make-brand-marks.py) -->
+    <link rel="icon" type="image/png" sizes="16x16" href="/brand/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="20x20" href="/brand/favicon-20.png" />
+    <link rel="icon" type="image/png" sizes="24x24" href="/brand/favicon-24.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/brand/favicon-48.png" />
     <link rel="apple-touch-icon" href="/favicon.png" />
     <meta name="theme-color" content="#0d0c0b" />
     <style>
@@ -76,6 +80,7 @@
       the page React renders above.
     -->
     <noscript>
+      <style>#root { display: none; }</style>
       <main style="max-width: 44rem; margin: 0 auto; padding: 4rem 1.5rem; font-family: system-ui, sans-serif; color: #edeae3">
         <h1>Kissa: a free vinyl player for Windows</h1>
         <p>
@@ -89,11 +94,13 @@
           <li>A turntable with real platter inertia, at 33⅓ or 45 RPM</li>
           <li>A tonearm you can drag across the record to seek through the track</li>
           <li>Synced lyrics, line by line and word by word</li>
-          <li>Eight listening rooms that re-light the deck, plus lighting matched to the album cover</li>
+          <li>Eight listening rooms that re-light the deck, plus lighting matched to the album cover, with optional Moving light</li>
+          <li>Three turntable finishes and special pressings, including an optional record coloured to match the album</li>
+          <li>Recorded turntable sounds: needle drops and soft mechanical keys</li>
           <li>Fullscreen listening display and a native Windows screensaver</li>
-          <li>A record shelf of what you have listened to</li>
-          <li>A Study Room for focused work: Rain, Snow, Forest, Night and Fireplace rooms with real nature recordings, a focus timer with breaks, small steps and a weekly view</li>
-          <li>Optional Discord status for what you are playing or studying</li>
+          <li>A record shelf of what you have listened to, to flip through as a crate</li>
+          <li>A Focus Room for studying, writing or any focused work: Rain, Snow, Forest, Night and Fireplace rooms with real nature recordings, a focus timer with breaks, small steps and a weekly view</li>
+          <li>Optional Discord status for what you are playing or focusing on</li>
         </ul>
         <p><a href="https://github.com/NamanOG/Kissa" style="color: #d98a4a">Source code on GitHub</a></p>
       </main>

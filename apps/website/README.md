@@ -25,7 +25,7 @@ The page is a short scrollytelling sequence carried by the Kissa record itself. 
 
 Section boundaries are `ui/PluckString`: hairlines that bow and ring like a string when the pointer crosses them.
 
-At widths up to 860px, the hero and its four explanations use normal document flow, with the record below the download actions. Each mode pairs its description with a lazy-loaded app screenshot instead of pinning a shared video over the text. Desktop keeps the scroll-driven stage and mode videos. The Study Room preview preserves the entire 16:9 app window and is limited by both content width and the available desktop viewport height.
+At widths up to 860px, the hero and its four explanations use normal document flow, with the record below the download actions. Each mode pairs its description with a lazy-loaded app screenshot instead of pinning a shared video over the text. Desktop keeps the scroll-driven stage and mode videos. The Focus Room preview preserves the entire 16:9 app window and is limited by both content width and the available desktop viewport height.
 
 Motion references (from the UI Reference System): `PluckString`, `TangibleHeading` and `Waveline` adapt Fancy Components' Elastic Line, Variable Font Cursor Proximity and Marquee Along SVG Path. All of it is disabled under `prefers-reduced-motion`, and pointer effects are off on touch devices.
 
@@ -51,8 +51,11 @@ Every download button opens Kissa's Microsoft Store page (`STORE_URL` in `src/li
 apps/website/
 ├── public/                  # Static assets
 │   ├── media/               # Mode clips, room stills and the record label (generated from captures/)
-│   ├── kissa-logo.svg       # The mark: nav and favicon
-│   ├── favicon.png          # 180px fallback and touch icon
+│   ├── brand/               # The mark beside the wordmark and the tab icons, one PNG per pixel size
+│   │                        #   (scripts/make-brand-marks.py, from the app's icon artwork; see docs/ICONS.md)
+│   ├── favicon.ico          # Tab icon sizes 16-48 for clients that ask for /favicon.ico
+│   ├── favicon.png          # 180px original artwork: apple-touch-icon and the Discord badge image
+│   ├── kissa-logo.svg       # Previous vector mark, no longer referenced by the site (kept for old links)
 │   └── og.jpg               # Link preview card
 ├── captures/                # Raw recordings (git-ignored) and the capture guide
 ├── src/

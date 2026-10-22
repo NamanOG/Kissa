@@ -35,7 +35,7 @@ export function SiteFooter() {
             &copy; {new Date().getFullYear()} Naman Bagdiya, GlyphCode
           </span>
           <ul className={styles.links} role="list">
-            <li><a href={asset('study-room/')}>Study Room</a></li>
+            <li><a href={asset('study-room/')}>Focus Room</a></li>
             <li><a href={asset('discord-music-status/')}>Discord status</a></li>
             {LINKS.map((l) => (
               <li key={l.href}>
@@ -64,7 +64,9 @@ export function SiteFooter() {
         </div>
         <p className={styles.legal}>
           Plays along with Spotify, Apple Music, TIDAL and local media players, which are trademarks of their
-          respective owners.
+          respective owners. Album artwork, song titles and lyrics shown on this site belong to their respective
+          owners and appear only to show how Kissa works. Kissa is not affiliated with or endorsed by these artists
+          or labels.
         </p>
       </div>
     </footer>

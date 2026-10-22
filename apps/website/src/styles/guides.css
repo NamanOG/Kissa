@@ -27,6 +27,7 @@
 .guide-home-link { margin-top: var(--space-8); }
 .guide-footer { display: flex; flex-wrap: wrap; gap: var(--space-6); padding-block: var(--space-8); border-top: 1px solid var(--color-border); color: var(--color-fg-muted); font-size: var(--text-small); }
 .guide-footer p { margin-right: auto; }
+.guide-footer .guide-legal { flex-basis: 100%; margin: 0; font-size: 0.8125rem; color: var(--color-fg-subtle); }
 @media (max-width: 640px) {
   .guide-header { min-height: 80px; }
   .guide-header > a:last-child { max-width: 150px; text-align: right; }
@@ -37,3 +38,5 @@
 @media (prefers-reduced-motion: reduce) {
   .guide-download { transition: none; }
 }
+
+.guide-download:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 3px; }

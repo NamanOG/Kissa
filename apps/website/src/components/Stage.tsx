@@ -114,7 +114,7 @@ export function Stage() {
   const [source, setSource] = useState(0)
   const [lyric, setLyric] = useState(0)
   const [time, setTime] = useState('0:00')
-  const [compact, setCompact] = useState(() => window.matchMedia('(max-width: 860px)').matches)
+  const [compact, setCompact] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 860px)').matches)
 
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 860px)')
@@ -342,8 +342,8 @@ export function Stage() {
             transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.5 }}
           >
             <p className="lead">
-              A free desktop music player that turns whatever you&rsquo;re already playing into a record, turning
-              quietly beside your work.
+              A free vinyl player for Windows 10 and 11. Turn what you play in Spotify, Apple Music, TIDAL or a
+              local media player into a record, turning quietly beside your work.
             </p>
             <div className={styles.actions}>
               <DownloadButton showMeta />

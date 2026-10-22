@@ -1,4 +1,5 @@
 import type { FeaturePageData } from '../data/featurePages'
+import { brandMark } from '../lib/brandMark'
 
 /** Shared by the browser and build-time renderer, so the indexable copy cannot drift. */
 export function FeaturePage({ page, base = '/' }: { page: FeaturePageData; base?: string }) {
@@ -6,7 +7,7 @@ export function FeaturePage({ page, base = '/' }: { page: FeaturePageData; base?
     <>
       <header className="guide-header container">
         <a href="#main-content" className="skip-link">Skip to content</a>
-        <a href={base} className="guide-brand"><img src={`${base}kissa-logo.svg`} width="28" height="28" alt="" />Kissa</a>
+        <a href={base} className="guide-brand"><img {...brandMark(base, 28)} width="28" height="28" alt="" />Kissa</a>
         <a href={base}>Back to the listening room</a>
       </header>
       <main id="main-content" tabIndex={-1} className="guide container">
@@ -29,7 +30,7 @@ export function FeaturePage({ page, base = '/' }: { page: FeaturePageData; base?
         </div>
         <aside className="guide-related" aria-label="More about Kissa">
           <span className="label">Keep exploring</span>
-          <a href={`${base}${page.related}/`}>{page.related === 'study-room' ? 'Inside the Study Room' : 'Music and study status on Discord'} →</a>
+          <a href={`${base}${page.related}/`}>{page.related === 'study-room' ? 'Inside the Focus Room' : 'Music and focus status on Discord'} →</a>
           <a href={`${base}#faq`}>Questions about Kissa →</a>
         </aside>
       </main>
@@ -37,6 +38,10 @@ export function FeaturePage({ page, base = '/' }: { page: FeaturePageData; base?
         <p>Kissa · Vinyl player for Windows</p>
         <a href="https://github.com/NamanOG/Kissa/blob/main/PRIVACY.md">Privacy</a>
         <a href="https://www.glyphcode.studio/">Made by GlyphCode</a>
+        <p className="guide-legal">
+          Album artwork, song titles and lyrics shown belong to their respective owners and appear only to show how
+          Kissa works. Kissa is not affiliated with or endorsed by these artists or labels.
+        </p>
       </footer>
     </>
   )

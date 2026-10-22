@@ -37,7 +37,7 @@ const FEATURES = [
     text: 'Each room has its own field recording: rain, snow, a forest stream, crickets at night, a crackling fire. Set it as loud or as quiet as you like.'
   },
   {
-    name: 'Sittings and breaks',
+    name: 'Focus sessions and breaks',
     text: 'Choose 25, 50 or 90 minutes, or an open session, with breaks between. After sleep or a long absence, choose whether to resume or finish.'
   },
   {
@@ -50,7 +50,7 @@ const FEATURES = [
   },
   {
     name: 'On Discord, if you like',
-    text: 'Show "Studying in the Rain room" with a timer on your profile. What you are working on stays private.'
+    text: 'Show "Focusing · Rain room" with a timer on your profile. What you are working on stays private.'
   }
 ]
 
@@ -67,7 +67,7 @@ export function StudyRoom() {
       <div className="container">
         <header className={styles.header}>
           <div className={styles.headerMain}>
-            <span className="label">The Study Room</span>
+            <span className="label">The Focus Room</span>
             <RevealHeading
               id="study-heading"
               className="section-title"
@@ -75,8 +75,8 @@ export function StudyRoom() {
             />
           </div>
           <p className="lead">
-            Kissa opens into a full-window room for focus: a real view, its own sound, a session clock and your
-            music on the record beside you.
+            Settle in for studying, writing, or whatever needs your attention. Kissa opens into a full-window
+            room: a real view, its own sound, a focus session clock and your music on the record beside you.
           </p>
         </header>
 
@@ -88,7 +88,7 @@ export function StudyRoom() {
                 src={asset(`media/study/study-${r.id}-800.webp`)}
                 srcSet={`${asset(`media/study/study-${r.id}-800.webp`)} 800w, ${asset(`media/study/study-${r.id}.webp`)} 1600w`}
                 sizes="(max-width: 860px) 92vw, 1100px"
-                alt={`The Kissa Study Room in the ${r.name} room: ${r.description}`}
+                alt={`The Kissa Focus Room in the ${r.name} room: ${r.description}`}
                 aria-hidden={i === active ? undefined : true}
                 width={1600}
                 height={900}
@@ -99,7 +99,7 @@ export function StudyRoom() {
           </div>
 
           <figcaption className={styles.controls}>
-            <div className={styles.tabs} role="group" aria-label="Study rooms">
+            <div className={styles.tabs} role="group" aria-label="Focus Room views">
               {STUDY_ROOMS.map((r, i) => (
                 <button
                   key={r.id}
@@ -129,7 +129,7 @@ export function StudyRoom() {
             </li>
           ))}
         </ol>
-        <p className="guide-home-link"><a href={asset('study-room/')}>Step inside the Study Room →</a></p>
+        <p className="guide-home-link"><a href={asset('study-room/')}>Step inside the Focus Room →</a></p>
       </div>
     </section>
   )

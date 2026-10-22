@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import styles from './SiteNav.module.css'
 import { DownloadButton } from './ui/DownloadButton'
-import { asset } from '../lib/asset'
+import { brandMark } from '../lib/brandMark'
 
 const NAV_ITEMS = [
   { label: 'Modes', id: 'modes' },
   { label: 'Rooms', id: 'rooms' },
-  { label: 'Study', id: 'study' },
+  { label: 'Focus', id: 'study' },
   { label: 'Features', id: 'notes' }
 ]
 
@@ -39,7 +39,7 @@ export function SiteNav() {
 
       <nav className={styles.bar} aria-label="Main">
         <a href="#top" className={styles.brand} aria-label="Kissa, back to top">
-          <img src={asset('kissa-logo.svg')} alt="" width={26} height={26} className={styles.logo} />
+          <img {...brandMark(import.meta.env.BASE_URL, 26)} alt="" width={26} height={26} className={styles.logo} />
           <span className={styles.wordmark}>Kissa</span>
         </a>
 
