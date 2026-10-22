@@ -2,6 +2,7 @@ import styles from './SiteFooter.module.css'
 import { ArrowOut } from './ui/Marks'
 import { GITHUB_URL } from '../lib/links'
 import { asset } from '../lib/asset'
+import { supportIsConfigured } from '../data/support'
 
 const LINKS = [
   { label: 'GitHub', href: GITHUB_URL },
@@ -37,6 +38,7 @@ export function SiteFooter() {
           <ul className={styles.links} role="list">
             <li><a href={asset('study-room/')}>Focus Room</a></li>
             <li><a href={asset('discord-music-status/')}>Discord status</a></li>
+            {supportIsConfigured() && <li><a href={asset('support/')}>Support Kissa</a></li>}
             {LINKS.map((l) => (
               <li key={l.href}>
                 <a href={l.href} target="_blank" rel="noopener noreferrer">

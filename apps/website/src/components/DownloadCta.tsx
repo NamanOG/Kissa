@@ -6,6 +6,8 @@ import { DownloadButton } from './ui/DownloadButton'
 import { Vinyl } from './ui/Vinyl'
 import { ArrowOut } from './ui/Marks'
 import { GITHUB_URL } from '../lib/links'
+import { asset } from '../lib/asset'
+import { supportIsConfigured } from '../data/support'
 
 export function DownloadCta() {
   const ref = useRef<HTMLElement>(null)
@@ -30,6 +32,11 @@ export function DownloadCta() {
         <DownloadButton showMeta className={styles.button} />
 
         <ul className={styles.alt} role="list">
+          {supportIsConfigured() && (
+            <li>
+              <a href={asset('support/')}>Support Kissa</a>
+            </li>
+          )}
           <li>
             <a href={`${GITHUB_URL}#version-history`} target="_blank" rel="noopener noreferrer">
               What&rsquo;s new
