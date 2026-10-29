@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Search, Upload, X } from 'lucide-react'
 import type { LyricsCandidate, LyricsChoice, LyricsRequest } from '../../../../types/lyrics'
 import { Button } from '../../components/ui/Button'
+import { useT } from '@renderer/i18n'
 
 interface Props {
   request: LyricsRequest
@@ -12,6 +13,7 @@ interface Props {
 
 /** The caller keys this by recording; unmounting invalidates all pending UI work. */
 export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.Element {
+  const t = useT()
   const dialog = useRef<HTMLDialogElement>(null)
   const input = useRef<HTMLInputElement>(null)
   const revision = useRef(0)
@@ -43,13 +45,13 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
       const result = await window.electron!.searchLyrics(request, query)
       if (mine !== revision.current) return
       if (result.status === 'unavailable')
-        setError('The lyrics library did not answer. Try again or import a file.')
+        setError(t('lrc.noAnswer'))
       else {
         setCandidates(result.candidates)
         setSearched(true)
       }
     } catch {
-      if (mine === revision.current) setError('Could not search. Try again or import a file.')
+      if (mine === revision.current) setError(t('lrc.searchFail'))
     } finally {
       if (mine === revision.current) setBusy(false)
     }
@@ -67,7 +69,7 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
         setError(
           err instanceof Error
             ? err.message.replace(/^Error invoking remote method '[^']+': Error: /, '')
-            : 'Could not save your choice. Try again.'
+            : t('lrc.saveFail')
         )
     } finally {
       if (mine === revision.current) setBusy(false)
@@ -77,7 +79,7 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
   const importFile = async (file?: File): Promise<void> => {
     if (!file || busy) return
     if (!/\.lrc$/i.test(file.name) || file.size > 256_000) {
-      setError('Choose a UTF-8 .lrc file smaller than 256 KB.')
+      setError(t('lrc.badFile'))
       return
     }
     const mine = ++revision.current
@@ -88,7 +90,7 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
       if (mine !== revision.current) return
       await save({ kind: 'import', text })
     } catch {
-      if (mine === revision.current) setError('Could not read this file. Try another .lrc file.')
+      if (mine === revision.current) setError(t('lrc.readFail'))
     } finally {
       if (mine === revision.current) setBusy(false)
     }
@@ -99,7 +101,7 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
       ref={dialog}
       aria-labelledby={heading}
       onCancel={onClose}
-      className="m-auto w-[min(620px,calc(100vw-32px))] max-h-[85vh] overflow-y-auto rounded-2xl border border-panel-line bg-[var(--deck-bg)] p-6 text-ink shadow-2xl backdrop:bg-black/75"
+      className="m-auto w-[min(620px,calc(100vw-32px))] max-h-[85vh] overflow-y-auto rounded-2xl border border-panel-line kissa-sheet p-6 text-ink shadow-2xl backdrop:bg-black/75"
       onDragOver={(e) => {
         e.preventDefault()
         setDragging(true)
@@ -114,7 +116,7 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 id={heading} className="font-kissa-editorial text-3xl">
-            Find the right words
+            {t('lrc.title')}
           </h2>
           <p className="mt-2 text-sm text-dim">
             {request.title} · {request.artist}
@@ -123,15 +125,14 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close lyrics choices"
+          aria-label={t('lrc.close')}
           className="rounded-md p-2 text-dim hover:text-ink focus-visible:outline focus-visible:outline-tone"
         >
           <X size={20} />
         </button>
       </div>
       <p className="mt-4 text-sm text-dim">
-        Choose another recording or drop an LRC file here. Your choice stays with this recording on
-        this device.
+        {t('lrc.desc')}
       </p>
       <form
         className="mt-5 flex gap-2"
@@ -141,7 +142,7 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
         }}
       >
         <label className="min-w-0 flex-1">
-          <span className="sr-only">Search LRCLIB by title and artist</span>
+          <span className="sr-only">{t('lrc.searchLabel')}</span>
           <input
             autoFocus
             value={query}
@@ -159,7 +160,7 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
         </label>
         <Button type="submit" disabled={busy || !query.trim()} variant="secondary">
           <Search size={16} className="mr-2" />
-          Search
+          {t('lrc.search')}
         </Button>
       </form>
       <div className="my-4 flex flex-wrap gap-3">
@@ -170,17 +171,17 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
           className={dragging ? 'outline outline-tone' : ''}
         >
           <Upload size={16} className="mr-2" />
-          Import .lrc
+          {t('lrc.import')}
         </Button>
         <Button variant="secondary" disabled={busy} onClick={() => void save({ kind: 'reset' })}>
-          Use automatic lyrics
+          {t('lrc.auto')}
         </Button>
         <input
           ref={input}
           type="file"
           accept=".lrc"
           className="hidden"
-          aria-label="Import LRC file"
+          aria-label={t('lrc.importLabel')}
           onChange={(e) => {
             void importFile(e.target.files?.[0])
             e.target.value = ''
@@ -188,11 +189,11 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
         />
       </div>
       <div role="status" aria-live="polite" className="text-sm text-dim">
-        {busy && 'Working on the lyrics…'}
+        {busy && t('lrc.working')}
         {error && <p className="text-ink">{error}</p>}
         {searched &&
           !candidates.length &&
-          'No matches. Try a shorter title, or import an LRC file.'}
+          t('lrc.none')}
       </div>
       <ul className="mt-3 divide-y divide-panel-line">
         {candidates.map((item) => (
@@ -201,21 +202,21 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
               <div className="min-w-0">
                 <h3 className="text-base font-semibold break-words">{item.title}</h3>
                 <p className="mt-1 text-sm text-dim break-words">
-                  {item.artist} · {item.album || 'Album not listed'}
+                  {item.artist} · {item.album || t('lrc.noAlbum')}
                 </p>
                 <p className="mt-2 font-mono text-xs text-tone">
                   {Math.floor(Math.round(item.duration) / 60)}:
                   {String(Math.round(item.duration) % 60).padStart(2, '0')} ·{' '}
-                  {item.synced ? 'Timed' : 'Words only'}
+                  {item.synced ? t('lrc.timed') : t('lrc.plain')}
                 </p>
               </div>
               <Button
                 variant="secondary"
                 disabled={busy}
-                aria-label={`Use ${item.title}, ${item.album || 'album not listed'}`}
+                aria-label={t('lrc.useLabel', { title: item.title, album: item.album || t('lrc.noAlbum') })}
                 onClick={() => void save({ kind: 'candidate', id: item.id })}
               >
-                Use
+                {t('lrc.use')}
               </Button>
             </div>
             <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-dim">

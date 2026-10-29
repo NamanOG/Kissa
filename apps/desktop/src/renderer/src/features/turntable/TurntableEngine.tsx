@@ -7,6 +7,8 @@ import { Slipmat } from './Slipmat'
 import { TonearmAssembly } from './TonearmAssembly'
 import { MechanicalControls } from './MechanicalControls'
 import { DeckNameplate } from '../editions/DeckNameplate'
+import { DustCover } from './DustCover'
+import { RecordFlip } from '../sides/RecordFlip'
 import { VinylEngine } from '../vinyl'
 import type { VinylEngineProps } from '../vinyl/types'
 
@@ -30,6 +32,7 @@ export const TurntableEngine = memo(
         <TurntableShadow />
 
         <div
+          data-deck-plinth
           className="relative w-full aspect-[10/7] pointer-events-none"
           style={{
             transform: 'rotateX(13deg) rotateY(-0.8deg)',
@@ -38,6 +41,7 @@ export const TurntableEngine = memo(
         >
           <TurntableBase className="absolute inset-0 overflow-visible">
             <div
+              data-tour="record"
               className="absolute flex items-center justify-center pointer-events-none"
               style={{
                 // The plinth is drawn in a 1000 x 700 box with the platter well centred at
@@ -54,11 +58,13 @@ export const TurntableEngine = memo(
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Platter size="100%" />
                   <Slipmat size="98%" />
-                  <VinylEngine
-                    albumArt={albumArt}
-                    isActive={isActive}
-                    className="w-[99%] h-[99%] max-w-none"
-                  />
+                  <RecordFlip>
+                    <VinylEngine
+                      albumArt={albumArt}
+                      isActive={isActive}
+                      className="w-[99%] h-[99%] max-w-none"
+                    />
+                  </RecordFlip>
                 </div>
               </div>
             </div>
@@ -75,6 +81,7 @@ export const TurntableEngine = memo(
 
             <MechanicalControls />
             <DeckNameplate />
+            <DustCover />
           </TurntableBase>
         </div>
       </div>

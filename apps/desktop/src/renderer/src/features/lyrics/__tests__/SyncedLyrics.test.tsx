@@ -133,8 +133,8 @@ describe('SyncedLyrics Component & Parser', () => {
     window.electron = { getLyrics } as any
 
     render(<SyncedLyrics />)
-    await waitFor(() => expect(screen.getByText('Lyrics Unreachable')).toBeInTheDocument())
-    expect(screen.queryByText('No Lyrics Found')).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Lyrics unreachable')).toBeInTheDocument())
+    expect(screen.queryByText('No lyrics found')).not.toBeInTheDocument()
 
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /try now/i })))
     await waitFor(() => expect(screen.getByText(/convo/i)).toBeInTheDocument())
@@ -148,7 +148,7 @@ describe('SyncedLyrics Component & Parser', () => {
     window.electron = { getLyrics } as any
 
     render(<SyncedLyrics />)
-    await waitFor(() => expect(screen.getByText('No Lyrics Found')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('No lyrics found')).toBeInTheDocument())
     await act(async () => fireEvent.click(screen.getByRole('button', { name: /search again/i })))
     await waitFor(() => expect(getLyrics).toHaveBeenCalledTimes(2))
   })
