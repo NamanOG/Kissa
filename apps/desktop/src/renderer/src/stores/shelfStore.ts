@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { TrackInfo } from './playerStore'
+import { createDeferredStorage } from '../utils/deferredStorage'
+import { knownSmallCover, needsShrink, shrinkCoverLater } from './shelfCovers'
 
 export interface RecordEntry {
   albumKey: string // Normalized "album-artist"
@@ -40,13 +42,53 @@ export function isBrowserTrack(track: Pick<TrackInfo, 'source' | 'sourceAppId'>)
   return BROWSER_SOURCE.test(track.sourceAppId ?? '') || BROWSER_SOURCE.test(track.source ?? '')
 }
 
+// Small cover copies arrive a moment after the listen; apply them together.
+const coverPatches = new Map<string, string>()
+let coverPatchTimer: ReturnType<typeof setTimeout> | undefined
+
+function patchCover(source: string, small: string): void {
+  coverPatches.set(source, small)
+  if (coverPatchTimer !== undefined) return
+  coverPatchTimer = setTimeout(() => {
+    coverPatchTimer = undefined
+    const patches = new Map(coverPatches)
+    coverPatches.clear()
+    useShelfStore.setState((state) => {
+      let changed = false
+      const records = state.records.map((r) => {
+        const small = r.artworkUrl ? patches.get(r.artworkUrl) : undefined
+        if (!small) return r
+        changed = true
+        return { ...r, artworkUrl: small }
+      })
+      return changed ? { records } : state
+    })
+  }, 200)
+}
+
+/** Shelves saved before covers were kept small: shrink their big covers once, quietly. */
+function shrinkSavedCovers(): void {
+  const urls = [
+    ...new Set(useShelfStore.getState().records.map((r) => r.artworkUrl).filter(needsShrink))
+  ]
+  let i = 0
+  const next = (): void => {
+    const url = urls[i++]
+    if (!url) return
+    shrinkCoverLater(url, patchCover)
+    setTimeout(next, 250)
+  }
+  next()
+}
+
 export const useShelfStore = create<ShelfState>()(
   persist(
     (set) => ({
       records: [],
       // The current cover has passed the main-process ArtworkService/coverMatch path.
       // Update old shelf art without recording an extra listen or changing recency.
-      repairArtwork: (track) =>
+      repairArtwork: (track) => {
+        let stored = false
         set((state) => {
           if (
             !track.album ||
@@ -60,12 +102,17 @@ export const useShelfStore = create<ShelfState>()(
             return state
           const key = normalizeKey(track.album, track.artist)
           const index = state.records.findIndex((r) => r.albumKey === key)
-          if (index < 0 || state.records[index].artworkUrl === track.artworkUrl) return state
+          const cover = knownSmallCover(track.artworkUrl)
+          if (index < 0 || state.records[index].artworkUrl === cover) return state
           const records = [...state.records]
-          records[index] = { ...records[index], artworkUrl: track.artworkUrl }
+          records[index] = { ...records[index], artworkUrl: cover }
+          stored = true
           return { records }
-        }),
-      addOrUpdateRecord: (track) =>
+        })
+        if (stored) shrinkCoverLater(track.artworkUrl, patchCover)
+      },
+      addOrUpdateRecord: (track) => {
+        let stored = false
         set((state) => {
           if (!track.album || !track.artist) return state // Ignore incomplete metadata
           if (track.sourceAppId === IDLE_SOURCE_APP_ID) return state // Not a real listen
@@ -76,6 +123,8 @@ export const useShelfStore = create<ShelfState>()(
           const key = normalizeKey(track.album, track.artist)
           const existingIdx = state.records.findIndex((r) => r.albumKey === key)
           const now = Date.now()
+          const cover = knownSmallCover(track.artworkUrl)
+          stored = true
 
           if (existingIdx !== -1) {
             const existing = state.records[existingIdx]
@@ -85,7 +134,7 @@ export const useShelfStore = create<ShelfState>()(
               ...existing,
               lastListened: now,
               playCount: existing.playCount + 1,
-              artworkUrl: track.artworkUrl ?? existing.artworkUrl,
+              artworkUrl: cover ?? existing.artworkUrl,
               tracksEncountered: isNewTrack
                 ? [...existing.tracksEncountered, track.title]
                 : existing.tracksEncountered
@@ -99,7 +148,7 @@ export const useShelfStore = create<ShelfState>()(
               albumKey: key,
               album: track.album,
               artist: track.artist,
-              artworkUrl: track.artworkUrl,
+              artworkUrl: cover,
               firstListened: now,
               lastListened: now,
               playCount: 1,
@@ -107,7 +156,9 @@ export const useShelfStore = create<ShelfState>()(
             }
             return { records: [...state.records, newRecord] }
           }
-        }),
+        })
+        if (stored) shrinkCoverLater(track.artworkUrl, patchCover)
+      },
       removeRecord: (albumKey) =>
         set((state) => ({
           records: state.records.filter((r) => r.albumKey !== albumKey)
@@ -117,6 +168,11 @@ export const useShelfStore = create<ShelfState>()(
     {
       name: 'kissa-record-shelf', // Persists to localStorage automatically
       version: 2,
+      // Saving the whole shelf on every song change froze the window; save once things settle.
+      storage: createDeferredStorage<ShelfState>(),
+      onRehydrateStorage: () => (state) => {
+        if (state && typeof window !== 'undefined') setTimeout(shrinkSavedCovers, 5000)
+      },
       // v0 shelves recorded the idle placeholder as an album; v1 recorded browser
       // streams with no artist. Drop both.
       migrate: (persisted) => {
