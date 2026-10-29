@@ -327,6 +327,11 @@ export class MediaDetectionService {
     return this.latestPayload
   }
 
+  /** The PC's volume as the helper last reported it; null while the helper is not running. */
+  public getVolume(): { master: number; isMuted: boolean } | null {
+    return this.worker ? { ...this.latestVolume } : null
+  }
+
   public setVolume(volume: number): void {
     const clamped = Math.max(0, Math.min(100, Math.round(volume)))
     this.latestVolume.master = clamped

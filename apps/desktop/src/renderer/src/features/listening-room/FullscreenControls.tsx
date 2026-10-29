@@ -4,6 +4,7 @@ import { usePlayerStore } from '@renderer/stores/playerStore'
 import { RoomDimmer } from '../controls/RoomDimmer'
 import { cn } from '@renderer/utils/cn'
 import { MovingLightToggle } from '../background/MovingLightToggle'
+import { useT } from '@renderer/i18n'
 
 export interface FullscreenControlsProps {
   isVisible: boolean
@@ -12,6 +13,8 @@ export interface FullscreenControlsProps {
   showLyrics?: boolean
   onToggleLyrics?: () => void
   canShowLyrics?: boolean
+  /** Lyrics shown somewhere that does not move the controls (party mode's side column). */
+  lyricsPressed?: boolean
 }
 
 export const FullscreenControls = memo(({ 
@@ -19,8 +22,11 @@ export const FullscreenControls = memo(({
   onHold,
   showLyrics = false, 
   onToggleLyrics, 
-  canShowLyrics = true 
+  canShowLyrics = true,
+  lyricsPressed
 }: FullscreenControlsProps) => {
+  const t = useT()
+  const lyricsOn = lyricsPressed ?? showLyrics
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const isPlaying = usePlayerStore((s) => s.isPlaying)
   const togglePlayPause = usePlayerStore((s) => s.togglePlayPause)
@@ -76,16 +82,16 @@ export const FullscreenControls = memo(({
         <MovingLightToggle variant="fullscreen" />
         <button
           type="button"
-          aria-label="Enter Listening Display"
+          aria-label={t('dock.display')}
           onClick={() => setIsListeningDisplay(true)}
           className="h-10 px-4 rounded-full flex items-center justify-center text-white/55 hover:text-white hover:bg-white/10 active:scale-95 transition-[transform,color,background-color] duration-150 text-[13px] font-medium font-sans focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
         >
           <Disc className="w-4 h-4 mr-2" />
-          Display
+          {t('fs.display')}
         </button>
         <button
           type="button"
-          aria-label="Exit Fullscreen"
+          aria-label={t('fs.exit')}
           onClick={() => setFullscreen(false)}
           className="w-10 h-10 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 active:scale-95 transition-[transform,color,background-color] duration-150"
         >
@@ -109,23 +115,24 @@ export const FullscreenControls = memo(({
             {canShowLyrics && onToggleLyrics && (
               <button
                 type="button"
-                aria-label={showLyrics ? "Hide Lyrics" : "Show Lyrics"}
+                aria-label={lyricsOn ? t('dock.hideLyrics') : t('fs.showLyrics')}
+                aria-pressed={lyricsOn}
                 onClick={onToggleLyrics}
                 className={cn(
                   "w-10 h-10 min-[900px]:w-11 min-[900px]:h-11 shrink-0 flex items-center justify-center rounded-full transition-[color,background-color,transform] duration-150 active:scale-[0.97]",
-                  showLyrics 
-                    ? "bg-white text-black shadow-lg" 
+                  lyricsOn 
+                    ? "bg-white/20 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_4px_14px_rgba(0,0,0,0.35)] backdrop-blur-xl" 
                     : "bg-transparent text-white/50 hover:text-white hover:bg-white/10"
                 )}
-                title="Toggle Lyrics"
+                title={t('dock.lyricsToggle')}
               >
-                <Quote className="w-[18px] h-[18px] min-[900px]:w-5 min-[900px]:h-5" fill={showLyrics ? "currentColor" : "none"} />
+                <Quote className="w-[18px] h-[18px] min-[900px]:w-5 min-[900px]:h-5" fill={lyricsOn ? "currentColor" : "none"} />
               </button>
             )}
 
             <button
               type="button"
-              aria-label={isAdaptive ? "Disable Match Album" : "Enable Match Album"}
+              aria-label={isAdaptive ? t('fs.matchOff') : t('fs.matchOn')}
               onClick={() => setTheme(isAdaptive ? 'quiet-room' : 'adaptive')}
               className={cn(
                 "w-10 h-10 min-[900px]:w-11 min-[900px]:h-11 shrink-0 flex items-center justify-center rounded-full transition-[color,background-color,transform] duration-150 active:scale-[0.97]",
@@ -133,7 +140,7 @@ export const FullscreenControls = memo(({
                   ? "bg-[#e8a95d]/20 text-[#e8a95d]" 
                   : "bg-transparent text-white/50 hover:text-white hover:bg-white/10"
               )}
-              title="Match Album Art Color"
+              title={t('fs.match')}
             >
               <Aperture className="w-[18px] h-[18px] min-[900px]:w-5 min-[900px]:h-5" />
             </button>
@@ -142,7 +149,7 @@ export const FullscreenControls = memo(({
           <div className="flex items-center gap-4 min-[900px]:gap-5 shrink-0">
             <button
               type="button"
-              aria-label="Skip Back"
+              aria-label={t('dock.prev')}
               onClick={handlePrev}
               className="w-10 h-10 flex items-center justify-center text-white/60 hover:text-white active:scale-[0.95] transition-[transform,color] duration-150 cursor-pointer"
             >
@@ -151,7 +158,7 @@ export const FullscreenControls = memo(({
             
             <button
               type="button"
-              aria-label={isPlaying ? "Pause" : "Play"}
+              aria-label={isPlaying ? t('dock.pause') : t('dock.play')}
               onClick={handlePlayPause}
               className="w-12 h-12 min-[900px]:w-14 min-[900px]:h-14 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white active:scale-[0.95] transition-[transform,background-color] duration-150 cursor-pointer"
             >
@@ -169,7 +176,7 @@ export const FullscreenControls = memo(({
             
             <button
               type="button"
-              aria-label="Skip Forward"
+              aria-label={t('dock.next')}
               onClick={handleNext}
               className="w-10 h-10 flex items-center justify-center text-white/60 hover:text-white active:scale-[0.95] transition-[transform,color] duration-150 cursor-pointer"
             >

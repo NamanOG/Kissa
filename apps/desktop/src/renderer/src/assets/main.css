@@ -19,10 +19,12 @@
   backdrop-filter: none;
 }
 
-/* Support Kissa: a slow breath of the album's colour. Opacity only, on a tiny layer. */
+/* Support Kissa: a slow breath of the album's colour. Opacity only, on a tiny layer. It breathes
+   twice when it appears and then rests: a loop that never stops keeps the window drawing frames
+   for a detail nobody is looking at. */
 .kissa-glow {
   opacity: 0.35;
-  animation: kissa-glow 5.5s ease-in-out infinite alternate;
+  animation: kissa-glow 5.5s ease-in-out 4 alternate;
 }
 @keyframes kissa-glow {
   from { opacity: 0.18; }
@@ -34,6 +36,27 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .kissa-glow {
+    animation: none;
+  }
+}
+/* The back of the sleeve: three small bars beside the song playing. */
+/* Six steps a second rather than every refresh: it reads the same at this size and leaves the
+   window idle between steps. */
+.sleeve-eq {
+  height: 9px;
+  transform-origin: bottom;
+  animation: sleeve-eq 1s steps(6, jump-none) infinite;
+}
+@keyframes sleeve-eq {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+.sleeve-paused .sleeve-eq,
+:root[data-window-hidden] .sleeve-eq {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sleeve-eq {
     animation: none;
   }
 }
@@ -189,6 +212,12 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Party mode on a TV: the pointer goes away with the controls. */
+  .kissa-cursor-hidden,
+  .kissa-cursor-hidden * {
+    cursor: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -206,12 +235,73 @@
 @layer components {
 .kissa-set-heading {
   margin: 0 0 10px 4px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--muted);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: color-mix(in srgb, var(--on-surface) 92%, transparent);
+}
+/*
+ * The one material for every sheet and dialog: tinted glass over the room, a hairline edge,
+ * one highlight along the top, a long soft shadow, and the room's accent falling faintly
+ * across the top corner. Matches the Deck's side rail and dock.
+ */
+.kissa-sheet {
+  position: relative;
+  isolation: isolate;
+  background-color: color-mix(in srgb, var(--deck-bg) 74%, transparent);
+  -webkit-backdrop-filter: blur(32px) saturate(1.5);
+  backdrop-filter: blur(32px) saturate(1.5);
+  box-shadow:
+    0 50px 120px -30px rgba(0, 0, 0, 0.8),
+    0 18px 40px -18px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.kissa-sheet::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(90% 45% at 12% 0%, color-mix(in srgb, var(--accent) 11%, transparent), transparent 70%);
+}
+/*
+ * Pressed and other show pieces. Two materials, used sparingly:
+ * - kissa-glass: frosted, tinted by the room, for panels over a still background
+ *   (never over something moving: the blur would be redrawn every frame).
+ * - kissa-raised / kissa-well: soft, lit-from-above surfaces, like moulded controls on a
+ *   hi-fi faceplate. Raised for tiles, well for tracks and slots. Kept faint on purpose.
+ */
+.kissa-glass {
+  position: relative;
+  isolation: isolate;
+  background-color: color-mix(in srgb, var(--deck-bg) 52%, transparent);
+  -webkit-backdrop-filter: blur(26px) saturate(1.45);
+  backdrop-filter: blur(26px) saturate(1.45);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 30px 70px -30px rgba(0, 0, 0, 0.7);
+}
+.kissa-raised {
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--on-surface) 7%, transparent),
+    color-mix(in srgb, var(--on-surface) 2.5%, transparent) 70%
+  );
+  box-shadow:
+    -5px -5px 14px rgba(255, 238, 220, 0.025),
+    8px 12px 26px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+}
+.kissa-well {
+  background: rgba(0, 0, 0, 0.22);
+  box-shadow:
+    inset 2px 3px 7px rgba(0, 0, 0, 0.42),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.035),
+    0 1px 0 rgba(255, 255, 255, 0.04);
 }
 .kissa-set-group {
   display: flex;
@@ -234,4 +324,107 @@
 .kissa-set-row:last-child {
   border-bottom: 0;
 }
+}
+
+/* Pressed: the progress track of the scene that is playing. */
+/* The room arriving as the opening lifts (StartupExperience sets data-kissa-arrive for 1.6 s).
+   Transform and opacity only, once per launch. */
+@keyframes kissa-arrive-side {
+  from {
+    opacity: 0;
+    transform: translate3d(-28px, 0, 0);
+  }
+}
+@keyframes kissa-arrive-dock {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 36px, 0) scale(0.98);
+  }
+}
+@keyframes kissa-arrive-stage {
+  from {
+    opacity: 0;
+    transform: scale(0.955);
+  }
+}
+html[data-kissa-arrive] .kissa-arrive-side {
+  animation: kissa-arrive-side 0.95s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
+}
+html[data-kissa-arrive] .kissa-arrive-dock {
+  animation: kissa-arrive-dock 1s cubic-bezier(0.16, 1, 0.3, 1) 0.14s both;
+}
+html[data-kissa-arrive] .kissa-arrive-stage {
+  animation: kissa-arrive-stage 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-kissa-arrive] .kissa-arrive-side,
+  html[data-kissa-arrive] .kissa-arrive-dock,
+  html[data-kissa-arrive] .kissa-arrive-stage {
+    animation: none;
+  }
+}
+
+/* Pressed, Time: a groove being cut (stroke-dasharray 1 on a pathLength 1 circle). */
+@keyframes pressed-cut {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pressed-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* While a full-window story (Pressed) covers everything, the app beneath is not drawn at all:
+   each frame of the story would otherwise rebuild the whole app's layers too. Sizes are
+   remembered, so nothing shifts when it comes back. */
+html[data-kissa-cover] #root > :not(:has([data-kissa-overlay])),
+html[data-kissa-cover] #root *:has(> [data-kissa-overlay]) > :not([data-kissa-overlay]) {
+  content-visibility: hidden;
+  contain-intrinsic-size: auto 1px auto 1px;
+}
+
+/* Wide Deck lyrics reuse the instrument, sheet and editorial type from the listening room. */
+@media (min-width: 1100px) {
+  .deck-lyrics-open {
+    grid-template-columns: minmax(0, 1.3125fr) minmax(0, 1fr);
+    gap: 48px;
+    padding: 0 24px;
+    overflow: visible;
+    max-width: 1576px;
+    margin-inline: auto;
+  }
+  .deck-lyrics-open .deck-details {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 30%;
+    pointer-events: none;
+  }
+  .deck-lyrics-open .deck-instrument {
+    padding: 104px 0 24px;
+    overflow: visible;
+  }
+  .deck-lyrics-open .deck-lyrics-card {
+    margin: var(--lyrics-top, 104px) 0 24px;
+    align-self: stretch;
+    padding: clamp(24px, 2vw, 32px);
+    width: 100%;
+    max-width: 640px;
+    justify-self: end;
+    border: 0;
+    border-radius: 24px;
+    background: color-mix(in srgb, var(--panel-bg) 72%, transparent);
+    box-shadow: none;
+  }
+  .deck-lyrics-open .onboarding-deck {
+    max-width: min(840px, calc((100vh - 240px) * 10 / 7));
+  }
 }

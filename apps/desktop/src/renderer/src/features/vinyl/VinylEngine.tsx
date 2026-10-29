@@ -8,6 +8,7 @@ import { EdgeLayer } from './EdgeLayer'
 import { Label } from './Label'
 import { Spindle } from './Spindle'
 import { usePlayerStore } from '@renderer/stores/playerStore'
+import { alignToBeat } from '@renderer/utils/frameBeat'
 
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
 
@@ -15,10 +16,10 @@ import albumPlaceholder from '@renderer/media/placeholder-album.png'
 let savedVinylPhase = 0
 
 /**
- * On high-refresh displays (120 Hz and up) the record turns in 60 steps a second instead of
- * at the display's rate: it looks the same, and every frame the window does not present
- * saves real CPU and GPU time (measured: Study Room 197% → 135% of a core at 120 Hz).
- * On 60 Hz displays the turn stays continuous.
+ * On high-refresh displays (120 Hz and up) the record turns in 60 steps a second, on the shared
+ * beat (utils/frameBeat), instead of at the display's rate: it looks the same, and every frame
+ * the window does not present saves real CPU and GPU time (measured: Study Room 197% → 135% of
+ * a core at 120 Hz). On 60 Hz displays the turn stays continuous.
  */
 let highRefresh: boolean | null = null
 const highRefreshListeners = new Set<() => void>()
@@ -34,15 +35,15 @@ function detectRefresh(): void {
         requestAnimationFrame(tick)
         return
       }
-      // The quickest quarter of frames shows the display's own rate; slower ones are just
-      // a busy page. While the page is busy (start-up, a track change) the answer is unclear,
-      // so try again later.
+      // The quickest frames show the display's own rate; slower ones are just a busy page.
+      // Until a quick enough run is seen, look again a little later: measured once at a busy
+      // start-up, a 144 Hz laptop was taken for 60 Hz and the record drew on every refresh.
       const gaps = stamps.slice(1).map((s, i) => s - stamps[i]).sort((a, b) => a - b)
-      const quick = gaps[Math.floor(gaps.length / 4)]
+      const quick = gaps[Math.floor(gaps.length / 10)]
       if (quick < 12) {
         highRefresh = true
         highRefreshListeners.forEach((fn) => fn())
-      } else if (quick > 20 && ++attempts < 8) {
+      } else if (++attempts < 8) {
         window.setTimeout(measure, 4000)
       }
     }
@@ -109,7 +110,9 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
     const effect = animationRef.current.effect as KeyframeEffect
     const apply = (): void => {
       const current = (animationRef.current?.effect as KeyframeEffect | null) ?? effect
-      current?.updateTiming({ duration: targetDuration, easing: spinEasing(targetDuration) })    }
+      current?.updateTiming({ duration: targetDuration, easing: spinEasing(targetDuration) })
+      if (animationRef.current) alignToBeat(animationRef.current)
+    }
     apply()
     detectRefresh()
     highRefreshListeners.add(apply)
@@ -125,13 +128,16 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
     let lastTime = performance.now()
     
     const updateRate = (time: number) => {
-      const deltaSeconds = (time - lastTime) / 1000
-      lastTime = time
-      
+      // A frame's time is when the frame began, which can be earlier than the moment this effect
+      // ran (a busy page). A negative step once pushed the spin-down past its start, and the
+      // record kept turning at 1.7 times its speed until the window was reloaded.
+      const deltaSeconds = Math.max(0, (time - lastTime) / 1000)
+      lastTime = Math.max(lastTime, time)
+
       let rate = currentPlaybackRateRef.current
-      if (playing && rate < targetRate) {
+      if (rate < targetRate) {
         rate = Math.min(targetRate, rate + 3.25 * deltaSeconds) // Spin up
-      } else if (!playing && rate > targetRate) {
+      } else if (rate > targetRate) {
         rate = Math.max(targetRate, rate - 2.25 * deltaSeconds) // Spin down
       }
       
@@ -143,6 +149,10 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
       
       if (rate !== targetRate) {
         rafRef.current = requestAnimationFrame(updateRate)
+      } else if (animationRef.current) {
+        // Up to speed: each of its steps is one beat long, so line them up with the shared beat
+        // (utils/frameBeat) and the record turns on the frames everything else uses.
+        alignToBeat(animationRef.current)
       }
     }
     

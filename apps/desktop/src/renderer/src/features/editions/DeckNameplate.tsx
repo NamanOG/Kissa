@@ -1,6 +1,7 @@
 import React, { memo } from 'react'
 import { useEditionsStore } from '@renderer/stores/editionsStore'
 import { FINISH_PALETTES } from './editions'
+import { tl } from '@renderer/i18n'
 
 /**
  * The model nameplate engraved on the deck's front edge, as on real hi-fi. It names the
@@ -24,7 +25,7 @@ export const DeckNameplate = memo((): React.JSX.Element => {
         onClick={showEditor}
         aria-label={`Kissa Edition: ${name}. Change your turntable`}
         aria-expanded={isOpen}
-        title="Change your turntable (E)"
+        title={tl('a11y.changeTurntable')}
         className="group pointer-events-auto flex h-full cursor-pointer items-center gap-[0.7em] rounded-[3px] px-3 font-mono text-[7.5px] font-bold uppercase tracking-[0.32em] text-[color:var(--deck-plate,#5f5146)] [filter:drop-shadow(0_1px_0_var(--deck-plate-shadow,rgba(0,0,0,0.85)))] transition-[filter,color] duration-micro ease-primary hover:brightness-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d7a76c]"
       >
         <span>Kissa</span>

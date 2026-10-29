@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { cn } from '@renderer/utils/cn'
+import { tl } from '@renderer/i18n'
 
 export interface DisplayMetadataProps {
   className?: string
@@ -24,7 +25,7 @@ export const DisplayMetadata = memo(({ className, align = 'left' }: DisplayMetad
 
   return (
     <section
-      aria-label="Now playing"
+      aria-label={tl('a11y.nowPlaying')}
       className={cn(
         'flex flex-col',
         isCenter ? 'items-center text-center' : 'items-start text-left',
@@ -61,7 +62,7 @@ export const DisplayMetadata = memo(({ className, align = 'left' }: DisplayMetad
               isCenter ? 'items-center text-center' : 'items-start text-left'
             )}
           >
-            <p className="max-w-full font-kissa-chassis uppercase text-[clamp(1rem,1.2vw,1.25rem)] tracking-[0.2em] text-tone line-clamp-1 opacity-90 font-bold">
+            <p className="max-w-full font-sans text-[clamp(1.05rem,1.3vw,1.35rem)] font-medium tracking-[-0.005em] text-white/85 line-clamp-1">
               {artist}
             </p>
             {album && (

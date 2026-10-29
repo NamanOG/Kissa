@@ -1,9 +1,10 @@
 import { memo, useEffect, useRef, useState } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
-import { Quote, Disc, AudioLines } from 'lucide-react'
+import { Quote, AudioLines, Tv } from 'lucide-react'
 import { SleepTimer } from './SleepTimer'
-import { MovingLightToggle } from '../background/MovingLightToggle'
+import { RoomLightButton } from '../background/RoomLightButton'
+import { PhoneRemoteButton } from '../remote/PhoneRemoteButton'
 import { RoomDimmer } from './RoomDimmer'
 
 /** Format seconds as m:ss */
@@ -18,14 +19,19 @@ export interface ControlDockProps {
 }
 
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
+import { useT } from '@renderer/i18n'
 
 const Scrubber = memo(() => {
   const currentTrack = usePlayerStore((s) => s.currentTrack)
+  const t = useT()
   const duration = currentTrack?.duration ?? 0
   const canSeek = currentTrack?.canSeek !== false
-  const source = currentTrack?.source || 'This app'
+  const source = currentTrack?.source || t('dock.thisApp')
 
   const [displayTime, setDisplayTime] = useState(0)
+  // The latest shown second, so repeated key presses build on each other between clock ticks.
+  const displayTimeRef = useRef(0)
+  displayTimeRef.current = displayTime
   const [isDragging, setIsDragging] = useState(false)
   const isDraggingRef = useRef(false)
 
@@ -103,6 +109,37 @@ const Scrubber = memo(() => {
     return seekTime
   }
 
+  const seekable = canSeek && duration > 0
+
+  // Keys move the position like any slider: arrows by 5 seconds, Page keys by 30, Home and End
+  // to the ends. The bar moves at once; the player follows through the same seek as a drag.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!seekable) return
+    const step: Record<string, number> = {
+      ArrowLeft: -5,
+      ArrowDown: -5,
+      ArrowRight: 5,
+      ArrowUp: 5,
+      PageDown: -30,
+      PageUp: 30
+    }
+    let target: number
+    if (e.key in step) target = displayTimeRef.current + step[e.key]
+    else if (e.key === 'Home') target = 0
+    else if (e.key === 'End') target = Math.max(0, duration - 1)
+    else return
+    e.preventDefault()
+    target = Math.max(0, Math.min(Math.floor(duration), Math.round(target)))
+    const ratio = target / duration
+    if (fillRef.current) fillRef.current.style.transform = `scaleX(${ratio})`
+    if (thumbRef.current) {
+      thumbRef.current.style.transform = `translate3d(${ratio * railWidthRef.current - 5}px, -50%, 0)`
+    }
+    displayTimeRef.current = target
+    setDisplayTime(target)
+    usePlayerStore.getState().seek(target)
+  }
+
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault()
     if (!canSeek || duration <= 0 || !railRef.current) return
@@ -132,19 +169,33 @@ const Scrubber = memo(() => {
     <div
       className="flex items-center gap-2 min-[900px]:gap-3 flex-1 min-w-[50px] min-[800px]:min-w-[100px] min-[1100px]:min-w-[160px]"
       role="group"
-      aria-label="Track position"
+      aria-label={t('dock.position')}
     >
-      <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0 text-dim">
+      <span aria-hidden="true" className="font-sans text-[11px] min-[900px]:text-[12px] tabular-nums font-medium shrink-0 text-dim">
         {formatTime(displayTime)}
       </span>
 
       <div
         ref={railRef}
-        title={canSeek ? undefined : `${source} does not let other apps change the position`}
+        title={canSeek ? undefined : t('dock.noSeek', { source })}
         className={cn(
-          'relative flex-1 h-5 flex items-center touch-none select-none',
+          'relative flex-1 h-5 flex items-center touch-none select-none rounded-full outline-none',
+          'focus-visible:ring-2 focus-visible:ring-tone/70 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent',
           canSeek ? 'cursor-pointer group' : 'cursor-default'
         )}
+        tabIndex={seekable ? 0 : -1}
+        role="slider"
+        aria-label={t('dock.position')}
+        aria-valuemin={0}
+        aria-valuemax={Math.max(0, Math.floor(duration))}
+        aria-valuenow={Math.min(displayTime, Math.max(0, Math.floor(duration)))}
+        aria-valuetext={
+          duration > 0
+            ? t('dock.seekHint', { time: formatTime(displayTime), total: formatTime(duration) })
+            : undefined
+        }
+        aria-disabled={!seekable || undefined}
+        onKeyDown={handleKeyDown}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -166,13 +217,15 @@ const Scrubber = memo(() => {
           <div
             className={cn(
               'h-full w-full rounded-full bg-ink shadow-[0_1px_4px_rgba(20,12,8,0.45)] transition-[transform,opacity] duration-micro',
-              isDragging ? 'scale-125 opacity-100' : 'scale-50 opacity-0 group-hover:scale-100 group-hover:opacity-100'
+              isDragging
+                ? 'scale-125 opacity-100'
+                : 'scale-50 opacity-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100'
             )}
           />
         </div>
       </div>
 
-      <span className="font-mono text-[10px] min-[900px]:text-[11px] tabular-nums font-medium shrink-0 text-dim">
+      <span aria-hidden="true" className="font-sans text-[11px] min-[900px]:text-[12px] tabular-nums font-medium shrink-0 text-dim">
         {duration > 0 ? formatTime(duration) : '–:––'}
       </span>
     </div>
@@ -194,20 +247,25 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
   const isLyricsActive = showSideLyrics
 
   const isExternalMedia = !!currentTrack?.sourceAppId
+  const t = useT()
 
   return (
     <div
       className={cn(
         'relative z-30 flex shrink-0 items-center justify-between border transform-gpu overflow-hidden',
-        'mx-2 mb-4 mt-2 h-[64px] min-[900px]:h-[72px] rounded-[36px] backdrop-blur-2xl shadow-2xl',
+        'mx-2 mb-4 mt-2 h-[64px] min-[900px]:h-[72px] rounded-[36px] backdrop-blur-2xl backdrop-saturate-[1.6] shadow-2xl',
         'px-4 min-[900px]:px-8 min-[1200px]:px-10 select-none transition-all duration-ui ease-primary',
         !hasTrack && 'opacity-50 pointer-events-none',
         className
       )}
+      // Without a record the dock is shown switched off; keep Tab and screen readers out of it too.
+      inert={!hasTrack || undefined}
       style={{
-        borderColor: 'var(--dock-border)',
-        backgroundColor: 'var(--dock-bg)',
-        boxShadow: 'var(--dock-shadow)'
+        // Glass: the room shows through, edged by a hairline and one highlight along the top.
+        borderColor: 'rgba(255,255,255,0.08)',
+        backgroundColor: 'color-mix(in srgb, var(--dock-bg) 58%, transparent)',
+        boxShadow:
+          '0 24px 60px -24px rgba(0,0,0,0.7), 0 8px 20px -10px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.2)'
       }}
     >
       <div
@@ -234,10 +292,10 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
               usePlayerStore.getState().playPrev()
             }
           }}
-          aria-label="Previous track"
-          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-dim hover:text-ink -m-2 p-2 rounded-full"
+          aria-label={t('dock.prev')}
+          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-dim hover:text-ink -m-2 p-2 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
         >
-          <svg viewBox="0 0 24 24" className="h-4 w-4 min-[900px]:h-[18px] min-[900px]:w-[18px] fill-current -translate-x-[1px]">
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 min-[900px]:h-[18px] min-[900px]:w-[18px] fill-current -translate-x-[1px]">
             <path d="M16 6.14v11.72c0 .77-.84 1.25-1.5.86l-9.8-5.86c-.64-.38-.64-1.34 0-1.72l9.8-5.86c.66-.39 1.5.09 1.5.86z" />
             <rect x="5" y="5" width="2" height="14" rx="1" />
           </svg>
@@ -252,9 +310,10 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
               window.electron.mediaPlayPause()
             }
           }}
-          aria-label={isPlaying ? 'Pause' : 'Play'}
+          aria-label={isPlaying ? t('dock.pause') : t('dock.play')}
           className={cn(
-            'relative h-10 w-10 min-[900px]:h-11 min-[900px]:w-11 rounded-full flex items-center justify-center cursor-pointer transition duration-ui ease-primary active:scale-[0.92] shrink-0 border hover:border-tone active:translate-y-px'
+            'relative h-10 w-10 min-[900px]:h-11 min-[900px]:w-11 rounded-full flex items-center justify-center cursor-pointer transition duration-ui ease-primary active:scale-[0.92] shrink-0 border hover:border-tone active:translate-y-px',
+            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone'
           )}
           style={{
             backgroundColor: 'var(--panel-bg)',
@@ -267,12 +326,12 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             className="flex items-center justify-center transition-transform duration-100 ease-out"
           >
             {isPlaying ? (
-              <svg viewBox="0 0 24 24" className="h-[14px] w-[14px] min-[900px]:h-[16px] min-[900px]:w-[16px] text-ink fill-current">
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[14px] w-[14px] min-[900px]:h-[16px] min-[900px]:w-[16px] text-ink fill-current">
                 <rect x="6" y="4" width="4" height="16" rx="1.5" />
                 <rect x="14" y="4" width="4" height="16" rx="1.5" />
               </svg>
             ) : (
-              <svg viewBox="0 0 24 24" className="h-[14px] w-[14px] min-[900px]:h-[16px] min-[900px]:w-[16px] text-ink fill-current ml-[2px]">
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[14px] w-[14px] min-[900px]:h-[16px] min-[900px]:w-[16px] text-ink fill-current ml-[2px]">
                 <path d="M8 5.14v13.72c0 .77.84 1.25 1.5.86l11.43-6.86c.64-.38.64-1.34 0-1.72L9.5 4.28C8.84 3.89 8 4.37 8 5.14z" />
               </svg>
             )}
@@ -288,10 +347,10 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
               usePlayerStore.getState().playNext()
             }
           }}
-          aria-label="Next track"
-          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-dim hover:text-ink -m-2 p-2 rounded-full"
+          aria-label={t('dock.next')}
+          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-dim hover:text-ink -m-2 p-2 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
         >
-          <svg viewBox="0 0 24 24" className="h-4 w-4 min-[900px]:h-[18px] min-[900px]:w-[18px] fill-current translate-x-[1px]">
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 min-[900px]:h-[18px] min-[900px]:w-[18px] fill-current translate-x-[1px]">
             <path d="M8 6.14v11.72c0 .77.84 1.25 1.5.86l9.8-5.86c.64-.38.64-1.34 0-1.72L9.5 5.28C8.84 4.89 8 5.37 8 6.14z" />
             <rect x="17" y="5" width="2" height="14" rx="1" />
           </svg>
@@ -304,7 +363,10 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
         className="relative z-10 flex items-center gap-1.5 min-[900px]:gap-2.5 shrink-0 justify-end transition-opacity duration-instant ease-primary"
         style={{ opacity: 'calc(0.4 + 0.6 * var(--room-illumination, 1))' }}
       >
-        <SleepTimer />
+        {/* A narrow window keeps the dock to the transport and the essentials. */}
+        <div className="contents max-[899px]:hidden">
+          <SleepTimer />
+        </div>
 
         <button
           type="button"
@@ -317,29 +379,32 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             }
           }}
           className={cn(
-            'onboarding-lyrics flex items-center gap-1 px-2 min-[900px]:px-3 py-1 rounded-full border transition duration-ui ease-primary cursor-pointer select-none active:scale-95',
+            'onboarding-lyrics flex h-8 items-center gap-1.5 px-2.5 min-[900px]:px-3 rounded-full transition duration-ui ease-primary cursor-pointer select-none active:scale-[0.97]',
+            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone',
             isLyricsActive
-              ? 'border-tone bg-tone/15 text-tone shadow-[0_0_12px_var(--accent)]'
-              : 'border-panel-line bg-[var(--surface)] text-dim hover:text-ink hover:border-tone/50'
+              ? 'bg-tone/20 text-tone shadow-[inset_0_0_0_0.5px_color-mix(in_srgb,var(--accent)_55%,transparent)]'
+              : 'bg-white/[0.06] text-ink/75 shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.12)] hover:bg-white/[0.1] hover:text-ink'
           )}
-          title={isLyricsActive ? 'Hide Lyrics' : 'Show Synced Lyrics'}
-          aria-label="Toggle Live Lyrics"
+          title={isLyricsActive ? t('dock.hideLyrics') : t('dock.showLyrics')}
+          aria-label={t('dock.lyricsToggle')}
+          aria-pressed={isLyricsActive}
         >
           <Quote
+            aria-hidden="true"
             className={cn(
               'w-3 h-3 min-[900px]:w-3.5 min-[900px]:h-3.5',
               isLyricsActive ? 'text-tone' : 'currentColor'
             )}
           />
-          <span className="hidden min-[760px]:inline font-mono text-[8.5px] min-[900px]:text-[9px] font-bold tracking-[0.14em] uppercase">
-            Lyrics
+          <span className="hidden min-[760px]:inline text-[12px] font-medium tracking-[-0.005em]">
+            {t('nav.lyrics')}
           </span>
         </button>
 
         <div
           className={cn(
-            'flex items-center gap-1.5 px-2 min-[900px]:px-2.5 py-1 rounded-full border transition-colors',
-            'border-panel-line bg-[var(--surface)] shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]'
+            'flex h-8 items-center gap-2 px-2.5 min-[900px]:px-3 rounded-full transition-colors max-[899px]:hidden',
+            'bg-white/[0.06] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.12)]'
           )}
         >
           {currentTrack?.source?.toLowerCase().includes('apple') ? (
@@ -369,46 +434,54 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           )}
           <span
             className={cn(
-              'font-mono text-[8.5px] min-[900px]:text-[9px] font-bold tracking-[0.14em] uppercase text-ink opacity-80'
+              'text-[12px] font-medium tracking-[-0.005em] text-ink/80'
             )}
           >
-            {currentTrack?.source || 'System Audio'}
+            {currentTrack?.source || t('dock.systemAudio')}
           </span>
         </div>
 
-        <MovingLightToggle variant="dock" />
+        <RoomLightButton />
 
+        <PhoneRemoteButton />
+
+        {/* The Listening Display (the screensaver look) lives in Settings, Screensaver, and on D. */}
         <button
           type="button"
-          onClick={() => usePlayerStore.getState().setIsListeningDisplay(true)}
+          data-tour="party"
+          onClick={() => usePlayerStore.getState().setPartyMode(true)}
           className={cn(
             'flex items-center justify-center w-[26px] h-[26px] min-[900px]:w-[28px] min-[900px]:h-[28px] rounded-full border transition duration-ui ease-primary cursor-pointer select-none active:scale-95',
+            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone',
             'border-transparent hover:border-panel-line bg-transparent hover:bg-[var(--surface)] text-dim hover:text-ink'
           )}
-          title="Start Listening Display (D)"
-          aria-label="Start Listening Display"
+          title={t('dock.partyKey')}
+          aria-label={t('dock.party')}
         >
-          <Disc className="w-3.5 h-3.5 stroke-[1.75]" />
+          <Tv aria-hidden="true" className="w-3.5 h-3.5 stroke-[1.75]" />
         </button>
 
         <button
           type="button"
+          data-tour="fullscreen"
           onClick={() => usePlayerStore.getState().toggleFullscreen()}
           className={cn(
             'flex items-center justify-center w-[26px] h-[26px] min-[900px]:w-[28px] min-[900px]:h-[28px] rounded-full border transition duration-ui ease-primary cursor-pointer select-none active:scale-95',
+            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone',
             isFullscreen
               ? 'border-tone bg-tone/15 text-tone shadow-[0_0_12px_var(--accent)]'
               : 'border-transparent hover:border-panel-line bg-transparent hover:bg-[var(--surface)] text-dim hover:text-ink'
           )}
-          title="Toggle Fullscreen (F11)"
-          aria-label="Toggle Fullscreen"
+          title={t('dock.fullscreenKey')}
+          aria-label={t('dock.fullscreen')}
+          aria-pressed={isFullscreen}
         >
           {isFullscreen ? (
-            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
               <path d="M4 14h6v6h-2v-4H4v-2zm16 0h-6v6h2v-4h4v-2zM4 10h6V4H8v4H4v2zm16 0h-6V4h2v4h4v2z" />
             </svg>
           ) : (
-            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
               <path d="M2 2h6v2H4v4H2V2zm14 0h6v6h-2V4h-4V2zM2 22v-6h2v4h4v2H2zm20 0h-6v-2h4v-4h2v6z" />
             </svg>
           )}

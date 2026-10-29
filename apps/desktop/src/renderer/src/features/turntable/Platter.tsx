@@ -46,6 +46,16 @@ export const Platter = memo(({ className, style, size = '100%', ...props }: Plat
             <stop offset="100%" stopColor="#0a0a0c" />
           </radialGradient>
 
+          {/* The platter's machined edge: lit where the room light falls (top left), in shade
+              opposite, like turned aluminium. */}
+          <linearGradient id="platter-edge-metal" x1="15%" y1="5%" x2="85%" y2="95%">
+            <stop offset="0%" stopColor="#d9d6d0" />
+            <stop offset="22%" stopColor="#8d8a86" />
+            <stop offset="50%" stopColor="#3c3b3d" />
+            <stop offset="78%" stopColor="#6d6a67" />
+            <stop offset="100%" stopColor="#2a292b" />
+          </linearGradient>
+
           <radialGradient id="platter-well-shadow" cx="50%" cy="50%" r="50%">
             <stop offset="78%" stopColor="rgba(0,0,0,0.85)" />
             <stop offset="92%" stopColor="rgba(0,0,0,0.3)" />
@@ -72,10 +82,11 @@ export const Platter = memo(({ className, style, size = '100%', ...props }: Plat
         <circle
           cx="200"
           cy="200"
-          r="193.5"
+          r="193.4"
           fill="none"
-          stroke="rgba(255,255,255,0.12)"
-          strokeWidth="0.8"
+          stroke="url(#platter-edge-metal)"
+          strokeWidth="1.6"
+          opacity="0.85"
         />
       </svg>
     </div>

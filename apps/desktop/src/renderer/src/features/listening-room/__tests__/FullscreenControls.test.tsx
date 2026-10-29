@@ -26,10 +26,10 @@ describe('FullscreenControls', () => {
     fireEvent.click(screen.getByRole('button', { name: /^play$|^pause$/i }))
     expect(mockTogglePlayPause).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(screen.getByRole('button', { name: /skip back/i }))
+    fireEvent.click(screen.getByRole('button', { name: /previous track/i }))
     expect(mockPlayPrev).toHaveBeenCalledTimes(1)
 
-    fireEvent.click(screen.getByRole('button', { name: /skip forward/i }))
+    fireEvent.click(screen.getByRole('button', { name: /next track/i }))
     expect(mockPlayNext).toHaveBeenCalledTimes(1)
   })
 
@@ -41,7 +41,7 @@ describe('FullscreenControls', () => {
 
   it('renders RoomDimmer', () => {
     render(<FullscreenControls isVisible={true} />)
-    expect(screen.getByTitle('Room Illumination')).toBeInTheDocument()
+    expect(screen.getByTitle('Room light')).toBeInTheDocument()
   })
 
   it('applies hidden styles when isVisible is false', () => {
@@ -61,7 +61,7 @@ describe('FullscreenControls', () => {
     const mockOnToggle = vi.fn()
     render(<FullscreenControls isVisible={true} canShowLyrics={true} showLyrics={false} onToggleLyrics={mockOnToggle} />)
     
-    const btn = screen.getByRole('button', { name: 'Show Lyrics' })
+    const btn = screen.getByRole('button', { name: 'Show lyrics' })
     expect(btn).toBeInTheDocument()
     
     fireEvent.click(btn)

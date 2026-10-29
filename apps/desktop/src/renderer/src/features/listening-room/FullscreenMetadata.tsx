@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { cn } from '@renderer/utils/cn'
+import { useT } from '@renderer/i18n'
 
 export interface FullscreenMetadataProps {
   className?: string
@@ -9,16 +10,17 @@ export interface FullscreenMetadataProps {
 }
 
 export const FullscreenMetadata = memo(({ className, isCentered = false }: FullscreenMetadataProps): React.JSX.Element => {
+  const t = useT()
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const prefersReducedMotion = useReducedMotion()
 
-  const title = currentTrack?.title ?? 'Waiting for music'
+  const title = currentTrack?.title ?? t('mini.waiting')
   const artist = currentTrack?.artist ?? 'Kissa'
   const album = currentTrack?.album
   const metadataKey = currentTrack?.audioUrl ?? currentTrack?.artworkUrl ?? `${title}-${artist}-${album ?? ''}`
 
   return (
-    <section aria-label="Now playing" className={cn('w-full', className)}>
+    <section aria-label={t('lr.nowPlaying')} className={cn('w-full', className)}>
       <AnimatePresence mode="wait" initial={!prefersReducedMotion}>
         <motion.div
           key={metadataKey}
@@ -51,7 +53,7 @@ export const FullscreenMetadata = memo(({ className, isCentered = false }: Fulls
           >
             {title}
           </h1>
-          <p className="mt-2 max-w-[min(100%,60em)] font-kissa-chassis uppercase text-[clamp(0.85rem,1.1vw,1rem)] tracking-[0.15em] text-dim line-clamp-1">
+          <p className="mt-2 max-w-[min(100%,60em)] font-sans text-[clamp(0.95rem,1.15vw,1.1rem)] font-medium text-white/80 line-clamp-1">
             {artist}
           </p>
           {album && album.toLowerCase() !== title.toLowerCase() && (

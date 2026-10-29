@@ -11,6 +11,7 @@ import snowPhoto from '@renderer/media/study/snow.jpg'
 import forestPhoto from '@renderer/media/study/forest.jpg'
 import nightPhoto from '@renderer/media/study/night.jpg'
 import fireplacePhoto from '@renderer/media/study/fireplace.jpg'
+import { tl } from '@renderer/i18n'
 
 export type StudyEnvironment = 'rain' | 'snow' | 'forest' | 'night' | 'fireplace'
 
@@ -29,40 +30,60 @@ export interface EnvironmentInfo {
 export const ENVIRONMENTS: EnvironmentInfo[] = [
   {
     id: 'rain',
-    label: 'Rain',
-    keepsTime: 'The glass mists over as you focus; a break wipes it clear.',
+    get label() {
+      return tl('scene.rain')
+    },
+    get keepsTime() {
+      return tl('scene.rain.time')
+    },
     photo: rainPhoto,
     lamp: '255, 176, 96',
     create: (c, r) => new RainScene(c, r)
   },
   {
     id: 'snow',
-    label: 'Snow',
-    keepsTime: 'Frost gathers at the edges as you focus; a break clears it.',
+    get label() {
+      return tl('scene.snow')
+    },
+    get keepsTime() {
+      return tl('scene.snow.time')
+    },
     photo: snowPhoto,
     lamp: '255, 186, 120',
     create: (c, r) => new SnowScene(c, r)
   },
   {
     id: 'forest',
-    label: 'Forest',
-    keepsTime: 'Morning light warms towards midday as you focus; a break returns to morning.',
+    get label() {
+      return tl('scene.forest')
+    },
+    get keepsTime() {
+      return tl('scene.forest.time')
+    },
     photo: forestPhoto,
     lamp: '255, 200, 140',
     create: (c, r) => new ForestScene(c, r)
   },
   {
     id: 'night',
-    label: 'Night',
-    keepsTime: 'The stars come out as you focus; a break leaves only the brightest.',
+    get label() {
+      return tl('scene.night')
+    },
+    get keepsTime() {
+      return tl('scene.night.time')
+    },
     photo: nightPhoto,
     lamp: '255, 170, 100',
     create: (c, r) => new NightScene(c, r)
   },
   {
     id: 'fireplace',
-    label: 'Fireplace',
-    keepsTime: 'The fire takes hold as you focus; a break lets it settle.',
+    get label() {
+      return tl('scene.fireplace')
+    },
+    get keepsTime() {
+      return tl('scene.fireplace.time')
+    },
     photo: fireplacePhoto,
     lamp: '255, 160, 80',
     create: (c, r) => new FireplaceScene(c, r)

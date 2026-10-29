@@ -7,6 +7,7 @@ import { useEditionsStore } from '@renderer/stores/editionsStore'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { useStudyStore } from '@renderer/stores/studyStore'
 import { afterRatingAnswer, loadGrowth, saveGrowth, shouldAskForRating, whatsNewDecision } from './growth'
+import { tl } from '@renderer/i18n'
 
 const EASE = [0.22, 1, 0.36, 1] as const
 
@@ -123,13 +124,13 @@ export function GrowthPrompts(): React.JSX.Element | null {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.98 }}
               transition={{ duration: 0.3, ease: EASE }}
-              className="relative z-10 w-full max-w-[560px] overflow-hidden rounded-[28px] border border-ink/[0.08] bg-[var(--deck-bg)] shadow-[0_30px_80px_rgba(0,0,0,0.65)]"
+              className="relative z-10 w-full max-w-[560px] overflow-hidden rounded-[28px] border border-ink/[0.08] kissa-sheet shadow-[0_30px_80px_rgba(0,0,0,0.65)]"
             >
               <button
                 type="button"
                 onClick={() => setWhatsNew(false)}
                 className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-dim transition-colors hover:bg-ink/[0.08] hover:text-ink cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone"
-                aria-label="Close"
+                aria-label={tl('a11y.close')}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -166,7 +167,7 @@ export function GrowthPrompts(): React.JSX.Element | null {
                 <button
                   type="button"
                   onClick={() => setWhatsNew(false)}
-                  className="inline-flex h-11 items-center justify-center rounded-full bg-ink px-6 text-[13px] font-semibold text-[var(--surface)] cursor-pointer transition-opacity hover:opacity-90 active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-tone px-6 text-[13px] font-semibold text-[#170f09] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_8px_22px_rgba(0,0,0,0.35)] cursor-pointer transition-[filter,transform] hover:brightness-110 active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
                 >
                   Back to the music
                 </button>
@@ -180,12 +181,12 @@ export function GrowthPrompts(): React.JSX.Element | null {
         {showRating && (
           <motion.div
             role="dialog"
-            aria-label="Rate Kissa"
+            aria-label={tl('a11y.rate')}
             initial={reduced ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 16 }}
             transition={{ duration: 0.35, ease: EASE }}
-            className="fixed bottom-28 right-6 z-[70] w-[340px] rounded-[22px] border border-ink/[0.08] bg-[var(--deck-bg)] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
+            className="fixed bottom-28 right-6 z-[70] w-[340px] rounded-[22px] border border-ink/[0.08] kissa-sheet p-5 shadow-[0_20px_60px_rgba(0,0,0,0.6)]"
           >
             <div className="flex items-start gap-3.5">
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-tone/15 text-tone">

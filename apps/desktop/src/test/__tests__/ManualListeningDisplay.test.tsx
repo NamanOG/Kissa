@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, waitFor, act, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, act, fireEvent, within } from '@testing-library/react'
 import App from '@renderer/App'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 
@@ -47,15 +47,16 @@ describe('Manual Listening Display Launch', { timeout: 20_000 }, () => {
     vi.restoreAllMocks()
   })
 
-  it('renders ListeningDisplay when isListeningDisplay is activated', async () => {
+  it('starts the Listening Display from Settings, Screensaver', async () => {
+    usePlayerStore.setState({ isSettingsOpen: true, settingsTab: 'screensaver' })
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Start Listening Display' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument()
     })
 
-    const startBtn = screen.getByRole('button', { name: 'Start Listening Display' })
-    fireEvent.click(startBtn)
+    fireEvent.click(screen.getByRole('button', { name: 'Start' }))
+    expect(usePlayerStore.getState().isSettingsOpen).toBe(false)
 
     await waitFor(() => {
       expect(screen.getByRole('main', { name: 'Listening Display' })).toBeInTheDocument()
@@ -90,7 +91,7 @@ describe('Manual Listening Display Launch', { timeout: 20_000 }, () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Start Listening Display' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Fullscreen' })).toBeInTheDocument()
     })
 
     expect(usePlayerStore.getState().isListeningDisplay).toBe(false)
@@ -114,7 +115,7 @@ describe('Manual Listening Display Launch', { timeout: 20_000 }, () => {
     })
 
     expect(screen.getByAltText('Manual Launch Track')).toBeInTheDocument()
-    expect(screen.getByText(/\[ L \] Live Lyrics/)).toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: 'Shortcuts' })).getByText('Lyrics')).toBeInTheDocument()
 
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l' }))
@@ -122,7 +123,7 @@ describe('Manual Listening Display Launch', { timeout: 20_000 }, () => {
 
     await waitFor(() => {
       expect(usePlayerStore.getState().screensaverLyrics).toBe(true)
-      expect(screen.getByText(/\[ L \] Album Art/)).toBeInTheDocument()
+      expect(within(screen.getByRole('group', { name: 'Shortcuts' })).getByText('Album art')).toBeInTheDocument()
     })
 
     expect(usePlayerStore.getState().isListeningDisplay).toBe(true)

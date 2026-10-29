@@ -105,6 +105,7 @@ export function extractColorsFromImage(artworkUrl: string): Promise<AdaptivePale
         
         let totalLuminance = 0
         let validPixels = 0
+        let darkPixels = 0
 
         for (let i = 0; i < imageData.length; i += 4) {
           const r = imageData[i]
@@ -121,6 +122,7 @@ export function extractColorsFromImage(artworkUrl: string): Promise<AdaptivePale
           
           totalLuminance += l
           validPixels++
+          if (max < 42) darkPixels++
           
           if (l < 15 || l > 240) continue
           
@@ -211,12 +213,17 @@ export function extractColorsFromImage(artworkUrl: string): Promise<AdaptivePale
 
         const baseIntensity = 0.15
         const intensityRange = 0.27
-        const primaryIntensity = baseIntensity + (richness * intensityRange)
+        // A mostly black cover keeps a mostly dark room: its colours glow, they do not fill it.
+        // (Near-black pixels never form clusters, so without this a small warm photo on a black
+        // sleeve would paint the whole room.)
+        const darkShare = validPixels > 0 ? darkPixels / validPixels : 0
+        const darkFactor = darkShare > 0.3 ? Math.max(0.35, 1 - (darkShare - 0.3) * 1.5) : 1
+        const primaryIntensity = (baseIntensity + (richness * intensityRange)) * darkFactor
         const secondaryIntensity = primaryIntensity * 0.7
         const highlightIntensity = primaryIntensity * 0.5
 
         const baseL = 3 + (avgLuminance / 100) * 5
-        const baseTemp = hslToRgbString(primary.h, Math.min(primary.s, 15), baseL)
+        const baseTemp = hslToRgbString(primary.h, Math.min(primary.s, 15) * darkFactor, baseL)
 
         const primaryPool = hslToRgbString(primary.h, Math.min(primary.s, 70), Math.min(primary.l, 50), primaryIntensity)
         const secondaryPool = hslToRgbString(secondary.h, Math.min(secondary.s, 75), Math.min(secondary.l, 55), secondaryIntensity)
@@ -243,7 +250,9 @@ export function extractColorsFromImage(artworkUrl: string): Promise<AdaptivePale
         
         const accent = hslToRgbString(highlight.h, highlight.s, Math.max(highlight.l, 55))
         const onSurface = hslToRgbString(primary.h, 10, 92)
-        const muted = hslToRgbString(primary.h, 10, Math.max(52, Math.min(70, baseL + 40)))
+        // Never darker than 62% lightness: grey secondary text must stay readable when the room light is
+        // full and the album is bright.
+        const muted = hslToRgbString(primary.h, 10, Math.max(62, Math.min(72, baseL + 40)))
 
         const newColors: AdaptivePalette = {
           accent,

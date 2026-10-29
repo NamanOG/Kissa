@@ -23,6 +23,7 @@ declare module '*.svg' {
 }
 
 import type { SystemMediaPayload } from '../../types/media'
+import type { LocalAlbumResult, TrackProblem } from '../../types/album'
 import type {
   LyricsChoice,
   LyricsRequest,
@@ -31,6 +32,14 @@ import type {
 } from '../../types/lyrics'
 import type { UpdateStatusPayload, UpdateInstallResult } from '../../types/update'
 import type { DiscordPresenceStatus, StudyPresence, YouTubeMusicConnectorStatus } from '../../types/discord'
+import type { RemoteQueue } from '../../types/remoteQueue'
+import type { PhoneRemoteStatus, RemoteCommand, RemoteLook, RemoteLyricLine, RemoteNowPlaying } from '../../types/remote'
+
+/** An album's sides, as the main process returns them (main/services/albumSides.ts). */
+export interface AlbumSidesResult {
+  kind: 'vinyl' | 'split' | 'single'
+  sides: Array<{ letter: string; tracks: Array<{ title: string; length: number }> }>
+}
 
 export interface KissaSystemMediaAPI {
   getSystemMedia: () => Promise<SystemMediaPayload | null>
@@ -42,10 +51,16 @@ export interface KissaSystemMediaAPI {
   setProgress: (progress: number, mode?: 'normal' | 'paused' | 'error' | 'none') => Promise<void>
   setThumbarButtons: (isPlaying: boolean) => Promise<void>
   onTrayAction: (callback: (action: string) => void) => () => void
+  takeJumpPlace?: () => Promise<string | null>
+  getAlbumSides?: (artist: string, album: string) => Promise<AlbumSidesResult | null>
+  showTrackToast?: (payload: { title: string; artist: string; artwork?: string; accent?: string; label?: string; playing?: boolean }) => Promise<boolean>
+  setJumpList?: (labels: Record<string, string>) => Promise<void>
   exportShare: (options: any) => Promise<boolean>
   getSharePayload: () => Promise<any>
   sendShareReady: (success: boolean) => Promise<void>
   mediaPlayPause: () => Promise<void>
+  chooseAlbumFolder?: () => Promise<LocalAlbumResult>
+  albumTrackProblem?: (url: string) => Promise<TrackProblem>
   mediaNext: () => Promise<void>
   mediaPrev: () => Promise<void>
   mediaSeek?: (positionSeconds: number) => Promise<void>
@@ -55,6 +70,11 @@ export interface KissaSystemMediaAPI {
   setFullScreen: (value: boolean) => Promise<boolean>
   onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void
   onWindowVisibility?: (callback: (visible: boolean) => void) => () => void
+  /** Mini player only: whether the cursor is over the window (watched by the main process). */
+  onMiniHover?: (callback: (inside: boolean) => void) => () => void
+  getGraphics?: () => Promise<{ hardwareAcceleration: boolean; activeNow: boolean }>
+  setHardwareAcceleration?: (on: boolean) => Promise<{ hardwareAcceleration: boolean; activeNow: boolean }>
+  relaunchApp?: () => Promise<void>
   isScreensaver: () => Promise<boolean>
   exitScreensaver: () => Promise<void>
   onScreensaverModeChanged?: (callback: (isScreensaver: boolean) => void) => () => void
@@ -94,6 +114,14 @@ export interface KissaSystemMediaAPI {
   forgetYouTubeMusicConnector?: () => Promise<YouTubeMusicConnectorStatus>
   onYouTubeMusicConnectorChanged?: (callback: (status: YouTubeMusicConnectorStatus) => void) => () => void
   onDiscordPresenceChanged?: (callback: (status: DiscordPresenceStatus) => void) => () => void
+  getPhoneRemote?: () => Promise<PhoneRemoteStatus>
+  setPhoneRemoteOn?: (on: boolean) => Promise<PhoneRemoteStatus>
+  sendRemoteQueue?: (snapshot: RemoteQueue) => void
+  sendRemoteLook?: (look: RemoteLook) => void
+  sendRemoteNowPlaying?: (snapshot: RemoteNowPlaying) => void
+  sendRemoteLyrics?: (track: { title: string; artist: string }, lines: RemoteLyricLine[]) => void
+  onPhoneRemoteChanged?: (callback: (status: PhoneRemoteStatus) => void) => () => void
+  onRemoteCommand?: (callback: (command: RemoteCommand) => void) => () => void
 }
 
 declare global {

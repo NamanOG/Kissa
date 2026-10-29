@@ -47,7 +47,7 @@ describe('fullscreen App architecture', { timeout: 20_000 }, () => {
     render(<App />)
 
     expect(await screen.findByRole('main', { name: 'Listening Room' })).toBeInTheDocument()
-    expect(screen.queryByTitle('Drag tonearm to drop needle & seek')).not.toBeInTheDocument()
+    expect(screen.queryByTitle('Drag the tonearm to drop the needle and seek')).not.toBeInTheDocument()
     expect(playbackHooks.audio.mock.calls.length).toBeGreaterThan(0)
     expect(playbackHooks.systemMedia.mock.calls.length).toBeGreaterThan(0)
   })

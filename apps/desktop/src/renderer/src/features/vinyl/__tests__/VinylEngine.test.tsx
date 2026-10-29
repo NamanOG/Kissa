@@ -20,14 +20,14 @@ describe('VinylEngine component', () => {
 
   it('renders vinyl record layers and spindle', () => {
     render(<VinylEngine />)
-    const albumArt = screen.getByAltText('Album Art')
+    const albumArt = screen.getByAltText('Album art')
     expect(albumArt).toBeInTheDocument()
     expect(albumArt).toHaveAttribute('src', 'https://example.com/art.png')
   })
 
   it('overrides store albumArt when prop is provided', () => {
     render(<VinylEngine albumArt="https://example.com/custom.png" />)
-    const albumArt = screen.getByAltText('Album Art')
+    const albumArt = screen.getByAltText('Album art')
     expect(albumArt).toHaveAttribute('src', 'https://example.com/custom.png')
   })
 })

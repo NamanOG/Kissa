@@ -19,7 +19,7 @@ export function useKeyboardShortcuts(): void {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
       const store = usePlayerStore.getState()
-      if (document.querySelector('dialog[open]')) return
+      if (document.querySelector('dialog[open], [data-kissa-overlay]')) return
 
       if (e.key === 'F11' || e.code === 'F11') {
         e.preventDefault()
@@ -60,6 +60,23 @@ export function useKeyboardShortcuts(): void {
           store.setFullscreen(false)
           return
         }
+      }
+
+      // P: party mode, the home screen full screen with nothing around it (for a TV).
+      if (
+        (e.key === 'p' || e.key === 'P' || e.code === 'KeyP') &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.metaKey &&
+        !store.isScreensaver &&
+        !store.isSettingsOpen &&
+        !store.isOnboardingOpen &&
+        !store.isKeyboardHelpOpen
+      ) {
+        if (e.repeat) return
+        e.preventDefault()
+        store.togglePartyMode()
+        return
       }
 
       if (

@@ -14,7 +14,7 @@ export const ReflectionLayer = memo(
           className="absolute inset-0 rounded-full"
           style={{
             background:
-              'conic-gradient(from 205deg, transparent 0deg, transparent 20deg, rgba(255,245,230,0.06) 32deg, rgba(255,255,255,0.18) 46deg, rgba(255,255,255,0.30) 58deg, rgba(255,245,225,0.16) 68deg, rgba(215,167,108,0.06) 80deg, transparent 96deg, transparent 200deg, rgba(255,245,230,0.06) 212deg, rgba(255,255,255,0.16) 226deg, rgba(255,255,255,0.26) 238deg, rgba(255,245,225,0.14) 248deg, rgba(215,167,108,0.04) 262deg, transparent 278deg)',
+              'conic-gradient(from 205deg, transparent 0deg, transparent 20deg, rgba(255,245,230,0.06) 32deg, rgba(255,255,255,0.22) 46deg, rgba(255,255,255,0.38) 58deg, rgba(255,245,225,0.2) 68deg, rgba(215,167,108,0.06) 80deg, transparent 96deg, transparent 200deg, rgba(255,245,230,0.06) 212deg, rgba(255,255,255,0.2) 226deg, rgba(255,255,255,0.32) 238deg, rgba(255,245,225,0.17) 248deg, rgba(215,167,108,0.04) 262deg, transparent 278deg)',
             maskImage:
               'radial-gradient(circle at center, transparent 14%, black 15%, black 96%, transparent 98%)',
             WebkitMaskImage:

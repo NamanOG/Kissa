@@ -8,6 +8,7 @@ import oxbloodMarbleTexture from '@renderer/media/editions/marble-oxblood.jpg'
 import midnightMarbleTexture from '@renderer/media/editions/marble-midnight.jpg'
 import tortoiseTexture from '@renderer/media/editions/tortoise.jpg'
 import splatterTexture from '@renderer/media/editions/splatter.jpg'
+import { tl } from '@renderer/i18n'
 
 export interface VinylPressing {
   name: string
@@ -28,26 +29,26 @@ function textureSwatch(src: string): string {
 
 /** Centre and rim colour of each pressing. Grooves and reflections sit on top of these. */
 export const VINYL_PRESSINGS: Record<VinylColor, VinylPressing> = {
-  black: { name: 'Classic Black', inner: '#1e1e1e', outer: '#0a0a0a' },
-  oxblood: { name: 'Oxblood', inner: '#641a1f', outer: '#2a090c' },
-  amber: { name: 'Amber', inner: '#a85c16', outer: '#4a2506' },
-  forest: { name: 'Bottle Green', inner: '#22523a', outer: '#0c2217' },
-  cobalt: { name: 'Cobalt', inner: '#20468a', outer: '#0b1c3d' },
-  smoke: { name: 'Smoke', inner: '#55555a', outer: '#262628' },
+  black: { get name() { return tl('pressing.black') }, inner: '#1e1e1e', outer: '#0a0a0a' },
+  oxblood: { get name() { return tl('pressing.oxblood') }, inner: '#641a1f', outer: '#2a090c' },
+  amber: { get name() { return tl('pressing.amber') }, inner: '#a85c16', outer: '#4a2506' },
+  forest: { get name() { return tl('pressing.forest') }, inner: '#22523a', outer: '#0c2217' },
+  cobalt: { get name() { return tl('pressing.cobalt') }, inner: '#20468a', outer: '#0b1c3d' },
+  smoke: { get name() { return tl('pressing.smoke') }, inner: '#55555a', outer: '#262628' },
   album: {
     // Drawn from the cover that is playing (useAlbumPressing); this is the fallback until then.
-    name: 'Match the Album',
+    get name() { return tl('pressing.album') },
     inner: '#1e1e1e',
     outer: '#0a0a0a',
     swatch: 'conic-gradient(from 30deg, #b8743a, #3f74a8, #a8406a, #6f9a52, #b8743a)'
   },
   match: {
-    name: 'Match the Room',
+    get name() { return tl('pressing.match') },
     inner: 'color-mix(in srgb, var(--accent) 64%, #000)',
     outer: 'color-mix(in srgb, var(--accent) 26%, #000)'
   },
   marble: {
-    name: 'Green Marble',
+    get name() { return tl('pressing.marble') },
     inner: '#1f4a35',
     outer: '#0b2016',
     kind: 'texture',
@@ -55,7 +56,7 @@ export const VINYL_PRESSINGS: Record<VinylColor, VinylPressing> = {
     swatch: textureSwatch(marbleTexture)
   },
   oxbloodMarble: {
-    name: 'Oxblood Marble',
+    get name() { return tl('pressing.oxbloodMarble') },
     inner: '#561219',
     outer: '#1e0508',
     kind: 'texture',
@@ -63,7 +64,7 @@ export const VINYL_PRESSINGS: Record<VinylColor, VinylPressing> = {
     swatch: textureSwatch(oxbloodMarbleTexture)
   },
   midnightMarble: {
-    name: 'Midnight Marble',
+    get name() { return tl('pressing.midnightMarble') },
     inner: '#18284f',
     outer: '#070b1a',
     kind: 'texture',
@@ -71,7 +72,7 @@ export const VINYL_PRESSINGS: Record<VinylColor, VinylPressing> = {
     swatch: textureSwatch(midnightMarbleTexture)
   },
   tortoise: {
-    name: 'Tortoiseshell',
+    get name() { return tl('pressing.tortoise') },
     inner: '#7a4214',
     outer: '#2a1406',
     kind: 'texture',
@@ -79,7 +80,7 @@ export const VINYL_PRESSINGS: Record<VinylColor, VinylPressing> = {
     swatch: textureSwatch(tortoiseTexture)
   },
   splatter: {
-    name: 'Splatter',
+    get name() { return tl('pressing.splatter') },
     inner: '#2a2a2e',
     outer: '#141416',
     kind: 'texture',
@@ -87,7 +88,7 @@ export const VINYL_PRESSINGS: Record<VinylColor, VinylPressing> = {
     swatch: textureSwatch(splatterTexture)
   },
   split: {
-    name: 'Smoke Split',
+    get name() { return tl('pressing.split') },
     inner: '#1c1c1c',
     outer: '#0a0a0a',
     kind: 'split',
@@ -114,8 +115,8 @@ function asPressing(p: AlbumPressing): VinylPressing {
 /** Pressings split for pickers: plain colours, then the special (textured or split) pressings. */
 export function pressingGroups(colors: readonly VinylColor[]): { label: string; colors: VinylColor[] }[] {
   return [
-    { label: 'Colours', colors: colors.filter((c) => !VINYL_PRESSINGS[c]?.kind) },
-    { label: 'Special pressings', colors: colors.filter((c) => Boolean(VINYL_PRESSINGS[c]?.kind)) }
+    { label: tl('pressing.colours'), colors: colors.filter((c) => !VINYL_PRESSINGS[c]?.kind) },
+    { label: tl('pressing.special'), colors: colors.filter((c) => Boolean(VINYL_PRESSINGS[c]?.kind)) }
   ]
 }
 

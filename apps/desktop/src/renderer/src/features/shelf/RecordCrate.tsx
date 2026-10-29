@@ -2,6 +2,7 @@ import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from '
 import { Disc3 } from 'lucide-react'
 import type { RecordEntry } from '@renderer/stores/shelfStore'
 import { cn } from '@renderer/utils/cn'
+import { useT } from '@renderer/i18n'
 import { useCrateThumb } from './crateThumbs'
 
 /** How many sleeves either side of the current one are drawn. The rest are not mounted. */
@@ -66,6 +67,7 @@ interface RecordCrateProps {
  * name is printed in full below. Only the sleeves near the current one are mounted.
  */
 export const RecordCrate = memo(({ records, onOpen, currentKey, onCurrentChange }: RecordCrateProps): React.JSX.Element => {
+  const t = useT()
   const found = records.findIndex((r) => r.albumKey === currentKey)
   const index = found >= 0 ? found : 0
   const current = records[index]
@@ -165,7 +167,7 @@ export const RecordCrate = memo(({ records, onOpen, currentKey, onCurrentChange 
         ref={crateRef}
         role="listbox"
         tabIndex={0}
-        aria-label="Record crate. Use the arrow keys to flip through, Enter to open."
+        aria-label={t('crate.label')}
         aria-activedescendant={`crate-${index}`}
         onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
@@ -193,7 +195,7 @@ export const RecordCrate = memo(({ records, onOpen, currentKey, onCurrentChange 
               type="button"
               role="option"
               aria-selected={isCurrent}
-              aria-label={`${r.album} by ${r.artist}`}
+              aria-label={t('crate.item', { album: r.album, artist: r.artist })}
               tabIndex={-1}
               data-current={isCurrent}
               onClick={() => {
@@ -240,7 +242,7 @@ export const RecordCrate = memo(({ records, onOpen, currentKey, onCurrentChange 
                 ) : (
                   <span className="flex h-full w-full flex-col items-center justify-center gap-2 p-4">
                     <Disc3 className="h-10 w-10 text-tone/30" />
-                    <span className="line-clamp-3 text-center font-mono text-[10px] uppercase text-white/40">{r.album}</span>
+                    <span className="line-clamp-3 text-center font-kissa-editorial text-[15px] leading-snug text-white/50">{r.album}</span>
                   </span>
                 )}
                 {/* Sleeves further out sit in shadow. */}
@@ -255,12 +257,12 @@ export const RecordCrate = memo(({ records, onOpen, currentKey, onCurrentChange 
       {/* The wall takes the height the details leave; the details never shrink. */}
       <div className="flex w-full max-w-[560px] shrink-0 flex-col items-center text-center">
         <p className="text-[12.5px] tabular-nums text-dim" aria-live="polite">
-          {index + 1} of {records.length}
+          {t('crate.count', { n: index + 1, total: records.length })}
         </p>
         <h2 className="mt-[calc(0.5rem-0.14em)] pt-[0.14em] line-clamp-2 font-kissa-editorial text-[26px] leading-[1.12] text-ink text-balance">{current.album}</h2>
         <p className="mt-1.5 line-clamp-1 text-[14px] text-ink/70">{current.artist}</p>
         <p className="mt-2 text-[12px] text-dim">
-          {current.playCount} {current.playCount === 1 ? 'play' : 'plays'}
+          {current.playCount} {t(current.playCount === 1 ? 'shelf.play.one' : 'shelf.play.other')}
         </p>
         <div className="mt-5 flex w-full items-center gap-5">
           {/* A ruler of the records, one tick each (sampled for big collections), with the current
@@ -285,8 +287,8 @@ export const RecordCrate = memo(({ records, onOpen, currentKey, onCurrentChange 
               max={Math.max(0, records.length - 1)}
               value={index}
               onChange={(e) => go(Number(e.target.value))}
-              aria-label="Move through the crate"
-              aria-valuetext={`${current.album}, ${index + 1} of ${records.length}`}
+              aria-label={t('crate.slider')}
+              aria-valuetext={t('crate.position', { album: current.album, n: index + 1, total: records.length })}
               disabled={records.length < 2}
               className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-default"
             />
@@ -297,7 +299,7 @@ export const RecordCrate = memo(({ records, onOpen, currentKey, onCurrentChange 
             onClick={() => onOpen(current.albumKey)}
             className="shrink-0 cursor-pointer rounded-md text-[12.5px] text-ink/85 underline decoration-ink/25 underline-offset-4 transition-colors hover:decoration-ink/60 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-ink/70"
           >
-            Album details
+            {t('crate.details')}
           </button>
         </div>
       </div>

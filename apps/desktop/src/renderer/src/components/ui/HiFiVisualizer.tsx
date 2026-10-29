@@ -1,5 +1,7 @@
 import React, { memo, useEffect, useRef } from 'react'
 import { cn } from '@renderer/utils/cn'
+import { beatOf, sleepUntilNextBeat } from '@renderer/utils/frameBeat'
+import { tl } from '@renderer/i18n'
 
 export interface HiFiVisualizerProps {
   isPlaying: boolean
@@ -43,15 +45,23 @@ export const HiFiVisualizer = memo(
       const barsData = barsDataRef.current
       
       // A decorative meter: 30 updates a second look the same as 60 and halve its cost. It
-      // sleeps between updates rather than skipping animation frames, which would still wake
-      // the page at the display's rate.
+      // updates on every other beat of the shared 60 Hz beat (utils/frameBeat), so it changes on
+      // frames the window draws anyway, and sleeps between updates instead of waking the page
+      // at the display's rate.
       let timer = 0
-      const schedule = (): void => {
+      let lastBeat = -1
+      const schedule = (t: number, b: number): void => {
         timer = window.setTimeout(() => {
           animFrameRef.current = requestAnimationFrame(animate)
-        }, 28)
+        }, sleepUntilNextBeat(t, b, 2))
       }
-      const animate = () => {
+      const animate = (now: number): void => {
+        const b = beatOf(now, 2)
+        if (b === lastBeat) {
+          animFrameRef.current = requestAnimationFrame(animate)
+          return
+        }
+        lastBeat = b
         timeRef.current += 0.1
         const t = timeRef.current
         
@@ -92,7 +102,7 @@ export const HiFiVisualizer = memo(
           }
         }
 
-        if (!allSettled) schedule()
+        if (!allSettled) schedule(now, b)
       }
 
       animFrameRef.current = requestAnimationFrame(animate)
@@ -113,7 +123,7 @@ export const HiFiVisualizer = memo(
           className
         )}
         style={{ height: `${height}px` }}
-        aria-label="Audio Spectrum Visualizer"
+        aria-label={tl('a11y.spectrum')}
         role="img"
       >
         {Array.from({ length: barsCount }).map((_, i) => (

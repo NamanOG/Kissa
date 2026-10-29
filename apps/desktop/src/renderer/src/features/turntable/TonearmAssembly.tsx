@@ -3,6 +3,8 @@ import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
 import { needleContact, needleLift, registerTonearm } from '@renderer/utils/needleSounds'
+import { useSidesStore } from '@renderer/features/sides/sidesStore'
+import { useT } from '@renderer/i18n'
 
 export interface TonearmAssemblyProps {
   className?: string
@@ -19,6 +21,7 @@ const INNER_GROOVE_ANGLE = 39.5
  * Features fluid inertia interpolation, needle drop/lift depth, and localized draggable hitbox.
  */
 export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps): React.JSX.Element => {
+  const t = useT()
   const isPlaying = usePlayerStore((state) => state.isPlaying)
   const isPowered = usePlayerStore((state) => state.isPowered)
   const duration = usePlayerStore((state) =>
@@ -39,6 +42,9 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
   const transitionStartRef = useRef<number>(0)
   const startAngleRef = useRef<number>(REST_ANGLE)
   const startScaleRef = useRef<number>(1.015)
+  // A new song: its position, length and place on the side arrive over a moment. The arm
+  // holds still until then and moves once, instead of jumping with each piece.
+  const holdUntilRef = useRef<number>(0)
 
   // While this arm is on screen it decides when the needle is heard: at its visible landing
   // and departure (utils/needleSounds).
@@ -67,14 +73,18 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
 
       const state = usePlayerStore.getState()
       const physicalFeedback = state.physicalFeedback
-      const isPaused = !state.isPlaying && state.isPowered
+      // Turning the record over between sides: the arm goes home and waits.
+      const sides = useSidesStore.getState()
+      const isPaused = (!state.isPlaying || sides.flipping) && state.isPowered
       const isStopped = !state.isPowered || (!state.isPlaying && state.progress === 0)
-      const isPlayingActive = state.isPlaying && state.isPowered
+      const isPlayingActive = state.isPlaying && state.isPowered && !sides.flipping
 
       const rawDur = state.currentTrack?.duration
-      const dur = rawDur && rawDur > 0 ? rawDur : 210
       const time = PlaybackClock.getCurrentTime()
-      const ratio = Math.min(1, Math.max(0, time / dur))
+      // The needle travels the song playing: the outer groove at its start, the label at its end.
+      // (Travelling the whole side put the arm near the label at the start of a side's last
+      // song, which read as a fault.) With no length yet it waits at the outer groove.
+      const ratio = rawDur && rawDur > 0 ? Math.min(1, Math.max(0, time / rawDur)) : 0
       const targetGrooveAngle = OUTER_GROOVE_ANGLE + ratio * (INNER_GROOVE_ANGLE - OUTER_GROOVE_ANGLE)
 
       if (isPlayingActive && (armStateRef.current === 'RESTING' || armStateRef.current === 'RETURNING')) {
@@ -119,8 +129,20 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
           needleContact()
         }
       } else if (armStateRef.current === 'PLAYING') {
-        nextAngle = targetGrooveAngle
         nextScale = 1.0
+        if (timestamp < holdUntilRef.current) {
+          // Settling on a new song: stay put.
+          nextAngle = armAngleRef.current
+        } else if (Math.abs(targetGrooveAngle - armAngleRef.current) > 0.35) {
+          // Anything more than the groove's own creep (a new song, a seek, the side's place
+          // arriving): lift, glide and set down rather than snap.
+          armStateRef.current = 'SWEEPING'
+          transitionStartRef.current = timestamp
+          startAngleRef.current = armAngleRef.current
+          nextAngle = armAngleRef.current
+        } else {
+          nextAngle = targetGrooveAngle
+        }
       } else if (armStateRef.current === 'LIFTING') {
         const progress = Math.min(1, (timestamp - transitionStartRef.current) / 250)
         nextScale = startScaleRef.current + (1.015 - startScaleRef.current) * progress
@@ -140,9 +162,13 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
         nextAngle = REST_ANGLE
         nextScale = 1.015
       } else if (armStateRef.current === 'SWEEPING') {
-        const progress = Math.min(1, (timestamp - transitionStartRef.current) / 300)
+        // Longer for a longer way: 0.45 s for a nudge, up to 0.9 s across the record.
+        const span = Math.abs(targetGrooveAngle - startAngleRef.current)
+        const sweepMs = 450 + Math.min(1, span / (INNER_GROOVE_ANGLE - OUTER_GROOVE_ANGLE)) * 450
+        const progress = Math.min(1, (timestamp - transitionStartRef.current) / sweepMs)
         nextAngle = startAngleRef.current + (targetGrooveAngle - startAngleRef.current) * easeInOutCubic(progress)
-        nextScale = 1.0 // remain lowered
+        // The arm rises a little off the record on the way and settles back down.
+        nextScale = 1.0 + 0.015 * Math.sin(Math.PI * progress)
         if (progress >= 1) {
           armStateRef.current = 'PLAYING'
         }
@@ -197,14 +223,14 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
 
     // Listen for manual seeks (from external sources) to snap tonearm smoothly
     const unsubscribe = usePlayerStore.subscribe((state, prevState) => {
-      if (!isDragging && Math.abs(state.progress - prevState.progress) > 1.5) {
-        if (state.isPlaying && state.isPowered && armStateRef.current === 'PLAYING') {
-          armStateRef.current = 'SWEEPING'
-          transitionStartRef.current = performance.now()
-          startAngleRef.current = armAngleRef.current
-        }
+      const a = state.currentTrack
+      const b = prevState.currentTrack
+      if (a !== b && (a?.title !== b?.title || a?.artist !== b?.artist)) {
+        holdUntilRef.current = performance.now() + 600
+        wake()
+        if (!rafId && !isDragging) rafId = requestAnimationFrame(updateRotation)
       }
-
+      // A seek needs only a wake: the playing arm sees the new groove is far off and glides there.
       if (
         state.isPlaying !== prevState.isPlaying ||
         state.isPowered !== prevState.isPowered ||
@@ -224,10 +250,18 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       }
     })
 
+    // A record being turned over (or a new place on the side) moves the arm too.
+    const unsubscribeSides = useSidesStore.subscribe((state, prev) => {
+      if (state.flipping === prev.flipping && state.place === prev.place) return
+      wake()
+      if (!rafId && !isDragging) rafId = requestAnimationFrame(updateRotation)
+    })
+
     return () => {
       if (rafId > 0) cancelAnimationFrame(rafId)
       window.clearTimeout(sleepTimer)
       unsubscribe()
+      unsubscribeSides()
     }
   }, [isDragging])
 
@@ -506,8 +540,8 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
                 height: '28%',
                 touchAction: 'none'
               }}
-              title="Drag tonearm to drop needle & seek"
-              aria-label="Tonearm cue handle. Drag to seek across vinyl record grooves."
+              title={t('tonearm.title')}
+              aria-label={t('tonearm.label')}
             />
           </div>
         </div>

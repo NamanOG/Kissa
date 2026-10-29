@@ -1,8 +1,10 @@
 import { memo, useEffect, useRef } from 'react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
+import { useT } from '@renderer/i18n'
 
 export const FullscreenProgress = memo((): React.JSX.Element => {
+  const t = useT()
   const duration = usePlayerStore((s) => s.currentTrack?.duration ?? 0)
   const fillRef = useRef<HTMLDivElement>(null)
 
@@ -21,7 +23,7 @@ export const FullscreenProgress = memo((): React.JSX.Element => {
   }, [duration])
 
   return (
-    <div aria-label="Playback progress" className="absolute bottom-0 left-0 right-0 z-50">
+    <div aria-label={t('lr.progress')} className="absolute bottom-0 left-0 right-0 z-50">
       <div className="h-[3px] w-full bg-white/10 backdrop-blur-sm">
         <div
           ref={fillRef}

@@ -14,7 +14,7 @@ describe('StartupExperience', () => {
   it("renders Kissa's mark and name", () => {
     render(<StartupExperience onComplete={vi.fn()} />)
     expect(screen.getByText('Kissa')).toBeInTheDocument()
-    expect(screen.getByLabelText('Kissa')).toBeInTheDocument()
+    expect(screen.getByAltText('Kissa')).toBeInTheDocument()
   })
 
   it('triggers onComplete after the subtle wake duration', () => {

@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 import type { SystemMediaPayload } from '../types/media'
+import type { LocalAlbumResult, TrackProblem } from '../types/album'
 import type {
   LyricsChoice,
   LyricsRequest,
@@ -10,6 +11,14 @@ import type {
 import type { ShareExportOptions, SharePayload } from '../types/share'
 import type { UpdateStatusPayload, UpdateInstallResult } from '../types/update'
 import type { DiscordPresenceStatus, StudyPresence, YouTubeMusicConnectorStatus } from '../types/discord'
+import type { RemoteQueue } from '../types/remoteQueue'
+import type { PhoneRemoteStatus, RemoteCommand, RemoteLook, RemoteLyricLine, RemoteNowPlaying } from '../types/remote'
+
+/** An album's sides, as the main process returns them (main/services/albumSides.ts). */
+export interface AlbumSidesResult {
+  kind: 'vinyl' | 'split' | 'single'
+  sides: Array<{ letter: string; tracks: Array<{ title: string; length: number }> }>
+}
 
 export interface KissaSystemMediaAPI {
   getSystemMedia: () => Promise<SystemMediaPayload | null>
@@ -19,6 +28,10 @@ export interface KissaSystemMediaAPI {
   onSystemMediaUpdate: (callback: (data: SystemMediaPayload | null) => void) => () => void
   getVolume: () => Promise<{ master: number; isMuted: boolean } | null>
   mediaPlayPause: () => Promise<void>
+  /** Asks for an album folder and reads it; its files become playable, read-only. */
+  chooseAlbumFolder: () => Promise<LocalAlbumResult>
+  /** Why a kissa-album:// track would not play. */
+  albumTrackProblem: (url: string) => Promise<TrackProblem>
   mediaNext: () => Promise<void>
   mediaPrev: () => Promise<void>
   mediaSeek: (positionSeconds: number) => Promise<void>
@@ -28,11 +41,19 @@ export interface KissaSystemMediaAPI {
   setFullScreen: (value: boolean) => Promise<boolean>
   onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void
   onWindowVisibility: (callback: (visible: boolean) => void) => () => void
+  onMiniHover: (callback: (inside: boolean) => void) => () => void
+  getGraphics: () => Promise<{ hardwareAcceleration: boolean; activeNow: boolean }>
+  setHardwareAcceleration: (on: boolean) => Promise<{ hardwareAcceleration: boolean; activeNow: boolean }>
+  relaunchApp: () => Promise<void>
   syncSettings: (settings: any) => Promise<void>
   setStartup: (enabled: boolean) => Promise<void>
   setProgress: (progress: number, mode?: 'normal' | 'paused' | 'error' | 'none') => Promise<void>
   setThumbarButtons: (isPlaying: boolean) => Promise<void>
   onTrayAction: (callback: (action: string) => void) => () => void
+  takeJumpPlace: () => Promise<string | null>
+  getAlbumSides: (artist: string, album: string) => Promise<AlbumSidesResult | null>
+  showTrackToast: (payload: { title: string; artist: string; artwork?: string; accent?: string; label?: string; playing?: boolean }) => Promise<boolean>
+  setJumpList: (labels: Record<string, string>) => Promise<void>
   exportShare: (options: ShareExportOptions) => Promise<boolean>
   getSharePayload: () => Promise<SharePayload | null>
   sendShareReady: (success: boolean) => Promise<void>
@@ -75,6 +96,14 @@ export interface KissaSystemMediaAPI {
   forgetYouTubeMusicConnector: () => Promise<YouTubeMusicConnectorStatus>
   onYouTubeMusicConnectorChanged: (callback: (status: YouTubeMusicConnectorStatus) => void) => () => void
   onDiscordPresenceChanged: (callback: (status: DiscordPresenceStatus) => void) => () => void
+  getPhoneRemote: () => Promise<PhoneRemoteStatus>
+  setPhoneRemoteOn: (on: boolean) => Promise<PhoneRemoteStatus>
+  sendRemoteQueue: (snapshot: RemoteQueue) => void
+  sendRemoteLook: (look: RemoteLook) => void
+  sendRemoteNowPlaying: (snapshot: RemoteNowPlaying) => void
+  sendRemoteLyrics: (track: { title: string; artist: string }, lines: RemoteLyricLine[]) => void
+  onPhoneRemoteChanged: (callback: (status: PhoneRemoteStatus) => void) => () => void
+  onRemoteCommand: (callback: (command: RemoteCommand) => void) => () => void
 }
 
 // The main process sends an embedded cover once and then marks updates "unchanged".
@@ -109,6 +138,8 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
   },
   getVolume: () => ipcRenderer.invoke('kissa:get-volume'),
   mediaPlayPause: () => ipcRenderer.invoke('kissa:media-play-pause'),
+  chooseAlbumFolder: () => ipcRenderer.invoke('kissa:album-choose'),
+  albumTrackProblem: (url) => ipcRenderer.invoke('kissa:album-problem', url),
   mediaNext: () => ipcRenderer.invoke('kissa:media-next'),
   mediaPrev: () => ipcRenderer.invoke('kissa:media-prev'),
   mediaSeek: (positionSeconds: number) => ipcRenderer.invoke('kissa:media-seek', positionSeconds),
@@ -133,6 +164,16 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
       ipcRenderer.removeListener('kissa:window-visibility', handler)
     }
   },
+  onMiniHover: (callback) => {
+    const handler = (_event: unknown, inside: boolean): void => callback(inside === true)
+    ipcRenderer.on('kissa:mini-hover', handler)
+    return (): void => {
+      ipcRenderer.removeListener('kissa:mini-hover', handler)
+    }
+  },
+  getGraphics: () => ipcRenderer.invoke('kissa:get-graphics'),
+  setHardwareAcceleration: (on) => ipcRenderer.invoke('kissa:set-graphics', on),
+  relaunchApp: () => ipcRenderer.invoke('kissa:relaunch'),
   syncSettings: (settings) => ipcRenderer.invoke('kissa:sync-settings', settings),
   setStartup: (enabled) => ipcRenderer.invoke('kissa:set-startup', enabled),
   setProgress: (progress, mode) => ipcRenderer.invoke('kissa:set-progress', progress, mode),
@@ -146,6 +187,10 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
       ipcRenderer.removeListener('kissa:tray-action', handler)
     }
   },
+  takeJumpPlace: () => ipcRenderer.invoke('kissa:take-jump-place'),
+  getAlbumSides: (artist, album) => ipcRenderer.invoke('kissa:album-sides', artist, album),
+  showTrackToast: (payload) => ipcRenderer.invoke('kissa:show-track-toast', payload),
+  setJumpList: (labels) => ipcRenderer.invoke('kissa:set-jump-list', labels),
   exportShare: (options) => ipcRenderer.invoke('kissa:export-share', options),
   getSharePayload: () => ipcRenderer.invoke('kissa:get-share-payload'),
   sendShareReady: (success) => ipcRenderer.invoke('kissa:share-ready', success),
@@ -203,6 +248,26 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
     ipcRenderer.on('kissa:discord-status-changed', handler)
     return (): void => {
       ipcRenderer.removeListener('kissa:discord-status-changed', handler)
+    }
+  },
+  getPhoneRemote: () => ipcRenderer.invoke('kissa:remote-status'),
+  setPhoneRemoteOn: (on) => ipcRenderer.invoke('kissa:remote-set-on', on),
+  sendRemoteQueue: (snapshot) => ipcRenderer.send('kissa:remote-queue', snapshot),
+  sendRemoteLook: (look) => ipcRenderer.send('kissa:remote-look', look),
+  sendRemoteNowPlaying: (snapshot) => ipcRenderer.send('kissa:remote-now-playing', snapshot),
+  sendRemoteLyrics: (track, lines) => ipcRenderer.send('kissa:remote-lyrics', track, lines),
+  onPhoneRemoteChanged: (callback) => {
+    const handler = (_event: unknown, status: PhoneRemoteStatus): void => callback(status)
+    ipcRenderer.on('kissa:remote-status-changed', handler)
+    return (): void => {
+      ipcRenderer.removeListener('kissa:remote-status-changed', handler)
+    }
+  },
+  onRemoteCommand: (callback) => {
+    const handler = (_event: unknown, command: RemoteCommand): void => callback(command)
+    ipcRenderer.on('kissa:remote-command', handler)
+    return (): void => {
+      ipcRenderer.removeListener('kissa:remote-command', handler)
     }
   }
 }

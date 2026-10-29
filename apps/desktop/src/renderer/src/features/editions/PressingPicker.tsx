@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { usePlayerStore, VINYL_COLORS, type VinylColor } from '@renderer/stores/playerStore'
 import { VINYL_PRESSINGS, pressingGroups, pressingSwatch } from '@renderer/features/vinyl/VinylBase'
 import { cn } from '@renderer/utils/cn'
+import { useT } from '@renderer/i18n'
 
 /**
  * Change the record's pressing from wherever the record is on screen (the Study Room has no
@@ -10,6 +11,7 @@ import { cn } from '@renderer/utils/cn'
  * itself; the choice applies at once and is the same setting the editor and Settings use.
  */
 export const PressingPicker = memo(({ className }: { className?: string }): React.JSX.Element => {
+  const t = useT()
   const vinylColor = usePlayerStore((s) => s.vinylColor)
   const setVinylColor = usePlayerStore((s) => s.setVinylColor)
   const [open, setOpen] = useState(false)
@@ -57,8 +59,8 @@ export const PressingPicker = memo(({ className }: { className?: string }): Reac
         aria-haspopup="true"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
-        aria-label={`Record: ${current.name}. Change the pressing`}
-        title="Change the record"
+        aria-label={t('picker.label', { name: current.name })}
+        title={t('picker.title')}
         className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-white/70"
       >
         <span
@@ -81,10 +83,10 @@ export const PressingPicker = memo(({ className }: { className?: string }): Reac
             className="absolute right-0 top-full z-30 mt-2 w-[276px] rounded-[18px] border border-white/10 bg-[rgba(16,14,13,0.92)] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.55)]"
           >
             <div className="flex items-baseline justify-between">
-              <span className="font-serif text-[17px] leading-none text-white">Your record</span>
+              <span className="font-serif text-[17px] leading-none text-white">{t('picker.heading')}</span>
               <span className="text-[11.5px] text-white/55">{current.name}</span>
             </div>
-            <div role="radiogroup" aria-label="Record pressing" className="mt-3">
+            <div role="radiogroup" aria-label={t('editor.pressingGroup')} className="mt-3">
               {pressingGroups(VINYL_COLORS).map((group) => (
                 <div key={group.label} className="mt-2.5 first:mt-0">
                   <div className="mb-2 text-[10.5px] text-white/45">{group.label}</div>

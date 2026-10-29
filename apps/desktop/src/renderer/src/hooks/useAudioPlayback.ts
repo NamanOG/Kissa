@@ -1,7 +1,10 @@
+import { openJumpPlace } from './useJumpList'
 import { useEffect, useRef } from 'react'
 import { needleFollowPlayback } from '@renderer/utils/needleSounds'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
+import { isAlbumUrl, useAlbumStore } from '@renderer/features/album/albumStore'
+import { vinylEngine } from '@renderer/features/hifi/vinylEngine'
 
 /**
  * Custom hook to manage real audio playback via HTML5 Audio API.
@@ -27,6 +30,8 @@ export function useAudioPlayback(): void {
     audio.preload = 'auto'
     audioRef.current = audio
     PlaybackClock.setAudioElement(audio)
+    // Albums from the PC can play through Kissa Hi-Fi's vinyl sound.
+    vinylEngine.attach(audio)
 
     let animId: number | null = null
 
@@ -85,6 +90,13 @@ export function useAudioPlayback(): void {
     }
 
     const onError = (): void => {
+      const url = usePlayerStore.getState().currentTrack?.audioUrl
+      // A track from an album folder that will not play is skipped, and main says why.
+      // (Clearing the source also raises an error; only the album file's own counts.)
+      if (isAlbumUrl(url) && audio.src === url) {
+        void useAlbumStore.getState().trackFailed(url)
+        return
+      }
       console.warn('[useAudioPlayback] Audio element error — source may be unavailable')
     }
 
@@ -101,6 +113,7 @@ export function useAudioPlayback(): void {
       audio.removeEventListener('pause', onPause)
       audio.removeEventListener('ended', onEnded)
       audio.removeEventListener('error', onError)
+      vinylEngine.detach()
       audio.pause()
       audio.src = ''
       audioRef.current = null
@@ -291,6 +304,8 @@ export function useAudioPlayback(): void {
           case 'checkForUpdates':
             store.setIsSettingsOpen(true)
             break
+          default:
+            if (action.startsWith('open:')) openJumpPlace(action.slice(5))
         }
       })
       return cleanup

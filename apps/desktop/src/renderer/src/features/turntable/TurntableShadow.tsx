@@ -32,6 +32,18 @@ export const TurntableShadow = memo(
             filter: 'blur(10px)'
           }}
         />
+        {/* Contact: where the feet meet the surface, a tight, dark line of shade. */}
+        <div
+          className="absolute"
+          style={{
+            left: '5%',
+            right: '5%',
+            bottom: '1.5%',
+            height: '5%',
+            background: 'radial-gradient(ellipse 50% 50% at 50% 50%, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.35) 60%, transparent 100%)',
+            filter: 'blur(6px)'
+          }}
+        />
       </div>
     )
   }

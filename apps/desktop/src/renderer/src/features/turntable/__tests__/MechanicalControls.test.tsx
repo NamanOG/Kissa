@@ -29,7 +29,7 @@ describe('MechanicalControls', () => {
 
   it('renders all 3 controls: Power, Speed (33/45), and Start/Stop', () => {
     render(<MechanicalControls />)
-    expect(screen.getByRole('button', { name: /Power Toggle/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Power$/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /33 RPM/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /45 RPM/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Start Motor|Stop Motor/i })).toBeInTheDocument()
@@ -37,7 +37,7 @@ describe('MechanicalControls', () => {
 
   it('toggles power state and triggers single state change', () => {
     render(<MechanicalControls />)
-    const powerBtn = screen.getByRole('button', { name: /Power Toggle/i })
+    const powerBtn = screen.getByRole('button', { name: /^Power$/i })
     expect(usePlayerStore.getState().isPowered).toBe(true)
 
     fireEvent.pointerDown(powerBtn, { button: 0 })

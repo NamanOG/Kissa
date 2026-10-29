@@ -14,9 +14,10 @@ export const FullscreenLyrics = memo((): React.JSX.Element => {
         duration: prefersReducedMotion ? 0.01 : 0.28, 
         ease: [0.22, 1, 0.36, 1] 
       }}
-      className="flex flex-col items-start justify-center h-full w-1/2 max-w-[1200px] shrink-0 pr-6 min-[900px]:pr-12"
+      // Starts below the top-right controls (Moving light, Display, exit) so the lyric buttons never sit under them.
+      className="flex flex-col items-start justify-center h-full w-1/2 max-w-[1200px] shrink-0 pt-[132px] pb-6 pr-6 min-[900px]:pr-12"
     >
-      <SyncedLyrics isLargeView={true} className="w-full h-full max-h-[85vh] pr-4 mask-image-vertical" />
+      <SyncedLyrics isLargeView={true} className="w-full h-full pr-4 mask-image-vertical" />
     </motion.div>
   )
 })

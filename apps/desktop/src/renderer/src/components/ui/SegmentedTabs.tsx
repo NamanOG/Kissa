@@ -16,6 +16,11 @@ export interface SegmentedTabsProps<T extends string> {
   /** 'tabs' switches a panel elsewhere; 'radio' picks one value of a setting. */
   kind?: 'tabs' | 'radio'
   size?: 'sm' | 'md'
+  /**
+   * 'outline' is the quiet ring used in Settings. 'inset' is a recessed track with a raised
+   * plate, filling its row, for a panel's main sections.
+   */
+  appearance?: 'outline' | 'inset'
   className?: string
 }
 
@@ -31,6 +36,7 @@ export function SegmentedTabs<T extends string>({
   label,
   kind = 'tabs',
   size = 'md',
+  appearance = 'outline',
   className
 }: SegmentedTabsProps<T>): React.JSX.Element {
   const plateId = useId()
@@ -57,7 +63,9 @@ export function SegmentedTabs<T extends string>({
       role={kind === 'tabs' ? 'tablist' : 'radiogroup'}
       aria-label={label}
       className={cn(
-        'inline-flex select-none items-center gap-0.5 rounded-full border border-ink/[0.14] p-[3px]',
+        appearance === 'outline'
+          ? 'inline-flex select-none items-center gap-0.5 rounded-full border border-ink/[0.14] p-[3px]'
+          : 'flex w-full select-none items-center gap-0.5 rounded-[11px] bg-black/25 p-[3px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.35),inset_0_0_0_1px_rgba(255,255,255,0.04),0_1px_0_rgba(255,255,255,0.04)]',
         className
       )}
     >
@@ -78,7 +86,11 @@ export function SegmentedTabs<T extends string>({
             className={cn(
               'relative cursor-pointer rounded-full font-medium outline-none transition-colors duration-micro',
               'focus-visible:outline focus-visible:outline-1 focus-visible:outline-ink/60',
-              size === 'md' ? 'h-7 px-4 text-[13px]' : 'h-[26px] min-w-[44px] px-3 text-[12.5px]',
+              appearance === 'inset'
+                ? 'h-[30px] flex-1 rounded-[8px] px-3 text-[12.5px] tracking-[-0.005em]'
+                : size === 'md'
+                  ? 'h-7 px-4 text-[13px]'
+                  : 'h-[26px] min-w-[44px] px-3 text-[12.5px]',
               selected ? 'text-ink' : 'text-dim hover:text-ink'
             )}
           >
@@ -87,7 +99,12 @@ export function SegmentedTabs<T extends string>({
                 layoutId={plateId}
                 aria-hidden="true"
                 transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 34 }}
-                className="absolute inset-0 rounded-full bg-ink/[0.11]"
+                className={cn(
+                  'absolute inset-0',
+                  appearance === 'inset'
+                    ? 'rounded-[8px] bg-[linear-gradient(180deg,rgba(255,255,255,0.13),rgba(255,255,255,0.08))] shadow-[0_1px_3px_rgba(0,0,0,0.35),0_0_0_0.5px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.18)]'
+                    : 'rounded-full bg-ink/[0.11]'
+                )}
               />
             )}
             <span className="relative">{tab.label}</span>

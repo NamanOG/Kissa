@@ -8,6 +8,7 @@ import { useStudyStore } from '@renderer/stores/studyStore'
 import { HardwareSwitch } from '@renderer/components/ui/HardwareSwitch'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { greetingFor } from '@renderer/utils/greeting'
+import { useT, type MessageKey } from '@renderer/i18n'
 import {
   breakMs,
   focusMs,
@@ -44,10 +45,10 @@ function useNow(active: boolean): number {
   return active ? now : Date.now()
 }
 
-const EYEBROW = 'font-kissa-chassis text-[11px] font-bold uppercase tracking-[0.24em] text-tone'
+const EYEBROW = 'font-sans text-[14px] font-semibold tracking-[-0.005em] text-tone'
 const SOFT_LABEL = 'text-[12.5px] text-white/70'
 // Kissa's immersive controls (the Listening Room's language): glass pills, quiet
-// uppercase sans labels, the room's accent for the one primary action.
+// sentence-case sans labels, the room's accent for the one primary action.
 const PRIMARY_BUTTON =
   'inline-flex h-10 items-center justify-center gap-2 rounded-full bg-tone px-5 font-sans text-[13.5px] font-semibold text-[var(--surface)] shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-transform active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone'
 const QUIET_BUTTON =
@@ -55,13 +56,16 @@ const QUIET_BUTTON =
 const CHIP = (selected: boolean): string =>
   cn(
     'h-8 rounded-full px-3.5 font-sans text-[13px] font-medium transition-colors cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone',
-    selected ? 'bg-white/20 text-white' : 'text-white/75 hover:bg-white/[0.08] hover:text-white'
+    selected
+      ? 'bg-[linear-gradient(180deg,rgba(255,255,255,0.24),rgba(255,255,255,0.14))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_2px_8px_rgba(0,0,0,0.35)]'
+      : 'text-white/70 hover:text-white'
   )
 
 type LengthChoice = 25 | 50 | 90 | 0
 type BreakChoice = 0 | 5 | 10
 
 export function StudyRoomView(): React.JSX.Element {
+  const tx = useT()
   const active = useStudyStore((s) => s.active)
   const review = useStudyStore((s) => s.review)
   const reduceMotion = useReducedMotion()
@@ -69,7 +73,7 @@ export function StudyRoomView(): React.JSX.Element {
 
   return (
     <section
-      aria-label="Focus journal"
+      aria-label={tx('focus.journal')}
       className="flex h-full w-full flex-col select-none text-white [text-shadow:0_1px_10px_rgba(0,0,0,0.55)]"
     >
       <AnimatePresence mode="wait" initial={false}>
@@ -94,6 +98,7 @@ export function StudyRoomView(): React.JSX.Element {
 // ---- Setup ------------------------------------------------------------------
 
 function SetupPage(): React.JSX.Element {
+  const tx = useT()
   const prefs = useStudyStore((s) => s.prefs)
   const lastIntention = useStudyStore((s) => s.lastIntention)
   const start = useStudyStore((s) => s.start)
@@ -114,7 +119,7 @@ function SetupPage(): React.JSX.Element {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1 pb-6 [mask-image:linear-gradient(to_bottom,#000_calc(100%-24px),transparent)]">
-      <span className={EYEBROW}>New focus session</span>
+      <span className={EYEBROW}>{tx('focus.new')}</span>
       <h1 className="font-kissa-editorial mt-3 text-[clamp(2.3rem,min(4vw,7vh),3.6rem)] font-normal leading-[1.02] tracking-[-0.01em] text-balance">
         {greetingFor(new Date(), listenerName)}
       </h1>
@@ -127,13 +132,13 @@ function SetupPage(): React.JSX.Element {
         }}
       >
         <label className="flex flex-col gap-3">
-          <span className={SOFT_LABEL}>What are you working on?</span>
+          <span className={SOFT_LABEL}>{tx('focus.working')}</span>
           <input
             type="text"
             value={intention}
             maxLength={140}
             onChange={(e) => setIntention(e.target.value)}
-            placeholder={lastIntention ? lastIntention : 'Read chapter 4'}
+            placeholder={lastIntention ? lastIntention : tx('focus.example')}
             className="font-kissa-editorial w-full rounded-2xl border border-white/15 bg-black/35 px-5 py-3.5 text-[20px] text-white placeholder:text-white/45 outline-none transition-colors focus:border-white/30 select-text"
           />
         </label>
@@ -142,8 +147,8 @@ function SetupPage(): React.JSX.Element {
 
         <div className="flex flex-wrap gap-x-10 gap-y-8">
           <div className="flex flex-col gap-3">
-            <span className={SOFT_LABEL}>Session length</span>
-            <div role="radiogroup" aria-label="Session length" className="flex flex-wrap gap-1.5">
+            <span className={SOFT_LABEL}>{tx('focus.length')}</span>
+            <div role="radiogroup" aria-label={tx('focus.length')} className="inline-flex w-fit flex-wrap gap-0.5 rounded-full border border-white/10 bg-black/30 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] backdrop-blur-xl">
               {([25, 50, 90, 0] as LengthChoice[]).map((m) => (
                 <button
                   key={m}
@@ -153,15 +158,15 @@ function SetupPage(): React.JSX.Element {
                   className={CHIP(length === m)}
                   onClick={() => setLength(m)}
                 >
-                  {m === 0 ? 'Open' : `${m} min`}
+                  {m === 0 ? tx('focus.open') : tx('focus.min', { m })}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="flex flex-col gap-3">
-            <span className={SOFT_LABEL}>Breaks</span>
-            <div role="radiogroup" aria-label="Break length" className="flex flex-wrap gap-1.5">
+            <span className={SOFT_LABEL}>{tx('focus.breaks')}</span>
+            <div role="radiogroup" aria-label={tx('focus.breakLength')} className="inline-flex w-fit flex-wrap gap-0.5 rounded-full border border-white/10 bg-black/30 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] backdrop-blur-xl">
               {([0, 5, 10] as BreakChoice[]).map((m) => (
                 <button
                   key={m}
@@ -171,7 +176,7 @@ function SetupPage(): React.JSX.Element {
                   className={CHIP(breaks === m)}
                   onClick={() => setBreaks(m)}
                 >
-                  {m === 0 ? 'None' : `${m} min`}
+                  {m === 0 ? tx('focus.none') : tx('focus.min', { m })}
                 </button>
               ))}
             </div>
@@ -181,15 +186,15 @@ function SetupPage(): React.JSX.Element {
           <HardwareSwitch
             checked={prefs.keepScreenAwake}
             onChange={(keepScreenAwake) => setPrefs({ keepScreenAwake })}
-            aria-label="Keep the screen on during sessions"
+            aria-label={tx('focus.keepAwakeLabel')}
           />
-          Keep the screen on during a focus session
+          {tx('focus.keepAwake')}
         </label>
 
         <div className="mt-1 flex items-center gap-5">
           <button type="submit" className={PRIMARY_BUTTON}>
             <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
-            Begin
+            {tx('focus.begin')}
           </button>
           {history.length > 0 && (
             <button
@@ -197,7 +202,7 @@ function SetupPage(): React.JSX.Element {
               className="font-sans text-[13px] font-semibold text-white/70 hover:text-white cursor-pointer"
               onClick={() => setShowHistory(true)}
             >
-              My focus sessions
+              {tx('focus.mySessions')}
             </button>
           )}
         </div>
@@ -214,6 +219,7 @@ function StepsEditor({
   steps: string[]
   onChange: (s: string[]) => void
 }): React.JSX.Element {
+  const tx = useT()
   const [draft, setDraft] = useState('')
   const [open, setOpen] = useState(steps.length > 0)
   const add = (): void => {
@@ -228,13 +234,13 @@ function StepsEditor({
         onClick={() => setOpen(true)}
         className="-mt-3 inline-flex w-fit items-center gap-2 font-sans text-[13px] font-medium text-white/75 transition-colors hover:text-white cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone rounded"
       >
-        <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Break it into small steps
+        <Plus className="h-3.5 w-3.5" aria-hidden="true" /> {tx('focus.breakItDown')}
       </button>
     )
   }
   return (
     <div className="flex flex-col gap-3">
-      <span className={SOFT_LABEL}>Small steps</span>
+      <span className={SOFT_LABEL}>{tx('focus.smallSteps')}</span>
       {steps.length > 0 && (
         <ul className="flex flex-col gap-1">
           {steps.map((s, i) => (
@@ -246,7 +252,7 @@ function StepsEditor({
               <span className="flex-1 truncate">{s}</span>
               <button
                 type="button"
-                aria-label={`Remove ${s}`}
+                aria-label={tx('focus.remove', { text: s })}
                 className="text-white/45 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer"
                 onClick={() => onChange(steps.filter((_, j) => j !== i))}
               >
@@ -269,14 +275,14 @@ function StepsEditor({
                 add()
               }
             }}
-            placeholder="Add a step and press Enter"
-            aria-label="Add a step"
+            placeholder={tx('focus.addStepHint')}
+            aria-label={tx('focus.addStep')}
             className="font-sans flex-1 rounded-xl border border-dashed border-white/15 bg-transparent px-3 py-2 text-[14px] text-white/85 placeholder:text-white/30 outline-none focus:border-white/30 select-text"
           />
           <button
             type="button"
             onClick={add}
-            aria-label="Add step"
+            aria-label={tx('focus.addStepButton')}
             className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] text-white/60 hover:bg-white/[0.12] cursor-pointer"
           >
             <Plus className="h-4 w-4" />
@@ -290,6 +296,7 @@ function StepsEditor({
 // ---- Session ----------------------------------------------------------------
 
 function SessionPage({ session }: { session: StudySession }): React.JSX.Element {
+  const tx = useT()
   const now = useNow(true)
   const { pause, resume, extend, takeBreak, backToFocus, finish } = useStudyStore.getState()
   const running = isRunning(session)
@@ -302,18 +309,18 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
   const clock = remaining !== null ? formatClock(remaining) : formatClock(elapsed)
 
   const phase = session.interruption
-    ? 'Paused while you were away'
+    ? tx('focus.away')
     : segment.ended
       ? isBreak
-        ? 'Break over'
-        : 'Focus block done'
+        ? tx('focus.breakOver')
+        : tx('focus.blockDone')
       : isBreak
         ? running
-          ? 'On a break'
-          : 'Break · paused'
+          ? tx('focus.onBreak')
+          : tx('focus.breakPaused')
         : running
-          ? 'Focusing'
-          : 'Paused'
+          ? tx('focus.focusing')
+          : tx('focus.paused')
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1 pb-6 [mask-image:linear-gradient(to_bottom,#000_calc(100%-24px),transparent)]">
@@ -322,7 +329,7 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
         className="font-kissa-editorial mt-2 line-clamp-2 text-[clamp(1.4rem,2.1vw,1.9rem)] font-normal leading-[1.15] text-white/90 text-balance"
         title={session.intention || undefined}
       >
-        {session.intention || 'Open session'}
+        {session.intention || tx('focus.openSession')}
       </h1>
 
       <p
@@ -356,24 +363,23 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
           planned={session.plan.focusMinutes !== null}
         />
         <span className="font-sans text-[12.5px] text-white/45 tabular-nums">
-          {formatMinutes(totalFocus)} focused
+          {tx('focus.focused', { time: formatMinutes(totalFocus) })}
           {session.breaksTaken > 0 &&
-            ` · ${session.breaksTaken} ${session.breaksTaken === 1 ? 'break' : 'breaks'}`}
+            ` · ${tx(session.breaksTaken === 1 ? 'focus.breakCount' : 'focus.breakCountMany', { n: session.breaksTaken })}`}
         </span>
       </div>
 
       {session.interruption ? (
         <div className="mt-7 max-w-[420px] rounded-2xl bg-black/40 p-5">
           <p className="font-sans text-[14px] leading-relaxed text-white/85">
-            Kissa wasn&apos;t running for {formatMinutes(session.interruption.awayMs)}, so that time
-            isn&apos;t counted.
+            {tx('focus.notRunning', { time: formatMinutes(session.interruption.awayMs) })}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <button type="button" className={PRIMARY_BUTTON} onClick={resume}>
-              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> Resume
+              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> {tx('focus.resume')}
             </button>
             <button type="button" className={QUIET_BUTTON} onClick={finish}>
-              <Square className="h-3 w-3" aria-hidden="true" /> Finish
+              <Square className="h-3 w-3" aria-hidden="true" /> {tx('focus.finish')}
             </button>
           </div>
         </div>
@@ -381,23 +387,23 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
         <div className="mt-7 inline-flex w-fit self-start flex-wrap items-center gap-1 rounded-full border border-white/10 bg-black/40 p-1.5 shadow-[0_24px_48px_rgba(0,0,0,0.45)] backdrop-blur-3xl">
           {isBreak ? (
             <button type="button" className={PRIMARY_BUTTON} onClick={backToFocus}>
-              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> Back to it
+              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> {tx('focus.backToIt')}
             </button>
           ) : session.plan.breakMinutes > 0 ? (
             <button type="button" className={PRIMARY_BUTTON} onClick={() => takeBreak()}>
-              <Coffee className="h-3.5 w-3.5" aria-hidden="true" /> Take {session.plan.breakMinutes}{' '}
-              min break
+              <Coffee className="h-3.5 w-3.5" aria-hidden="true" />{' '}
+              {tx('focus.takeBreak', { m: session.plan.breakMinutes })}
             </button>
           ) : (
             <button type="button" className={PRIMARY_BUTTON} onClick={backToFocus}>
-              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> Another block
+              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> {tx('focus.anotherBlock')}
             </button>
           )}
           <button type="button" className={QUIET_BUTTON} onClick={extend}>
-            <Plus className="h-3 w-3" aria-hidden="true" /> 10 min
+            <Plus className="h-3 w-3" aria-hidden="true" /> {tx('focus.tenMin')}
           </button>
           <button type="button" className={QUIET_BUTTON} onClick={finish}>
-            <Square className="h-3 w-3" aria-hidden="true" /> Finish
+            <Square className="h-3 w-3" aria-hidden="true" /> {tx('focus.finish')}
           </button>
         </div>
       ) : (
@@ -409,16 +415,16 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
         >
           {running ? (
             <button type="button" className={QUIET_BUTTON} onClick={pause}>
-              <Pause className="h-3.5 w-3.5" aria-hidden="true" /> Pause
+              <Pause className="h-3.5 w-3.5" aria-hidden="true" /> {tx('focus.pause')}
             </button>
           ) : (
             <button type="button" className={PRIMARY_BUTTON} onClick={resume}>
-              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> Resume
+              <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> {tx('focus.resume')}
             </button>
           )}
           {isBreak ? (
             <button type="button" className={QUIET_BUTTON} onClick={backToFocus}>
-              <Play className="h-3 w-3" aria-hidden="true" /> End break
+              <Play className="h-3 w-3" aria-hidden="true" /> {tx('focus.endBreak')}
             </button>
           ) : (
             <button
@@ -426,7 +432,7 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
               className={QUIET_BUTTON}
               onClick={() => takeBreak(session.plan.breakMinutes || 5)}
             >
-              <Coffee className="h-3.5 w-3.5" aria-hidden="true" /> Break
+              <Coffee className="h-3.5 w-3.5" aria-hidden="true" /> {tx('focus.break')}
             </button>
           )}
           {segment.plannedMs !== null && (
@@ -434,13 +440,13 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
               type="button"
               className={QUIET_BUTTON}
               onClick={extend}
-              aria-label="Add ten minutes"
+              aria-label={tx('focus.addTen')}
             >
-              <Plus className="h-3 w-3" aria-hidden="true" /> 10 min
+              <Plus className="h-3 w-3" aria-hidden="true" /> {tx('focus.tenMin')}
             </button>
           )}
           <button type="button" className={QUIET_BUTTON} onClick={finish}>
-            <Square className="h-3 w-3" aria-hidden="true" /> Finish
+            <Square className="h-3 w-3" aria-hidden="true" /> {tx('focus.finish')}
           </button>
         </div>
       )}
@@ -465,13 +471,14 @@ function Rounds({
   current: boolean
   planned: boolean
 }): React.JSX.Element | null {
+  const tx = useT()
   if (!planned) return null
   const marks = Array.from({ length: Math.min(8, done + (current ? 1 : 0)) })
   if (marks.length === 0) return null
   return (
     <span
       className="flex items-center gap-1.5"
-      aria-label={`${done} focus ${done === 1 ? 'block' : 'blocks'} done`}
+      aria-label={done === 1 ? tx('focus.blockDoneOne') : tx('focus.blocksDone', { n: done })}
     >
       {marks.map((_, i) => (
         <span
@@ -491,6 +498,7 @@ function TaskList({
   tasks: StudyTask[]
   editable?: boolean
 }): React.JSX.Element {
+  const tx = useT()
   const toggleTask = useStudyStore((s) => s.toggleTask)
   const addTask = useStudyStore((s) => s.addTask)
   const removeTask = useStudyStore((s) => s.removeTask)
@@ -500,10 +508,10 @@ function TaskList({
   return (
     <div>
       <div className="flex items-baseline justify-between">
-        <span className={SOFT_LABEL}>Steps</span>
+        <span className={SOFT_LABEL}>{tx('focus.steps')}</span>
         {tasks.length > 0 && (
           <span className="font-sans text-[12px] text-white/45 tabular-nums">
-            {doneCount} of {tasks.length}
+            {tx('focus.ofTotal', { done: doneCount, total: tasks.length })}
           </span>
         )}
       </div>
@@ -535,7 +543,7 @@ function TaskList({
             {editable && (
               <button
                 type="button"
-                aria-label={`Remove ${t.text}`}
+                aria-label={tx('focus.remove', { text: t.text })}
                 onClick={() => removeTask(t.id)}
                 className="text-white/45 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer"
               >
@@ -557,8 +565,8 @@ function TaskList({
               setDraft('')
             }
           }}
-          placeholder={tasks.length ? 'Add another step' : 'Add a step and press Enter'}
-          aria-label="Add a step"
+          placeholder={tasks.length ? tx('focus.addAnother') : tx('focus.addStepHint')}
+          aria-label={tx('focus.addStep')}
           className="font-sans mt-1.5 w-full rounded-xl bg-transparent px-0 py-1.5 text-[14px] text-white/85 placeholder:text-white/30 outline-none select-text"
         />
       )}
@@ -571,6 +579,7 @@ function TaskList({
  * wait for you on the review page.
  */
 function ThoughtJar({ session }: { session: StudySession }): React.JSX.Element {
+  const tx = useT()
   const parkThought = useStudyStore((s) => s.parkThought)
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
@@ -605,8 +614,8 @@ function ThoughtJar({ session }: { session: StudySession }): React.JSX.Element {
               }
             }}
             onBlur={() => !draft.trim() && setOpen(false)}
-            placeholder="Write it down, get back to work"
-            aria-label="Note for later"
+            placeholder={tx('focus.noteHint')}
+            aria-label={tx('focus.note')}
             className="font-sans flex-1 bg-transparent text-[14px] text-white/85 placeholder:text-white/35 outline-none select-text"
           />
         </div>
@@ -615,10 +624,10 @@ function ThoughtJar({ session }: { session: StudySession }): React.JSX.Element {
           type="button"
           onClick={() => setOpen(true)}
           className="font-sans inline-flex items-center gap-2 rounded text-[13px] font-semibold text-white/45 transition-colors hover:text-white cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
-          title="Something on your mind? Note it and come back to it after."
+          title={tx('focus.noteTitle')}
         >
           <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-          Note for later
+          {tx('focus.note')}
           {count > 0 && (
             <span className="rounded-full bg-white/10 px-2 py-0.5 text-[11px] tabular-nums">
               {count}
@@ -632,13 +641,14 @@ function ThoughtJar({ session }: { session: StudySession }): React.JSX.Element {
 
 // ---- Review -----------------------------------------------------------------
 
-const RATINGS: Array<{ id: Rating; label: string }> = [
-  { id: 'distracted', label: 'Distracted' },
-  { id: 'okay', label: 'Okay' },
-  { id: 'focused', label: 'Focused' }
+const RATINGS: Array<{ id: Rating; label: MessageKey }> = [
+  { id: 'distracted', label: 'focus.rate.distracted' },
+  { id: 'okay', label: 'focus.rate.okay' },
+  { id: 'focused', label: 'focus.rate.focused' }
 ]
 
 function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
+  const tx = useT()
   const saveReview = useStudyStore((s) => s.saveReview)
   const discard = useStudyStore((s) => s.discard)
   const removeThought = useStudyStore((s) => s.removeThought)
@@ -662,14 +672,19 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar pr-1 pb-6 [mask-image:linear-gradient(to_bottom,#000_calc(100%-24px),transparent)]">
-      <span className={EYEBROW}>Focus session finished</span>
+      <span className={EYEBROW}>{tx('focus.finished')}</span>
       <h1 className="font-kissa-editorial mt-2 text-[clamp(2rem,3vw,2.75rem)] font-normal leading-[1.05]">
-        {formatMinutes(focus)} of focus
+        {tx('focus.ofFocus', { time: formatMinutes(focus) })}
       </h1>
       <p className="font-sans mt-2 text-[13px] text-white/45">
         {session.breaksTaken > 0
-          ? `${session.breaksTaken} ${session.breaksTaken === 1 ? 'break' : 'breaks'}, ${formatMinutes(rest)}`
-          : 'No breaks'}
+          ? tx('focus.breaksSummary', {
+              breaks: tx(session.breaksTaken === 1 ? 'focus.breakCount' : 'focus.breakCountMany', {
+                n: session.breaksTaken
+              }),
+              time: formatMinutes(rest)
+            })
+          : tx('focus.noBreaks')}
         {session.intention && ` · ${session.intention}`}
       </p>
 
@@ -687,7 +702,7 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
           >
             {done && <Check className="h-3 w-3 text-[var(--surface)]" strokeWidth={3} />}
           </span>
-          I did what I set out to do
+          {tx('focus.didIt')}
         </label>
       )}
 
@@ -699,7 +714,7 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
 
       {thoughts.length > 0 && (
         <div className="mt-5">
-          <span className={SOFT_LABEL}>Notes for later</span>
+          <span className={SOFT_LABEL}>{tx('focus.notes')}</span>
           <ul className="mt-2 flex flex-col gap-1.5">
             {thoughts.map((t) => (
               <li
@@ -709,7 +724,7 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
                 <span className="flex-1 select-text">{t.text}</span>
                 <button
                   type="button"
-                  aria-label="Dismiss this note"
+                  aria-label={tx('focus.dismissNote')}
                   onClick={() => removeThought(t.at)}
                   className="text-white/45 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer"
                 >
@@ -722,8 +737,8 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
       )}
 
       <div className="mt-6 flex flex-col gap-2">
-        <span className={SOFT_LABEL}>How did it feel? · optional</span>
-        <div role="radiogroup" aria-label="How the session felt" className="flex flex-wrap gap-2">
+        <span className={SOFT_LABEL}>{tx('focus.howFelt')}</span>
+        <div role="radiogroup" aria-label={tx('focus.howFeltLabel')} className="flex flex-wrap gap-2">
           {RATINGS.map((r) => (
             <button
               key={r.id}
@@ -733,7 +748,7 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
               onClick={() => setRating(rating === r.id ? null : r.id)}
               className={CHIP(rating === r.id)}
             >
-              {r.label}
+              {tx(r.label)}
             </button>
           ))}
         </div>
@@ -758,7 +773,7 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
             }
           >
             <Share2 size={15} aria-hidden="true" />
-            Share session
+            {tx('focus.share')}
           </button>
         )}
         <button
@@ -766,17 +781,17 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
           className={PRIMARY_BUTTON}
           onClick={() => saveReview({ rating, intentionDone: done })}
         >
-          {tooShort ? 'Close' : 'Save to my sessions'}
+          {tooShort ? tx('focus.close') : tx('focus.save')}
         </button>
         {!tooShort && (
           <button type="button" className={QUIET_BUTTON} onClick={discard}>
-            Don&apos;t keep
+            {tx('focus.dontKeep')}
           </button>
         )}
       </div>
       {tooShort && (
         <p className="font-sans mt-3 text-[12px] text-white/45">
-          Sessions under a minute are not kept.
+          {tx('focus.tooShort')}
         </p>
       )}
       {sharePayload && (
@@ -788,10 +803,10 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
 
 // ---- History and the day ------------------------------------------------------
 
-const RATING_LABEL: Record<Rating, string> = {
-  distracted: 'Distracted',
-  okay: 'Okay',
-  focused: 'Focused'
+const RATING_LABEL: Record<Rating, MessageKey> = {
+  distracted: 'focus.rate.distracted',
+  okay: 'focus.rate.okay',
+  focused: 'focus.rate.focused'
 }
 
 function HistoryPage({
@@ -801,6 +816,7 @@ function HistoryPage({
   records: SessionRecord[]
   onBack: () => void
 }): React.JSX.Element {
+  const tx = useT()
   const deleteRecord = useStudyStore((s) => s.deleteRecord)
   const clearHistory = useStudyStore((s) => s.clearHistory)
   const [confirmClear, setConfirmClear] = useState(false)
@@ -834,13 +850,13 @@ function HistoryPage({
         onClick={onBack}
         className="font-sans self-start text-[13px] font-semibold text-white/45 hover:text-white cursor-pointer"
       >
-        ← Back
+        {tx('focus.back')}
       </button>
       <h1 className="font-kissa-editorial mt-3 text-[clamp(1.8rem,2.6vw,2.4rem)] font-normal">
-        My focus sessions
+        {tx('focus.mySessions')}
       </h1>
       <p className="font-sans mt-1 text-[13px] text-white/45">
-        {formatMinutes(weekFocus)} in the last seven days
+        {tx('focus.lastSeven', { time: formatMinutes(weekFocus) })}
       </p>
       <WeekStrip records={records} />
       <ul className="mt-5 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto no-scrollbar">
@@ -852,21 +868,23 @@ function HistoryPage({
             <div className="min-w-0 flex-1">
               <p className="font-kissa-editorial truncate text-[16px] text-white">
                 {r.intentionDone && (
-                  <Check className="mr-1.5 inline h-3.5 w-3.5 text-tone" aria-label="Done" />
+                  <Check className="mr-1.5 inline h-3.5 w-3.5 text-tone" aria-label={tx('focus.done')} />
                 )}
-                {r.intention || 'Open session'}
+                {r.intention || tx('focus.openSession')}
               </p>
               <p className="font-sans text-[12px] text-white/45 tabular-nums">
                 {dateFmt.format(new Date(r.startedAt))} · {formatMinutes(r.focusMs)}
-                {r.tasksTotal ? ` · ${r.tasksDone ?? 0}/${r.tasksTotal} steps` : ''}
-                {r.rating && ` · ${RATING_LABEL[r.rating]}`}
+                {r.tasksTotal
+                  ? ` · ${tx('focus.stepsCount', { done: r.tasksDone ?? 0, total: r.tasksTotal })}`
+                  : ''}
+                {r.rating && ` · ${tx(RATING_LABEL[r.rating])}`}
               </p>
             </div>
             <button
               type="button"
               onClick={() => deleteRecord(r.id)}
               className="text-white/45 opacity-0 transition-opacity hover:text-white group-hover:opacity-100 focus-visible:opacity-100 cursor-pointer"
-              aria-label={`Delete session ${r.intention || 'Open session'}`}
+              aria-label={tx('focus.delete', { name: r.intention || tx('focus.openSession') })}
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
@@ -875,7 +893,7 @@ function HistoryPage({
       </ul>
       <div className="font-sans mt-3 flex items-center gap-4 text-[12.5px] font-semibold text-white/45">
         <button type="button" className="hover:text-white cursor-pointer" onClick={exportJson}>
-          Export
+          {tx('focus.export')}
         </button>
         {confirmClear ? (
           <>
@@ -888,14 +906,14 @@ function HistoryPage({
                 onBack()
               }}
             >
-              Clear all
+              {tx('focus.clearAll')}
             </button>
             <button
               type="button"
               className="hover:text-white cursor-pointer"
               onClick={() => setConfirmClear(false)}
             >
-              Keep
+              {tx('focus.keep')}
             </button>
           </>
         ) : (
@@ -904,7 +922,7 @@ function HistoryPage({
             className="hover:text-white cursor-pointer"
             onClick={() => setConfirmClear(true)}
           >
-            Clear…
+            {tx('focus.clear')}
           </button>
         )}
       </div>
@@ -914,6 +932,7 @@ function HistoryPage({
 
 /** A quiet week at a glance: one bar a day against the daily goal. */
 function WeekStrip({ records }: { records: SessionRecord[] }): React.JSX.Element | null {
+  const tx = useT()
   const goal = useStudyStore((s) => s.prefs.dailyGoalMinutes)
   const days = useMemo(() => lastSevenDays(records, Date.now()), [records])
   const goalMs = goal * 60_000
@@ -926,7 +945,7 @@ function WeekStrip({ records }: { records: SessionRecord[] }): React.JSX.Element
     .join(', ')
 
   return (
-    <div className="mt-7" role="img" aria-label={`Focus by day: ${summary}`}>
+    <div className="mt-7" role="img" aria-label={tx('focus.byDay', { summary })}>
       <div className="relative flex h-16 items-end gap-2">
         {goalMs > 0 && (
           <div
@@ -935,7 +954,7 @@ function WeekStrip({ records }: { records: SessionRecord[] }): React.JSX.Element
             aria-hidden="true"
           >
             <span className="font-sans absolute -top-[17px] right-0 text-[10.5px] text-white/45">
-              Goal {formatMinutes(goalMs)}
+              {tx('focus.goal', { time: formatMinutes(goalMs) })}
             </span>
           </div>
         )}
@@ -975,7 +994,7 @@ function WeekStrip({ records }: { records: SessionRecord[] }): React.JSX.Element
       </div>
       {streak >= 2 && (
         <p className="font-sans mt-2 text-[12.5px] text-white/60">
-          Daily goal met {streak} days in a row
+          {tx('focus.streak', { n: streak })}
         </p>
       )}
     </div>
@@ -984,6 +1003,7 @@ function WeekStrip({ records }: { records: SessionRecord[] }): React.JSX.Element
 
 /** The day's focus against an optional goal, at the foot of the journal. */
 function TodayLine(): React.JSX.Element {
+  const tx = useT()
   const history = useStudyStore((s) => s.history)
   const active = useStudyStore((s) => s.active)
   const goal = useStudyStore((s) => s.prefs.dailyGoalMinutes)
@@ -1005,11 +1025,11 @@ function TodayLine(): React.JSX.Element {
     <div className="mt-5 shrink-0 border-t border-white/[0.08] pt-4">
       <div className="flex items-baseline justify-between gap-3">
         <span className="font-sans text-[12.5px] text-white/45">
-          Today{' '}
+          {tx('focus.today')}{' '}
           <span className="text-white/85 tabular-nums">
-            {today < 60_000 ? 'nothing yet' : formatMinutes(today)}
+            {today < 60_000 ? tx('focus.nothingYet') : formatMinutes(today)}
           </span>
-          {goal > 0 && <> of {formatMinutes(goalMs)}</>}
+          {goal > 0 && <> {tx('focus.ofGoal', { time: formatMinutes(goalMs) })}</>}
         </span>
         <button
           type="button"
@@ -1017,9 +1037,9 @@ function TodayLine(): React.JSX.Element {
           onClick={() =>
             setPrefs({ dailyGoalMinutes: goals[(goals.indexOf(goal) + 1) % goals.length] ?? 120 })
           }
-          title="Change the daily goal"
+          title={tx('focus.changeGoal')}
         >
-          Goal {formatMinutes(goalMs)}
+          {tx('focus.goal', { time: formatMinutes(goalMs) })}
         </button>
       </div>
       {goal > 0 && (

@@ -9,16 +9,29 @@ import { ScreensaverRegistryService } from './services/ScreensaverRegistryServic
 import { StorePackageService } from './services/StorePackageService'
 import { startDiscordPresence, stopDiscordPresence } from './services/discord'
 import { startStudyKeepAwake, stopStudyKeepAwake } from './services/StudyKeepAwake'
+import { setupPhoneRemote, stopPhoneRemote } from './services/remote'
 import { DiagnosticsLog } from './services/DiagnosticsLog'
 import { join } from 'path'
+import { jumpPlaceFromArgv } from './window/jumpList'
+import { TrackToast } from './window/TrackToast'
+import { installLoopbackHandler } from './audio/loopback'
+import { AlbumFolderService, registerAlbumScheme } from './album/AlbumFolderService'
+import { applyGraphicsChoice, setupGraphicsIpc } from './services/GraphicsSettings'
+
+// Hardware acceleration can be switched off in Settings; Chromium only reads it at launch.
+applyGraphicsChoice()
+
+// The read-only address for an album folder the listener picks (see AlbumFolderService).
+registerAlbumScheme()
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
 if (!gotSingleInstanceLock) {
   app.quit()
 } else {
-  app.on('second-instance', () => {
+  app.on('second-instance', (_event, argv) => {
     const wm = WindowManager.getInstance()
+    const place = jumpPlaceFromArgv(argv)
     if (wm.isScreensaver) {
       ScreensaverSessionService.getInstance().notifyWake()
     }
@@ -27,6 +40,8 @@ if (!gotSingleInstanceLock) {
       if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.show()
       mainWindow.focus()
+      // A jump-list task: open that part of Kissa.
+      if (place && !wm.isScreensaver) mainWindow.webContents.send('kissa:tray-action', `open:${place}`)
     }
   })
 
@@ -74,19 +89,34 @@ if (!gotSingleInstanceLock) {
     // Start background system media detection (Apple Music, Spotify, etc.)
     MediaDetectionService.getInstance().start()
 
+    // Album folders the listener picks: read-only, only the files of the album read last.
+    AlbumFolderService.getInstance().start()
+
+    // The meters and the light listen to what the PC plays (measured only, never recorded).
+    installLoopbackHandler(() => WindowManager.getInstance().getMainWindow()?.webContents.mainFrame)
+
     // Optional Apple Music activity on Discord (off until the person turns it on).
     startDiscordPresence()
 
     // Study sessions keep the display on (no screensaver) while they run.
     startStudyKeepAwake()
 
+    // The phone remote (off until the person switches it on; never remembered across launches).
+    setupPhoneRemote()
+
     // Start named pipe server for Windows screensaver supervisor coordination
     ScreensaverSessionService.getInstance().start()
 
     const isHidden = process.argv.includes('--hidden')
     const isScreensaver = process.argv.includes('--screensaver')
-    WindowManager.getInstance().createMainWindow(isHidden, isScreensaver)
+    if (!isScreensaver) WindowManager.getInstance().pendingJumpPlace = jumpPlaceFromArgv(process.argv)
+    const mainWindow = WindowManager.getInstance().createMainWindow(isHidden, isScreensaver)
+    // The song-change card is a window too; it must never keep Kissa alive on its own.
+    mainWindow.on('closed', () => TrackToast.getInstance().destroy())
+    mainWindow.on('show', () => TrackToast.getInstance().hide())
+    mainWindow.on('restore', () => TrackToast.getInstance().hide())
     WindowManager.getInstance().setupIpcHandlers()
+    setupGraphicsIpc()
     
     ShareManager.getInstance().init()
 
@@ -105,9 +135,11 @@ if (!gotSingleInstanceLock) {
   })
 
   app.on('before-quit', () => {
+    TrackToast.getInstance().destroy()
     ScreensaverSessionService.getInstance().stop()
     stopDiscordPresence()
     stopStudyKeepAwake()
+    stopPhoneRemote()
     MediaDetectionService.getInstance().stop()
   })
 

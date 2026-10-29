@@ -1,3 +1,5 @@
+import { beatOf, sleepUntilNextBeat } from './frameBeat'
+
 /**
  * A lightweight, non-React singleton that serves as the single authoritative
  * source of truth for the current playback time.
@@ -203,6 +205,7 @@ export class PlaybackClock {
   }
 
   private static stopSubscriberLoop(): void {
+    this.lastBeat = -1
     if (this.subscriberTimer !== null) {
       clearTimeout(this.subscriberTimer)
       this.subscriberTimer = null
@@ -213,22 +216,30 @@ export class PlaybackClock {
   }
 
   /**
-   * At most about 60 updates a second, on any display. On 120 and 144 Hz screens an
-   * every-frame loop woke the page twice as often for movement nobody can see (lyrics and
-   * progress bars move by fractions of a pixel between frames).
+   * At most 60 updates a second, on any display, on the shared beat (utils/frameBeat): lyrics
+   * and progress bars change on the same frames as the record, so they do not add frames of
+   * their own on 120 and 144 Hz screens.
    */
   private static subscriberTimer: ReturnType<typeof setTimeout> | null = null
+  private static lastBeat = -1
 
-  private static onSubscriberFrame = (): void => {
+  private static onSubscriberFrame = (t: number): void => {
     this.subscriberRafId = null
     if (this.subscribers.size === 0) return
+    const b = beatOf(t)
+    if (b === this.lastBeat) {
+      // Woke a refresh early: the beat has not turned yet.
+      this.subscriberRafId = requestAnimationFrame(this.onSubscriberFrame)
+      return
+    }
+    this.lastBeat = b
 
     const time = this.getCurrentTime()
     this.notifySubscribers(time)
     this.subscriberTimer = setTimeout(() => {
       this.subscriberTimer = null
       this.ensureSubscriberLoop()
-    }, 12)
+    }, sleepUntilNextBeat(t, b))
   }
 
   private static notifySubscribers(time: number): void {

@@ -7,6 +7,7 @@ import { ShareCardRenderer } from './ShareCardRenderer'
 import { Button } from '../../components/ui/Button'
 import { cn } from '../../utils/cn'
 import { usePlayerStore } from '../../stores/playerStore'
+import { useT } from '@renderer/i18n'
 
 interface SharePreviewModalProps {
   payload: SharePayload | null
@@ -14,6 +15,7 @@ interface SharePreviewModalProps {
 }
 
 export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) {
+  const t = useT()
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('4:5')
   const [exporting, setExporting] = useState<'copy' | 'save' | null>(null)
   const [error, setError] = useState('')
@@ -46,13 +48,13 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
       } else {
         setError(
           action === 'copy'
-            ? 'Could not copy the card. Try again or save the image.'
-            : 'No image was saved. Try again when ready.'
+            ? t('card.copyFail')
+            : t('card.saveFail')
         )
       }
     } catch (e) {
       console.error('[Share] Export failed', e)
-      setError('Could not export the card. Please try again.')
+      setError(t('card.exportFail'))
     } finally {
       setExporting(null)
     }
@@ -78,7 +80,7 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
       <AnimatePresence>
         <dialog
           ref={dialogRef}
-          aria-label="Share a card"
+          aria-label={t('card.title')}
           onCancel={(e) => {
             e.preventDefault()
             if (!exporting) onClose()
@@ -90,17 +92,17 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 16 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="relative flex flex-col w-full max-w-3xl max-h-[90vh] bg-[var(--deck-bg)] rounded-[28px] shadow-[0_30px_80px_rgba(0,0,0,0.65)] overflow-hidden border border-ink/[0.08]"
+            className="relative flex flex-col w-full max-w-3xl max-h-[90vh] kissa-sheet rounded-[28px] shadow-[0_30px_80px_rgba(0,0,0,0.65)] overflow-hidden border border-ink/[0.08]"
           >
             <div className="flex items-center justify-between px-8 pt-7 pb-5">
               <h2 className="font-kissa-editorial text-[26px] font-normal text-ink">
-                Share a card
+                {t('card.title')}
               </h2>
               <button
                 onClick={onClose}
                 disabled={!!exporting}
                 className="flex h-9 w-9 items-center justify-center rounded-full text-dim hover:bg-ink/[0.08] hover:text-ink transition-colors cursor-pointer"
-                aria-label="Close"
+                aria-label={t('common.close')}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -159,7 +161,7 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
                   ) : (
                     <Copy className="w-4 h-4 mr-2" />
                   )}
-                  Copy image
+                  {t('card.copy')}
                 </Button>
                 <Button
                   disabled={!!exporting}
@@ -171,7 +173,7 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
                   ) : (
                     <Download className="w-4 h-4 mr-2" />
                   )}
-                  Save image
+                  {t('card.save')}
                 </Button>
               </div>
             </div>

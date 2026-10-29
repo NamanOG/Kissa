@@ -5,7 +5,7 @@ import { Label } from '../Label'
 describe('Label component', () => {
   it('renders custom album art image when provided', () => {
     render(<Label albumArt="https://example.com/artwork.jpg" />)
-    const img = screen.getByAltText('Album Art')
+    const img = screen.getByAltText('Album art')
     expect(img).toBeInTheDocument()
     expect(img).toHaveAttribute('src', 'https://example.com/artwork.jpg')
   })

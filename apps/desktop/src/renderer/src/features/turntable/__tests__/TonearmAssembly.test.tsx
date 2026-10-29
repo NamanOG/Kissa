@@ -19,13 +19,13 @@ describe('TonearmAssembly component', () => {
 
   it('renders unified tonearm SVG with drag title', () => {
     render(<TonearmAssembly />)
-    const armEl = screen.getByTitle('Drag tonearm to drop needle & seek')
+    const armEl = screen.getByTitle('Drag the tonearm to drop the needle and seek')
     expect(armEl).toBeInTheDocument()
   })
 
   it('starts drag interaction on pointerDown', () => {
     render(<TonearmAssembly />)
-    const motionDiv = screen.getByTitle('Drag tonearm to drop needle & seek')
+    const motionDiv = screen.getByTitle('Drag the tonearm to drop the needle and seek')
 
     Object.defineProperty(motionDiv, 'getBoundingClientRect', {
       value: () => ({
@@ -45,7 +45,7 @@ describe('TonearmAssembly component', () => {
   it('triggers pause and resets progress when dragged back to rest position', () => {
     usePlayerStore.setState({ isPlaying: true, progress: 100 })
     render(<TonearmAssembly />)
-    const motionDiv = screen.getByTitle('Drag tonearm to drop needle & seek')
+    const motionDiv = screen.getByTitle('Drag the tonearm to drop the needle and seek')
 
     Object.defineProperty(motionDiv, 'getBoundingClientRect', {
       value: () => ({
@@ -79,7 +79,7 @@ describe('TonearmAssembly component', () => {
     })
     
     render(<TonearmAssembly />)
-    const motionDiv = screen.getByTitle('Drag tonearm to drop needle & seek')
+    const motionDiv = screen.getByTitle('Drag the tonearm to drop the needle and seek')
 
     Object.defineProperty(motionDiv, 'getBoundingClientRect', {
       value: () => ({

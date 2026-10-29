@@ -1,4 +1,5 @@
 import React, { memo, useState, useMemo } from 'react'
+import { AlbumOpenButton } from '@renderer/features/album/AlbumEntry'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useShelfStore, RecordEntry } from '../../stores/shelfStore'
 import { usePlayerStore } from '../../stores/playerStore'
@@ -8,25 +9,31 @@ import { cn } from '../../utils/cn'
 import { SharePreviewModal } from '../share/SharePreviewModal'
 import { SharePayload, StatsShareData, AlbumShareData } from '../../../../types/share'
 import { RecordCrate } from './RecordCrate'
+import { SavedLinesView } from './SavedLinesView'
+import { compareTones, useCoverTones } from './coverTone'
+import { useT } from '../../i18n'
+import { usePressedStore } from '../wrap/pressedStore'
 
-type ShelfLayout = 'grid' | 'crate'
+type ShelfLayout = 'grid' | 'crate' | 'lines'
 const LAYOUT_KEY = 'kissa_shelf_layout'
 
 function readLayout(): ShelfLayout {
   try {
-    return localStorage.getItem(LAYOUT_KEY) === 'crate' ? 'crate' : 'grid'
+    const saved = localStorage.getItem(LAYOUT_KEY)
+    return saved === 'crate' || saved === 'lines' ? saved : 'grid'
   } catch {
     return 'grid'
   }
 }
 
-type SortOption = 'recent' | 'added' | 'played' | 'alpha'
+type SortOption = 'recent' | 'added' | 'played' | 'alpha' | 'colour'
 
 export const RecordShelfView = memo(() => {
   const records = useShelfStore((s) => s.records)
   const clearShelf = useShelfStore((s) => s.clearShelf)
   const removeRecord = useShelfStore((s) => s.removeRecord)
   const [sort, setSort] = useState<SortOption>('recent')
+  const t = useT()
   const listenerName = usePlayerStore((s) => s.listenerName)
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
@@ -45,6 +52,9 @@ export const RecordShelfView = memo(() => {
     }
   }
 
+  const toneItems = useMemo(() => records.map((r) => ({ key: r.albumKey, url: r.artworkUrl })), [records])
+  const tones = useCoverTones(toneItems, sort === 'colour')
+
   const sortedRecords = useMemo(() => {
     const arr = [...records]
     switch (sort) {
@@ -56,10 +66,12 @@ export const RecordShelfView = memo(() => {
         return arr.sort((a, b) => b.playCount - a.playCount)
       case 'alpha':
         return arr.sort((a, b) => a.album.localeCompare(b.album))
+      case 'colour':
+        return arr.sort((a, b) => compareTones(tones.get(a.albumKey), tones.get(b.albumKey)) || b.lastListened - a.lastListened)
       default:
         return arr
     }
-  }, [records, sort])
+  }, [records, sort, tones])
 
   const selectedRecord = useMemo(() => records.find(r => r.albumKey === selectedAlbum), [records, selectedAlbum])
 
@@ -109,79 +121,93 @@ export const RecordShelfView = memo(() => {
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       className="relative flex flex-col h-full w-full transform-gpu overflow-hidden mx-auto"
     >
-      <header className="flex flex-col min-[1100px]:flex-row min-[1100px]:items-end justify-between shrink-0 mb-5 px-8 min-[1100px]:px-16 pt-8 min-[1100px]:pt-10 gap-5 min-[1100px]:gap-8">
-        <div>
-          <h1 className="font-serif text-3xl min-[900px]:text-4xl font-medium tracking-tight text-ink flex items-center gap-3">
-            <Disc3 className="w-8 h-8 opacity-40" />
-            {listenerName.trim() ? `${possessive(listenerName)} Records` : 'My Records'}
-          </h1>
-          <p className="mt-2 text-[13px] text-dim">
-            {records.length} {records.length === 1 ? 'record' : 'records'}
-          </p>
+      <header className="shrink-0 mb-5 px-8 min-[1100px]:px-16 pt-8 min-[1100px]:pt-10">
+        <div className="flex items-end justify-between gap-6">
+          <div className="min-w-0">
+            <h1 className="truncate font-kissa-editorial text-[2rem] min-[900px]:text-[2.6rem] font-medium leading-[1.05] tracking-[-0.03em] text-ink">
+              {listenerName.trim()
+                ? t('shelf.titleNamed', { owner: possessive(listenerName), name: listenerName.trim() })
+                : t('shelf.titleMine')}
+            </h1>
+            <p className="mt-2 text-[13px] text-dim">
+              {t(records.length === 1 ? 'shelf.count.one' : 'shelf.count.other', { n: records.length })}
+            </p>
+          </div>
+          {records.length > 0 && !selectionMode && (
+            <div role="radiogroup" aria-label={t('shelf.layout')} className={cn(TRACK, 'shrink-0')}>
+              <SortTab active={layout === 'grid'} onClick={() => setLayout('grid')} label={t('shelf.grid')} radio indicator="layout-indicator" />
+              <SortTab active={layout === 'crate'} onClick={() => setLayout('crate')} label={t('shelf.crate')} radio indicator="layout-indicator" />
+              <SortTab active={layout === 'lines'} onClick={() => setLayout('lines')} label={t('shelf.lines')} radio indicator="layout-indicator" />
+            </div>
+          )}
         </div>
-        
+
         {records.length > 0 && (
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b border-ink/10 pb-2">
+          <div className="mt-6 flex min-h-8 flex-wrap items-center gap-x-3 gap-y-3">
             {!selectionMode ? (
               <>
-                <div role="radiogroup" aria-label="Shelf layout" className="flex items-center gap-6">
-                  <SortTab active={layout === 'grid'} onClick={() => setLayout('grid')} label="Grid" radio indicator="layout-indicator" />
-                  <SortTab active={layout === 'crate'} onClick={() => setLayout('crate')} label="Crate" radio indicator="layout-indicator" />
-                </div>
-                <div className="flex items-center gap-6 pl-6 border-l border-ink/10">
-                  <SortTab active={sort === 'recent'} onClick={() => setSort('recent')} label="Recent" />
-                  <SortTab active={sort === 'added'} onClick={() => setSort('added')} label="Added" />
-                  <SortTab active={sort === 'played'} onClick={() => setSort('played')} label="Most played" />
-                  <SortTab active={sort === 'alpha'} onClick={() => setSort('alpha')} label="A-Z" />
-                </div>
+                {layout !== 'lines' && (
+                  <div role="group" aria-label={t('shelf.sort')} className={TRACK}>
+                    <SortTab active={sort === 'recent'} onClick={() => setSort('recent')} label={t('shelf.sort.recent')} />
+                    <SortTab active={sort === 'added'} onClick={() => setSort('added')} label={t('shelf.sort.added')} />
+                    <SortTab active={sort === 'played'} onClick={() => setSort('played')} label={t('shelf.sort.played')} />
+                    <SortTab active={sort === 'alpha'} onClick={() => setSort('alpha')} label={t('shelf.sort.alpha')} />
+                    <SortTab active={sort === 'colour'} onClick={() => setSort('colour')} label={t('shelf.colour')} />
+                  </div>
+                )}
                 {/* Set apart by space, not a rule: a rule would start the new line when the bar wraps. */}
-                <div className="ml-auto flex items-center gap-4 pb-[9px]">
-                  <button 
-                    type="button" 
-                    onClick={() => setSelectionMode(true)}
-                    className="text-[12.5px] font-semibold cursor-pointer text-dim hover:text-ink transition-colors"
+                <div className="ml-auto flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    data-tour="pressed"
+                    onClick={() => usePressedStore.getState().show('month', 0)}
+                    title={t('pressed.buttonHint')}
+                    className="mr-1 inline-flex h-8 cursor-pointer items-center gap-2 rounded-full bg-tone/[0.16] pl-2.5 pr-3.5 text-[12.5px] font-semibold text-tone shadow-[inset_0_0_0_0.5px_color-mix(in_srgb,var(--accent)_45%,transparent),inset_0_1px_0_rgba(255,255,255,0.08)] transition-colors hover:bg-tone/[0.24] outline-none focus-visible:ring-1 focus-visible:ring-tone"
                   >
-                    Select to share
+                    <Disc3 aria-hidden="true" className="h-4 w-4 stroke-[1.75]" />
+                    {t('pressed.button')}
                   </button>
-                  <button 
-                    type="button" 
-                    onClick={handleShareStats}
-                    className="text-[12.5px] font-semibold cursor-pointer text-tone hover:text-tone/80 transition-colors"
-                  >
-                    Share my stats
+                  <AlbumOpenButton quiet small label="album.folder" />
+                  <button type="button" onClick={() => setSelectionMode(true)} className={PILL}>
+                    {t('shelf.select')}
                   </button>
-                  <button 
-                    type="button" 
+                  <button type="button" onClick={handleShareStats} className={PILL}>
+                    {t('shelf.shareStats')}
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setShowClearConfirm(true)}
-                    className="text-[12.5px] font-semibold cursor-pointer text-red-500/70 hover:text-red-500 transition-colors ml-4"
+                    className="ml-1 h-8 cursor-pointer rounded-full px-3 text-[12.5px] font-medium text-dim transition-colors hover:bg-red-500/10 hover:text-red-300"
                   >
-                    Clear
+                    {t('shelf.clear')}
                   </button>
                 </div>
               </>
             ) : (
-              <div className="flex items-center gap-6">
-                <span className="text-[12.5px] font-semibold text-tone">
-                  {selectedForShare.size} of 9 selected
+              <div className="flex w-full items-center gap-3">
+                <span className="text-[13px] font-medium text-ink/80" role="status">
+                  {t('shelf.selected', { n: selectedForShare.size })}
                 </span>
-                <button 
-                  type="button" 
-                  onClick={handleShareCollection}
-                  disabled={selectedForShare.size === 0}
-                  className="text-[12.5px] font-semibold cursor-pointer text-ink hover:opacity-80 disabled:opacity-30 transition-colors"
-                >
-                  Share
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    setSelectionMode(false)
-                    setSelectedForShare(new Set())
-                  }}
-                  className="text-[12.5px] font-semibold cursor-pointer text-dim hover:text-ink transition-colors"
-                >
-                  Cancel
-                </button>
+                <div className="ml-auto flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectionMode(false)
+                      setSelectedForShare(new Set())
+                    }}
+                    className={PILL}
+                  >
+                    {t('shelf.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleShareCollection}
+                    disabled={selectedForShare.size === 0}
+                    className="h-8 cursor-pointer rounded-full bg-tone px-4 text-[12.5px] font-semibold text-[#170f09] transition-[filter] hover:brightness-110 disabled:cursor-default disabled:opacity-30"
+                  >
+                    {t('shelf.share')}
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -200,19 +226,19 @@ export const RecordShelfView = memo(() => {
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative z-10 w-full max-w-[420px] bg-[#141216] border border-white/10 rounded-2xl shadow-[0_32px_64px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col p-6"
+              className="relative z-10 w-full max-w-[420px] kissa-sheet border border-white/[0.08] rounded-[24px] overflow-hidden flex flex-col p-6"
             >
-              <h3 className="font-serif text-xl font-medium tracking-tight text-white mb-3">Clear Shelf</h3>
+              <h3 className="font-kissa-editorial text-[1.5rem] font-medium tracking-[-0.02em] text-white mb-3">{t('shelf.clearTitle')}</h3>
               <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
-                This only removes records from your Kissa shelf. It does not affect Spotify, Apple Music, your music libraries, or playback history.
+                {t('shelf.clearText')}
               </p>
               <div className="flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setShowClearConfirm(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-full text-[13px] font-medium text-zinc-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                 >
-                  Cancel
+                  {t('shelf.cancel')}
                 </button>
                 <button
                   type="button"
@@ -221,9 +247,9 @@ export const RecordShelfView = memo(() => {
                     setShowClearConfirm(false)
                     setSelectedAlbum(null)
                   }}
-                  className="px-5 py-2 rounded-xl bg-white text-black text-xs font-bold uppercase tracking-wider hover:bg-white/90 active:scale-95 transition-[transform,background-color] shadow-md cursor-pointer"
+                  className="px-5 py-2 rounded-full bg-tone text-[#170f09] text-[13px] font-semibold hover:brightness-110 active:scale-95 transition-[transform,background-color] shadow-md cursor-pointer"
                 >
-                  Clear Shelf
+                  {t('shelf.clearConfirm')}
                 </button>
               </div>
             </motion.div>
@@ -236,14 +262,19 @@ export const RecordShelfView = memo(() => {
           <div className="w-48 h-28 border border-panel-line rounded-sm flex items-end p-4 mb-6 relative overflow-hidden bg-black/40 shadow-[inset_0_4px_24px_rgba(0,0,0,0.5)]">
             <div className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-panel-line/50" />
             <div className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-panel-line/50" />
-            <span className="font-kissa-chassis text-[9.5px] uppercase tracking-[0.2em] font-bold text-dim">
-              EMPTY SHELF
+            <span className="text-[15px] font-semibold tracking-[-0.01em] text-ink/90">
+              {t('shelf.empty')}
             </span>
           </div>
-          <p className="font-kissa-chassis text-[11px] uppercase tracking-[0.1em] leading-relaxed text-dim text-center max-w-xs">
-            Play something in Spotify, Apple Music or TIDAL. Each album you listen to is kept here.
+          <p className="text-[13px] leading-relaxed text-dim text-center max-w-xs">
+            {t('shelf.emptyText')}
           </p>
+          <div className="mt-5">
+            <AlbumOpenButton quiet label="album.folder" />
+          </div>
         </div>
+      ) : layout === 'lines' && !selectionMode ? (
+        <SavedLinesView />
       ) : layout === 'crate' && !selectionMode ? (
         <div className="flex-1 w-full min-h-0">
           <RecordCrate
@@ -304,8 +335,8 @@ export const RecordShelfView = memo(() => {
               exit={{ x: '100%', opacity: 0.5 }}
               transition={{ type: 'spring', damping: 30, stiffness: 240 }}
               role="dialog"
-              aria-label={`${selectedRecord.album} by ${selectedRecord.artist}`}
-              className="absolute bottom-0 right-0 top-0 z-40 flex w-[400px] flex-col overflow-hidden border-l border-ink/[0.06] bg-[var(--deck-bg)] shadow-[-24px_0_80px_rgba(0,0,0,0.6)] min-[1400px]:w-[440px]"
+              aria-label={t('shelf.by', { album: selectedRecord.album, artist: selectedRecord.artist })}
+              className="absolute bottom-0 right-0 top-0 z-40 flex w-[400px] flex-col overflow-hidden border-l border-ink/[0.06] kissa-sheet shadow-[-24px_0_80px_rgba(0,0,0,0.6)] min-[1400px]:w-[440px]"
             >
               {/* Lit by its own cover, like the record on the deck. */}
               {selectedRecord.artworkUrl && (
@@ -322,7 +353,7 @@ export const RecordShelfView = memo(() => {
                 type="button"
                 onClick={() => setSelectedAlbum(null)}
                 className="absolute right-5 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full text-dim transition-colors hover:bg-ink/[0.08] hover:text-ink cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone"
-                aria-label="Close"
+                aria-label={t('shelf.close')}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -356,25 +387,25 @@ export const RecordShelfView = memo(() => {
                 <dl className="mt-8 grid grid-cols-3 border-y border-ink/[0.08] py-5">
                   <div>
                     <dd className="font-kissa-editorial text-[30px] leading-none text-ink tabular-nums">{selectedRecord.playCount}</dd>
-                    <dt className="mt-2 text-[11px] text-dim">{selectedRecord.playCount === 1 ? 'play' : 'plays'}</dt>
+                    <dt className="mt-2 text-[11px] text-dim">{t(selectedRecord.playCount === 1 ? 'shelf.play.one' : 'shelf.play.other')}</dt>
                   </div>
                   <div className="border-l border-ink/[0.08] pl-5">
-                    <dd className="font-kissa-editorial text-[22px] leading-[1.36] text-ink">{shelfDate(selectedRecord.firstListened)}</dd>
-                    <dt className="mt-2 text-[11px] text-dim">first played</dt>
+                    <dd className="font-kissa-editorial text-[22px] leading-[1.36] text-ink">{shelfDate(selectedRecord.firstListened, t)}</dd>
+                    <dt className="mt-2 text-[11px] text-dim">{t('shelf.firstPlayed')}</dt>
                   </div>
                   <div className="border-l border-ink/[0.08] pl-5">
-                    <dd className="font-kissa-editorial text-[22px] leading-[1.36] text-ink">{shelfDate(selectedRecord.lastListened)}</dd>
-                    <dt className="mt-2 text-[11px] text-dim">last played</dt>
+                    <dd className="font-kissa-editorial text-[22px] leading-[1.36] text-ink">{shelfDate(selectedRecord.lastListened, t)}</dd>
+                    <dt className="mt-2 text-[11px] text-dim">{t('shelf.lastPlayed')}</dt>
                   </div>
                 </dl>
 
                 {selectedRecord.tracksEncountered.length > 0 && (
                   <div className="mt-8">
-                    <p className="text-[12.5px] font-medium text-dim">Songs you have played</p>
+                    <p className="text-[12.5px] font-medium text-dim">{t('shelf.songs')}</p>
                     <ol className="mt-3">
                       {selectedRecord.tracksEncountered.map((t, i) => (
                         <li key={i} className="flex items-baseline gap-4 border-b border-ink/[0.05] py-2.5 last:border-b-0">
-                          <span className="w-5 shrink-0 font-mono text-[11px] text-dim/70 tabular-nums">{String(i + 1).padStart(2, '0')}</span>
+                          <span className="w-5 shrink-0 font-sans text-[12px] font-medium text-dim/70 tabular-nums">{String(i + 1).padStart(2, '0')}</span>
                           <span className="truncate text-[13.5px] text-ink/90">{t}</span>
                         </li>
                       ))}
@@ -392,7 +423,7 @@ export const RecordShelfView = memo(() => {
                   className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-tone text-[12.5px] font-bold text-[var(--surface)] transition-transform cursor-pointer active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
                 >
                   <Share className="h-4 w-4" />
-                  Share a card
+                  {t('shelf.shareCard')}
                 </button>
                 <button
                   type="button"
@@ -401,12 +432,13 @@ export const RecordShelfView = memo(() => {
                     setSelectedAlbum(null)
                   }}
                   className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink/10 text-dim transition-colors hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-300 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone"
-                  aria-label="Remove from the shelf"
-                  title="Remove from the shelf"
+                  aria-label={t('shelf.remove')}
+                  title={t('shelf.remove')}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
-              </div>            </motion.div>
+              </div>
+            </motion.div>
           </>
         )}
       </AnimatePresence>
@@ -422,14 +454,21 @@ export const RecordShelfView = memo(() => {
 RecordShelfView.displayName = 'RecordShelfView'
 
 /** Today, yesterday, a date this year, or a date with the year. */
-function shelfDate(time: number): string {
+function shelfDate(time: number, t: (key: 'shelf.today' | 'shelf.yesterday') => string): string {
   const d = new Date(time)
   const today = new Date()
   const days = Math.round((new Date(today.toDateString()).getTime() - new Date(d.toDateString()).getTime()) / 86_400_000)
-  if (days === 0) return 'Today'
-  if (days === 1) return 'Yesterday'
+  if (days === 0) return t('shelf.today')
+  if (days === 1) return t('shelf.yesterday')
   return d.toLocaleDateString(undefined, d.getFullYear() === today.getFullYear() ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' })
 }
+
+/** A recessed track holding a group of choices, like a native segmented control. */
+const TRACK =
+  'flex items-center gap-0.5 rounded-[11px] bg-black/25 p-[3px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.35),inset_0_0_0_1px_rgba(255,255,255,0.04),0_1px_0_rgba(255,255,255,0.04)]'
+/** A quiet glass button for secondary actions. */
+const PILL =
+  'h-8 cursor-pointer rounded-full bg-white/[0.06] px-3.5 text-[12.5px] font-medium text-ink/80 shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.12)] transition-colors hover:bg-white/[0.1] hover:text-ink'
 
 function SortTab({ active, onClick, label, radio, indicator = 'sort-indicator' }: { active: boolean, onClick: () => void, label: string, radio?: boolean, indicator?: string }) {
   return (
@@ -439,20 +478,21 @@ function SortTab({ active, onClick, label, radio, indicator = 'sort-indicator' }
       role={radio ? 'radio' : undefined}
       aria-checked={radio ? active : undefined}
       aria-pressed={radio ? undefined : active}
-      className="relative pb-[9px] group cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-tone rounded-sm"
+      className="relative h-[28px] rounded-[8px] px-3 group cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-tone"
     >
+      {active && (
+        <motion.div
+          layoutId={indicator}
+          transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+          className="absolute inset-0 rounded-[8px] bg-[linear-gradient(180deg,rgba(255,255,255,0.13),rgba(255,255,255,0.08))] shadow-[0_1px_3px_rgba(0,0,0,0.35),0_0_0_0.5px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.18)]"
+        />
+      )}
       <span className={cn(
-        "text-[13px] transition-colors duration-ui",
-        active ? "text-ink font-medium" : "text-dim group-hover:text-ink"
+        "relative text-[12.5px] font-medium tracking-[-0.005em] transition-colors duration-ui",
+        active ? "text-ink" : "text-ink/55 group-hover:text-ink"
       )}>
         {label}
       </span>
-      {active && (
-        <motion.div 
-          layoutId={indicator}
-          className="absolute left-0 right-0 bottom-0 h-[2px] bg-tone shadow-[0_0_8px_var(--accent)]" 
-        />
-      )}
     </button>
   )
 }
@@ -516,7 +556,7 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center p-4">
               <Disc3 className="w-12 h-12 text-tone/30 mb-2" />
-              <span className="text-[10px] font-mono text-white/30 text-center uppercase break-all">{record.album}</span>
+              <span className="font-kissa-editorial text-[14px] leading-snug text-white/50 text-center break-words">{record.album}</span>
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-tr from-black/40 via-transparent to-white/10 pointer-events-none mix-blend-overlay" />

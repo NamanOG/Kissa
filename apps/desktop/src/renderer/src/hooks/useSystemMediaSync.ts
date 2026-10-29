@@ -4,6 +4,8 @@ import albumPlaceholder from '@renderer/media/placeholder-album.png'
 import kissaIdleCover from '@renderer/media/kissa_idle_cover.jpg'
 import type { SystemMediaPayload } from '../../../types/media'
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
+import { externalSession, resetExternalSession } from '@renderer/utils/externalSession'
+import { useAlbumStore } from '@renderer/features/album/albumStore'
 const isKissaSMTCSession = (payload: SystemMediaPayload, currentStoreTrack: any): boolean => {
   if (!payload.sourceAppId) {
     // Fallback if OS provides no identity: conservatively assume it's Kissa's echo
@@ -21,11 +23,19 @@ const isKissaSMTCSession = (payload: SystemMediaPayload, currentStoreTrack: any)
 
   if (lowerId.includes('electron')) {
     // In dev, multiple Electron apps might run. We use title as an additional sanity check.
-    return payload.title === currentStoreTrack?.title
+    // Chromium names Kissa's own session after the window ("Kissa") when the page gives it no
+    // song details, so a track change in an album would otherwise look like another player.
+    const windowTitle = typeof document !== 'undefined' ? document.title : ''
+    return (
+      payload.title === currentStoreTrack?.title || (!!windowTitle && payload.title === windowTitle)
+    )
   }
 
   return false
 }
+
+/** Longest a new song waits for its cover before it is shown without one. */
+export const COVER_WAIT_MS = 450
 
 export function useSystemMediaSync(): void {
   const setTrack = usePlayerStore((s) => s.setTrack)
@@ -35,11 +45,22 @@ export function useSystemMediaSync(): void {
   const commandCooldownRef = useRef(false)
   const lastTrackKeyRef = useRef('')
   const prevTrackDurationRef = useRef(-1)
+  // A new song's title arrives a moment before its cover. It is held back (at most
+  // COVER_WAIT_MS) so the title, cover, record and room change together, once.
+  const pendingRef = useRef<{
+    key: string
+    payload: SystemMediaPayload
+    receivedAt: number
+    timer: ReturnType<typeof setTimeout>
+  } | null>(null)
+  const releaseKeyRef = useRef('')
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.electron?.onSystemMediaUpdate) {
       return
     }
+
+    resetExternalSession()
 
     window.__kissaMediaCommandCooldown = () => {
       commandCooldownRef.current = true
@@ -48,12 +69,60 @@ export function useSystemMediaSync(): void {
       }, 1500)
     }
 
+    const dropPending = (): void => {
+      if (pendingRef.current) clearTimeout(pendingRef.current.timer)
+      pendingRef.current = null
+    }
+
     const handleMediaPayload = (payload: SystemMediaPayload | null): void => {
       const currentStoreTrack = usePlayerStore.getState().currentTrack
       const currentStoreIsPlaying = usePlayerStore.getState().isPlaying
       const isInternalAudio = Boolean(currentStoreTrack?.audioUrl)
 
+      // Hold a new song from another player until its cover arrives, when a song from another
+      // player is on screen now (from nothing, or from Kissa's own record, it shows at once).
+      if (payload?.title) {
+        const key = `${payload.title}|${payload.artist || ''}|${payload.sourceAppId || ''}`
+        const showingExternal =
+          !isInternalAudio &&
+          !!currentStoreTrack?.sourceAppId &&
+          currentStoreTrack.sourceAppId !== 'kissa-idle'
+        const isNewSong = key !== lastTrackKeyRef.current
+        if (isNewSong && showingExternal && !payload.artworkDataUrl && releaseKeyRef.current !== key) {
+          const pending = pendingRef.current
+          if (pending && pending.key === key) {
+            pending.payload = payload
+          } else {
+            dropPending()
+            pendingRef.current = {
+              key,
+              payload,
+              receivedAt: performance.now(),
+              timer: setTimeout(() => {
+                const held = pendingRef.current
+                if (!held) return
+                pendingRef.current = null
+                releaseKeyRef.current = held.key
+                const waited = (performance.now() - held.receivedAt) / 1000
+                handleMediaPayload({
+                  ...held.payload,
+                  progress: (held.payload.progress || 0) + (held.payload.isPlaying ? waited : 0)
+                })
+              }, COVER_WAIT_MS)
+            }
+          }
+          return
+        }
+        // Its cover came (show it now), or another new song replaced it. A late report from the
+        // song still on screen leaves the held one waiting.
+        const held = pendingRef.current
+        if (held && (key === held.key || isNewSong)) dropPending()
+      } else {
+        dropPending()
+      }
+
       if (!payload || !payload.title) {
+        resetExternalSession()
         if (isInternalAudio) return // Leave internal audio alone
 
         setTrack({
@@ -81,18 +150,25 @@ export function useSystemMediaSync(): void {
         return
       }
 
-      // If we reach here, the payload is from a genuine external media source (e.g. Spotify),
-      // OR Kissa is completely idle (no internal track loaded).
-      // We must accept it and yield the clock.
+      // From here on the payload is from another player (e.g. Spotify), or Kissa is idle.
+      const trackKey = `${payload.title}|${payload.artist || ''}|${payload.sourceAppId || ''}`
+      const wasPlayingThis = externalSession.key === trackKey && externalSession.playing
+      externalSession.key = trackKey
+      externalSession.playing = payload.isPlaying
+
       if (isInternalAudio) {
-        // We had an internal track loaded, but an external app just took over.
-        // We must pause our internal audio so the external app can play cleanly.
+        // Kissa's own record stays on unless the listener starts music elsewhere: another player
+        // takes over when it starts playing (or plays something new) while the album plays, or
+        // plays at all while the album is paused. Its paused and "still playing" reports, which
+        // Windows keeps sending, leave the album alone.
+        const takesOver = payload.isPlaying && (!currentStoreIsPlaying || !wasPlayingThis)
+        if (!takesOver) return
+        // Keep the album's place for Resume album, then step aside.
+        useAlbumStore.getState().suspend()
         usePlayerStore.getState().pause()
       }
 
       PlaybackClock.setMode(true) // External media mode
-
-      const trackKey = `${payload.title}|${payload.artist || ''}|${payload.sourceAppId || ''}`
 
       // Defensively verify the store wasn't externally reset (e.g., via Vite HMR or state hydration)
       const storeMatchesPayload =
@@ -244,6 +320,7 @@ export function useSystemMediaSync(): void {
     })
 
     return (): void => {
+      dropPending()
       cleanup()
       clearInterval(ticker)
       unsubscribe()

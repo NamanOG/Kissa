@@ -6,6 +6,7 @@
  * playback, volume, Discord or Study settings. Everything stays on this PC.
  */
 import type { AppTheme, VinylColor } from '@renderer/stores/playerStore'
+import { tl } from '@renderer/i18n'
 
 export type DeckFinish = 'original' | 'porcelain' | 'silver'
 export const DECK_FINISHES: DeckFinish[] = ['original', 'porcelain', 'silver']
@@ -47,9 +48,14 @@ export interface FinishPalette {
 
 export const FINISH_PALETTES: Record<DeckFinish, FinishPalette> = {
   original: {
-    name: 'Original',
-    description: 'Dark walnut lacquer',
-    top: ['#3c332e', '#2a231f', '#1c1715', '#14100f', '#0d0a09'],
+    get name() {
+      return tl('finish.original.name')
+    },
+    get description() {
+      return tl('finish.original.desc')
+    },
+    // Satin lacquer in a lamp-lit room: a warm lift where the light falls, deep at the front.
+    top: ['#5a4a3f', '#3e3229', '#2a211c', '#1c1613', '#110d0b'],
     front: ['#382e29', '#251e1b', '#171210', '#0a0807'],
     feet: ['#302824', '#1c1614', '#100c0b', '#060504'],
     well: ['#08080a', '#050506', '#151210'],
@@ -58,12 +64,23 @@ export const FINISH_PALETTES: Record<DeckFinish, FinishPalette> = {
     engrave: '#635548',
     engraveShadow: 'rgba(0,0,0,0.9)',
     brushed: false,
-    plate: { text: '#5f5146', shadow: 'rgba(0,0,0,0.85)' },
+    // A cut, lit edge, the platter's lip and one broad satin highlight: depth without ornament.
+    machining: {
+      chamfer: ['rgba(255,228,196,0.55)', 'rgba(255,255,255,0.06)'],
+      recess: true,
+      reflection: false,
+      sheen: true
+    },
+    plate: { text: '#6e5f52', shadow: 'rgba(0,0,0,0.85)' },
     swatch: 'linear-gradient(135deg, #3c332e 0%, #1c1715 55%, #0d0a09 100%)'
   },
   porcelain: {
-    name: 'Porcelain',
-    description: 'Ivory satin lacquer, graphite controls',
+    get name() {
+      return tl('finish.porcelain.name')
+    },
+    get description() {
+      return tl('finish.porcelain.desc')
+    },
     // Lacquer, not plastic: kept below white so it sits in a dim room, almost even across the
     // plate, with one broad soft highlight (sheen) instead of a falling diagonal gradient.
     top: ['#ddd3c1', '#d7ccb9', '#cfc3ae', '#c6b9a3', '#bcae96'],
@@ -88,8 +105,12 @@ export const FINISH_PALETTES: Record<DeckFinish, FinishPalette> = {
     swatch: 'linear-gradient(135deg, #ddd3c1 0%, #cfc3ae 55%, #bcae96 100%)'
   },
   silver: {
-    name: 'Studio Silver',
-    description: 'Brushed aluminium, black anodised controls',
+    get name() {
+      return tl('finish.silver.name')
+    },
+    get description() {
+      return tl('finish.silver.desc')
+    },
     // Satin aluminium under the room's light: nearly even across the plate, a little darker at
     // the front, and well below white, so it sits in a dim room instead of glowing.
     top: ['#b4b8bc', '#adb1b5', '#a5a9ae', '#9ca0a5', '#92979c'],

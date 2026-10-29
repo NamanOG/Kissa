@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@renderer/utils/cn'
 import { VinylLayerProps } from './types'
 import { usePlayerStore } from '@renderer/stores/playerStore'
+import kissaIdleCover from '@renderer/media/kissa_idle_cover.jpg'
+import kissaIdleLabel from '@renderer/media/kissa_idle_label.jpg'
+import { tl } from '@renderer/i18n'
 
 interface LabelProps extends VinylLayerProps {
   albumArt?: string
@@ -16,6 +19,9 @@ export const Label = memo(({ className, style, size = '28%', albumArt, ...props 
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const title = currentTrack?.title ?? 'Kissa'
   const artist = currentTrack?.artist ?? 'Listening Machine'
+  // The idle cover is a whole sleeve (record drawn above the name), so its record sits above the
+  // middle. On the label, use a square cut centred on that record so it lines up with the spindle.
+  const labelArt = albumArt === kissaIdleCover ? kissaIdleLabel : albumArt
 
   return (
     <div
@@ -36,14 +42,20 @@ export const Label = memo(({ className, style, size = '28%', albumArt, ...props 
       <AnimatePresence>
         {albumArt ? (
           <motion.img
-            key={currentTrack ? `${title}|${artist}` : 'empty-label'}
+            // Keyed by the picture too, so a sharper cover arriving later crossfades in.
+            key={
+              currentTrack
+                ? `${title}|${artist}|${albumArt.length}:${albumArt.slice(-24)}`
+                : 'empty-label'
+            }
+            // Follows the sleeve: a beat after the title, and the old label stays until covered.
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            src={albumArt}
-            alt="Album Art"
-            className="absolute inset-0 w-full h-full object-cover object-center brightness-[0.95] contrast-[1.02]"
+            exit={{ opacity: 0, transition: { duration: 0.25, delay: 0.35 } }}
+            transition={{ duration: 0.5, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            src={labelArt}
+            alt={tl('a11y.albumArt')}
+            className="absolute inset-0 w-full h-full object-cover object-center"
             draggable={false}
             onError={(e) => {
               e.currentTarget.style.display = 'none'
@@ -67,7 +79,6 @@ export const Label = memo(({ className, style, size = '28%', albumArt, ...props 
           </motion.div>
         )}
       </AnimatePresence>
-
     </div>
   )
 })

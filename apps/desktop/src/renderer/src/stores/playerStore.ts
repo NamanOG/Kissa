@@ -65,7 +65,7 @@ export const VINYL_COLORS: VinylColor[] = [
   'splatter',
   'split'
 ]
-export type SettingsTab = 'room' | 'playback' | 'lyrics' | 'system'
+export type SettingsTab = 'general' | 'turntable' | 'lyrics' | 'screensaver' | 'sharing' | 'about'
 export type LyricsSize = 's' | 'm' | 'l'
 export type LyricsFace = 'sans' | 'serif'
 
@@ -105,6 +105,8 @@ export interface PlayerState {
   isMiniPlayer: boolean
   isFullscreen: boolean
   isListeningDisplay: boolean
+  /** The home screen full screen with no sidebar or dock: for a TV at a party. */
+  isPartyMode: boolean
   isScreensaver: boolean
   screensaverLyrics: boolean
   miniPlayerAlwaysOnTop: boolean
@@ -151,6 +153,8 @@ export interface PlayerState {
   setFullscreen: (value: boolean) => void
   toggleFullscreen: () => void
   setIsListeningDisplay: (isListeningDisplay: boolean) => void
+  setPartyMode: (value: boolean) => void
+  togglePartyMode: () => void
   setIsScreensaver: (isScreensaver: boolean) => void
   setScreensaverLyrics: (screensaverLyrics: boolean) => void
   toggleScreensaverLyrics: () => void
@@ -263,13 +267,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   isMiniPlayer: false,
   isFullscreen: false,
   isListeningDisplay: false,
+  isPartyMode: false,
   isScreensaver: false,
   screensaverLyrics: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_screensaver_lyrics') === 'true' : false,
   miniPlayerAlwaysOnTop: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_always_on_top') !== 'false' : true,
   theme: getInitialTheme(),
   previousManualTheme: getInitialTheme() === 'adaptive' ? 'quiet-room' : getInitialTheme(),
   isSettingsOpen: false,
-  settingsTab: 'room',
+  settingsTab: 'general',
   isOnboardingOpen: getInitialOnboarding(),
   isWhatsNewOpen: false,
   // "Turntable sounds": the needle and the deck's controls. Earlier versions tied the needle to
@@ -365,15 +370,25 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       set({ isMiniPlayer: false })
     }
 
-    set({ isFullscreen: value })
+    // Leaving full screen by any route (F11, Esc, the exit button) also ends party mode.
+    set(value ? { isFullscreen: true } : { isFullscreen: false, isPartyMode: false })
 
     window.electron?.setFullScreen(value).then(
-      (isFullscreen) => set({ isFullscreen }),
-      () => set({ isFullscreen: false })
+      (isFullscreen) => set(isFullscreen ? { isFullscreen } : { isFullscreen, isPartyMode: false }),
+      () => set({ isFullscreen: false, isPartyMode: false })
     )
   },
   toggleFullscreen: () => get().setFullscreen(!get().isFullscreen),
   setIsListeningDisplay: (isListeningDisplay) => set({ isListeningDisplay }),
+  setPartyMode: (value) => {
+    if (!value) {
+      get().setFullscreen(false)
+      return
+    }
+    set({ isPartyMode: true, activeView: 'deck', isListeningDisplay: false })
+    get().setFullscreen(true)
+  },
+  togglePartyMode: () => get().setPartyMode(!get().isPartyMode),
   setIsScreensaver: (isScreensaver) => set({ isScreensaver }),
   setScreensaverLyrics: (screensaverLyrics) => {
     if (typeof localStorage !== 'undefined') {

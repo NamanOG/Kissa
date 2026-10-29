@@ -39,14 +39,10 @@ describe('ControlDock component', () => {
     expect(dockEl).toHaveClass('opacity-50', 'pointer-events-none')
   })
 
-  it('renders Start Listening Display button and activates isListeningDisplay', () => {
-    usePlayerStore.setState({ isListeningDisplay: false })
+  it('keeps the Listening Display out of the dock (it lives in Settings and on D)', () => {
     render(<ControlDock />)
-    const displayBtn = screen.getByRole('button', { name: 'Start Listening Display' })
-    expect(displayBtn).toBeInTheDocument()
-
-    fireEvent.click(displayBtn)
-    expect(usePlayerStore.getState().isListeningDisplay).toBe(true)
+    expect(screen.queryByRole('button', { name: 'Start Listening Display' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Fullscreen' })).toHaveAttribute('data-tour', 'fullscreen')
   })
 
   it('shows no stale position when the new source reports no length', () => {

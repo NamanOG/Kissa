@@ -65,7 +65,7 @@ describe('ShareTrackModal & sharing utilities', () => {
     it('renders the track metadata and understated source badge', () => {
       render(<ShareTrackModal isOpen={true} onClose={vi.fn()} track={mockTrack} />)
 
-      expect(screen.getByText('Share Track')).toBeInTheDocument()
+      expect(screen.getByText('Share this track')).toBeInTheDocument()
       expect(screen.getByRole('heading', { name: 'Time' })).toBeInTheDocument()
       expect(screen.getAllByText(/Pink Floyd/).length).toBeGreaterThan(0)
       expect(screen.getByRole('button', { name: /Copy message/i })).toBeInTheDocument()

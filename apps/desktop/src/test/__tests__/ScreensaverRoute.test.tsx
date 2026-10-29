@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen, waitFor, act } from '@testing-library/react'
+import { render, screen, waitFor, act, within } from '@testing-library/react'
 import App from '@renderer/App'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 
@@ -57,7 +57,7 @@ describe('Screensaver Route Integration', () => {
     // The normal app layout should NOT be rendered.
     // Let's verify normal UI elements are completely absent.
     expect(screen.queryByRole('heading', { name: 'Kissa' })).not.toBeInTheDocument() // Usually in sidebar/header
-    expect(screen.queryByTitle('Room Illumination')).not.toBeInTheDocument() // Part of normal room
+    expect(screen.queryByTitle('Room light')).not.toBeInTheDocument() // Part of normal room
     
     const headings = screen.getAllByRole('heading', { name: 'Screensaver Test' })
     expect(headings.length).toBeGreaterThan(0)
@@ -71,7 +71,7 @@ describe('Screensaver Route Integration', () => {
       expect(screen.queryByRole('main', { name: 'Listening Display' })).not.toBeInTheDocument()
     })
 
-    expect(screen.getByTitle('Drag tonearm to drop needle & seek')).toBeInTheDocument()
+    expect(screen.getByTitle('Drag the tonearm to drop the needle and seek')).toBeInTheDocument()
   })
 
   it('toggles between album art and synced lyrics via L key in screensaver mode without exiting', async () => {
@@ -82,7 +82,7 @@ describe('Screensaver Route Integration', () => {
       expect(screen.getByRole('main', { name: 'Listening Display' })).toBeInTheDocument()
     })
 
-    expect(screen.getByText(/\[ L \] Live Lyrics/)).toBeInTheDocument()
+    expect(within(screen.getByRole('group', { name: 'Shortcuts' })).getByText('Lyrics')).toBeInTheDocument()
 
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l' }))
@@ -90,7 +90,7 @@ describe('Screensaver Route Integration', () => {
 
     await waitFor(() => {
       expect(usePlayerStore.getState().screensaverLyrics).toBe(true)
-      expect(screen.getByText(/\[ L \] Album Art/)).toBeInTheDocument()
+      expect(within(screen.getByRole('group', { name: 'Shortcuts' })).getByText('Album art')).toBeInTheDocument()
     })
 
     act(() => {
@@ -99,7 +99,7 @@ describe('Screensaver Route Integration', () => {
 
     await waitFor(() => {
       expect(usePlayerStore.getState().screensaverLyrics).toBe(false)
-      expect(screen.getByText(/\[ L \] Live Lyrics/)).toBeInTheDocument()
+      expect(within(screen.getByRole('group', { name: 'Shortcuts' })).getByText('Lyrics')).toBeInTheDocument()
     })
 
     expect(window.electron.exitScreensaver).not.toHaveBeenCalled()

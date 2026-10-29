@@ -48,7 +48,7 @@ describe('App Integration', () => {
 
     // Time is now handled via DOM refs and moved from ControlDock
     // Check Turntable & Tonearm
-    expect(screen.getByTitle('Drag tonearm to drop needle & seek')).toBeInTheDocument()
+    expect(screen.getByTitle('Drag the tonearm to drop the needle and seek')).toBeInTheDocument()
   }, 15000)
 
   it('synchronizes play/pause button with store state across components', async () => {

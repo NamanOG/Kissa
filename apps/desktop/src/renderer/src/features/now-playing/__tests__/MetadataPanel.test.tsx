@@ -49,7 +49,8 @@ describe('MetadataPanel component', () => {
     expect(screen.getByText('Daft Punk')).toBeInTheDocument()
     expect(screen.getByText('Random Access Memories')).toBeInTheDocument()
     expect(screen.getByText('4:08')).toBeInTheDocument()
-    expect(screen.getByText('from Spotify')).toBeInTheDocument()
+    // The source sits in the status pill beside Now playing.
+    expect(screen.getByText('Spotify')).toBeInTheDocument()
   })
 
   it('says Paused when the track is not playing, and omits an album that repeats the title', () => {

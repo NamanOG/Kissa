@@ -6,12 +6,14 @@ import { DisplayMetadata } from './DisplayMetadata'
 import { AlbumSleeve } from '../now-playing/AlbumSleeve'
 import { SyncedLyrics } from '../lyrics/SyncedLyrics'
 import { useWakeDetection } from './useWakeDetection'
+import { useT } from '@renderer/i18n'
 
 export interface ListeningDisplayProps {
   mode: 'interactive' | 'screensaver'
 }
 
 export const ListeningDisplay = memo(({ mode }: ListeningDisplayProps): React.JSX.Element => {
+  const t = useT()
   const currentTrack = usePlayerStore((s) => s.currentTrack)
   const isPlaying = usePlayerStore((s) => s.isPlaying)
   const screensaverLyrics = usePlayerStore((s) => s.screensaverLyrics)
@@ -43,7 +45,7 @@ export const ListeningDisplay = memo(({ mode }: ListeningDisplayProps): React.JS
 
   return (
     <motion.main
-      aria-label="Listening Display"
+      aria-label={t('lr.display')}
       initial={{ opacity: 0, scale: 0.985 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.985 }}
@@ -95,8 +97,10 @@ export const ListeningDisplay = memo(({ mode }: ListeningDisplayProps): React.JS
                     <SyncedLyrics isLargeView={false} className="w-full h-full" />
                   </div>
 
-                  <div className="mt-3 flex items-center gap-2 text-[10px] font-mono tracking-widest text-white/30 uppercase">
-                    <span>[ L ] Album Art &nbsp;•&nbsp; [ T ] Theme &nbsp;•&nbsp; [ A ] Match Album</span>
+                  <div className="mt-3 flex items-center gap-4 text-[12px] font-medium text-white/45" role="group" aria-label={t('lr.shortcuts')}>
+                    <DisplayHint k="L">{t('lr.albumArt')}</DisplayHint>
+                    <DisplayHint k="T">{t('room.short')}</DisplayHint>
+                    <DisplayHint k="A">{t('fs.match')}</DisplayHint>
                   </div>
                 </motion.div>
               ) : (
@@ -119,8 +123,10 @@ export const ListeningDisplay = memo(({ mode }: ListeningDisplayProps): React.JS
 
                   <DisplayMetadata align="center" className="w-full" />
 
-                  <div className="mt-6 flex items-center justify-center gap-2 text-[10px] font-mono tracking-widest text-white/30 uppercase">
-                    <span>[ L ] Live Lyrics &nbsp;•&nbsp; [ T ] Theme &nbsp;•&nbsp; [ A ] Match Album</span>
+                  <div className="mt-6 flex items-center justify-center gap-4 text-[12px] font-medium text-white/45" role="group" aria-label={t('lr.shortcuts')}>
+                    <DisplayHint k="L">{t('settings.lyrics')}</DisplayHint>
+                    <DisplayHint k="T">{t('room.short')}</DisplayHint>
+                    <DisplayHint k="A">{t('fs.match')}</DisplayHint>
                   </div>
                 </motion.div>
               )}
@@ -133,3 +139,15 @@ export const ListeningDisplay = memo(({ mode }: ListeningDisplayProps): React.JS
 })
 
 ListeningDisplay.displayName = 'ListeningDisplay'
+
+/** A quiet key hint: the key on a small glass cap, then what it does. */
+function DisplayHint({ k, children }: { k: string; children: React.ReactNode }): React.JSX.Element {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <kbd className="inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-[5px] bg-white/[0.08] px-1 font-sans text-[11px] font-semibold text-white/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_0_0.5px_rgba(255,255,255,0.1)]">
+        {k}
+      </kbd>
+      <span>{children}</span>
+    </span>
+  )
+}

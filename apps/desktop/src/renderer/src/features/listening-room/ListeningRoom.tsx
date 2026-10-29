@@ -7,8 +7,10 @@ import { FullscreenLyrics } from './FullscreenLyrics'
 import { useAutoHide } from './useAutoHide'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { ListeningDisplay } from './ListeningDisplay'
+import { useT } from '@renderer/i18n'
 
 export const ListeningRoom = memo((): React.JSX.Element => {
+  const t = useT()
   const prefersReducedMotion = useReducedMotion()
   const { isVisible, handlePointerMove, setHold } = useAutoHide()
   const [showLyrics, setShowLyrics] = useState(false)
@@ -34,7 +36,7 @@ export const ListeningRoom = memo((): React.JSX.Element => {
       ) : (
         <motion.main
           key="interactive"
-          aria-label="Listening Room"
+          aria-label={t('lr.room')}
       onPointerMove={handlePointerMove}
       initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.995 }}
       animate={{ opacity: 1, scale: 1 }}

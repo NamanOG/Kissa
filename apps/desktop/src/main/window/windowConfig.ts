@@ -1,8 +1,12 @@
 import { BrowserWindowConstructorOptions } from 'electron'
 import { join } from 'path'
 
-/** Smallest size at which the full deck layout fits. Below this the turntable overlaps the artwork. */
-export const MAIN_WINDOW_MIN_SIZE = { width: 900, height: 640 } as const
+/**
+ * Smallest window. Below 900 px wide the renderer switches to the compact deck (top
+ * navigation, turntable above the words), so Kissa fits a Snap half of a 1366 px or
+ * 125% laptop screen. Below 600 px tall the turntable moves beside the words.
+ */
+export const MAIN_WINDOW_MIN_SIZE = { width: 600, height: 500 } as const
 
 export const getWindowConfig = (): BrowserWindowConstructorOptions => ({
   width: 900,
@@ -10,7 +14,7 @@ export const getWindowConfig = (): BrowserWindowConstructorOptions => ({
   minWidth: MAIN_WINDOW_MIN_SIZE.width,
   minHeight: MAIN_WINDOW_MIN_SIZE.height,
   show: false,
-  backgroundColor: '#0f0b07',
+  backgroundColor: '#0b0a09',
   autoHideMenuBar: true,
   titleBarStyle: 'hidden',
   titleBarOverlay: { color: '#00000000', symbolColor: '#ffffff' },

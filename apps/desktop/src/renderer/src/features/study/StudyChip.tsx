@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { cn } from '@renderer/utils/cn'
+import { useT, tl } from '@renderer/i18n'
 import { useStudyStore } from '@renderer/stores/studyStore'
 import { formatClock, isRunning, segmentElapsed, segmentRemaining } from './studySession'
 
@@ -8,6 +9,7 @@ import { formatClock, isRunning, segmentElapsed, segmentRemaining } from './stud
  * beside a document or browser). Renders nothing without a session.
  */
 export function StudyChip({ className, onOpen }: { className?: string; onOpen?: () => void }): React.JSX.Element | null {
+  const tx = useT()
   const session = useStudyStore((s) => s.active)
   const [now, setNow] = useState(() => Date.now())
 
@@ -22,16 +24,16 @@ export function StudyChip({ className, onOpen }: { className?: string; onOpen?: 
   const remaining = segmentRemaining(segment, now)
   const time = formatClock(remaining ?? segmentElapsed(segment, now))
   const label = session.interruption
-    ? 'Focus paused'
+    ? tx('focus.chipPaused')
     : segment.ended
       ? segment.kind === 'focus'
-        ? 'Block done'
-        : 'Break over'
+        ? tx('focus.chipBlockDone')
+        : tx('focus.breakOver')
       : segment.kind === 'break'
-        ? 'Break'
+        ? tx('focus.break')
         : isRunning(session)
-          ? 'Focusing'
-          : 'Focus paused'
+          ? tx('focus.focusing')
+          : tx('focus.chipPaused')
 
   const content = (
     <>
@@ -44,12 +46,12 @@ export function StudyChip({ className, onOpen }: { className?: string; onOpen?: 
     </>
   )
   const classes = cn(
-    'inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-dim',
+    'inline-flex items-center gap-1.5 font-sans text-[12px] font-medium text-dim',
     className
   )
 
   return onOpen ? (
-    <button type="button" onClick={onOpen} className={cn(classes, 'cursor-pointer hover:text-ink')} title="Open the Focus Room">
+    <button type="button" onClick={onOpen} className={cn(classes, 'cursor-pointer hover:text-ink')} title={tl('a11y.openFocus')}>
       {content}
     </button>
   ) : (
