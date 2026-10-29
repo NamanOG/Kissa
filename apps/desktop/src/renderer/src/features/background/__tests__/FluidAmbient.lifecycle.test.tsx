@@ -35,6 +35,7 @@ afterEach(() => {
   vi.restoreAllMocks()
   delete (window as unknown as { electron?: unknown }).electron
   document.documentElement.removeAttribute('data-moving-light')
+  delete document.documentElement.dataset.kissaCover
 })
 
 const flush = async (): Promise<void> => {
@@ -170,6 +171,35 @@ describe('Moving light component lifecycle (fake WebGL, controlled covers)', () 
     const added = add.mock.calls.filter(([t]) => t === 'resize').length
     const removed = remove.mock.calls.filter(([t]) => t === 'resize').length
     expect(removed).toBe(added)
+  })
+
+  it('keeps moving behind the mini player, also when it opens from the Focus Room', async () => {
+    const covers = controlledCovers()
+    render(<FluidAmbient artworkUrl="A" coverLoader={covers.load} />)
+    covers.succeed('A')
+    await flush()
+    act(() => usePlayerStore.setState({ isMiniPlayer: true }))
+    expect(blurOff()).toBe(true)
+    act(() => usePlayerStore.setState({ isMiniPlayer: false, activeView: 'study' }))
+    expect(blurOff()).toBe(false) // the Focus Room covers it
+    act(() => usePlayerStore.setState({ isMiniPlayer: true }))
+    expect(blurOff()).toBe(true)
+    act(() => usePlayerStore.setState({ isPlaying: false }))
+    expect(blurOff()).toBe(false) // nothing plays: one still frame
+  })
+
+  it('pauses while a full-window story (Pressed) covers the app, and resumes after', async () => {
+    const covers = controlledCovers()
+    render(<FluidAmbient artworkUrl="A" coverLoader={covers.load} />)
+    covers.succeed('A')
+    await flush()
+    expect(blurOff()).toBe(true)
+    document.documentElement.dataset.kissaCover = ''
+    await flush()
+    expect(blurOff()).toBe(false)
+    delete document.documentElement.dataset.kissaCover
+    await flush()
+    expect(blurOff()).toBe(true)
   })
 
   it('repeated on/off leaves no live resources or canvases behind', async () => {

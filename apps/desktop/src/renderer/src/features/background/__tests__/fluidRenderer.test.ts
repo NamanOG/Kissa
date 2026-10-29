@@ -84,6 +84,24 @@ describe('Moving light renderer lifecycle (fake WebGL, manual clock)', () => {
     expect(fake.draws).toBe(before + 1)
   })
 
+  it('stretches the small field to the window pixels in a second pass, and falls back to the field size', () => {
+    const { r, fake, canvas } = setup()
+    const before = fake.draws
+    r!.resize(320, 200, 1920, 1200)
+    expect(canvas.width).toBe(1920)
+    expect(canvas.height).toBe(1200)
+    expect(fake.draws).toBe(before + 1) // one frame shown, the field pass goes to its own target
+    r!.dispose()
+    expect(fake.live.size).toBe(0)
+
+    const broken = setup()
+    ;(broken.fake.gl as unknown as { checkFramebufferStatus: () => number }).checkFramebufferStatus = () => 0
+    broken.r!.resize(320, 200, 1920, 1200)
+    expect(broken.canvas.width).toBe(320) // the costly field shader never runs at window size
+    broken.r!.dispose()
+    expect(broken.fake.live.size).toBe(0)
+  })
+
   it('releases every resource and the context on dispose, and ignores later calls', () => {
     const { r, fake, clock, onRunning } = setup()
     r!.setActive(true)
@@ -157,11 +175,11 @@ describe('Moving light renderer lifecycle (fake WebGL, manual clock)', () => {
 describe('Moving light frame pacing (manual display)', () => {
   const intervals = (at: number[]): number[] => at.slice(1).map((x, i) => +(x - at[i]).toFixed(3))
 
-  for (const [hz, refreshes] of [[144, 5], [120, 4], [60, 2]] as const) {
+  for (const [hz, refreshes] of [[120, 4], [60, 2]] as const) {
     it(`draws on every ${refreshes}th refresh of a ${hz} Hz display, evenly`, () => {
       const { r, clock } = setup({}, 1000 / hz)
       r!.setActive(true)
-      clock.advance(500) // let it learn the refresh rate
+      clock.advance(500)
       clock.drawnAt.length = 0
       clock.advance(1000)
       const gaps = intervals(clock.drawnAt)
@@ -169,6 +187,22 @@ describe('Moving light frame pacing (manual display)', () => {
       expect(new Set(gaps)).toEqual(new Set([expected]))
     })
   }
+
+  it('on a 144 Hz display, draws 30 times a second on the shared 60 Hz beat', () => {
+    const { r, clock } = setup({}, 1000 / 144)
+    r!.setActive(true)
+    clock.advance(500)
+    clock.drawnAt.length = 0
+    clock.advance(1000)
+    expect(clock.drawnAt).toHaveLength(30)
+    // Every draw is the first refresh of a 30 Hz slot, so it shares its frame with everything
+    // else that steps on the beat (utils/frameBeat); the gaps are four or five refreshes.
+    const slot = 1000 / 30
+    for (const t of clock.drawnAt) expect((t + 0.5) % slot).toBeLessThan(1000 / 144 + 0.5)
+    expect(new Set(intervals(clock.drawnAt))).toEqual(
+      new Set([+((4 * 1000) / 144).toFixed(3), +((5 * 1000) / 144).toFixed(3)])
+    )
+  })
 
   it('at 24 fps on a 144 Hz display, draws on every 6th refresh, evenly', () => {
     const { r, clock } = setup({}, 1000 / 144, 1000 / 24)

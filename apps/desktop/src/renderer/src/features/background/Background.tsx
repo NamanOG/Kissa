@@ -1,6 +1,7 @@
 import { memo, useEffect } from 'react'
 import { GradientLayer } from './GradientLayer'
 import { VignetteLayer } from './VignetteLayer'
+import { DaylightLayer } from './DaylightLayer'
 
 /*
  * There is deliberately no grain layer. The old one tiled a constant mid-grey noise with
@@ -35,6 +36,7 @@ export const Background = memo(() => {
     <div className="fixed inset-0 w-screen h-screen -z-50 overflow-hidden bg-transparent">
       <GradientLayer />
       <VignetteLayer />
+      <DaylightLayer />
       <div 
         className="absolute inset-0 pointer-events-none bg-black transition-opacity duration-75 z-10"
         style={{ opacity: 'calc(1 - var(--room-illumination, 1))' }} 

@@ -186,7 +186,9 @@ export function fieldColours(palette: Swatch[]): Array<[number, number, number]>
   const colourful = Math.hypot(ma, mb) > 0.025
   return palette.map((s, i) => {
     let [L, a, b] = labs[i]
-    if (colourful && Math.hypot(a, b) < 0.03) {
+    // Black stays black: tinting it with the cover's average hue turned the black of a mostly black
+    // cover (More Life) into a brown room.
+    if (colourful && Math.hypot(a, b) < 0.03 && L > 0.3) {
       a += ma * 0.6
       b += mb * 0.6
     }

@@ -2,6 +2,10 @@ import { memo, useEffect, useRef, useState } from 'react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { AmbientDrift } from './AmbientDrift'
 import { createFluidRenderer, type FluidRenderer } from './fluidRenderer'
+import { useFeaturesStore } from '@renderer/stores/featuresStore'
+import { soundListener } from '@renderer/features/sound/soundListener'
+import { useWindowVisible } from '@renderer/hooks/useWindowVisible'
+import { useDocumentCovered } from '@renderer/hooks/useDocumentCovered'
 import { extractPalette, paletteTexture, SLOTS } from './colourField'
 
 export { VERT, FRAG } from './fluidRenderer'
@@ -12,11 +16,12 @@ export { VERT, FRAG } from './fluidRenderer'
  * itself stays still on the deck.
  *
  * How it stays cheap:
- * - One WebGL surface at about 40% of the window (at most 640 px wide), stretched by the
- *   compositor. (At 20% the stretch showed as coarse blocks.)
+ * - The colour field is drawn at about 40% of the window (at most 640 px wide). (At 20% the
+ *   stretch showed as coarse blocks.) A second, very cheap pass stretches it to the window's own
+ *   pixels and adds a fine dither, so a dark room shows no stepped contour lines.
  * - 30 frames a second on the display's refresh grid, and only while it can be seen: it stops when
  *   Moving light is off (this component unmounts and releases its context), when playback is
- *   paused, when the mini player or the Focus Room covers it, when the window is minimised or
+ *   paused, when the Focus Room or a full-window story (Pressed) covers it, when the window is minimised or
  *   hidden in the tray, and under reduced motion (one still frame).
  * - The cover is read once per track into its palette (up to six colours from the whole cover).
  *   Track changes crossfade; a late load from a skipped track is ignored.
@@ -29,6 +34,8 @@ export { VERT, FRAG } from './fluidRenderer'
 const MAX_WIDTH = 640
 const SAMPLE = 48
 const RETRY_MS = 5000
+/** Longest side of the canvas in device pixels. */
+const MAX_OUTPUT = 2560
 
 /**
  * The cover's palette, ready to upload: the cover is read at 48 px, its main colours are found
@@ -79,21 +86,10 @@ export function surfaceSize(innerWidth: number, innerHeight: number): [number, n
   return [w, h]
 }
 
-/** Whether the app window can be seen (not minimised, not hidden in the tray). */
-function useWindowVisible(): boolean {
-  const [visible, setVisible] = useState(() => !document.hidden)
-  useEffect(() => {
-    const onDoc = (): void => setVisible(!document.hidden)
-    document.addEventListener('visibilitychange', onDoc)
-    // Minimising or hiding to the tray does not change document.hidden on Windows; the main
-    // process says so instead.
-    const off = window.electron?.onWindowVisibility?.((v) => setVisible(v && !document.hidden))
-    return () => {
-      document.removeEventListener('visibilitychange', onDoc)
-      off?.()
-    }
-  }, [])
-  return visible
+/** The canvas size: the window's own pixels, capped so a very large display stays cheap. */
+export function outputSize(innerWidth: number, innerHeight: number, dpr: number): [number, number] {
+  const scale = Math.min(Math.max(1, dpr || 1), MAX_OUTPUT / Math.max(1, innerWidth, innerHeight))
+  return [Math.max(1, Math.round(innerWidth * scale)), Math.max(1, Math.round(innerHeight * scale))]
 }
 
 function useReducedMotion(): boolean {
@@ -118,8 +114,17 @@ export const FluidAmbient = memo(({ artworkUrl, coverLoader = loadCover }: { art
   // The outcome of the latest cover load. A failure applies only to that URL.
   const [cover, setCover] = useState<{ url: string; ok: boolean } | null>(null)
 
+  const soundLight = useFeaturesStore((s) => s.soundLight)
+  const soundRef = useRef(soundLight)
+  soundRef.current = soundLight
   const isPlaying = usePlayerStore((s) => s.isPlaying)
-  const covered = usePlayerStore((s) => s.isMiniPlayer || s.activeView === 'study')
+  // The mini player does not cover it: there the light runs behind the record, on the same
+  // small surface (sized from the mini window) and the same 30 fps beat.
+  const roomCovered = usePlayerStore((s) => !s.isMiniPlayer && s.activeView === 'study')
+  // Pressed covering the whole window: the app beneath is not drawn, but a running WebGL loop
+  // still cost a ~40 ms stall in the story about every 400 ms.
+  const storyCovered = useDocumentCovered()
+  const covered = roomCovered || storyCovered
   const visible = useWindowVisible()
   const reduced = useReducedMotion()
   const coverFailed = cover?.url === artworkUrl && !cover.ok
@@ -138,6 +143,7 @@ export const FluidAmbient = memo(({ artworkUrl, coverLoader = loadCover }: { art
       canvas,
       {
         loadCover: (url) => loaderRef.current(url),
+        sound: () => (soundRef.current && soundListener.status === 'live' ? soundListener.levels : null),
         onDraw: import.meta.env.DEV
           ? () => {
               const w = window as unknown as { __kissaAmbientFrames?: number }
@@ -162,7 +168,11 @@ export const FluidAmbient = memo(({ artworkUrl, coverLoader = loadCover }: { art
       return
     }
     rendererRef.current = renderer
-    const resize = (): void => renderer.resize(...surfaceSize(window.innerWidth, window.innerHeight))
+    const resize = (): void =>
+      renderer.resize(
+        ...surfaceSize(window.innerWidth, window.innerHeight),
+        ...outputSize(window.innerWidth, window.innerHeight, window.devicePixelRatio)
+      )
     resize()
     window.addEventListener('resize', resize)
     return () => {

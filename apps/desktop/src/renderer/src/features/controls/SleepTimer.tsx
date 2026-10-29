@@ -1,71 +1,97 @@
-import React, { memo, useState, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Timer, Clock, X } from 'lucide-react'
-import { usePlayerStore } from '@renderer/stores/playerStore'
+import React, { memo, useState, useEffect, useId, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { Timer, X, Minus, Plus } from 'lucide-react'
+import { useSleepStore } from '@renderer/stores/sleepStore'
 import { cn } from '@renderer/utils/cn'
+import { useT } from '@renderer/i18n'
+
+const EASE = [0.22, 1, 0.36, 1] as const
+const WIDTH = 288
 
 export const SleepTimer = memo(({ className }: { className?: string }): React.JSX.Element => {
   const [isOpen, setIsOpen] = useState(false)
-  const [timeLeft, setTimeLeft] = useState<number | null>(null) // in seconds
+  const t = useT()
   const [targetMinutes, setTargetMinutes] = useState<number>(30)
   const popoverRef = useRef<HTMLDivElement>(null)
-  const pause = usePlayerStore((s) => s.pause)
-  const setIsPowered = usePlayerStore((s) => s.setIsPowered)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const [anchor, setAnchor] = useState<{ left: number; bottom: number } | null>(null)
+  const titleId = useId()
+  const reduce = useReducedMotion()
+  const endsAt = useSleepStore((s) => s.endsAt)
+  const startSleep = useSleepStore((s) => s.start)
+  const cancelSleep = useSleepStore((s) => s.cancel)
+  const [now, setNow] = useState(() => Date.now())
+  const timeLeft = endsAt === null ? null : Math.max(0, Math.round((endsAt - now) / 1000))
+
+  useEffect(() => {
+    if (endsAt === null) return
+    setNow(Date.now())
+    const id = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(id)
+  }, [endsAt])
 
   useEffect(() => {
     if (!isOpen) return
 
+    // The dock clips what overflows it, so the card is placed on the page above the button,
+    // like the room light and phone remote cards.
+    const place = (): void => {
+      const r = buttonRef.current?.getBoundingClientRect()
+      if (r) setAnchor({ left: r.left + r.width / 2, bottom: window.innerHeight - r.top + 32 })
+    }
+    place()
+
     const handlePointerDown = (e: MouseEvent | TouchEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      if (buttonRef.current?.contains(target)) return // the button toggles it itself
+      if (popoverRef.current && !popoverRef.current.contains(target)) {
         setIsOpen(false)
       }
     }
 
+    // Escape closes the timer and hands focus back to its button, as the other dock popovers do.
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.stopPropagation()
         setIsOpen(false)
+        buttonRef.current?.focus()
       }
     }
+
+    // Opening from the keyboard lands on the first control inside.
+    const focusFirst = window.setTimeout(
+      () => popoverRef.current?.querySelector<HTMLElement>('button')?.focus(),
+      30
+    )
 
     document.addEventListener('mousedown', handlePointerDown)
     document.addEventListener('touchstart', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('keydown', handleKeyDown, true)
+    window.addEventListener('resize', place)
 
     return () => {
       document.removeEventListener('mousedown', handlePointerDown)
       document.removeEventListener('touchstart', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('keydown', handleKeyDown, true)
+      window.removeEventListener('resize', place)
+      window.clearTimeout(focusFirst)
     }
   }, [isOpen])
 
-  useEffect(() => {
-    if (timeLeft === null) return
-
-    if (timeLeft <= 0) {
-      pause()
-      setIsPowered(false)
-      setTimeLeft(null)
-      if (typeof window !== 'undefined' && window.electron?.mediaPlayPause) {
-        void window.electron.mediaPlayPause()
-      }
-      return
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev !== null ? prev - 1 : null))
-    }, 1000)
-
-    return (): void => clearInterval(timer)
-  }, [timeLeft, pause, setIsPowered])
+  const close = (): void => {
+    setIsOpen(false)
+    buttonRef.current?.focus()
+  }
 
   const handleStart = (): void => {
-    setTimeLeft(targetMinutes * 60)
-    setIsOpen(false)
+    startSleep(targetMinutes)
+    close()
   }
 
   const handleCancel = (): void => {
-    setTimeLeft(null)
-    setIsOpen(false)
+    cancelSleep()
+    close()
   }
 
   const formatTime = (seconds: number): string => {
@@ -74,119 +100,144 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
+  const left = anchor
+    ? Math.max(12, Math.min(window.innerWidth - WIDTH - 12, anchor.left - WIDTH / 2))
+    : 0
+
   return (
     <div className={cn('relative', className)}>
       <button
+        ref={buttonRef}
         type="button"
+        data-tour="sleep"
         onClick={() => setIsOpen(!isOpen)}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-label={timeLeft !== null ? `${t('sleep.title')}: ${formatTime(timeLeft)}` : t('sleep.title')}
         className={cn(
           'w-8 h-8 min-[900px]:w-9 min-[900px]:h-9 flex items-center justify-center rounded-full transition-colors relative cursor-pointer active:scale-95',
-          timeLeft !== null
+          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone',
+          timeLeft !== null || isOpen
             ? 'text-tone bg-tone/15'
             : 'text-dim hover:text-ink hover:bg-ink/[0.08]'
         )}
-        title="Sleep Timer"
+        title={t('sleep.title')}
       >
-        <Timer className="w-4 h-4 min-[900px]:w-[18px] min-[900px]:h-[18px]" strokeWidth={1.75} />
+        <Timer aria-hidden="true" className="w-4 h-4 min-[900px]:w-[18px] min-[900px]:h-[18px]" strokeWidth={1.75} />
         {timeLeft !== null && (
-          <span className="absolute -bottom-1 -right-1 bg-black/90 text-tone text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded border border-tone/40 shadow-md leading-none">
+          <span aria-hidden="true" className="absolute -bottom-1 -right-1 rounded-full bg-[#16120f] px-1.5 py-0.5 text-[9px] font-semibold leading-none tabular-nums text-tone shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent)_45%,transparent),0_2px_6px_rgba(0,0,0,0.5)]">
             {Math.ceil(timeLeft / 60)}m
           </span>
         )}
       </button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            ref={popoverRef}
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-            className="absolute bottom-[120%] right-0 w-64 rounded-2xl p-5 z-50 overflow-hidden bg-[var(--deck-bg)] border border-panel-line shadow-[var(--panel-shadow)]"
-          >
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-tone to-transparent opacity-70" />
-
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-white">
-                <Clock className="w-4 h-4 text-tone" strokeWidth={1.5} />
-                <h3 className="font-serif text-sm font-medium">Sleep Timer</h3>
+      {createPortal(
+        <AnimatePresence>
+          {isOpen && anchor && (
+            <motion.div
+              ref={popoverRef}
+              role="dialog"
+              aria-modal="false"
+              aria-labelledby={titleId}
+              initial={{ opacity: 0, y: reduce ? 0 : 8, scale: reduce ? 1 : 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: reduce ? 0 : 6 }}
+              transition={{ duration: reduce ? 0.12 : 0.26, ease: EASE }}
+              style={{ left, bottom: anchor.bottom, width: WIDTH, transformOrigin: 'bottom center' }}
+              className="fixed z-[90] overflow-hidden rounded-[22px] border border-white/[0.09] bg-[#16120f]/[0.93] p-4 shadow-[0_30px_80px_-24px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl backdrop-saturate-150"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p id={titleId} className="font-kissa-editorial text-[22px] leading-tight tracking-[-0.015em] text-ink">
+                    {t('sleep.title')}
+                  </p>
+                  <p className="mt-1 text-[12.5px] text-ink/65">
+                    {timeLeft === null ? t('sleep.idle') : t('sleep.remaining')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={close}
+                  aria-label={t('sleep.close')}
+                  className="-mr-1 -mt-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink/55 transition-colors hover:bg-white/10 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
+                >
+                  <X aria-hidden="true" className="h-3.5 w-3.5" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="w-6 h-6 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
 
-            {timeLeft === null ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between bg-black/60 border border-white/10 rounded-xl p-2 shadow-inner">
+              {timeLeft === null ? (
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between rounded-[16px] bg-white/[0.05] p-1.5 shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.1)]">
+                    <button
+                      type="button"
+                      onClick={() => setTargetMinutes(Math.max(5, targetMinutes - 5))}
+                      aria-label={t('sleep.less')}
+                      className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/[0.07] text-ink transition-colors hover:bg-white/[0.13] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
+                    >
+                      <Minus aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
+                    <div className="font-kissa-editorial text-[30px] leading-none tabular-nums text-ink" aria-live="polite">
+                      {targetMinutes}
+                      <span className="ml-1 font-sans text-[12px] text-ink/55">{t('sleep.min')}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setTargetMinutes(Math.min(120, targetMinutes + 5))}
+                      aria-label={t('sleep.more')}
+                      className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-white/[0.07] text-ink transition-colors hover:bg-white/[0.13] active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
+                    >
+                      <Plus aria-hidden="true" className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[15, 30, 45, 60].map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => setTargetMinutes(m)}
+                        aria-pressed={targetMinutes === m}
+                        aria-label={t('sleep.preset', { n: m })}
+                        className={cn(
+                          'h-8 cursor-pointer rounded-full text-[12px] font-medium tabular-nums transition-[color,background-color,box-shadow,transform] duration-ui ease-primary active:scale-95',
+                          'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone',
+                          targetMinutes === m
+                            ? 'bg-tone/20 text-tone shadow-[inset_0_0_0_0.5px_color-mix(in_srgb,var(--accent)_55%,transparent)]'
+                            : 'bg-white/[0.05] text-ink/65 hover:bg-white/[0.09] hover:text-ink'
+                        )}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+
                   <button
                     type="button"
-                    onClick={() => setTargetMinutes(Math.max(5, targetMinutes - 5))}
-                    className="w-8 h-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.15] text-white font-bold rounded-lg transition-colors active:scale-95 cursor-pointer"
+                    onClick={handleStart}
+                    className="h-10 w-full cursor-pointer rounded-full bg-tone text-[13px] font-semibold text-[#170f09] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_8px_22px_rgba(0,0,0,0.35)] transition-[filter,transform] duration-ui ease-primary hover:brightness-110 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
                   >
-                    -
+                    {t('sleep.start')}
                   </button>
-                  <div className="font-mono text-xl font-medium text-white">
-                    {targetMinutes} <span className="text-xs text-zinc-400">min</span>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  <div className="text-center font-kissa-editorial text-[44px] leading-none tabular-nums text-tone" role="timer">
+                    {formatTime(timeLeft)}
                   </div>
                   <button
                     type="button"
-                    onClick={() => setTargetMinutes(Math.min(120, targetMinutes + 5))}
-                    className="w-8 h-8 flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.15] text-white font-bold rounded-lg transition-colors active:scale-95 cursor-pointer"
+                    onClick={handleCancel}
+                    className="h-10 w-full cursor-pointer rounded-full bg-white/[0.08] text-[13px] font-semibold text-ink shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.12)] transition-colors hover:bg-white/[0.13] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
                   >
-                    +
+                    {t('sleep.cancel')}
                   </button>
                 </div>
-
-                <div className="grid grid-cols-4 gap-2">
-                  {[15, 30, 45, 60].map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setTargetMinutes(m)}
-                      className={cn(
-                        'py-1.5 text-xs font-mono rounded-lg transition-[color,background-color,transform] duration-ui ease-primary active:scale-95 cursor-pointer border',
-                        targetMinutes === m
-                          ? 'bg-tone/20 text-tone border-tone/50 font-bold shadow-[0_0_8px_var(--accent)]/20'
-                          : 'bg-black/30 text-zinc-400 border-white/10 hover:text-white hover:bg-white/[0.08]'
-                      )}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleStart}
-                  className="w-full py-2.5 bg-tone hover:opacity-90 active:scale-[0.98] text-black font-bold text-sm rounded-xl transition-[opacity,transform] duration-ui ease-primary cursor-pointer shadow-[0_4px_16px_var(--accent)] shadow-black/20"
-                >
-                  Start Timer
-                </button>
-              </div>
-            ) : (
-              <div className="text-center space-y-4">
-                <div className="font-mono text-3xl text-tone font-light tracking-wider drop-shadow-md">
-                  {formatTime(timeLeft)}
-                </div>
-                <p className="text-xs text-zinc-400 uppercase tracking-widest font-mono">Remaining</p>
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="w-full py-2 bg-white/[0.08] hover:bg-white/[0.14] text-white text-sm font-semibold rounded-xl transition-colors border border-white/10 active:scale-95 cursor-pointer"
-                >
-                  Cancel Timer
-                </button>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   )
 })

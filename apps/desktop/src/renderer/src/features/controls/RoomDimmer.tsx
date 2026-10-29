@@ -3,8 +3,10 @@ import { usePlayerStore } from '@renderer/stores/playerStore'
 import { useMechanicalTick } from '@renderer/hooks/useMechanicalTick'
 import { cn } from '@renderer/utils/cn'
 import { Sun } from 'lucide-react'
+import { useT } from '@renderer/i18n'
 
 export const RoomDimmer = memo(() => {
+  const t = useT()
   const illuminationLevel = usePlayerStore((s) => s.illuminationLevel)
   const setIlluminationLevel = usePlayerStore((s) => s.setIlluminationLevel)
 
@@ -131,12 +133,12 @@ export const RoomDimmer = memo(() => {
 
   return (
     <div
+      data-tour="room-dimmer"
       className="flex flex-1 items-center gap-2 min-[900px]:gap-3 shrink-0 group w-full"
-      title="Room Illumination"
-      aria-label="Room Illumination"
+      title={t('room.light')}
     >
-      <span className="font-mono text-[9px] uppercase tracking-widest text-dim font-bold select-none hidden min-[1000px]:block shrink-0">
-        Room
+      <span aria-hidden="true" className="text-[12px] font-medium tracking-[-0.005em] text-dim select-none hidden min-[1000px]:block shrink-0">
+        {t('room.short')}
       </span>
       
       <div
@@ -154,7 +156,8 @@ export const RoomDimmer = memo(() => {
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={illuminationLevel}
-        aria-label="Room illumination"
+        aria-valuetext={t('room.lightValue', { n: Math.round(illuminationLevel) })}
+        aria-label={t('room.light')}
       >
         <div 
           className="absolute left-0 right-0 h-[2.5px] rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.8),0_1px_0_rgba(255,255,255,0.08)] pointer-events-none"
@@ -183,7 +186,8 @@ export const RoomDimmer = memo(() => {
         />
       </div>
 
-      <Sun 
+      <Sun
+        aria-hidden="true"
         className="w-3 h-3 min-[900px]:w-3.5 min-[900px]:h-3.5 shrink-0 transition-opacity" 
         style={{ opacity: 0.3 + (illuminationLevel / 100) * 0.7, color: 'var(--on-surface)' }}
       />

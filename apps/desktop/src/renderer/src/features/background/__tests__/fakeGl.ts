@@ -32,6 +32,7 @@ export function makeFakeGl(opts: { failCompile?: boolean; failLink?: boolean } =
     if (typeof id === 'string') state.live.delete(id)
   }
   const noop = (): void => {}
+  let boundFramebuffer: unknown = null
   state.gl = {
     VERTEX_SHADER: 1,
     FRAGMENT_SHADER: 2,
@@ -52,6 +53,10 @@ export function makeFakeGl(opts: { failCompile?: boolean; failLink?: boolean } =
     TEXTURE_WRAP_T: 17,
     LINEAR: 18,
     CLAMP_TO_EDGE: 19,
+    TEXTURE2: 20,
+    FRAMEBUFFER: 21,
+    COLOR_ATTACHMENT0: 22,
+    FRAMEBUFFER_COMPLETE: 23,
     createShader: () => make('shader'),
     shaderSource: noop,
     compileShader: noop,
@@ -61,6 +66,14 @@ export function makeFakeGl(opts: { failCompile?: boolean; failLink?: boolean } =
     createProgram: () => make('program'),
     attachShader: noop,
     linkProgram: noop,
+    bindAttribLocation: noop,
+    createFramebuffer: () => make('framebuffer'),
+    bindFramebuffer: (_t: number, fb: unknown) => {
+      boundFramebuffer = fb
+    },
+    framebufferTexture2D: noop,
+    checkFramebufferStatus: () => 23,
+    deleteFramebuffer: del,
     getProgramParameter: () => !state.failLink,
     deleteProgram: del,
     useProgram: noop,
@@ -83,8 +96,9 @@ export function makeFakeGl(opts: { failCompile?: boolean; failLink?: boolean } =
     deleteTexture: del,
     activeTexture: noop,
     viewport: noop,
+    // Counts frames shown: draws to the canvas, not to the field's own target.
     drawArrays: () => {
-      state.draws++
+      if (!boundFramebuffer) state.draws++
     },
     isContextLost: () => state.lost,
     getExtension: (name: string) =>

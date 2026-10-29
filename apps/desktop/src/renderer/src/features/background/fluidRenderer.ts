@@ -1,3 +1,5 @@
+import { slotOf } from '@renderer/utils/frameBeat'
+
 /**
  * Moving light's renderer, kept apart from React so every lifecycle path (start, pause, cover
  * changes, failure, context loss, disposal) can be exercised with a fake WebGL context and a
@@ -37,6 +39,8 @@ uniform float uAspect;
 uniform vec4 uQ;
 uniform vec4 uR;
 uniform vec2 uO[6];
+// Music: a gentle lift with the level and the kick (0 when the light does not follow the sound).
+uniform float uGlow;
 
 float hash(vec2 i) {
   i = mod(i, 289.0);
@@ -92,12 +96,41 @@ void main() {
     total += e;
   }
   vec3 col = total > 0.0 ? toGamma(acc / total) : vec3(0.08, 0.07, 0.06);
-  // No per-pixel dither: the surface is stretched to the window, which turned dither into visible
-  // grain blocks. The colours vary enough that banding does not show.
+  col *= 1.0 + uGlow;
+  // Dithering happens in the second pass (SMOOTH_FRAG), at the window's own pixels.
   gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
 `
 
+/** Dither strength in 8-bit steps; the room's shades scale it down to about one step. */
+export const DITHER_STEPS = 2.5
+
+// Second pass: the small colour field, stretched to the window's own pixels, with a fine
+// triangular dither. Without it a dark room showed the 8-bit steps of a slow gradient as wavy
+// contour lines (stretched 2.5x, and made coarser by the shades laid over the room). Dithering in
+// the small field itself would be stretched into visible grain; at one window pixel, and about
+// one step after the room's shades, it is invisible and the steps disappear.
+export const SMOOTH_FRAG = `
+const float DITHER = ${(DITHER_STEPS / 255).toFixed(5)};
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
+precision mediump float;
+#endif
+varying vec2 vUv;
+uniform sampler2D uField;
+float h(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+void main() {
+  vec3 c = texture2D(uField, vUv).rgb;
+  vec2 f = gl_FragCoord.xy;
+  float n = h(f) + h(f + vec2(41.7, 113.3)) - 1.0;
+  gl_FragColor = vec4(clamp(c + n * DITHER, 0.0, 1.0), 1.0);
+}
+`
 const LATTICE = 289
 const wrap = (x: number): number => ((x % LATTICE) + LATTICE) % LATTICE
 /** How fast the shared warp changes. */
@@ -141,6 +174,11 @@ export interface FluidDeps {
   cancelFrame?: (id: number) => void
   /** Target time between drawn frames; rounded to a whole number of display refreshes. */
   frameMs?: number
+  /**
+   * The music, when the light follows it: energy (0 to 1) speeds the flow and lifts the light a
+   * little, a kick (pulse, 0 to 1) brightens it for a moment. Null or absent: no effect.
+   */
+  sound?: () => { energy: number; pulse: number } | null
   /** Development: count drawn frames. */
   onDraw?: () => void
 }
@@ -157,7 +195,12 @@ export interface FluidCallbacks {
 export interface FluidRenderer {
   setCover: (url: string) => void
   setActive: (active: boolean) => void
-  resize: (width: number, height: number) => void
+  /**
+   * width x height is the colour field (small); outWidth x outHeight the canvas, normally the
+   * window's own pixels, where the field is stretched and dithered. Without an output size the
+   * canvas is the field's size.
+   */
+  resize: (width: number, height: number, outWidth?: number, outHeight?: number) => void
   dispose: () => void
   readonly running: boolean
   readonly disposed: boolean
@@ -208,34 +251,50 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
     gl.getExtension('WEBGL_lose_context')?.loseContext()
   }
 
+  const link = (vs: WebGLShader, fs: WebGLShader): WebGLProgram | null => {
+    const prog = gl.createProgram()
+    if (!prog) return null
+    gl.attachShader(prog, vs)
+    gl.attachShader(prog, fs)
+    // Both programs read the quad from attribute 0, so one buffer set-up serves both.
+    gl.bindAttribLocation(prog, 0, 'aPos')
+    gl.linkProgram(prog)
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      gl.deleteProgram(prog)
+      return null
+    }
+    return prog
+  }
+
   const vs = compile(gl, gl.VERTEX_SHADER, VERT)
   const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG)
-  const prog = vs && fs ? gl.createProgram() : null
+  const prog = vs && fs ? link(vs, fs) : null
   if (!vs || !fs || !prog) {
     release(() => vs && gl.deleteShader(vs), () => fs && gl.deleteShader(fs))
     return null
   }
-  gl.attachShader(prog, vs)
-  gl.attachShader(prog, fs)
-  gl.linkProgram(prog)
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    release(() => gl.deleteProgram(prog), () => gl.deleteShader(vs), () => gl.deleteShader(fs))
-    return null
-  }
-  gl.useProgram(prog)
+  // The smoothing pass is optional: without it the field is drawn straight to the canvas.
+  const smoothFs = compile(gl, gl.FRAGMENT_SHADER, SMOOTH_FRAG)
+  const smoothProg = smoothFs ? link(vs, smoothFs) : null
+
   const buf = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, buf)
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW)
-  const aPos = gl.getAttribLocation(prog, 'aPos')
-  gl.enableVertexAttribArray(aPos)
-  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0)
+  gl.enableVertexAttribArray(0)
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
+  gl.useProgram(prog)
   const uMix = gl.getUniformLocation(prog, 'uMix')
   const uQ = gl.getUniformLocation(prog, 'uQ')
   const uR = gl.getUniformLocation(prog, 'uR')
   const uO = gl.getUniformLocation(prog, 'uO')
   const uAspect = gl.getUniformLocation(prog, 'uAspect')
+  const uGlow = gl.getUniformLocation(prog, 'uGlow')
   gl.uniform1i(gl.getUniformLocation(prog, 'uA'), 0)
   gl.uniform1i(gl.getUniformLocation(prog, 'uB'), 1)
+  if (smoothProg) {
+    gl.useProgram(smoothProg)
+    gl.uniform1i(gl.getUniformLocation(smoothProg, 'uField'), 2)
+  }
 
   const makeTex = (): WebGLTexture | null => {
     const t = gl.createTexture()
@@ -250,7 +309,35 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
   let texA = makeTex()
   let texB = makeTex()
 
+  // The field's own small target, sampled with linear filtering by the smoothing pass.
+  let fieldTex: WebGLTexture | null = null
+  let fbo: WebGLFramebuffer | null = null
+  let fieldW = canvas.width
+  let fieldH = canvas.height
+  let outW = canvas.width
+  let outH = canvas.height
+  // The size the field target was last allocated at.
+  let targetW = 0
+  let targetH = 0
+  const smoothing = (): boolean => Boolean(smoothProg && fbo && (outW !== fieldW || outH !== fieldH))
+  const setupTarget = (): void => {
+    if (!smoothProg) return
+    if (!fieldTex) fieldTex = makeTex()
+    if (!fbo) fbo = gl.createFramebuffer()
+    gl.bindTexture(gl.TEXTURE_2D, fieldTex)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, fieldW, fieldH, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo)
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fieldTex, 0)
+    const ok = gl.checkFramebufferStatus(gl.FRAMEBUFFER) === gl.FRAMEBUFFER_COMPLETE
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+    if (!ok) {
+      gl.deleteFramebuffer(fbo)
+      fbo = null
+    }
+  }
+
   let mix = 1
+  let glow = 0
   let fadeFrom = 0
   let time = Math.random() * 40
   let frameId = 0
@@ -261,41 +348,53 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
   const draw = (): void => {
     if (disposed || gl.isContextLost()) return
     deps.onDraw?.()
+    const smooth = smoothing()
+    gl.useProgram(prog)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, smooth ? fbo : null)
+    gl.viewport(0, 0, smooth ? fieldW : outW, smooth ? fieldH : outH)
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, texA)
     gl.activeTexture(gl.TEXTURE1)
     gl.bindTexture(gl.TEXTURE_2D, texB)
     gl.uniform1f(uMix, mix)
+    gl.uniform1f(uGlow, glow)
     const f = flowUniforms(time)
     gl.uniform4f(uQ, f.q[0], f.q[1], f.q[2], f.q[3])
     gl.uniform4f(uR, f.r[0], f.r[1], f.r[2], f.r[3])
     gl.uniform2fv(uO, f.o)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
+    if (!smooth || !smoothProg) return
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+    gl.viewport(0, 0, outW, outH)
+    gl.useProgram(smoothProg)
+    gl.activeTexture(gl.TEXTURE2)
+    gl.bindTexture(gl.TEXTURE_2D, fieldTex)
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
   }
 
-  // Frame pacing: the loop follows the display refresh and draws on the first refresh at least
-  // (frameMs - half a refresh) after the last drawn frame, so frames land on the refresh grid at a
-  // near-constant cadence (about 35 ms at 144 Hz, 33 ms at 120 or 60 Hz), and each frame advances
-  // the clock by exactly the time since the previous one. An earlier timer-then-frame loop drew
-  // at uneven 36 to 67 ms intervals. Refreshes that do not draw cost almost nothing: the page
-  // already has animation-frame work while music plays. (Aligning these frames with the record's
-  // 60 Hz steps was tried and measured; it did not reduce dropped frames, so it was not kept.)
-  let vsync = 1000 / 60
-  let lastTick = -1
+  // Frame pacing: the loop follows the display refresh and draws on the first refresh of each
+  // frameMs slot of the clock. At 30 fps the slots are every other beat of the shared 60 Hz beat
+  // (utils/frameBeat), so Moving light changes on the same frames as the record and the progress
+  // bar instead of adding frames of its own: on a 144 Hz laptop the separate cadences together
+  // had the window drawing on nearly every refresh. Each frame advances the colour by exactly
+  // the time since the previous one, so the motion stays even when the gaps alternate between
+  // four and five refreshes.
+  let lastSlot = -1
   let lastDraw = -1
   const frame = (t: number): void => {
     frameId = 0
     if (disposed || !running) return
-    if (lastTick >= 0) {
-      const d = t - lastTick
-      // Learn the refresh interval from intervals that were not missed refreshes.
-      if (d > 2 && d < vsync * 1.5) vsync += (d - vsync) * 0.1
-    }
-    lastTick = t
-    if (lastDraw < 0 || t - lastDraw >= frameMs - vsync / 2) {
+    const slot = slotOf(t, frameMs)
+    if (slot !== lastSlot) {
+      lastSlot = slot
       const dt = lastDraw >= 0 ? Math.min(0.1, (t - lastDraw) / 1000) : 0
       lastDraw = t
-      time += dt
+      const s = deps.sound?.()
+      const energy = s ? Math.max(0, Math.min(1, s.energy)) : 0
+      const pulse = s ? Math.max(0, Math.min(1, s.pulse)) : 0
+      glow = energy * 0.1 + pulse * 0.09
+      // Louder music moves the colour faster; quiet passages drift as before.
+      time += dt * (1 + 1.5 * energy)
       if (mix < 1) mix = Math.min(1, (now() - fadeFrom) / 1200)
       draw()
     }
@@ -303,7 +402,7 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
   }
   const schedule = (): void => {
     if (disposed || !running) return
-    lastTick = -1
+    lastSlot = -1
     lastDraw = -1
     frameId = requestFrame(frame)
   }
@@ -321,6 +420,7 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
       stopLoop()
       // Finish any crossfade so a still room shows the current cover.
       mix = 1
+      glow = 0
       draw()
     }
     cb.onRunning?.(on)
@@ -344,13 +444,26 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
       if (disposed) return
       setRunning(on)
     },
-    resize(width, height) {
+    resize(width, height, outWidth = width, outHeight = height) {
       if (disposed) return
-      if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width
-        canvas.height = height
-        gl.viewport(0, 0, width, height)
+      fieldW = width
+      fieldH = height
+      const wantSmooth = outWidth !== width || outHeight !== height
+      if (wantSmooth && (targetW !== width || targetH !== height)) {
+        setupTarget()
+        targetW = width
+        targetH = height
       }
+      // Without the smoothing pass the field is drawn straight to a canvas of its own size: the
+      // field shader is too costly to run at every window pixel.
+      const smooth = wantSmooth && Boolean(smoothProg && fbo)
+      outW = smooth ? outWidth : width
+      outH = smooth ? outHeight : height
+      if (canvas.width !== outW || canvas.height !== outH) {
+        canvas.width = outW
+        canvas.height = outH
+      }
+      gl.useProgram(prog)
       gl.uniform1f(uAspect, width / height)
       // Resizing clears the drawing buffer: draw again now, or a still room goes blank.
       draw()
@@ -389,10 +502,14 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
       release(
         () => gl.deleteTexture(texA),
         () => gl.deleteTexture(texB),
+        () => fieldTex && gl.deleteTexture(fieldTex),
+        () => fbo && gl.deleteFramebuffer(fbo),
         () => gl.deleteBuffer(buf),
         () => gl.deleteProgram(prog),
+        () => smoothProg && gl.deleteProgram(smoothProg),
         () => gl.deleteShader(vs),
-        () => gl.deleteShader(fs)
+        () => gl.deleteShader(fs),
+        () => smoothFs && gl.deleteShader(smoothFs)
       )
       cb.onRunning?.(false)
     }
