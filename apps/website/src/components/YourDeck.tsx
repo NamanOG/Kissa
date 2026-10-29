@@ -9,7 +9,7 @@ const PANELS = [
     clip: 'moving-light',
     label: 'Moving light',
     title: 'The cover’s colours, drifting.',
-    text: 'Turn on Moving light and the colours of the album that is playing flow slowly behind the room, mixing and changing as the record turns. Off by default; one switch on the deck.'
+    text: 'Turn on Moving light and the colours of the album that is playing drift slowly behind the room while the music plays. Let them move with the beat, turn the room light down, or set a sleep timer.'
   },
   {
     clip: 'editions',

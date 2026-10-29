@@ -9,7 +9,7 @@
   },
   {
     "q": "Is Kissa a virtual record player or an audio player?",
-    "a": "Kissa is a virtual record player that accompanies the music already playing on your Windows PC. Keep listening in Spotify, Apple Music, TIDAL or a local media player; Kissa adds the spinning vinyl, album artwork and synced lyrics. It does not stream songs, import an audio library or record physical vinyl."
+    "a": "Kissa can play your own album folders or accompany music already playing on your Windows PC. Keep listening in Spotify, Apple Music, TIDAL or a local media player; Kissa adds the spinning vinyl, album artwork and synced lyrics. It does not stream songs or record physical vinyl."
   },
   {
     "q": "Can I change the look of the turntable and the record?",
@@ -42,5 +42,13 @@
   {
     "q": "Can Kissa be used as a Windows screensaver?",
     "a": "Yes. Kissa includes a native Windows screensaver that keeps the record turning, with or without lyrics, when your PC is idle. You turn it on from Kissa's settings."
+  },
+  {
+    "q": "Does Pressed upload my listening?",
+    "a": "No. Your listening history and Pressed recap are kept on your PC."
+  },
+  {
+    "q": "Do I need an account for the phone remote?",
+    "a": "No. It works over your own Wi-Fi: scan the QR code Kissa shows, or enter its 6-digit code."
   }
 ]

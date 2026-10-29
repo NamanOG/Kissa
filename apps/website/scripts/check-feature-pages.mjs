@@ -20,7 +20,7 @@ assert.ok(homeRoot.includes('Windows 10 and 11'), 'home: supported systems in vi
 assert.ok(homeRoot.includes('href="https://apps.microsoft.com/detail/9p3n4x4wm80j"'), 'home: Store link without JavaScript')
 assert.ok(homeRoot.includes(`href="${new URL(site).pathname}study-room/"`), 'home: crawlable Focus Room link')
 assert.ok(homeRoot.includes(`href="${new URL(site).pathname}discord-music-status/"`), 'home: crawlable Discord guide link')
-assert.ok(homeRoot.includes('It does not stream songs, import an audio library or record physical vinyl.'), 'home: honest product scope')
+assert.ok(homeRoot.includes('It does not stream songs or record physical vinyl.'), 'home: honest product scope')
 const homeSchema = JSON.parse(home.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1])
 const faqSchema = homeSchema['@graph'].find((entry) => entry['@type'] === 'FAQPage')
 const unescapeHtml = (value) => value.replaceAll('&#x27;', "'").replaceAll('&quot;', '"').replaceAll('&amp;', '&')

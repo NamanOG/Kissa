@@ -9,13 +9,13 @@ const MODES = [
     id: 'normal',
     name: 'Normal Window',
     description:
-      'A vinyl deck that sits beside your code, writing or browser. Watch the platter spin, and seek by dropping the needle.',
+      'A vinyl deck beside your work. Switch to the mini player for just the record, with controls on hover.',
     clip: 'normal'
   },
   {
     id: 'fullscreen',
     name: 'Fullscreen Room',
-    description: 'Desktop clutter fades away. The album cover takes the whole screen, lit softly in its own colours.',
+    description: 'Desktop clutter fades away. The album cover takes the whole screen, lit softly in its own colours. Press P for Party mode.',
     clip: 'fullscreen'
   },
   {

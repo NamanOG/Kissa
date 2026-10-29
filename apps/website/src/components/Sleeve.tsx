@@ -18,7 +18,9 @@ const SIDES = [
       { no: 'A3', name: 'Synced lyrics', note: 'Line by line, and word by word where the source allows.' },
       { no: 'A4', name: 'Your turntable', note: 'Walnut, Porcelain or Studio Silver, with coloured and marbled pressings. Save the looks you like.' },
       { no: 'A5', name: 'Match the Album', note: 'An optional record pressed in the colours of the cover. Classic black stays the default.' },
-      { no: 'A6', name: 'Real turntable sounds', note: 'Recorded needle drops and soft mechanical keys. One switch turns them off.' }
+      { no: 'A6', name: 'Real turntable sounds', note: 'Recorded needle drops and soft mechanical keys. One switch turns them off.' },
+      { no: 'A7', name: 'Your albums', note: 'Play your own album folders with the Kissa Hi-Fi vinyl sound.' },
+      { no: 'A8', name: 'Dust lid and record sides', note: 'Lift the dust lid, turn the record over and read the sleeve back.' }
     ]
   },
   {
@@ -26,17 +28,20 @@ const SIDES = [
     title: 'The room',
     tracks: [
       { no: 'B1', name: 'Match Album light', note: 'The room is lit by the colours of the current cover.' },
-      { no: 'B2', name: 'Moving light', note: 'Turn it on and the cover’s colours drift slowly behind the room.' },
-      { no: 'B3', name: 'Listening Display', note: 'Fullscreen, as a turntable or a 12-inch cover on a stand.' },
+      { no: 'B2', name: 'Moving light', note: 'The cover’s colours drift behind the room while music plays, and can move with the beat.' },
+      { no: 'B3', name: 'Listening Display', note: 'Press D for fullscreen, as a turntable or a 12-inch cover on a stand.' },
       { no: 'B4', name: 'Screensaver', note: 'A native Windows screensaver that keeps the record turning.' },
       { no: 'B5', name: 'Record Shelf', note: 'Your listening history: flip through the crate, or see it as a grid.' },
-      { no: 'B6', name: 'Quiet by default', note: 'Lives in the system tray, and updates through the Microsoft Store.' }
+      { no: 'B6', name: 'Quiet by default', note: 'Lives in the system tray, and updates through the Microsoft Store.' },
+      { no: 'B7', name: 'Pressed', note: 'Your week, month or year in music, told as a short moving story with a card to share. Stays on your PC.' },
+      { no: 'B8', name: 'Phone remote', note: 'Control Kissa from your phone on the same Wi-Fi. Scan a QR code or enter a 6-digit code. No account.' },
+      { no: 'B9', name: 'English and Spanish', note: 'Use Kissa in English or Spanish.' }
     ]
   }
 ]
 
 /**
- * Sleeve - the feature list as the back of an LP: two sides, six tracks each.
+ * Sleeve - the feature list as the back of an LP: two sides of notes.
  * As the section scrolls in, the record slides out of its sleeve.
  */
 export function Sleeve() {
