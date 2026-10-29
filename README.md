@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-4.4.0-blue?style=flat-square" alt="Version 4.4.0" />
+  <img src="https://img.shields.io/badge/Version-5.0.0-blue?style=flat-square" alt="Version 5.0.0" />
   <img src="https://img.shields.io/badge/Electron-39-blue?style=flat-square&logo=electron" alt="Electron 39" />
   <img src="https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react" alt="React 19" />
   <img src="https://img.shields.io/badge/TypeScript-Strict-blue?style=flat-square&logo=typescript" alt="TypeScript" />
@@ -259,8 +259,8 @@ npm run build:store
 
 Production artifacts are output to `apps/desktop/dist/`:
 
-- `Kissa-Setup-4.4.0.exe`
-- `Kissa-Portable-4.4.0.exe`
+- `Kissa-Setup-5.0.0.exe`
+- `Kissa-Portable-5.0.0.exe`
 
 ---
 

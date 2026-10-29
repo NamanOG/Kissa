@@ -1,6 +1,6 @@
 {
   "name": "apps-desktop",
-  "version": "4.4.0",
+  "version": "5.0.0",
   "description": "A contemplative desktop vinyl player & listening environment for Windows.",
   "license": "SEE LICENSE IN LICENSE",
   "main": "./out/main/index.js",
