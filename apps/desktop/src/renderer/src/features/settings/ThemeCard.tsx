@@ -3,6 +3,7 @@ import { Check } from 'lucide-react'
 import { ThemeDefinition } from './themes'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { cn } from '@renderer/utils/cn'
+import { useT } from '@renderer/i18n'
 
 export interface ThemeCardProps {
   theme: ThemeDefinition
@@ -15,6 +16,7 @@ export interface ThemeCardProps {
  * room gets a thin ink frame and a small check, never a glow or a jump in size.
  */
 export const ThemeCard = memo(({ theme, isSelected, onSelect }: ThemeCardProps): React.JSX.Element => {
+  const t = useT()
   const artworkUrl = usePlayerStore((s) => s.currentTrack?.artworkUrl)
   const cover = artworkUrl && !artworkUrl.includes('placeholder-album') ? artworkUrl : null
 
@@ -24,7 +26,7 @@ export const ThemeCard = memo(({ theme, isSelected, onSelect }: ThemeCardProps):
       onClick={onSelect}
       className="group relative flex w-full cursor-pointer select-none flex-col text-left outline-none"
       aria-pressed={isSelected}
-      aria-label={`${theme.name} room`}
+      aria-label={t('themeCard.label', { name: theme.id === 'adaptive' ? t('turntable.match') : theme.name })}
     >
       <div
         className={cn(
@@ -82,7 +84,7 @@ export const ThemeCard = memo(({ theme, isSelected, onSelect }: ThemeCardProps):
           isSelected ? 'font-medium text-ink' : 'text-dim group-hover:text-ink'
         )}
       >
-        {theme.id === 'adaptive' ? 'Match the album' : theme.name}
+        {theme.id === 'adaptive' ? t('turntable.match') : theme.name}
       </span>
     </button>
   )

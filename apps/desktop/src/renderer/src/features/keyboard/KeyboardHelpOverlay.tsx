@@ -1,84 +1,117 @@
 import React, { memo, useRef } from 'react'
 import { useDialogFocus } from '../../hooks/useDialogFocus'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { X } from 'lucide-react'
+import { useT, type MessageKey } from '@renderer/i18n'
+
+type Shortcut = { keys: string[]; action: MessageKey }
+type Group = { title: MessageKey; items: Shortcut[] }
+
+// Grouped the way people look for them: the music, where to look, the room.
+const GROUPS: Group[] = [
+  {
+    title: 'keys.group.playback',
+    items: [
+      { keys: ['Space'], action: 'keys.playPause' },
+      { keys: ['←', '→'], action: 'keys.seek' },
+      { keys: ['Shift', '←', '→'], action: 'keys.skip' },
+      { keys: ['↑', '↓'], action: 'keys.volume' },
+      { keys: ['M'], action: 'keys.mute' }
+    ]
+  },
+  {
+    title: 'keys.group.views',
+    items: [
+      { keys: ['L'], action: 'keys.lyrics' },
+      { keys: ['D'], action: 'keys.display' },
+      { keys: ['P'], action: 'keys.party' },
+      { keys: ['F11'], action: 'keys.fullscreen' }
+    ]
+  },
+  {
+    title: 'keys.group.room',
+    items: [
+      { keys: ['E'], action: 'keys.edition' },
+      { keys: ['A'], action: 'keys.match' },
+      { keys: ['T'], action: 'keys.themes' },
+      { keys: ['S'], action: 'keys.settings' },
+      { keys: ['?'], action: 'keys.help' },
+      { keys: ['Esc'], action: 'keys.close' }
+    ]
+  }
+]
+
+const KEYCAP =
+  'inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-[6px] bg-white/[0.08] px-1.5 text-[11.5px] font-medium leading-none text-ink/85 shadow-[inset_0_-1px_0_rgba(0,0,0,0.35),inset_0_0_0_0.5px_rgba(255,255,255,0.12)]'
 
 export const KeyboardHelpOverlay = memo((): React.JSX.Element => {
   const isOpen = usePlayerStore((s) => s.isKeyboardHelpOpen)
   const toggle = usePlayerStore((s) => s.toggleKeyboardHelp)
   const panelRef = useRef<HTMLDivElement>(null)
+  const t = useT()
+  const reduce = useReducedMotion()
   useDialogFocus(panelRef, isOpen)
-
-  const shortcuts = [
-    { key: 'Space', action: 'Play / Pause' },
-    { key: 'L', action: 'Toggle Lyrics View' },
-    { key: '← / →', action: 'Seek ±5 seconds' },
-    { key: 'Shift + ← / →', action: 'Previous / Next Track' },
-    { key: 'T', action: 'Cycle Themes' },
-    { key: 'A', action: 'Toggle Match Album' },
-    { key: 'F11', action: 'Toggle Fullscreen' },
-    { key: 'D', action: 'Start Listening Display' },
-    { key: 'S', action: 'Open Settings' },
-    { key: 'E', action: 'Change your turntable (Kissa Edition)' },
-    { key: '↑ / ↓', action: 'Volume ±5%' },
-    { key: '?', action: 'Toggle this overlay' },
-    { key: 'Esc', action: 'Close modals' }
-  ]
 
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-6"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-6 backdrop-blur-[2px]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
+          transition={{ duration: 0.18 }}
           onClick={toggle}
         >
           <motion.div
             ref={panelRef}
             role="dialog"
             aria-modal="true"
-            aria-label="Keyboard shortcuts"
-            className="relative w-full max-w-[420px] bg-[var(--deck-bg)] border border-white/[0.1] rounded-2xl p-8 overflow-hidden select-none shadow-[0_24px_64px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(255,255,255,0.05)]"
-            initial={{ scale: 0.96, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.96, opacity: 0 }}
+            aria-label={t('keys.title')}
+            className="relative flex max-h-full w-full max-w-[680px] select-none flex-col overflow-hidden rounded-[24px] border border-white/[0.09] kissa-sheet shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)]"
+            initial={{ opacity: 0, scale: reduce ? 1 : 0.97, y: reduce ? 0 : 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: reduce ? 1 : 0.98 }}
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/[0.08]">
-              <h2 className="text-[12px] text-dim uppercase tracking-[0.2em] font-kissa-chassis font-bold">
-                Quick Reference
-              </h2>
+            <div className="flex shrink-0 items-start justify-between gap-4 px-7 pt-6">
+              <div>
+                <h2 className="font-kissa-editorial text-[26px] leading-tight tracking-[-0.015em] text-ink">
+                  {t('keys.title')}
+                </h2>
+                <p className="mt-1 text-[12.5px] text-dim">{t('keys.subtitle')}</p>
+              </div>
               <button
                 type="button"
                 onClick={toggle}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-[color,background-color,transform] duration-ui ease-primary cursor-pointer shadow-sm active:scale-95 border border-white/[0.08]"
-                aria-label="Close"
+                className="-mr-1 flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-ink/55 transition-[color,background-color,transform] duration-ui ease-primary hover:bg-white/10 hover:text-ink active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
+                aria-label={t('keys.closeLabel')}
               >
-                <X className="w-4 h-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
 
-            <div className="space-y-2.5">
-              {shortcuts.map((sc, i) => (
-                <div 
-                  key={i} 
-                  className="flex items-center justify-between group py-2 px-3 rounded-xl hover:bg-white/[0.05] transition-colors"
-                >
-                  <span className="text-ink text-[13.5px] font-medium tracking-wide">
-                    {sc.action}
-                  </span>
-                  <kbd className="min-w-[36px] px-2.5 py-1 text-center bg-black/40 border border-white/10 rounded text-[11px] font-kissa-chassis font-bold tracking-widest text-dim shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)] group-hover:text-tone group-hover:border-tone/50 transition-colors duration-ui ease-primary">
-                    {sc.key}
-                  </kbd>
-                </div>
+            <div className="grid min-h-0 grid-cols-1 gap-x-8 gap-y-6 overflow-y-auto px-7 pb-7 pt-6 min-[720px]:grid-cols-2">
+              {GROUPS.map((group, gi) => (
+                <section key={group.title} className={gi === 2 ? 'min-[720px]:col-start-2 min-[720px]:row-start-1 min-[720px]:row-span-2' : undefined}>
+                  <h3 className="mb-2 text-[12.5px] font-medium text-tone">{t(group.title)}</h3>
+                  <dl className="divide-y divide-white/[0.06] rounded-[14px] bg-white/[0.035] px-3.5 shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.07)]">
+                    {group.items.map((sc) => (
+                      <div key={sc.action} className="flex items-center justify-between gap-4 py-2.5">
+                        <dt className="text-[13.5px] text-ink/90">{t(sc.action)}</dt>
+                        <dd className="flex shrink-0 items-center gap-1">
+                          {sc.keys.map((k) => (
+                            <kbd key={k} className={KEYCAP}>{k}</kbd>
+                          ))}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
               ))}
             </div>
-
           </motion.div>
         </motion.div>
       )}

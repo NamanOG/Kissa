@@ -4,9 +4,10 @@ import { HardwareSwitch } from '@renderer/components/ui/HardwareSwitch'
 import { cn } from '@renderer/utils/cn'
 import type { DiscordPresenceStatus, YouTubeMusicConnectorStatus } from '../../../../types/discord'
 import { CONNECTOR_STORE_LINKS, YOUTUBE_MUSIC_AVAILABLE } from './youtubeMusicConnector'
+import { BTN } from './PersonalSettings'
+import { tl } from '@renderer/i18n'
 
-const BUTTON =
-  'h-8 px-4 rounded-full border border-ink/[0.16] text-[12.5px] font-medium text-ink transition-colors hover:bg-ink/[0.07] hover:border-ink/25 cursor-pointer active:translate-y-px disabled:cursor-default disabled:opacity-40 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-ink/70'
+const BUTTON = BTN
 
 function openExternal(url: string): void {
   if (window.electron?.openExternal) void window.electron.openExternal(url)
@@ -86,13 +87,13 @@ export function YouTubeMusicConnectorRow({
         <HardwareSwitch
           checked={status.shareYouTubeMusic}
           onChange={toggle}
-          aria-label="Also share YouTube Music from the browser on Discord"
+          aria-label={tl('a11y.ytmShare')}
         />
       </div>
 
       {status.shareYouTubeMusic && (
         <div className="mt-3 rounded-xl border border-ink/10 bg-ink/[0.04] p-3.5">
-          <ol className="flex flex-col gap-3.5" aria-label="Set up YouTube Music">
+          <ol className="flex flex-col gap-3.5" aria-label={tl('a11y.ytmSetup')}>
             <Step n={1} done={paired} title="Add “Kissa for YouTube Music” to your browser">
               {!paired && (
                 <div className="flex flex-wrap gap-2">

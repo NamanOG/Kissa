@@ -7,6 +7,7 @@ import env05 from '@renderer/media/environments/05_rainy_window.jpg'
 import env06 from '@renderer/media/environments/06_hifi_library.jpg'
 import env07 from '@renderer/media/environments/07_concrete_vinyl.jpg'
 import env08 from '@renderer/media/environments/08_sunday_morning.jpg'
+import { tl } from '@renderer/i18n'
 
 export interface ThemeDefinition {
   id: AppTheme
@@ -47,13 +48,17 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
   {
     id: 'quiet-room',
     number: '01',
-    name: 'Warm Walnut Studio',
-    description: 'Amber lamplight, walnut grain, late-night warmth',
+    get name() {
+      return tl('room.quiet-room.name')
+    },
+    get description() {
+      return tl('room.quiet-room.desc')
+    },
     image: env01,
     accentColor: '#e08e45',
     surfaceColor: '#16100c',
     onSurfaceColor: '#faf3ea',
-    mutedColor: '#a6866b',
+    mutedColor: '#aa8b72',
     ui: {
       panelBg: 'rgba(32, 22, 17, 0.82)',
       panelBorder: 'rgba(224, 142, 69, 0.14)',
@@ -82,13 +87,17 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
   {
     id: 'dusty-record',
     number: '02',
-    name: 'Vintage Amber',
-    description: 'Sepia photographs, aged cardboard, faded gold sleeves',
+    get name() {
+      return tl('room.dusty-record.name')
+    },
+    get description() {
+      return tl('room.dusty-record.desc')
+    },
     image: env02,
     accentColor: '#e5a93c',
     surfaceColor: '#18140c',
     onSurfaceColor: '#fbf5e6',
-    mutedColor: '#9e8862',
+    mutedColor: '#b5a487',
     ui: {
       panelBg: 'rgba(32, 26, 16, 0.84)',
       panelBorder: 'rgba(229, 169, 60, 0.16)',
@@ -117,13 +126,17 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
   {
     id: 'jazz-bar',
     number: '03',
-    name: 'Indigo Jazz Club',
-    description: 'Neon signs, velvet booths, smoky violet haze',
+    get name() {
+      return tl('room.jazz-bar.name')
+    },
+    get description() {
+      return tl('room.jazz-bar.desc')
+    },
     image: env03,
     accentColor: '#c084fc',
     surfaceColor: '#0d0b1a',
     onSurfaceColor: '#f3efff',
-    mutedColor: '#8b7eb8',
+    mutedColor: '#978cbf',
     ui: {
       panelBg: 'rgba(22, 18, 42, 0.82)',
       panelBorder: 'rgba(192, 132, 252, 0.2)',
@@ -152,13 +165,17 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
   {
     id: 'midnight-apartment',
     number: '04',
-    name: 'Cold Midnight',
-    description: 'Insomnia blue, graphite walls, city glow from a window',
+    get name() {
+      return tl('room.midnight-apartment.name')
+    },
+    get description() {
+      return tl('room.midnight-apartment.desc')
+    },
     image: env04,
     accentColor: '#38bdf8',
     surfaceColor: '#0a0e18',
     onSurfaceColor: '#e6f0fa',
-    mutedColor: '#5b7294',
+    mutedColor: '#7d91af',
     ui: {
       panelBg: 'rgba(16, 23, 38, 0.86)',
       panelBorder: 'rgba(56, 189, 248, 0.14)',
@@ -187,13 +204,17 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
   {
     id: 'rainy-window',
     number: '05',
-    name: 'Petrichor',
-    description: 'Rain on glass, slate sky, warm indoor refuge',
+    get name() {
+      return tl('room.rainy-window.name')
+    },
+    get description() {
+      return tl('room.rainy-window.desc')
+    },
     image: env05,
     accentColor: '#7dd3fc',
     surfaceColor: '#101520',
     onSurfaceColor: '#eaf0f8',
-    mutedColor: '#64748b',
+    mutedColor: '#95a1b2',
     ui: {
       panelBg: 'rgba(22, 29, 44, 0.82)',
       panelBorder: 'rgba(125, 211, 252, 0.14)',
@@ -222,13 +243,17 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
   {
     id: 'hifi-library',
     number: '06',
-    name: 'Hi-Fi Library',
-    description: 'Hunter green walls, mahogany shelves, polished brass',
+    get name() {
+      return tl('room.hifi-library.name')
+    },
+    get description() {
+      return tl('room.hifi-library.desc')
+    },
     image: env06,
     accentColor: '#34d399',
     surfaceColor: '#08140c',
     onSurfaceColor: '#e8f8f0',
-    mutedColor: '#4d7c62',
+    mutedColor: '#80b095',
     ui: {
       panelBg: 'rgba(14, 30, 20, 0.84)',
       panelBorder: 'rgba(52, 211, 153, 0.16)',
@@ -257,13 +282,17 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
   {
     id: 'concrete-vinyl',
     number: '07',
-    name: 'Concrete Loft',
-    description: 'Raw concrete, warm terracotta, sunlit industrial windows',
+    get name() {
+      return tl('room.concrete-vinyl.name')
+    },
+    get description() {
+      return tl('room.concrete-vinyl.desc')
+    },
     image: env07,
     accentColor: '#c87056',
     surfaceColor: '#e0e2e5',
     onSurfaceColor: '#2b2e33',
-    mutedColor: '#7a818c',
+    mutedColor: '#43474e',
     ui: {
       panelBg: 'rgba(230, 232, 235, 0.82)',
       panelBorder: 'rgba(0, 0, 0, 0.08)',
@@ -290,13 +319,17 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
   {
     id: 'sunday-morning',
     number: '08',
-    name: 'Sunday Morning',
-    description: 'Linen sheets, warm cream light, slow coffee mornings',
+    get name() {
+      return tl('room.sunday-morning.name')
+    },
+    get description() {
+      return tl('room.sunday-morning.desc')
+    },
     image: env08,
     accentColor: '#b45309',
     surfaceColor: '#f0e8d8',
     onSurfaceColor: '#3d2a14',
-    mutedColor: '#8a6840',
+    mutedColor: '#5b442a',
     ui: {
       panelBg: 'rgba(240, 232, 216, 0.85)',
       panelBorder: 'rgba(0, 0, 0, 0.06)',
@@ -323,8 +356,12 @@ export const LISTENING_ENVIRONMENTS: ThemeDefinition[] = [
   {
     id: 'adaptive',
     number: '09',
-    name: 'Adaptive Atmosphere',
-    description: 'Dynamic room lighting that color-matches the current album artwork',
+    get name() {
+      return tl('room.adaptive.name')
+    },
+    get description() {
+      return tl('room.adaptive.desc')
+    },
     image: env01, // We will use a placeholder or one of the existing ones
     accentColor: 'var(--adaptive-accent, #e0a868)',
     surfaceColor: '#121212',

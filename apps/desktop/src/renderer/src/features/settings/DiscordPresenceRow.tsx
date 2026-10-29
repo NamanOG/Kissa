@@ -2,28 +2,30 @@ import React, { useEffect, useState } from 'react'
 import { HardwareSwitch } from '@renderer/components/ui/HardwareSwitch'
 import type { DiscordPresenceState, DiscordPresenceStatus } from '../../../../types/discord'
 import { YouTubeMusicConnectorRow } from './YouTubeMusicConnectorRow'
+import { BTN, BTN_PRIMARY } from './PersonalSettings'
+import { tl, useT } from '@renderer/i18n'
 
 function stateText(state: DiscordPresenceState, spotify: boolean, youtubeMusic = false): string {
   const players = [
     'Apple Music',
     ...(spotify ? ['Spotify'] : []),
     ...(youtubeMusic ? ['YouTube Music'] : [])
-  ].join(spotify && youtubeMusic ? ', ' : ' or ').replace(/, ([^,]*)$/, ' or $1')
+  ].join(spotify && youtubeMusic ? ', ' : tl('discord.or')).replace(/, ([^,]*)$/, `${tl('discord.or')}$1`)
   switch (state) {
     case 'off':
-      return 'Show the track you are playing on your Discord profile, with a link to Kissa'
+      return tl('discord.off')
     case 'unconfigured':
-      return 'Discord sharing is not available in this build of Kissa'
+      return tl('discord.unconfigured')
     case 'no-discord':
-      return 'Waiting for the Discord app to open'
+      return tl('discord.waiting')
     case 'idle':
-      return `Connected. Shows up when Kissa is following ${players}`
+      return tl('discord.idle', { players })
     case 'sharing':
-      return 'Sharing what you play on your Discord profile'
+      return tl('discord.sharing')
     case 'paused':
-      return 'Paused. The track clears after two minutes'
+      return tl('discord.paused')
     case 'studying':
-      return 'Sharing your focus session'
+      return tl('discord.studying')
   }
 }
 
@@ -33,6 +35,7 @@ function stateText(state: DiscordPresenceState, spotify: boolean, youtubeMusic =
  * separate opt-in: Spotify can share itself, and both together put two cards on the profile.
  */
 export function DiscordPresenceRow(): React.JSX.Element | null {
+  const t = useT()
   const [status, setStatus] = useState<DiscordPresenceStatus | null>(null)
   const [confirming, setConfirming] = useState(false)
 
@@ -78,7 +81,7 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
     <div className="kissa-set-row flex-col items-stretch gap-0">
       <div className="flex items-center justify-between gap-4">
         <div className="flex flex-col">
-          <span className="text-[14px] font-medium text-ink">Share on Discord</span>
+          <span className="text-[14px] font-medium text-ink">{t('discord.title')}</span>
           <span className="mt-0.5 text-[12.5px] leading-relaxed text-dim flex items-center gap-1.5" role="status">
             {live && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-tone" aria-hidden="true" />}
             {stateText(status.state, status.shareSpotify, status.shareYouTubeMusic)}
@@ -88,31 +91,29 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
           disabled={status.state === 'unconfigured' && !status.enabled}
           checked={status.enabled || confirming}
           onChange={onToggle}
-          aria-label="Share listening activity on Discord"
+          aria-label={t('discord.switch')}
         />
       </div>
 
       {confirming && (
         <div className="mt-3 rounded-xl border border-ink/10 bg-ink/[0.04] p-3.5">
           <p className="text-[12px] leading-relaxed text-ink/90">
-            While Kissa follows Apple Music, your Discord profile will show the song, artist, album
-            cover and time played, with a link to get Kissa. During a focus session it shows the
-            room and its timer instead. Friends and people in your servers can see it.
+            {t('discord.confirm')}
           </p>
           <div className="mt-3 flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="h-8 px-4 rounded-full border border-ink/[0.16] text-[12.5px] font-medium text-ink transition-colors hover:bg-ink/[0.07] hover:border-ink/25 cursor-pointer active:translate-y-px"
+              className={BTN}
             >
-              Not now
+              {t('discord.notNow')}
             </button>
             <button
               type="button"
               onClick={() => setEnabled(true)}
-              className="h-8 px-4 rounded-full bg-ink text-[var(--surface)] text-[12.5px] font-semibold transition-opacity hover:opacity-90 cursor-pointer active:translate-y-px"
+              className={BTN_PRIMARY}
             >
-              Share on Discord
+              {t('discord.title')}
             </button>
           </div>
         </div>
@@ -121,16 +122,15 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
       {status.enabled && canShareSpotify && (
         <div className="mt-3 flex items-center justify-between gap-4 border-t border-ink/[0.06] pt-3">
           <div className="flex flex-col">
-            <span className="text-[12.5px] font-medium text-ink">Also share Spotify</span>
+            <span className="text-[12.5px] font-medium text-ink">{t('discord.spotify')}</span>
             <span className="text-[11.5px] leading-relaxed text-dim mt-0.5">
-              If Spotify is also connected in Discord, your profile can show two cards. To keep only
-              Kissa's, turn off "Display Spotify as your status" in Discord's Connections settings.
+              {t('discord.spotify.desc')}
             </span>
           </div>
           <HardwareSwitch
             checked={status.shareSpotify}
             onChange={setShareSpotify}
-            aria-label="Also share Spotify activity on Discord"
+            aria-label={t('discord.spotify.label')}
           />
         </div>
       )}
@@ -140,16 +140,15 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
       {status.enabled && canShareStudy && (
         <div className="mt-3 flex items-center justify-between gap-4 border-t border-ink/[0.06] pt-3">
           <div className="flex flex-col">
-            <span className="text-[12.5px] font-medium text-ink">Show focus sessions</span>
+            <span className="text-[12.5px] font-medium text-ink">{t('discord.focus')}</span>
             <span className="text-[11.5px] leading-relaxed text-dim mt-0.5">
-              While a session runs, your profile shows the room and its timer. What you are working
-              on stays private.
+              {t('discord.focus.desc')}
             </span>
           </div>
           <HardwareSwitch
             checked={status.shareStudy}
             onChange={setShareStudy}
-            aria-label="Show focus sessions on Discord"
+            aria-label={t('discord.focus.label')}
           />
         </div>
       )}

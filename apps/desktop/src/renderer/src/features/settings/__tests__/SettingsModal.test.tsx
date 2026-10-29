@@ -41,7 +41,7 @@ describe('SettingsModal Windows Screensaver integration', () => {
 
     usePlayerStore.setState({
       isSettingsOpen: true,
-      settingsTab: 'system',
+      settingsTab: 'screensaver',
       hasUpdateAvailable: false
     })
   })
@@ -54,7 +54,7 @@ describe('SettingsModal Windows Screensaver integration', () => {
   it('renders Set as Windows Screensaver when not registered', async () => {
     render(<SettingsModal />)
 
-    expect(screen.getByText('Screensaver')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Screensaver', level: 3 })).toBeInTheDocument()
 
     const setButton = await screen.findByRole('button', { name: 'Use Kissa' })
     expect(setButton).toBeInTheDocument()
@@ -63,8 +63,8 @@ describe('SettingsModal Windows Screensaver integration', () => {
     ).toBeInTheDocument()
   })
 
-  it('opens release notes from System settings without leaving Settings over them', async () => {
-    usePlayerStore.setState({ isWhatsNewOpen: false })
+  it('opens release notes from About without leaving Settings over them', async () => {
+    usePlayerStore.setState({ isWhatsNewOpen: false, settingsTab: 'about' })
     render(<SettingsModal />)
     fireEvent.click(screen.getByRole('button', { name: 'View changes' }))
     expect(usePlayerStore.getState().isSettingsOpen).toBe(false)
@@ -109,7 +109,7 @@ describe('SettingsModal Windows Screensaver integration', () => {
     render(<SettingsModal />)
 
     expect(screen.getByText('Lyrics on the screensaver')).toBeInTheDocument()
-    const toggleButton = screen.getByRole('switch', { name: 'Toggle Screensaver Lyrics' })
+    const toggleButton = screen.getByRole('switch', { name: 'Lyrics on the screensaver' })
     expect(toggleButton).toBeInTheDocument()
 
     fireEvent.click(toggleButton)
@@ -169,7 +169,7 @@ describe('SettingsModal In-App Update System', () => {
 
     usePlayerStore.setState({
       isSettingsOpen: true,
-      settingsTab: 'system'
+      settingsTab: 'about'
     })
   })
 
@@ -391,7 +391,7 @@ describe('SettingsModal startup and background switches', () => {
       syncSettings: syncSettingsMock
     } as any
 
-    usePlayerStore.setState({ isSettingsOpen: true, settingsTab: 'system', startWithWindows: false, runInBackground: false })
+    usePlayerStore.setState({ isSettingsOpen: true, settingsTab: 'general', startWithWindows: false, runInBackground: false })
   })
 
   afterEach(() => {
@@ -402,7 +402,7 @@ describe('SettingsModal startup and background switches', () => {
   it('turns Start with Windows on and tells the main process', () => {
     render(<SettingsModal />)
 
-    fireEvent.click(screen.getByLabelText('Toggle Start with Windows'))
+    fireEvent.click(screen.getByLabelText('Start with Windows'))
 
     expect(usePlayerStore.getState().startWithWindows).toBe(true)
     expect(setStartupMock).toHaveBeenCalledWith(true)
@@ -411,13 +411,14 @@ describe('SettingsModal startup and background switches', () => {
   it('turns Keep Running in Tray on and syncs it to the main process', () => {
     render(<SettingsModal />)
 
-    fireEvent.click(screen.getByLabelText('Toggle Keep Running in Tray'))
+    fireEvent.click(screen.getByLabelText('Keep running in the tray'))
 
     expect(usePlayerStore.getState().runInBackground).toBe(true)
     expect(syncSettingsMock).toHaveBeenCalledWith({ runInBackground: true })
   })
 
   it('shows the Store build as updated by Microsoft Store, with no update button', async () => {
+    usePlayerStore.setState({ settingsTab: 'about' })
     window.electron = {
       ...window.electron,
       getUpdateStatus: vi.fn().mockResolvedValue({
