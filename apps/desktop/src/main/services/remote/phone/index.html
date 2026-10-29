@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#120e0b" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Kissa" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Kissa</title>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon-180.png" sizes="180x180" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/app.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <div class="room" aria-hidden="true">
+      <div class="room-art" id="room-art"></div>
+      <div class="room-tint"></div>
+    </div>
+
+    <main class="shell">
+      <!-- Now playing -->
+      <section class="player" id="player" hidden>
+        <header class="bar-top">
+          <span class="link" id="link" role="status" aria-live="polite">
+            <span class="link-dot" aria-hidden="true"></span>
+            <span id="link-text"></span>
+          </span>
+        </header>
+
+        <div class="stage" id="stage">
+          <div class="cover" id="cover">
+            <img id="cover-img" alt="" decoding="async" />
+            <div class="cover-blank" aria-hidden="true"><span></span></div>
+          </div>
+          <ol class="lyrics" id="lyrics" aria-live="off"></ol>
+        </div>
+
+        <div class="meta">
+          <div class="meta-text">
+            <h1 class="title" id="title"></h1>
+            <p class="artist" id="artist"></p>
+          </div>
+        </div>
+
+        <div class="progress" aria-hidden="true">
+          <div class="track"><div class="fill" id="bar"></div></div>
+          <div class="times"><span id="elapsed">0:00</span><span id="remaining"></span></div>
+        </div>
+
+        <div class="transport">
+          <button class="skip" id="prev" type="button">
+            <svg viewBox="0 0 32 32" aria-hidden="true">
+              <path
+                d="M26 8.6v14.8c0 1-1.1 1.6-1.9 1L14.6 17a1.2 1.2 0 0 1 0-2l9.5-7.4c.8-.6 1.9 0 1.9 1Z"
+              />
+              <path
+                d="M15 8.6v14.8c0 1-1.1 1.6-1.9 1L3.6 17a1.2 1.2 0 0 1 0-2l9.5-7.4c.8-.6 1.9 0 1.9 1Z"
+              />
+            </svg>
+          </button>
+          <button class="play" id="play" type="button">
+            <svg class="i-play" viewBox="0 0 32 32" aria-hidden="true">
+              <path
+                d="M9 6.3v19.4c0 1.1 1.2 1.8 2.1 1.2l15.4-9.7c.9-.6.9-1.8 0-2.4L11.1 5.1C10.2 4.5 9 5.2 9 6.3Z"
+              />
+            </svg>
+            <svg class="i-pause" viewBox="0 0 32 32" aria-hidden="true">
+              <rect x="7.5" y="5.5" width="6" height="21" rx="1.6" />
+              <rect x="18.5" y="5.5" width="6" height="21" rx="1.6" />
+            </svg>
+          </button>
+          <button class="skip" id="next" type="button">
+            <svg viewBox="0 0 32 32" aria-hidden="true">
+              <path
+                d="M6 8.6v14.8c0 1 1.1 1.6 1.9 1l9.5-7.4a1.2 1.2 0 0 0 0-2L7.9 7.6C7.1 7 6 7.6 6 8.6Z"
+              />
+              <path
+                d="M17 8.6v14.8c0 1 1.1 1.6 1.9 1l9.5-7.4a1.2 1.2 0 0 0 0-2l-9.5-7.4c-.8-.6-1.9 0-1.9 1Z"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div class="volume" id="volume" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3l4-3.5v12l-4-3.5H4z" /></svg>
+          <input id="volume-range" type="range" min="0" max="100" step="1" value="50" />
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9.5h3l4-3.5v12l-4-3.5H4z" />
+            <path class="wave" d="M15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11" />
+          </svg>
+        </div>
+
+        <nav class="tools">
+          <button class="tool" id="lyrics-toggle" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-7.2L7.5 20v-3.5H5A1.5 1.5 0 0 1 3.5 15V7A1.5 1.5 0 0 1 5 5.5Z"
+              />
+              <path class="cut" d="M7.5 9.5h9M7.5 12.5h6" />
+            </svg>
+          </button>
+          <button
+            class="tool"
+            id="look-open"
+            type="button"
+            aria-haspopup="dialog"
+            aria-controls="look-sheet"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="8.5" />
+              <circle class="cut" cx="12" cy="12" r="2.2" />
+              <path class="cut" d="M12 6.2a5.8 5.8 0 0 1 5.8 5.8" />
+            </svg>
+          </button>
+          <button
+            class="tool"
+            id="queue-open"
+            type="button"
+            aria-haspopup="dialog"
+            aria-controls="queue-sheet"
+            hidden
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path class="cut" d="M4 6.5h11M4 11.5h11M4 16.5h7" />
+              <path d="M17.5 13.5v6.2a2 2 0 1 1-1.5-1.9V12l4.5-1.2v2Z" />
+            </svg>
+          </button>
+        </nav>
+      </section>
+
+      <!-- Pairing -->
+      <section class="pair" id="pair" hidden>
+        <img class="pair-icon" src="/icon-180.png" alt="" width="72" height="72" />
+        <h1 class="pair-title" id="pair-title"></h1>
+        <p class="pair-text" id="pair-text"></p>
+        <form id="pair-form" autocomplete="off" novalidate>
+          <label class="code" for="pair-code">
+            <input
+              id="pair-code"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              pattern="[0-9]*"
+              maxlength="6"
+            />
+            <span class="code-cells" aria-hidden="true" id="code-cells"
+              ><i></i><i></i><i></i><i></i><i></i><i></i
+            ></span>
+          </label>
+          <button class="primary" type="submit" id="pair-go"></button>
+        </form>
+        <p class="pair-note" id="pair-note" role="alert"></p>
+      </section>
+
+      <!-- Off or away -->
+      <section class="pair" id="gone" hidden>
+        <img class="pair-icon" src="/icon-180.png" alt="" width="72" height="72" />
+        <h1 class="pair-title" id="gone-title"></h1>
+        <p class="pair-text" id="gone-text"></p>
+        <button class="primary" type="button" id="gone-retry"></button>
+      </section>
+    </main>
+
+    <dialog id="look-sheet" class="sheet" aria-labelledby="look-title">
+      <div class="grabber" aria-hidden="true"></div>
+      <header class="sheet-head">
+        <h2 id="look-title"></h2>
+        <button class="done" type="button" data-close></button>
+      </header>
+      <div class="sheet-body" id="look-body"></div>
+    </dialog>
+
+    <dialog id="queue-sheet" class="sheet" aria-labelledby="queue-title">
+      <div class="grabber" aria-hidden="true"></div>
+      <header class="sheet-head">
+        <div>
+          <h2 id="queue-title"></h2>
+          <p id="queue-album" class="sheet-sub"></p>
+        </div>
+        <button class="done" type="button" data-close></button>
+      </header>
+      <ol id="queue-list" class="queue-list"></ol>
+      <p id="queue-note" class="sheet-note" role="status"></p>
+    </dialog>
+  </body>
+</html>
