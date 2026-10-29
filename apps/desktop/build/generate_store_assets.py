@@ -8,8 +8,11 @@ Only the in-app marks (window, tray, sidebar):  python build/generate_store_asse
 Two versions of the mark, chosen by the size it is drawn at:
   above 48 px   the original artwork (icon.png), resized.
   48 px & below the "small-size" version: the same artwork with its six hairline teal waves
-                replaced by three clearer ones, a firmer copper ring, and a soft light edge so the
+                replaced by three clearer ones, a firmer copper edge, and a soft light edge so the
                 record's outline holds on dark backgrounds (Search, Start, taskbar in dark mode).
+
+The master (2026-10-29) is the record and tonearm alone, filling the square: no dark plinth or
+outer ring around it, so it reads as big as the other apps' icons in Start and the taskbar.
                 Its strokes are drawn at the exact output size, at least one pixel wide.
 
 electron-builder packs every image in build/appx/ into the package's assets folder. Windows picks
@@ -46,6 +49,11 @@ if '--out' in sys.argv:
     _preview.mkdir(parents=True, exist_ok=True)
 
 SMALL_MAX = 48  # marks this size or smaller use the small-size version
+# The record on the 512 px master: centre and radius. Its copper edge sits on this circle.
+REC_X, REC_Y, REC_R = 247.05, 256.05, 244.3
+# The small-size waves were laid out on the earlier artwork (record centred, radius 196); this
+# maps that layout onto the current master.
+WAVE_SCALE, WAVE_DX, WAVE_DY = 1.2463, -72, -63
 SUPERSAMPLE = 8  # the small-size strokes are drawn this much larger, then reduced
 
 TARGET_SIZES = (16, 20, 24, 30, 32, 36, 40, 48, 60, 64, 72, 80, 96, 256)
@@ -126,33 +134,34 @@ def small_mark(n: int) -> Image.Image:
 
     out = ICON_WITHOUT_WAVES.resize((n, n), Image.LANCZOS)
 
-    # Waves: two or three, clipped inside the copper ring
-    ring_w = stroke(1.0, 9)
-    clip_r = 226 - ring_w / 2 - stroke(0.8, 8)
+    # Waves: two or three, clipped inside the copper edge
+    ring_w = stroke(1.0, 7)
+    clip_r = REC_R - ring_w - stroke(0.8, 8)
     waves = Image.new('L', (m, m), 0)
     dw = ImageDraw.Draw(waves)
     count, gap, top = (2, 46, 304) if tiny else (3, 36, 298)
     width = stroke(1.15 if tiny else 0.95, 7) * k
     for i in range(count):
-        pts = [(x * k, (top + 38 + i * gap - 38 * math.cos(2 * math.pi * (x - 122) / 390)) * k)
+        pts = [((WAVE_DX + x * WAVE_SCALE) * k,
+                (WAVE_DY + (top + 38 + i * gap - 38 * math.cos(2 * math.pi * (x - 122) / 390)) * WAVE_SCALE) * k)
                for x in range(40, 481, 4)]
         dw.line(pts, fill=255, width=max(1, round(width)), joint='curve')
     clip = Image.new('L', (m, m), 0)
-    ImageDraw.Draw(clip).ellipse([(256 - clip_r) * k, (256 - clip_r) * k, (256 + clip_r) * k, (256 + clip_r) * k], fill=255)
+    ImageDraw.Draw(clip).ellipse([(REC_X - clip_r) * k, (REC_Y - clip_r) * k, (REC_X + clip_r) * k, (REC_Y + clip_r) * k], fill=255)
     waves = Image.composite(waves, clip.point(lambda v: 0), clip)
     out.alpha_composite(_layer(_gradient(m, TEAL, diagonal=False), waves, n))
 
-    # Copper ring, centred on the master's ring (r 226)
+    # Copper edge, on the record's rim
     ring = Image.new('L', (m, m), 0)
-    r_out = (226 + ring_w / 2) * k
-    ImageDraw.Draw(ring).ellipse([256 * k - r_out, 256 * k - r_out, 256 * k + r_out, 256 * k + r_out],
+    r_out = REC_R * k
+    ImageDraw.Draw(ring).ellipse([REC_X * k - r_out, REC_Y * k - r_out, REC_X * k + r_out, REC_Y * k + r_out],
                                  outline=255, width=max(1, round(ring_w * k)))
     out.alpha_composite(_layer(_gradient(m, COPPER, diagonal=True), ring, n))
 
     # Soft light edge on the record's perimeter
     edge = Image.new('L', (m, m), 0)
-    r_edge = 254 * k
-    ImageDraw.Draw(edge).ellipse([256 * k - r_edge, 256 * k - r_edge, 256 * k + r_edge, 256 * k + r_edge],
+    r_edge = REC_R * k
+    ImageDraw.Draw(edge).ellipse([REC_X * k - r_edge, REC_Y * k - r_edge, REC_X * k + r_edge, REC_Y * k + r_edge],
                                  outline=255, width=max(1, round(u * k)))
     out.alpha_composite(_layer(Image.new('RGB', (m, m), EDGE), edge, n, opacity=0.5))
     return out
