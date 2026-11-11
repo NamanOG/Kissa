@@ -34,7 +34,7 @@ assert.ok(fallback.includes('#root { display: none; }'), 'home: no duplicate app
 const fallbackItems = [...fallback.matchAll(/<li>([\s\S]*?)<\/li>/g)].map((item) => item[1].trim())
 assert.equal(new Set(fallbackItems).size, fallbackItems.length, 'home: no duplicate fallback features')
 console.log('Homepage: real initial HTML, main heading, Store/internal links, matching FAQ schema and no-JS fallback passed.')
-for (const slug of ['study-room', 'discord-music-status']) {
+for (const slug of ['whats-new', 'study-room', 'discord-music-status']) {
   const html = readFileSync(resolve(root, 'dist', slug, 'index.html'), 'utf8')
   const title = html.match(/<title>([^<]+)<\/title>/)?.[1]
   assert.equal((html.match(/<title>/g) ?? []).length, 1, `${slug}: one title`)

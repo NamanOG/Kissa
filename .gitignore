@@ -58,3 +58,6 @@ docs/
 # Native helpers, built by `npm run build:smtc` and `npm run build:screensaver`
 apps/desktop/resources/smtc-helper.exe
 apps/desktop/resources/Kissa.scr
+
+# Local exports (social previews and similar)
+outputs/

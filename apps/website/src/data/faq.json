@@ -44,6 +44,10 @@
     "a": "Yes. Kissa includes a native Windows screensaver that keeps the record turning, with or without lyrics, when your PC is idle. You turn it on from Kissa's settings."
   },
   {
+    "q": "Can I reduce motion or increase contrast?",
+    "a": "Yes. In Settings, General, Comfort, Reduce motion uses fades instead of movement and holds the moving light still, and Increase contrast gives brighter secondary text and more solid panels. Each follows your Windows setting until you change it."
+  },
+  {
     "q": "Does Pressed upload my listening?",
     "a": "No. Your listening history and Pressed recap are kept on your PC."
   },

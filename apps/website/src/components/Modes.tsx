@@ -158,9 +158,6 @@ export function Modes() {
               ))}
             </div>
             <div className={styles.caption} aria-hidden="true">
-              <span className="label">
-                0{active + 1} / 0{MODES.length}
-              </span>
               <span className={styles.ticks}>
                 {MODES.map((mode, i) => (
                   <span key={mode.id} className={i === active ? styles.tickOn : undefined} />

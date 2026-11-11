@@ -6,7 +6,8 @@ import { supportIsConfigured } from '../data/support'
 
 const LINKS = [
   { label: 'GitHub', href: GITHUB_URL },
-  { label: 'Issues', href: `${GITHUB_URL}/issues` },
+  { label: 'Request a feature', href: `${GITHUB_URL}/issues/new?template=feature_request.yml` },
+  { label: 'Report a bug', href: `${GITHUB_URL}/issues/new?template=bug_report.yml` },
   { label: 'License', href: `${GITHUB_URL}/blob/main/LICENSE` },
   { label: 'Privacy', href: `${GITHUB_URL}/blob/main/PRIVACY.md` },
   { label: '@NamanOG', href: 'https://github.com/NamanOG' }

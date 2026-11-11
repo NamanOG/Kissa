@@ -38,10 +38,7 @@ export function DownloadCta() {
             </li>
           )}
           <li>
-            <a href={`${GITHUB_URL}#version-history`} target="_blank" rel="noopener noreferrer">
-              What&rsquo;s new
-              <ArrowOut />
-            </a>
+            <a href={asset('whats-new/')}>What&rsquo;s new in 5.1</a>
           </li>
           <li>
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">

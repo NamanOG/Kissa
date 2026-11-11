@@ -13,14 +13,15 @@ const SIDES = [
     name: 'Side A',
     title: 'The deck',
     tracks: [
-      { no: 'A1', name: 'Tonearm seeking', note: 'Drag the needle across the groove to move through the track.' },
+      { no: 'A1', name: 'Tonearm seeking', note: 'Drag the needle to move through the track. The arm sets down at the edge and travels inwards as it plays.' },
       { no: 'A2', name: '33⅓ and 45', note: 'Two speeds, with real spin-up and coast-down.' },
-      { no: 'A3', name: 'Synced lyrics', note: 'Line by line, and word by word where the source allows.' },
+      { no: 'A3', name: 'Synced lyrics', note: 'Line by line, word by word where the source allows, and over your other windows if you like.' },
       { no: 'A4', name: 'Your turntable', note: 'Walnut, Porcelain or Studio Silver, with coloured and marbled pressings. Save the looks you like.' },
       { no: 'A5', name: 'Match the Album', note: 'An optional record pressed in the colours of the cover. Classic black stays the default.' },
       { no: 'A6', name: 'Real turntable sounds', note: 'Recorded needle drops and soft mechanical keys. One switch turns them off.' },
       { no: 'A7', name: 'Your albums', note: 'Play your own album folders with the Kissa Hi-Fi vinyl sound.' },
-      { no: 'A8', name: 'Dust lid and record sides', note: 'Lift the dust lid, turn the record over and read the sleeve back.' }
+      { no: 'A8', name: 'Dust lid and record sides', note: 'Lift the dust lid, turn the record over and read the sleeve back.' },
+      { no: 'A9', name: 'Its own window buttons', note: 'Minimise, maximise and close in a small glass capsule, made for the room.' }
     ]
   },
   {
@@ -28,14 +29,15 @@ const SIDES = [
     title: 'The room',
     tracks: [
       { no: 'B1', name: 'Match Album light', note: 'The room is lit by the colours of the current cover.' },
-      { no: 'B2', name: 'Moving light', note: 'The cover’s colours drift behind the room while music plays, and can move with the beat.' },
+      { no: 'B2', name: 'Moving light', note: 'The cover’s colours drift behind the room, and can move with the beat: gently, balanced or lively.' },
       { no: 'B3', name: 'Listening Display', note: 'Press D for fullscreen, as a turntable or a 12-inch cover on a stand.' },
       { no: 'B4', name: 'Screensaver', note: 'A native Windows screensaver that keeps the record turning.' },
       { no: 'B5', name: 'Record Shelf', note: 'Your listening history: flip through the crate, or see it as a grid.' },
       { no: 'B6', name: 'Quiet by default', note: 'Lives in the system tray, and updates through the Microsoft Store.' },
       { no: 'B7', name: 'Pressed', note: 'Your week, month or year in music, told as a short moving story with a card to share. Stays on your PC.' },
       { no: 'B8', name: 'Phone remote', note: 'Control Kissa from your phone on the same Wi-Fi. Scan a QR code or enter a 6-digit code. No account.' },
-      { no: 'B9', name: 'English and Spanish', note: 'Use Kissa in English or Spanish.' }
+      { no: 'B9', name: 'English and Spanish', note: 'Use Kissa in English or Spanish.' },
+      { no: 'B10', name: 'Comfort', note: 'Reduce motion and increase contrast. Each follows Windows until you choose.' }
     ]
   }
 ]
