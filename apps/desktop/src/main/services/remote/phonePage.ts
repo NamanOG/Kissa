@@ -20,11 +20,3 @@ export const PHONE_ICONS: Record<string, Buffer> = {
   '/icon-512.png': Buffer.from(icon512, 'base64')
 }
 
-/**
- * The app's own typefaces, so the phone page reads like Kissa. They are the same files the
- * window uses, from the font packages Kissa ships with.
- */
-export const PHONE_FONT_FILES: Record<string, string> = {
-  'sans.woff2': '@fontsource-variable/archivo/files/archivo-latin-standard-normal.woff2',
-  'serif.woff2': '@fontsource-variable/newsreader/files/newsreader-latin-opsz-normal.woff2'
-}

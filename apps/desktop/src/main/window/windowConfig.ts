@@ -17,7 +17,8 @@ export const getWindowConfig = (): BrowserWindowConstructorOptions => ({
   backgroundColor: '#0b0a09',
   autoHideMenuBar: true,
   titleBarStyle: 'hidden',
-  titleBarOverlay: { color: '#00000000', symbolColor: '#ffffff' },
+  // No native caption buttons: Kissa draws its own (WindowControls.tsx), the same in the Store
+  // and classic builds. 'hidden' keeps the resizable frame, Snap by dragging and Win+arrow.
   // Multi-size ICO (build/generate_store_assets.py): Windows picks the frame for the display scale.
   icon: join(__dirname, '../../resources/icon.ico'),
   webPreferences: {

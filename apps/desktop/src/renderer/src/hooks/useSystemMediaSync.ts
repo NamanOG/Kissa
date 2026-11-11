@@ -3,7 +3,7 @@ import { usePlayerStore } from '@renderer/stores/playerStore'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
 import kissaIdleCover from '@renderer/media/kissa_idle_cover.jpg'
 import type { SystemMediaPayload } from '../../../types/media'
-import { PlaybackClock } from '@renderer/utils/PlaybackClock'
+import { PlaybackClock, sourceProfile } from '@renderer/utils/PlaybackClock'
 import { externalSession, resetExternalSession } from '@renderer/utils/externalSession'
 import { useAlbumStore } from '@renderer/features/album/albumStore'
 const isKissaSMTCSession = (payload: SystemMediaPayload, currentStoreTrack: any): boolean => {
@@ -169,6 +169,7 @@ export function useSystemMediaSync(): void {
       }
 
       PlaybackClock.setMode(true) // External media mode
+      PlaybackClock.setSourceProfile(sourceProfile(payload.sourceAppId))
 
       // Defensively verify the store wasn't externally reset (e.g., via Vite HMR or state hydration)
       const storeMatchesPayload =
@@ -182,7 +183,8 @@ export function useSystemMediaSync(): void {
         }
         prevTrackDurationRef.current = currentStoreTrack?.duration || -1
         lastTrackKeyRef.current = trackKey
-        PlaybackClock.setSmtcState(payload.progress || 0, payload.isPlaying)
+        // A new track is a known jump: the clock (and the tonearm) start from its place at once.
+        PlaybackClock.startTrack(payload.progress || 0, payload.isPlaying, payload.duration || 0)
 
         setTrack({
           title: payload.title,

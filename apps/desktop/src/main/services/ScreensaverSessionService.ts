@@ -223,7 +223,13 @@ export class ScreensaverSessionService {
   }
 
   public exitScreensaverMode(): void {
-    if (!this.sessionActive) return
+    if (!this.sessionActive) {
+      // No Kissa.scr session (its handshake failed, or Kissa was started with --screensaver
+      // directly): the window can still be in screensaver mode, and input must still wake it.
+      // WindowManager ignores this when the window is not in screensaver mode.
+      WindowManager.getInstance().exitScreensaverMode()
+      return
+    }
 
     this.sessionActive = false
     this.sessionToken = null

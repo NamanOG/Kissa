@@ -250,6 +250,13 @@ describe('ScreensaverSessionService', () => {
       expect(secondarySocket.end).toHaveBeenCalledTimes(1)
     })
 
+    it('still wakes the window when there is no Kissa.scr session', () => {
+      expect(service.isScreensaverActive()).toBe(false)
+      service.notifyWake()
+      expect(WindowManager.getInstance().exitScreensaverMode).toHaveBeenCalledTimes(1)
+      expect(mockMainWindow.setFullScreen).toHaveBeenCalledWith(false)
+    })
+
     it('handles repeated wake events idempotently without throwing', () => {
       const fakeSocket: any = { write: vi.fn(), end: vi.fn(), on: vi.fn(), destroyed: false }
       service.enterScreensaverMode(fakeSocket)

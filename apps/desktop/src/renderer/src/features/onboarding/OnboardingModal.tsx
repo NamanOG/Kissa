@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import {
   ArrowLeft,
   ArrowRight,
@@ -255,6 +256,19 @@ const STOPS: Stop[] = [
     tint: TILE.rose,
     title: 'tour.navLyrics.title',
     desc: 'tour.navLyrics.desc'
+  },
+  {
+    id: 'desktop-lyrics',
+    chapter: 'around',
+    kind: 'spot',
+    target: '[data-tour="nav-lyrics"]',
+    optional: true,
+    icon: Quote,
+    tint: TILE.rose,
+    title: 'tour.desktopLyrics.title',
+    desc: 'tour.desktopLyrics.desc',
+    keys: ['Ctrl', 'Alt', 'L'],
+    isNew: true
   },
   {
     id: 'nav-shelf',
@@ -698,9 +712,10 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({ className }) =
           <X className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
         {/* How far through, as a thin line under the chapters. */}
-        <span className="pointer-events-none absolute inset-x-4 -bottom-[3px] h-[2px] overflow-hidden rounded-full bg-white/[0.06]">
+        <span className="pointer-events-none absolute inset-x-6 -bottom-[7px] h-px overflow-hidden rounded-full bg-white/[0.08]">
           <motion.span
-            className="block h-full origin-left rounded-full bg-tone"
+            // Neutral: the chapter pill is the one accent; this is only a quiet hairline of progress.
+            className="block h-full origin-left rounded-full bg-white/45"
             animate={{ scaleX: (step + 1) / stops.length }}
             transition={SPRING}
           />

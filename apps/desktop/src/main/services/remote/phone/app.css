@@ -68,7 +68,7 @@ svg {
   display: block;
 }
 
-/* ---- The room behind everything: the cover, blurred, tinted by the room's accent. ---- */
+/* The room behind everything: the cover, blurred, tinted by the room's accent. */
 .room {
   position: fixed;
   inset: 0;
@@ -112,7 +112,7 @@ svg {
   flex-direction: column;
 }
 
-/* ---- Now playing ---- */
+/* Now playing */
 .player {
   flex: 1;
   display: flex;
@@ -443,7 +443,7 @@ input[type='range']::-moz-range-thumb {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ---- Pairing and off ---- */
+/* Pairing and off */
 .pair {
   flex: 1;
   display: flex;
@@ -550,7 +550,7 @@ input[type='range']::-moz-range-thumb {
   color: var(--dim);
 }
 
-/* ---- Sheets ---- */
+/* Sheets */
 .sheet {
   position: fixed;
   inset: auto 0 0;

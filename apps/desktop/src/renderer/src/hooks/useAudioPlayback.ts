@@ -207,7 +207,9 @@ export function useAudioPlayback(): void {
     // on screen, playback changes stand in for it (utils/needleSounds).
 
     if (isPlaying) {
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'
+      // Kissa's own media session speaks only for Kissa's own audio. Marking it playing while another
+      // player (Apple Music, Spotify) has the music kept a second, empty session alive beside it.
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = audio.src ? 'playing' : 'none'
       if (typeof window !== 'undefined' && (window as any).electron) (window as any).electron.setThumbarButtons(true)
       if (audio.src) {
         audio.play().catch(() => {
@@ -215,7 +217,7 @@ export function useAudioPlayback(): void {
       }
       needleFollowPlayback(true)
     } else {
-      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'
+      if ('mediaSession' in navigator) navigator.mediaSession.playbackState = audio.src ? 'paused' : 'none'
       if (typeof window !== 'undefined' && (window as any).electron) (window as any).electron.setThumbarButtons(false)
       if (audio.src) {
         audio.pause()

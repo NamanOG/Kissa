@@ -30,7 +30,7 @@ describe('MetadataPanel component', () => {
     expect(screen.queryByText('Listening Room')).not.toBeInTheDocument()
   })
 
-  it('shows title, artist, album, length and source for the playing track', () => {
+  it('shows title, artist, album and where it plays from, without repeating the dock time', () => {
     usePlayerStore.setState({
       isPlaying: true,
       currentTrack: {
@@ -44,13 +44,12 @@ describe('MetadataPanel component', () => {
     })
 
     render(<MetadataPanel />)
-    expect(screen.getByText('Now playing')).toBeInTheDocument()
     expect(screen.getByText('Get Lucky')).toBeInTheDocument()
     expect(screen.getByText('Daft Punk')).toBeInTheDocument()
     expect(screen.getByText('Random Access Memories')).toBeInTheDocument()
-    expect(screen.getByText('4:08')).toBeInTheDocument()
-    // The source sits in the status pill beside Now playing.
-    expect(screen.getByText('Spotify')).toBeInTheDocument()
+    expect(screen.queryByText('4:08')).not.toBeInTheDocument()
+    // One quiet line under the cover says where it plays from.
+    expect(screen.getByTestId('np-source')).toHaveTextContent('Playing from Spotify')
   })
 
   it('says Paused when the track is not playing, and omits an album that repeats the title', () => {

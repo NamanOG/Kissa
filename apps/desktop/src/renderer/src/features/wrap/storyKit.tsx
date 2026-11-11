@@ -135,7 +135,6 @@ export function CountUp({
   )
 }
 
-/* -------------------------------------------------------------------------------------------- */
 
 const washes = new Map<string, string | null>()
 
@@ -239,7 +238,6 @@ export function StoryBackdrop({
   )
 }
 
-/* -------------------------------------------------------------------------------------------- */
 
 /** A camera move for one scene: where the shot starts, where it settles, where it drifts to. */
 export interface CameraMove {

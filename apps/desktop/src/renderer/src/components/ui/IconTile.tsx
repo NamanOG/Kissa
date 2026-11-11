@@ -20,16 +20,17 @@ export const TILE = {
 export type TileTint = readonly [string, string]
 
 /**
- * A small rounded tile with an icon, lit in its own colour: a soft gradient, a gloss across the
- * top half, a hairline edge and a white glyph with a little depth. 'brand' shows Kissa's mark.
+ * A small rounded tile with an icon: quiet room-tinted glass, a hairline edge lit from above and
+ * the glyph in the room's text colour. One look for every feature, so a list of settings reads as
+ * one calm panel rather than a row of coloured app icons. (`tint` is kept for callers; the tiles
+ * no longer take their own colours.) 'brand' shows Kissa's mark.
  */
 export function IconTile({
   icon: Icon,
-  tint,
   size = 'sm'
 }: {
   icon: TileIcon | 'brand'
-  tint: TileTint
+  tint?: TileTint
   size?: 'sm' | 'lg'
 }): React.JSX.Element {
   const large = size === 'lg'
@@ -37,11 +38,11 @@ export function IconTile({
     <span
       aria-hidden="true"
       className={cn(
-        'relative flex shrink-0 items-center justify-center overflow-hidden text-white',
-        'shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.22),inset_0_1px_0_rgba(255,255,255,0.4),0_1px_2px_rgba(0,0,0,0.4),0_4px_10px_-2px_rgba(0,0,0,0.45)]',
+        'relative flex shrink-0 items-center justify-center overflow-hidden text-ink/80',
+        'bg-[color-mix(in_srgb,var(--on-surface)_7%,transparent)]',
+        'shadow-[inset_0_0_0_0.5px_color-mix(in_srgb,var(--on-surface)_16%,transparent),inset_0_1px_0_rgba(255,255,255,0.06)]',
         large ? 'h-12 w-12 rounded-[13px]' : 'h-[30px] w-[30px] rounded-[8.5px]'
       )}
-      style={{ background: `linear-gradient(160deg, ${tint[0]} 0%, ${tint[1]} 100%)` }}
     >
       {Icon === 'brand' ? (
         <img
@@ -53,12 +54,8 @@ export function IconTile({
           className="h-[86%] w-[86%] rounded-full object-cover"
         />
       ) : (
-        <Icon
-          className={cn('relative drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]', large ? 'h-[26px] w-[26px]' : 'h-[17px] w-[17px]')}
-          strokeWidth={2}
-        />
+        <Icon className={large ? 'h-[22px] w-[22px]' : 'h-4 w-4'} strokeWidth={1.75} />
       )}
-      <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-[linear-gradient(180deg,rgba(255,255,255,0.22),rgba(255,255,255,0))]" />
     </span>
   )
 }

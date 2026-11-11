@@ -1,4 +1,5 @@
-import React, { memo, useState, useMemo } from 'react'
+import { SPRING_PANEL, SPRING_INDICATOR } from '@renderer/utils/motion'
+import React, { memo, useEffect, useState, useMemo } from 'react'
 import { AlbumOpenButton } from '@renderer/features/album/AlbumEntry'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useShelfStore, RecordEntry } from '../../stores/shelfStore'
@@ -13,6 +14,7 @@ import { SavedLinesView } from './SavedLinesView'
 import { compareTones, useCoverTones } from './coverTone'
 import { useT } from '../../i18n'
 import { usePressedStore } from '../wrap/pressedStore'
+import { useSavedLinesStore } from '@renderer/stores/savedLinesStore'
 
 type ShelfLayout = 'grid' | 'crate' | 'lines'
 const LAYOUT_KEY = 'kissa_shelf_layout'
@@ -31,11 +33,16 @@ type SortOption = 'recent' | 'added' | 'played' | 'alpha' | 'colour'
 export const RecordShelfView = memo(() => {
   const records = useShelfStore((s) => s.records)
   const clearShelf = useShelfStore((s) => s.clearShelf)
+  // On the Lines view the count under the title is of the kept lines, not the records.
+  const savedLineCount = useSavedLinesStore((s) => s.lines.length)
   const removeRecord = useShelfStore((s) => s.removeRecord)
   const [sort, setSort] = useState<SortOption>('recent')
   const t = useT()
   const listenerName = usePlayerStore((s) => s.listenerName)
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null)
+  // Removing a record asks first, inside the panel; a new album starts without the question.
+  const [confirmRemove, setConfirmRemove] = useState(false)
+  useEffect(() => setConfirmRemove(false), [selectedAlbum])
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   
   const [sharePayload, setSharePayload] = useState<SharePayload | null>(null)
@@ -119,10 +126,14 @@ export const RecordShelfView = memo(() => {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.985 }}
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-      className="relative flex flex-col h-full w-full transform-gpu overflow-hidden mx-auto"
+      className={cn(
+        'relative flex flex-col h-full w-full transform-gpu overflow-hidden mx-auto',
+        // With the album panel open the shelf and its toolbar make room for it: nothing is clipped under it.
+        selectedAlbum && !selectionMode && 'pr-[392px] min-[1400px]:pr-[432px]'
+      )}
     >
       <header className="shrink-0 mb-5 px-8 min-[1100px]:px-16 pt-8 min-[1100px]:pt-10">
-        <div className="flex items-end justify-between gap-6">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <div className="min-w-0">
             <h1 className="truncate font-kissa-editorial text-[2rem] min-[900px]:text-[2.6rem] font-medium leading-[1.05] tracking-[-0.03em] text-ink">
               {listenerName.trim()
@@ -130,14 +141,43 @@ export const RecordShelfView = memo(() => {
                 : t('shelf.titleMine')}
             </h1>
             <p className="mt-2 text-[13px] text-dim">
-              {t(records.length === 1 ? 'shelf.count.one' : 'shelf.count.other', { n: records.length })}
+              {layout === 'lines'
+                ? t(savedLineCount === 1 ? 'shelf.linesCount.one' : 'shelf.linesCount.other', { n: savedLineCount })
+                : t(records.length === 1 ? 'shelf.count.one' : 'shelf.count.other', { n: records.length })}
             </p>
           </div>
           {records.length > 0 && !selectionMode && (
-            <div role="radiogroup" aria-label={t('shelf.layout')} className={cn(TRACK, 'shrink-0')}>
-              <SortTab active={layout === 'grid'} onClick={() => setLayout('grid')} label={t('shelf.grid')} radio indicator="layout-indicator" />
-              <SortTab active={layout === 'crate'} onClick={() => setLayout('crate')} label={t('shelf.crate')} radio indicator="layout-indicator" />
-              <SortTab active={layout === 'lines'} onClick={() => setLayout('lines')} label={t('shelf.lines')} radio indicator="layout-indicator" />
+            // Actions on the right of the title, on the count's line; the view controls get their own row.
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+              <button
+                type="button"
+                data-tour="pressed"
+                onClick={() => usePressedStore.getState().show('month', 0)}
+                title={t('pressed.buttonHint')}
+                className={cn(PILL, 'inline-flex items-center gap-2 pl-2.5')}
+              >
+                <Disc3 aria-hidden="true" className="h-4 w-4 stroke-[1.75] text-tone" />
+                {t('pressed.button')}
+              </button>
+              <AlbumOpenButton quiet small label="album.folder" />
+              {/* Selecting and clearing act on the records, so they are not offered over the saved lines. */}
+              {layout !== 'lines' && (
+                <button type="button" onClick={() => setSelectionMode(true)} className={PILL}>
+                  {t('shelf.select')}
+                </button>
+              )}
+              <button type="button" onClick={handleShareStats} className={PILL}>
+                {t('shelf.shareStats')}
+              </button>
+              {layout !== 'lines' && (
+                <button
+                  type="button"
+                  onClick={() => setShowClearConfirm(true)}
+                  className="ml-2 h-8 cursor-pointer rounded-full px-3 text-[12.5px] font-medium text-dim transition-colors before:mr-3 before:inline-block before:h-3.5 before:w-px before:translate-y-[2px] before:bg-ink/15 before:content-[''] hover:text-red-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone"
+                >
+                  {t('shelf.clear')}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -155,33 +195,13 @@ export const RecordShelfView = memo(() => {
                     <SortTab active={sort === 'colour'} onClick={() => setSort('colour')} label={t('shelf.colour')} />
                   </div>
                 )}
-                {/* Set apart by space, not a rule: a rule would start the new line when the bar wraps. */}
-                <div className="ml-auto flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    data-tour="pressed"
-                    onClick={() => usePressedStore.getState().show('month', 0)}
-                    title={t('pressed.buttonHint')}
-                    className="mr-1 inline-flex h-8 cursor-pointer items-center gap-2 rounded-full bg-tone/[0.16] pl-2.5 pr-3.5 text-[12.5px] font-semibold text-tone shadow-[inset_0_0_0_0.5px_color-mix(in_srgb,var(--accent)_45%,transparent),inset_0_1px_0_rgba(255,255,255,0.08)] transition-colors hover:bg-tone/[0.24] outline-none focus-visible:ring-1 focus-visible:ring-tone"
-                  >
-                    <Disc3 aria-hidden="true" className="h-4 w-4 stroke-[1.75]" />
-                    {t('pressed.button')}
-                  </button>
-                  <AlbumOpenButton quiet small label="album.folder" />
-                  <button type="button" onClick={() => setSelectionMode(true)} className={PILL}>
-                    {t('shelf.select')}
-                  </button>
-                  <button type="button" onClick={handleShareStats} className={PILL}>
-                    {t('shelf.shareStats')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowClearConfirm(true)}
-                    className="ml-1 h-8 cursor-pointer rounded-full px-3 text-[12.5px] font-medium text-dim transition-colors hover:bg-red-500/10 hover:text-red-300"
-                  >
-                    {t('shelf.clear')}
-                  </button>
-                </div>
+                {!selectionMode && (
+                  <div role="radiogroup" aria-label={t('shelf.layout')} className={cn(TRACK, 'ml-auto shrink-0')}>
+                    <SortTab active={layout === 'grid'} onClick={() => setLayout('grid')} label={t('shelf.grid')} radio indicator="layout-indicator" />
+                    <SortTab active={layout === 'crate'} onClick={() => setLayout('crate')} label={t('shelf.crate')} radio indicator="layout-indicator" />
+                    <SortTab active={layout === 'lines'} onClick={() => setLayout('lines')} label={t('shelf.lines')} radio indicator="layout-indicator" />
+                  </div>
+                )}
               </>
             ) : (
               <div className="flex w-full items-center gap-3">
@@ -228,15 +248,15 @@ export const RecordShelfView = memo(() => {
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               className="relative z-10 w-full max-w-[420px] kissa-sheet border border-white/[0.08] rounded-[24px] overflow-hidden flex flex-col p-6"
             >
-              <h3 className="font-kissa-editorial text-[1.5rem] font-medium tracking-[-0.02em] text-white mb-3">{t('shelf.clearTitle')}</h3>
-              <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
+              <h3 className="font-kissa-editorial text-[1.5rem] font-medium tracking-[-0.02em] text-ink mb-2">{t('shelf.clearTitle')}</h3>
+              <p className="text-[14px] text-dim mb-6 leading-relaxed">
                 {t('shelf.clearText')}
               </p>
               <div className="flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setShowClearConfirm(false)}
-                  className="px-4 py-2 rounded-full text-[13px] font-medium text-zinc-300 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                  className="h-9 px-4 rounded-full text-[13px] font-medium text-ink/80 hover:text-ink hover:bg-white/[0.08] transition-colors cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-tone"
                 >
                   {t('shelf.cancel')}
                 </button>
@@ -247,7 +267,8 @@ export const RecordShelfView = memo(() => {
                     setShowClearConfirm(false)
                     setSelectedAlbum(null)
                   }}
-                  className="px-5 py-2 rounded-full bg-tone text-[#170f09] text-[13px] font-semibold hover:brightness-110 active:scale-95 transition-[transform,background-color] shadow-md cursor-pointer"
+                  // Destructive: red, as the system styles it, not the accent.
+                  className="h-9 px-5 rounded-full bg-[#e5484d] text-white text-[13px] font-semibold hover:brightness-110 active:scale-[0.97] transition-[transform,filter] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#e5484d]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--deck-bg)]"
                 >
                   {t('shelf.clearConfirm')}
                 </button>
@@ -292,29 +313,35 @@ export const RecordShelfView = memo(() => {
             // so covers stay record-sized instead of poster-sized.
             style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(170px, 100%), 1fr))' }}
           >
-            <AnimatePresence>
-              {sortedRecords.map((record) => (
-                <motion.div
-                  layout
-                  key={record.albumKey}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <RecordItem 
-                    record={record} 
-                    isSelected={selectedAlbum === record.albumKey}
-                    onClick={() => {
-                      if (selectionMode) toggleSelection(record.albumKey)
-                      else setSelectedAlbum(selectedAlbum === record.albumKey ? null : record.albumKey)
-                    }}
-                    selectionMode={selectionMode}
-                    isSelectedForShare={selectedForShare.has(record.albumKey)}
-                  />
-                </motion.div>
-              ))}
-            </AnimatePresence>
+            <GridCards count={sortedRecords.length}>
+              {(shown, settled) => (
+                <AnimatePresence>
+                  {sortedRecords.slice(0, shown).map((record) => (
+                    <motion.div
+                      // Layout animation (re-sorting) only once every card is in: while cards are
+                      // still arriving, each batch would re-measure every card already shown.
+                      layout={settled}
+                      key={record.albumKey}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <RecordItem
+                        record={record}
+                        isSelected={selectedAlbum === record.albumKey}
+                        onClick={() => {
+                          if (selectionMode) toggleSelection(record.albumKey)
+                          else setSelectedAlbum(selectedAlbum === record.albumKey ? null : record.albumKey)
+                        }}
+                        selectionMode={selectionMode}
+                        isSelectedForShare={selectedForShare.has(record.albumKey)}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
+            </GridCards>
           </div>
         </div>
       )}
@@ -333,10 +360,11 @@ export const RecordShelfView = memo(() => {
               initial={{ x: '100%', opacity: 0.5 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: '100%', opacity: 0.5 }}
-              transition={{ type: 'spring', damping: 30, stiffness: 240 }}
+              transition={SPRING_PANEL}
               role="dialog"
               aria-label={t('shelf.by', { album: selectedRecord.album, artist: selectedRecord.artist })}
-              className="absolute bottom-0 right-0 top-0 z-40 flex w-[400px] flex-col overflow-hidden border-l border-ink/[0.06] kissa-sheet shadow-[-24px_0_80px_rgba(0,0,0,0.6)] min-[1400px]:w-[440px]"
+              // A floating sheet of the app's room-tinted glass, inset from the window's edges.
+              className="absolute bottom-3 right-3 top-3 z-40 flex w-[380px] flex-col overflow-hidden rounded-[22px] border border-white/[0.08] kissa-sheet shadow-[0_24px_80px_-12px_rgba(0,0,0,0.65)] min-[1400px]:w-[420px]"
             >
               {/* Lit by its own cover, like the record on the deck. */}
               {selectedRecord.artworkUrl && (
@@ -344,99 +372,110 @@ export const RecordShelfView = memo(() => {
                   src={selectedRecord.artworkUrl}
                   alt=""
                   aria-hidden="true"
-                  className="pointer-events-none absolute -top-16 left-1/2 h-[70%] w-[160%] -translate-x-1/2 object-cover opacity-30 blur-3xl"
+                  className="pointer-events-none absolute -top-16 left-1/2 h-[60%] w-[160%] -translate-x-1/2 object-cover opacity-25 blur-3xl"
                 />
               )}
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-[var(--deck-bg)]/70 to-[var(--deck-bg)]" aria-hidden="true" />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-[var(--deck-bg)]/60 to-[var(--deck-bg)]/90" aria-hidden="true" />
 
               <button
                 type="button"
                 onClick={() => setSelectedAlbum(null)}
-                className="absolute right-5 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full text-dim transition-colors hover:bg-ink/[0.08] hover:text-ink cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone"
+                className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full text-dim transition-colors hover:bg-ink/[0.08] hover:text-ink cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone"
                 aria-label={t('shelf.close')}
               >
                 <X className="h-4 w-4" />
               </button>
 
-              <div className="relative flex-1 overflow-y-auto no-scrollbar px-9 pb-6 pt-16">
-                <div className="relative aspect-square w-[70%]">
-                  {/* The record peeking out of its sleeve. */}
-                  <div
-                    className="absolute right-[-30%] top-[4%] aspect-square w-[92%] rounded-full border border-ink/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
-                    style={{ backgroundImage: 'repeating-radial-gradient(#101010 0px, #191919 2px, #101010 4px)' }}
-                    aria-hidden="true"
-                  >
-                    <div className="absolute left-1/2 top-1/2 aspect-square w-[34%] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full">
-                      {selectedRecord.artworkUrl && <img src={selectedRecord.artworkUrl} alt="" className="h-full w-full object-cover" />}
+              <div className="relative flex-1 overflow-y-auto no-scrollbar px-7 pb-7 pt-14">
+                <div className="aspect-square w-full max-w-[260px] overflow-hidden rounded-[14px] bg-[#1a1411] shadow-[0_18px_40px_-10px_rgba(0,0,0,0.6),inset_0_0_0_0.5px_rgba(255,255,255,0.08)]">
+                  {selectedRecord.artworkUrl ? (
+                    <img src={selectedRecord.artworkUrl} alt={selectedRecord.album} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Disc3 className="h-12 w-12 text-tone/30" />
                     </div>
-                  </div>
-                  <div className="relative h-full w-full overflow-hidden rounded-xl bg-[#1a1411] shadow-[0_24px_50px_rgba(0,0,0,0.6)]">
-                    {selectedRecord.artworkUrl ? (
-                      <img src={selectedRecord.artworkUrl} alt={selectedRecord.album} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center">
-                        <Disc3 className="h-12 w-12 text-tone/30" />
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
 
-                <h2 className="mt-9 font-kissa-editorial text-[30px] font-normal leading-[1.08] text-ink text-balance">{selectedRecord.album}</h2>
-                <p className="mt-2 text-[15px] text-tone">{selectedRecord.artist}</p>
+                <h2 className="mt-6 font-kissa-editorial text-[22px] font-medium leading-[1.15] tracking-[-0.015em] text-ink text-balance">{selectedRecord.album}</h2>
+                <p className="mt-1 text-[14px] text-dim">{selectedRecord.artist}</p>
 
-                <dl className="mt-8 grid grid-cols-3 border-y border-ink/[0.08] py-5">
-                  <div>
-                    <dd className="font-kissa-editorial text-[30px] leading-none text-ink tabular-nums">{selectedRecord.playCount}</dd>
-                    <dt className="mt-2 text-[11px] text-dim">{t(selectedRecord.playCount === 1 ? 'shelf.play.one' : 'shelf.play.other')}</dt>
-                  </div>
-                  <div className="border-l border-ink/[0.08] pl-5">
-                    <dd className="font-kissa-editorial text-[22px] leading-[1.36] text-ink">{shelfDate(selectedRecord.firstListened, t)}</dd>
-                    <dt className="mt-2 text-[11px] text-dim">{t('shelf.firstPlayed')}</dt>
-                  </div>
-                  <div className="border-l border-ink/[0.08] pl-5">
-                    <dd className="font-kissa-editorial text-[22px] leading-[1.36] text-ink">{shelfDate(selectedRecord.lastListened, t)}</dd>
-                    <dt className="mt-2 text-[11px] text-dim">{t('shelf.lastPlayed')}</dt>
-                  </div>
+                {/* The record's history as a quiet grouped list, like a settings screen. */}
+                <dl className="mt-6 overflow-hidden rounded-[12px] bg-white/[0.045] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.06)]">
+                  {[
+                    [t('shelf.stat.plays'), String(selectedRecord.playCount)],
+                    [t('shelf.stat.first'), shelfDate(selectedRecord.firstListened, t)],
+                    [t('shelf.stat.last'), shelfDate(selectedRecord.lastListened, t)]
+                  ].map(([label, value], i) => (
+                    <div key={label} className={cn('flex items-baseline justify-between gap-4 px-4 py-2.5', i > 0 && 'shadow-[inset_0_0.5px_0_rgba(255,255,255,0.06)]')}>
+                      <dt className="text-[13px] text-dim">{label}</dt>
+                      <dd className="text-[13px] font-medium tabular-nums text-ink/90">{value}</dd>
+                    </div>
+                  ))}
                 </dl>
 
                 {selectedRecord.tracksEncountered.length > 0 && (
-                  <div className="mt-8">
-                    <p className="text-[12.5px] font-medium text-dim">{t('shelf.songs')}</p>
-                    <ol className="mt-3">
-                      {selectedRecord.tracksEncountered.map((t, i) => (
-                        <li key={i} className="flex items-baseline gap-4 border-b border-ink/[0.05] py-2.5 last:border-b-0">
-                          <span className="w-5 shrink-0 font-sans text-[12px] font-medium text-dim/70 tabular-nums">{String(i + 1).padStart(2, '0')}</span>
-                          <span className="truncate text-[13.5px] text-ink/90">{t}</span>
+                  <div className="mt-6">
+                    <p className="px-1 text-[12px] font-medium text-dim">{t('shelf.songs')}</p>
+                    <ol className="mt-2 overflow-hidden rounded-[12px] bg-white/[0.045] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.06)]">
+                      {selectedRecord.tracksEncountered.map((song, i) => (
+                        <li key={i} className={cn('flex items-baseline gap-3 px-4 py-2.5', i > 0 && 'shadow-[inset_0_0.5px_0_rgba(255,255,255,0.06)]')}>
+                          <span className="w-4 shrink-0 text-right text-[12px] tabular-nums text-dim/80">{i + 1}</span>
+                          <span className="truncate text-[13.5px] text-ink/90">{song}</span>
                         </li>
                       ))}
                     </ol>
                   </div>
                 )}
-              </div>
 
-              <div className="relative flex shrink-0 items-center gap-3 border-t border-ink/[0.06] px-9 py-5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSharePayload({ type: 'album', data: selectedRecord as unknown as AlbumShareData, aspectRatio: '4:5' })
-                  }}
-                  className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-tone text-[12.5px] font-bold text-[var(--surface)] transition-transform cursor-pointer active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
-                >
-                  <Share className="h-4 w-4" />
-                  {t('shelf.shareCard')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    removeRecord(selectedRecord.albumKey)
-                    setSelectedAlbum(null)
-                  }}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink/10 text-dim transition-colors hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-300 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone"
-                  aria-label={t('shelf.remove')}
-                  title={t('shelf.remove')}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {/* Actions follow the content: one calm primary action and a quiet remove. */}
+                <div className="mt-6 flex items-center gap-2">
+                  {confirmRemove ? (
+                    <div className="flex w-full items-center gap-2" role="group" aria-label={t('shelf.removeAsk')}>
+                      <p className="min-w-0 flex-1 text-[13px] text-ink/85">{t('shelf.removeAsk')}</p>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmRemove(false)}
+                        className="h-8 rounded-full px-3 text-[12.5px] font-medium text-ink/75 transition-colors hover:bg-white/[0.08] hover:text-ink cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-tone"
+                      >
+                        {t('shelf.cancel')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          removeRecord(selectedRecord.albumKey)
+                          setConfirmRemove(false)
+                          setSelectedAlbum(null)
+                        }}
+                        className="h-8 rounded-full bg-[#e5484d] px-3.5 text-[12.5px] font-semibold text-white transition-[filter] hover:brightness-110 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#e5484d]/60"
+                      >
+                        {t('shelf.removeYes')}
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSharePayload({ type: 'album', data: selectedRecord as unknown as AlbumShareData, aspectRatio: '4:5' })
+                        }}
+                        className="inline-flex h-9 items-center gap-2 rounded-full bg-tone/[0.16] px-4 text-[13px] font-semibold text-tone transition-colors hover:bg-tone/[0.24] cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-tone"
+                      >
+                        <Share className="h-4 w-4" aria-hidden="true" />
+                        {t('shelf.shareCard')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmRemove(true)}
+                        className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-full text-dim transition-colors hover:bg-red-500/10 hover:text-red-300 cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-tone"
+                        aria-label={t('shelf.remove')}
+                        title={t('shelf.remove')}
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </motion.div>
           </>
@@ -453,6 +492,24 @@ export const RecordShelfView = memo(() => {
 
 RecordShelfView.displayName = 'RecordShelfView'
 
+/**
+ * The grid's first screenful mounts at once and the rest follows a batch per frame. A shelf of 114
+ * records mounted every card (each with layout animation) in one 230 ms task, measured in the live
+ * app on 2026-11-10; in batches no single frame carries more than one batch. Mounted afresh each
+ * time the grid opens, so returning to the grid is staged the same way.
+ */
+const GRID_FIRST = 12
+const GRID_STEP = 6
+function GridCards({ count, children }: { count: number; children: (shown: number, settled: boolean) => React.ReactNode }): React.JSX.Element {
+  const [shown, setShown] = useState(() => Math.min(count, GRID_FIRST))
+  useEffect(() => {
+    if (shown >= count) return
+    const id = requestAnimationFrame(() => setShown((n) => Math.min(count, n + GRID_STEP)))
+    return () => cancelAnimationFrame(id)
+  }, [shown, count])
+  return <>{children(Math.min(shown, count), shown >= count)}</>
+}
+
 /** Today, yesterday, a date this year, or a date with the year. */
 function shelfDate(time: number, t: (key: 'shelf.today' | 'shelf.yesterday') => string): string {
   const d = new Date(time)
@@ -466,9 +523,9 @@ function shelfDate(time: number, t: (key: 'shelf.today' | 'shelf.yesterday') => 
 /** A recessed track holding a group of choices, like a native segmented control. */
 const TRACK =
   'flex items-center gap-0.5 rounded-[11px] bg-black/25 p-[3px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.35),inset_0_0_0_1px_rgba(255,255,255,0.04),0_1px_0_rgba(255,255,255,0.04)]'
-/** A quiet glass button for secondary actions. */
+/** A quiet text button for secondary actions: no outline, it fills only on hover. */
 const PILL =
-  'h-8 cursor-pointer rounded-full bg-white/[0.06] px-3.5 text-[12.5px] font-medium text-ink/80 shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.12)] transition-colors hover:bg-white/[0.1] hover:text-ink'
+  'h-8 cursor-pointer rounded-full px-3 text-[12.5px] font-medium text-ink/75 transition-colors hover:bg-white/[0.08] hover:text-ink outline-none focus-visible:ring-1 focus-visible:ring-tone'
 
 function SortTab({ active, onClick, label, radio, indicator = 'sort-indicator' }: { active: boolean, onClick: () => void, label: string, radio?: boolean, indicator?: string }) {
   return (
@@ -483,7 +540,7 @@ function SortTab({ active, onClick, label, radio, indicator = 'sort-indicator' }
       {active && (
         <motion.div
           layoutId={indicator}
-          transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+          transition={SPRING_INDICATOR}
           className="absolute inset-0 rounded-[8px] bg-[linear-gradient(180deg,rgba(255,255,255,0.13),rgba(255,255,255,0.08))] shadow-[0_1px_3px_rgba(0,0,0,0.35),0_0_0_0.5px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.18)]"
         />
       )}
@@ -541,7 +598,7 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
           >
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1/3 aspect-square rounded-full border border-white/10 overflow-hidden">
               {record.artworkUrl ? (
-                 <img src={record.artworkUrl} className="w-full h-full object-cover opacity-80" alt="" />
+                 <img src={record.artworkUrl} loading="lazy" decoding="async" className="w-full h-full object-cover opacity-80" alt="" />
               ) : (
                  <div className="w-full h-full bg-tone opacity-80" />
               )}
@@ -552,7 +609,7 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
 
         <div className="absolute inset-0 z-10 rounded-sm overflow-hidden bg-[#1a1411]">
           {record.artworkUrl ? (
-            <img src={record.artworkUrl} alt={record.album} className="w-full h-full object-cover pointer-events-none" />
+            <img src={record.artworkUrl} alt={record.album} loading="lazy" decoding="async" className="w-full h-full object-cover pointer-events-none" />
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center p-4">
               <Disc3 className="w-12 h-12 text-tone/30 mb-2" />
@@ -567,18 +624,24 @@ const RecordItem = memo(({ record, isSelected, onClick, selectionMode, isSelecte
       {selectionMode && (
         <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 h-1 rounded-full transition-colors flex items-center justify-center">
            {isSelectedForShare ? (
-             <div className="w-1.5 h-1.5 rounded-full bg-tone shadow-[0_0_8px_var(--accent)]" />
+             <div className="w-1.5 h-1.5 rounded-full bg-tone" />
            ) : (
              <div className="w-1 h-1 rounded-full bg-white/10" />
            )}
         </div>
       )}
 
-      <div className="mt-4 flex flex-col px-1 z-10 transition-opacity" style={{ opacity: isSelected ? 1 : 0.85 }}>
+      <div className="relative isolate mt-4 flex flex-col px-1 z-10">
+        {/* A soft, static shade behind the words, so they stay readable over the brightest rooms
+            (a plain gradient: no blur for a hundred cards to recompute). */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -inset-x-4 -inset-y-3 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.34),transparent_72%)]"
+        />
         <h3 className="font-serif text-[16px] leading-snug font-medium tracking-tight text-ink truncate">
           {record.album}
         </h3>
-        <p className="mt-1 text-[13px] text-dim truncate">
+        <p className="mt-1 text-[13px] text-ink/70 truncate">
           {record.artist}
         </p>
       </div>

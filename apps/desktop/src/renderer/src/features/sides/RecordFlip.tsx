@@ -1,3 +1,4 @@
+import { prefersReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { memo, useEffect, type ReactNode } from 'react'
 import { useAnimate } from 'framer-motion'
 import { currentLetter, useSidesStore } from './sidesStore'
@@ -13,7 +14,7 @@ export const RecordFlip = memo(({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!flipCount || !scope.current) return
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    if (prefersReducedMotion()) {
       useSidesStore.setState((s) => ({ shownLetter: currentLetter(s) }))
       return
     }

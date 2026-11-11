@@ -62,11 +62,16 @@ export const FullscreenControls = memo(({
     }
   }
 
+  // The layer covers the whole screen only to place the controls. It never takes the pointer
+  // itself, so the lyrics, their options and Party mode's lyrics card underneath stay
+  // clickable; only the two control groups do, and only while they are shown.
+  const hit = isVisible ? 'pointer-events-auto' : 'pointer-events-none'
+
   return (
     <div
       className={cn(
-        "absolute inset-0 z-50 flex flex-col justify-between p-6 min-[900px]:p-12",
-        isVisible ? "opacity-100" : "opacity-0 pointer-events-none"
+        "absolute inset-0 z-50 flex flex-col justify-between p-6 min-[900px]:p-12 pointer-events-none",
+        isVisible ? "opacity-100" : "opacity-0"
       )}
       onFocus={() => onHold?.(true)}
       onBlur={(e) => {
@@ -78,7 +83,7 @@ export const FullscreenControls = memo(({
         transitionTimingFunction: 'var(--ease-out, cubic-bezier(0.22,1,0.36,1))'
       }}
     >
-      <div className="flex justify-end gap-3">
+      <div data-testid="fs-top-controls" className={cn("flex gap-3 self-end", hit)}>
         <MovingLightToggle variant="fullscreen" />
         <button
           type="button"
@@ -93,19 +98,23 @@ export const FullscreenControls = memo(({
           type="button"
           aria-label={t('fs.exit')}
           onClick={() => setFullscreen(false)}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 active:scale-95 transition-[transform,color,background-color] duration-150"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 active:scale-95 transition-[transform,color,background-color] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
         >
           <Minimize2 className="w-5 h-5" />
         </button>
       </div>
 
-      <div 
+      <div
+        data-testid="fs-transport"
         className={cn(
-          "absolute bottom-6 min-[900px]:bottom-10 transition-all flex justify-center",
-          showLyrics ? "left-1/4 -translate-x-1/2" : "left-1/2 -translate-x-1/2"
+          "absolute bottom-6 left-1/2 min-[900px]:bottom-10 flex justify-center transition-transform",
+          hit
         )}
+        // With the lyrics open the transport slides to the left quarter. It moves by transform
+        // only (it used to animate `left`, a layout property, for 600 ms).
         style={{
-          transitionDuration: '600ms',
+          transform: showLyrics ? 'translateX(calc(-50% - 25vw))' : 'translateX(-50%)',
+          transitionDuration: '520ms',
           transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)'
         }}
       >

@@ -7,7 +7,7 @@
     return document.getElementById(id)
   }
 
-  // ---- Words ---------------------------------------------------------------------------------
+  // Words
   // English and Spanish, following Kissa's own language once the PC says which it uses.
 
   var WORDS = {
@@ -247,7 +247,7 @@
     renderQueue()
   }
 
-  // ---- Connection --------------------------------------------------------------------------
+  // Connection
 
   function connect() {
     clearTimeout(retryTimer)
@@ -358,7 +358,7 @@
     if (navigator.vibrate) navigator.vibrate(8)
   }
 
-  // ---- Now playing -------------------------------------------------------------------------
+  // Now playing
 
   function onState(next) {
     state = next
@@ -501,7 +501,7 @@
     input.style.setProperty('--fill', input.value + '%')
   }
 
-  // ---- Controls ----------------------------------------------------------------------------
+  // Controls
 
   el.play.addEventListener('click', function () {
     tap()
@@ -552,7 +552,7 @@
     flushVolume()
   })
 
-  // ---- Sheets ------------------------------------------------------------------------------
+  // Sheets
 
   function openSheet(sheet, opener) {
     sheet.showModal()
@@ -616,7 +616,7 @@
     openSheet(queueSheet, el.queueOpen)
   })
 
-  // ---- Room and record ---------------------------------------------------------------------
+  // Room and record
 
   function onLook(next) {
     look = next
@@ -815,7 +815,7 @@
     paintSleepLine()
   }
 
-  // ---- Up next -----------------------------------------------------------------------------
+  // Up next
   // Only a queue Kissa really plays (an album folder or Kissa's own order). A streaming app's
   // queue cannot be read, so for one the button is not shown at all.
 
@@ -879,7 +879,7 @@
           : ''
   }
 
-  // ---- Pairing -----------------------------------------------------------------------------
+  // Pairing
 
   function paintCode() {
     var v = el.pairCode.value
@@ -947,7 +947,7 @@
     connect()
   })
 
-  // ---- Battery: no stream and no clock while the page is out of sight. -------------------
+  // Battery: no stream and no clock while the page is out of sight.
 
   var timer = 0
   function startClock() {

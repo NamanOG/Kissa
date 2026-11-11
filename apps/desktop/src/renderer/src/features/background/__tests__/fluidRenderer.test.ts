@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createFluidRenderer } from '../fluidRenderer'
+import { BLOOM_MAX, coverPulse, createFluidRenderer, MAX_SPEED, soundTerms, WARP_MAX, type SoundSignals } from '../fluidRenderer'
 import { controlledCovers, makeFakeGl } from './fakeGl'
 
 /**
@@ -224,5 +224,243 @@ describe('Moving light frame pacing (manual display)', () => {
     expect(Math.min(...gaps)).toBeGreaterThanOrEqual(1000 / 30 - 1000 / 144)
     // A frame whose refresh was missed lands one refresh late; nothing waits longer than that.
     expect(Math.max(...gaps)).toBeLessThanOrEqual((6 * 1000) / 144 + 1e-3)
+  })
+})
+
+describe('Moving light coasting and crossfades (manual clock)', () => {
+  const advances = (r: { time: number }, clock: { advance: (ms: number) => void; drawnAt: number[] }, ms: number): number[] => {
+    const out: number[] = []
+    let last = r.time
+    const end = clock.drawnAt.length
+    const step = 1000 / 144
+    for (let i = 0; i < ms / step; i++) {
+      clock.advance(step)
+      if (clock.drawnAt.length > end + out.length) {
+        // Flow speed: clock advance per second of display time (1 = full motion).
+        const at = clock.drawnAt[clock.drawnAt.length - 1]
+        const prev = clock.drawnAt[clock.drawnAt.length - 2]
+        // The final still frame lands on the same refresh as the last moving one.
+        out.push(prev === undefined || at === prev ? 0 : +((r.time - last) / ((at - prev) / 1000)).toFixed(9))
+        last = r.time
+      }
+    }
+    return out
+  }
+
+  it('a coasting pause slows the colour to a stop over about 0.9 s, then stops for real', () => {
+    const { r, clock, onRunning } = setup()
+    r!.setActive(true)
+    clock.advance(2000) // fully up to speed
+    onRunning.mockClear()
+    r!.setActive(false, { coast: true })
+    expect(r!.running).toBe(true)
+    const steps = advances(r!, clock, 1200)
+    // Frames keep drawing for the coast (~27 at 30 fps), and stop once it has settled.
+    expect(steps.length).toBeGreaterThanOrEqual(25)
+    expect(steps.length).toBeLessThanOrEqual(29)
+    for (let i = 1; i < steps.length; i++) expect(steps[i]).toBeLessThanOrEqual(steps[i - 1] + 1e-9)
+    expect(steps[steps.length - 1]).toBe(0)
+    expect(r!.running).toBe(false)
+    expect(onRunning.mock.calls).toEqual([[false]])
+    expect(clock.pending).toBe(0)
+  })
+
+  it('playing again during a coast reverses it without stopping the loop', () => {
+    const { r, clock, onRunning } = setup()
+    r!.setActive(true)
+    clock.advance(2000)
+    onRunning.mockClear()
+    r!.setActive(false, { coast: true })
+    const down = advances(r!, clock, 300)
+    r!.setActive(true)
+    const up = advances(r!, clock, 600)
+    expect(up[up.length - 1]).toBeGreaterThan(down[down.length - 1])
+    expect(onRunning).not.toHaveBeenCalled()
+    expect(r!.running).toBe(true)
+  })
+
+  it('stopping without a coast stops at once', () => {
+    const { r, clock } = setup()
+    r!.setActive(true)
+    clock.advance(500)
+    r!.setActive(false)
+    expect(r!.running).toBe(false)
+    expect(clock.pending).toBe(0)
+  })
+
+  it('a play eases in rather than starting at full speed', () => {
+    const { r, clock } = setup()
+    r!.setActive(true)
+    const steps = advances(r!, clock, 1700) // the first light of a session wakes over 1.4 s
+    expect(steps[1]).toBeLessThan(steps[steps.length - 1] * 0.2)
+    expect(steps[steps.length - 1]).toBeCloseTo(1, 2)
+  })
+
+  it('a track change blends over 1.6 s on a smoothstep', async () => {
+    const mixes: number[] = []
+    const fake = makeFakeGl()
+    ;(fake.gl as unknown as { uniform1f: (loc: { name?: string }, v: number) => void }).uniform1f = (loc, v) => {
+      if (loc?.name === 'uMix') mixes.push(v)
+    }
+    ;(fake.gl as unknown as { getUniformLocation: (_p: unknown, name: string) => unknown }).getUniformLocation = (_p, name) => ({ name })
+    const canvas = document.createElement('canvas')
+    canvas.getContext = vi.fn(() => fake.gl) as unknown as HTMLCanvasElement['getContext']
+    const clock = manualClock(1000 / 60)
+    const covers = controlledCovers()
+    const r = createFluidRenderer(canvas, { loadCover: covers.load, ...clock.deps })!
+    r.setActive(true)
+    clock.advance(200)
+    r.setCover('B')
+    covers.succeed('B')
+    await flush()
+    mixes.length = 0
+    clock.advance(400)
+    const at400 = mixes[mixes.length - 1]
+    clock.advance(400)
+    const at800 = mixes[mixes.length - 1]
+    clock.advance(900)
+    const end = mixes[mixes.length - 1]
+    const smooth = (p: number): number => p * p * (3 - 2 * p)
+    expect(at400).toBeCloseTo(smooth(400 / 1600), 1)
+    expect(at800).toBeCloseTo(0.5, 1)
+    expect(end).toBe(1)
+  })
+})
+
+describe('The light moves with the music (uniforms, fake GL)', () => {
+  const run = (sound: SoundSignals | null, opts: { source?: () => [number, number]; amount?: number } = {}) => {
+    const fake = makeFakeGl()
+    const canvas = document.createElement('canvas')
+    canvas.getContext = vi.fn(() => fake.gl) as unknown as HTMLCanvasElement['getContext']
+    const clock = manualClock(1000 / 60)
+    const covers = controlledCovers()
+    const r = createFluidRenderer(canvas, {
+      loadCover: covers.load,
+      ...clock.deps,
+      sound: () => sound,
+      source: opts.source,
+      amount: opts.amount === undefined ? undefined : () => opts.amount!
+    })!
+    r.resize(320, 180)
+    return { r, fake, clock }
+  }
+
+  it('with no sound, every term is at rest and time runs at the old drift', () => {
+    const { r, fake, clock } = run(null)
+    r.setActive(true)
+    clock.advance(1500) // past the ease-in
+    const t0 = r.time
+    clock.advance(1000)
+    expect(fake.uniforms.uS).toEqual([0, 0.42, 0.9, 1])
+    expect(fake.uniforms.uGlow).toEqual([0])
+    expect(r.time - t0).toBeCloseTo(1, 1)
+  })
+
+  it('with sound, the uniforms follow the formulas', () => {
+    const s = { level: 0.5, swell: 0.4, bass: 0.6, kick: 0.25, pan: 0 }
+    const { r, fake, clock } = run(s)
+    r.setActive(true)
+    clock.advance(1500)
+    const k = soundTerms(s, 1, 1)
+    const [amp, sigma, warp, sat] = fake.uniforms.uS
+    expect(amp).toBeCloseTo(0.04 + 0.1 * 0.5 + 0.14 * 0.25, 5)
+    expect(sigma).toBeCloseTo(0.42 + 0.1 * 0.4, 5)
+    expect(warp).toBeCloseTo(Math.min(WARP_MAX, 0.9 + 0.05 * 0.6), 5)
+    expect(sat).toBeCloseTo(1 + 0.12 * 0.4, 5)
+    expect(fake.uniforms.uGlow[0]).toBeCloseTo(0.03 * 0.5, 5)
+    expect(k.speed).toBeCloseTo(0.85 + 0.36 + 0.25 + 0.4, 5)
+  })
+
+  it('the flow never exceeds 3.2x and the warp never exceeds its limit', () => {
+    const k = soundTerms({ level: 1, swell: 1, bass: 1, kick: 1, pan: 0 }, 1.5, 1.5)
+    expect(k.speed).toBeLessThanOrEqual(MAX_SPEED)
+    expect(k.warp).toBeLessThanOrEqual(WARP_MAX)
+  })
+
+  it('the pool glides toward a new source over about half a second', () => {
+    let at: [number, number] = [0.5, 0.5]
+    const { r, fake, clock } = run(null, { source: () => at })
+    r.setActive(true)
+    clock.advance(1500)
+    const x0 = fake.uniforms.uSrc[0]
+    at = [0.8, 0.5]
+    clock.advance(500)
+    const aspect = 320 / 180
+    const target = (0.8 - 0.5) * aspect
+    const mid = fake.uniforms.uSrc[0]
+    expect(mid).toBeGreaterThan(x0 + (target - x0) * 0.5)
+    expect(mid).toBeLessThan(target - 0.01)
+    clock.advance(3000)
+    expect(fake.uniforms.uSrc[0]).toBeCloseTo(target, 2)
+    expect(fake.uniforms.uSrc[1]).toBeCloseTo(0, 5)
+  })
+
+  it('a still room (paused) is drawn with every sound term at rest', () => {
+    const { r, fake, clock } = run({ level: 1, swell: 1, bass: 1, kick: 1, pan: 1 })
+    r.setActive(true)
+    clock.advance(1500)
+    r.setActive(false)
+    expect(fake.uniforms.uS).toEqual([0, 0.42, 0.9, 1])
+    expect(fake.uniforms.uGlow).toEqual([0])
+  })
+})
+
+describe('Light amount and safety', () => {
+  it('the total lift changes by at most 0.06 between drawn frames, even on a sudden kick', () => {
+    const fake = makeFakeGl()
+    const canvas = document.createElement('canvas')
+    canvas.getContext = vi.fn(() => fake.gl) as unknown as HTMLCanvasElement['getContext']
+    const clock = manualClock(1000 / 60)
+    let sound: SoundSignals = { level: 0, swell: 0, bass: 0, kick: 0, pan: 0 }
+    const lifts: number[] = []
+    const r = createFluidRenderer(canvas, {
+      loadCover: controlledCovers().load,
+      ...clock.deps,
+      onDraw: () => lifts.push((fake.uniforms.uGlow?.[0] ?? 0) + (fake.uniforms.uS?.[0] ?? 0)),
+      sound: () => sound,
+      amount: () => 1.5
+    })!
+    r.setActive(true)
+    clock.advance(1500)
+    sound = { level: 1, swell: 1, bass: 1, kick: 1, pan: 0 }
+    clock.advance(1000)
+    for (let i = 1; i < lifts.length; i++) expect(Math.abs(lifts[i] - lifts[i - 1])).toBeLessThanOrEqual(0.06 + 1e-9)
+    expect(fake.uniforms.uS[0]).toBeLessThanOrEqual(BLOOM_MAX + 1e-9)
+  })
+
+  it('Gentle moves less than Lively', () => {
+    const s = { level: 0.7, swell: 0.6, bass: 0.6, kick: 0.8, pan: 0 }
+    const gentle = soundTerms(s, 0.5, 0.5)
+    const lively = soundTerms(s, 1.5, 1.5)
+    expect(gentle.bloomAmp).toBeLessThan(lively.bloomAmp)
+    expect(gentle.speed).toBeLessThan(lively.speed)
+  })
+})
+
+describe('Small delights', () => {
+  it('a new cover breathes: up over 250 ms, gone by 1.35 s', () => {
+    expect(coverPulse(0)).toBe(0)
+    expect(coverPulse(243)).toBeCloseTo(1, 2)
+    expect(coverPulse(700)).toBeGreaterThan(0.2)
+    expect(coverPulse(700)).toBeLessThan(0.8)
+    expect(coverPulse(1350)).toBe(0)
+    expect(coverPulse(-5)).toBe(0)
+  })
+
+  it('the first light of a session wakes over 1.4 s; a later play over 0.6 s', () => {
+    const { r, clock } = setup()
+    const speedAfter = (ms: number): number => {
+      const t0 = r!.time
+      clock.advance(ms)
+      const t1 = r!.time
+      clock.advance(100)
+      return (r!.time - t1) / 0.1
+    }
+    r!.setActive(true)
+    expect(speedAfter(700)).toBeLessThan(0.8) // still waking at 0.7 s
+    clock.advance(1000)
+    r!.setActive(false)
+    r!.setActive(true)
+    expect(speedAfter(700)).toBeGreaterThan(0.95) // a later play is up to speed by 0.7 s
   })
 })

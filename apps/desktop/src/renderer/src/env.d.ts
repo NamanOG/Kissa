@@ -23,6 +23,7 @@ declare module '*.svg' {
 }
 
 import type { SystemMediaPayload } from '../../types/media'
+import type { DesktopLyricsFrame, DesktopLyricsSize, DesktopLyricsStatus } from '../../types/desktopLyrics'
 import type { LocalAlbumResult, TrackProblem } from '../../types/album'
 import type {
   LyricsChoice,
@@ -53,12 +54,12 @@ export interface KissaSystemMediaAPI {
   onTrayAction: (callback: (action: string) => void) => () => void
   takeJumpPlace?: () => Promise<string | null>
   getAlbumSides?: (artist: string, album: string) => Promise<AlbumSidesResult | null>
-  showTrackToast?: (payload: { title: string; artist: string; artwork?: string; accent?: string; label?: string; playing?: boolean }) => Promise<boolean>
+  showTrackToast?: (payload: { title: string; artist: string; artwork?: string; accent?: string; label?: string; playPauseLabel?: string; nextLabel?: string; playing?: boolean }) => Promise<boolean>
   setJumpList?: (labels: Record<string, string>) => Promise<void>
   exportShare: (options: any) => Promise<boolean>
   getSharePayload: () => Promise<any>
   sendShareReady: (success: boolean) => Promise<void>
-  mediaPlayPause: () => Promise<void>
+  mediaPlayPause: (reason?: 'sleep-timer' | 'album-start') => Promise<void>
   chooseAlbumFolder?: () => Promise<LocalAlbumResult>
   albumTrackProblem?: (url: string) => Promise<TrackProblem>
   mediaNext: () => Promise<void>
@@ -68,7 +69,15 @@ export interface KissaSystemMediaAPI {
   getAppVersion?: () => Promise<string>
   toggleMiniPlayer?: (isMini: boolean, alwaysOnTop?: boolean) => Promise<void>
   setFullScreen: (value: boolean) => Promise<boolean>
+  /** Start-up timeline marks (main/startupTiming.ts). */
+  startupMark?: (name: string) => void
+  /** The opening has drawn its first frame over the room: show the window; resolves once it is on screen. */
+  openingReady?: () => Promise<void>
   onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void
+  /** Kissa's own caption buttons (no native overlay). */
+  windowControl?: (action: 'minimize' | 'toggle-maximize' | 'close') => Promise<void>
+  getWindowMaximized?: () => Promise<boolean>
+  onWindowMaximized?: (callback: (maximized: boolean) => void) => () => void
   onWindowVisibility?: (callback: (visible: boolean) => void) => () => void
   /** Mini player only: whether the cursor is over the window (watched by the main process). */
   onMiniHover?: (callback: (inside: boolean) => void) => () => void
@@ -100,6 +109,9 @@ export interface KissaSystemMediaAPI {
   installUpdate?: () => Promise<UpdateInstallResult>
   openStorePage?: () => Promise<void>
   openStoreReview?: () => Promise<void>
+  getReminders?: () => Promise<unknown>
+  setReminders?: (state: unknown) => Promise<unknown>
+  getSystemInfo?: () => Promise<{ windows: string; arch: string }>
   onUpdateStatusChanged?: (callback: (status: UpdateStatusPayload) => void) => () => void
   getDiscordPresence?: () => Promise<DiscordPresenceStatus>
   setStudyKeepAwake?: (on: boolean) => Promise<boolean>
@@ -122,6 +134,11 @@ export interface KissaSystemMediaAPI {
   sendRemoteLyrics?: (track: { title: string; artist: string }, lines: RemoteLyricLine[]) => void
   onPhoneRemoteChanged?: (callback: (status: PhoneRemoteStatus) => void) => () => void
   onRemoteCommand?: (callback: (command: RemoteCommand) => void) => () => void
+  getDesktopLyrics?: () => Promise<DesktopLyricsStatus>
+  setDesktopLyrics?: (change: { enabled?: boolean; locked?: boolean; size?: DesktopLyricsSize }) => Promise<DesktopLyricsStatus>
+  sendDesktopLyricsFrame?: (frame: DesktopLyricsFrame) => void
+  sendDesktopLyricsLabels?: (labels: { lock: string; unlock: string; close: string; size: string }) => void
+  onDesktopLyricsChanged?: (callback: (status: DesktopLyricsStatus) => void) => () => void
 }
 
 declare global {

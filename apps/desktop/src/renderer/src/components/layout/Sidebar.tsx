@@ -1,12 +1,15 @@
+import { SPRING_INDICATOR } from '@renderer/utils/motion'
 import React from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
-import { Quote, Settings, HelpCircle, Keyboard, Minimize2, Maximize2, Disc3, BookOpen } from 'lucide-react'
+import { Quote, Settings, HelpCircle, Keyboard, Minimize2, Maximize2, Disc3, BookOpen, Heart } from 'lucide-react'
+import { SUPPORT_PAGE_URL, openSupportPage } from '@renderer/features/support/SupportKissaLink'
 import { useEditionsStore } from '@renderer/stores/editionsStore'
 import { TurntableIcon } from './TurntableIcon'
 
 import { useStudyStore } from '@renderer/stores/studyStore'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { useT } from '@renderer/i18n'
 import { useGuideStore } from '@renderer/features/onboarding/guideStore'
 import { brandMarkSrc, brandMarkSrcSet } from '@renderer/utils/brandMark'
@@ -18,7 +21,7 @@ function NavMarker(): React.JSX.Element {
     <motion.div
       layoutId="kissa-nav-marker"
       aria-hidden="true"
-      transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 34 }}
+      transition={reduceMotion ? { duration: 0 } : SPRING_INDICATOR}
       className="absolute left-0 top-[30%] h-[40%] w-[3px] rounded-r-full bg-tone"
     />
   )
@@ -58,11 +61,11 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const isStudying = useStudyStore((s) => s.active !== null)
 
     return (
-      <aside
+      <aside data-region="rail"
         ref={ref}
         className={cn(
           'z-40 flex flex-col items-center py-6 select-none transition-[background-color,border-color,box-shadow,transform] duration-ui ease-primary transform-gpu will-change-transform border overflow-hidden',
-          'my-4 ml-4 mr-2 h-[calc(100%-32px)] w-[68px] min-[900px]:w-[76px] shrink-0 rounded-[38px] backdrop-blur-2xl backdrop-saturate-[1.6]',
+          'my-4 ml-4 mr-2 h-[calc(100%-32px)] w-[68px] min-[900px]:w-[76px] shrink-0 rounded-[38px]',
           // A narrow window uses CompactTopBar instead.
           'max-[899px]:hidden',
           className
@@ -70,19 +73,19 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
         style={{
           // The same glass as the dock, so the frame of the app is one material.
           borderColor: 'rgba(255,255,255,0.08)',
-          backgroundColor: 'color-mix(in srgb, var(--panel-bg) 52%, transparent)',
+          backgroundColor: 'color-mix(in srgb, var(--panel-bg) var(--rail-glass, 52%), transparent)',
           boxShadow:
             '0 24px 60px -24px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.2)'
         }}
         {...props}
       >
-        <nav className="flex flex-col items-center space-y-4 [@media(max-height:760px)]:space-y-0 w-full">
+        <nav aria-label="Kissa" className="flex flex-col items-center space-y-4 [@media(max-height:760px)]:space-y-0 w-full">
           <button
             type="button"
             onClick={() => setActiveView('deck')}
             aria-current={activeView === 'deck' ? 'page' : undefined}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-1.5 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-1.5 cursor-pointer transition-[color,background-color,transform] duration-100 ease-out active:scale-[0.94] motion-reduce:active:scale-100 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
               activeView === 'deck' ? "text-tone" : "text-dim hover:text-ink"
             )}
             title={t('nav.deckTitle')}
@@ -102,7 +105,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             onClick={() => setActiveView('lyrics')}
             aria-current={activeView === 'lyrics' ? 'page' : undefined}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-[color,background-color,transform] duration-100 ease-out active:scale-[0.94] motion-reduce:active:scale-100 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
               activeView === 'lyrics' ? "text-tone" : "text-dim hover:text-ink"
             )}
             title={t('nav.lyricsTitle')}
@@ -120,7 +123,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             onClick={() => setActiveView('shelf')}
             aria-current={activeView === 'shelf' ? 'page' : undefined}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06] group",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-[color,background-color,transform] duration-100 ease-out active:scale-[0.94] motion-reduce:active:scale-100 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06] group",
               activeView === 'shelf' ? "text-tone" : "text-dim hover:text-ink"
             )}
             title={t('nav.shelfTitle')}
@@ -137,7 +140,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             onClick={() => setActiveView('study')}
             aria-current={activeView === 'study' ? 'page' : undefined}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-[color,background-color,transform] duration-100 ease-out active:scale-[0.94] motion-reduce:active:scale-100 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
               activeView === 'study' ? "text-tone" : "text-dim hover:text-ink"
             )}
             title={isStudying ? t('nav.focusRunning') : t('nav.focusTitle')}
@@ -160,7 +163,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             type="button"
             onClick={showEditionEditor}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-[color,background-color,transform] duration-100 ease-out active:scale-[0.94] motion-reduce:active:scale-100 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
               isEditionEditorOpen ? "text-tone" : "text-dim hover:text-ink"
             )}
             title={`${t('nav.turntable')} (E)`}
@@ -168,7 +171,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             aria-expanded={isEditionEditorOpen}
           >
             {isEditionEditorOpen && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone shadow-[0_0_8px_var(--accent)]" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone" />
             )}
             <TurntableIcon className="w-4 h-4" strokeWidth={isEditionEditorOpen ? 2 : 1.5} />
           </button>
@@ -177,14 +180,14 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             type="button"
             onClick={() => usePlayerStore.getState().toggleMiniPlayer()}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-[color,background-color,transform] duration-100 ease-out active:scale-[0.94] motion-reduce:active:scale-100 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
               isMiniPlayer ? "text-tone" : "text-dim hover:text-ink"
             )}
             title={t('nav.mini')}
             aria-label={t('nav.mini')}
           >
             {isMiniPlayer && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone shadow-[0_0_8px_var(--accent)]" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone" />
             )}
             {isMiniPlayer ? (
               <Maximize2 className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isMiniPlayer ? 2 : 1.5} />
@@ -198,21 +201,21 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             data-tour="nav-guide"
             onClick={() => setIsOnboardingOpen(true)}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-[color,background-color,transform] duration-100 ease-out active:scale-[0.94] motion-reduce:active:scale-100 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
               isOnboardingOpen ? "text-tone" : "text-dim hover:text-ink"
             )}
             title={t('nav.guide')}
             aria-label={guideHasNew ? `${t('nav.guide')}. ${t('guide.new.badge')}` : t('nav.guide')}
           >
             {isOnboardingOpen && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone shadow-[0_0_8px_var(--accent)]" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone" />
             )}
             <HelpCircle className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isOnboardingOpen ? 2 : 1.5} />
             {guideHasNew && !isOnboardingOpen && (
               <span
                 aria-hidden="true"
                 data-testid="guide-new-dot"
-                className="absolute top-2.5 left-1/2 ml-1.5 h-1.5 w-1.5 rounded-full bg-tone shadow-[0_0_6px_var(--accent)]"
+                className="absolute top-2.5 left-1/2 ml-1.5 h-1.5 w-1.5 rounded-full bg-tone"
               />
             )}
           </button>
@@ -221,35 +224,49 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             type="button"
             onClick={toggleKeyboardHelp}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-[color,background-color,transform] duration-100 ease-out active:scale-[0.94] motion-reduce:active:scale-100 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06]",
               isKeyboardHelpOpen ? "text-tone" : "text-dim hover:text-ink"
             )}
             title={t('nav.keys')}
             aria-label={t('nav.keys')}
           >
             {isKeyboardHelpOpen && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone shadow-[0_0_8px_var(--accent)]" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone" />
             )}
             <Keyboard className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4" strokeWidth={isKeyboardHelpOpen ? 2 : 1.5} />
           </button>
+
+          {/* Support Kissa: in the sidebar's own stack, so it never sits on the Deck's content. */}
+          {SUPPORT_PAGE_URL && (
+            <button
+              type="button"
+              data-testid="sidebar-support"
+              onClick={() => openSupportPage()}
+              className="relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-[color,background-color,transform] duration-100 ease-out active:scale-[0.94] motion-reduce:active:scale-100 outline-none text-tone/80 hover:text-tone focus-visible:text-tone focus-visible:bg-ink/[0.06]"
+              title={t('nav.support')}
+              aria-label={t('nav.support')}
+            >
+              <Heart className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          )}
 
           <button
             type="button"
             onClick={toggleSettings}
             className={cn(
-              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-colors active:scale-95 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06] group",
+              "relative w-full flex flex-col items-center justify-center py-3 gap-2 cursor-pointer transition-[color,background-color,transform] duration-100 ease-out active:scale-[0.94] motion-reduce:active:scale-100 outline-none focus-visible:text-ink focus-visible:bg-ink/[0.06] group",
               isSettingsOpen ? "text-tone" : "text-dim hover:text-ink"
             )}
             title={t('nav.settings')}
             aria-label={t('nav.settings')}
           >
             {isSettingsOpen && (
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone shadow-[0_0_8px_var(--accent)]" />
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[40%] rounded-r-full bg-tone" />
             )}
             <div className="relative">
               <Settings className="w-4 h-4 min-[900px]:w-4 min-[900px]:h-4 transition-transform duration-200 ease-out group-hover:rotate-[20deg]" strokeWidth={isSettingsOpen ? 2 : 1.5} />
               {hasUpdateAvailable && (
-                <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-tone shadow-[0_0_8px_var(--accent)]" />
+                <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-tone" />
               )}
             </div>
           </button>

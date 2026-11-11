@@ -79,7 +79,9 @@ export function cleanArtist(artist: string): string {
  * different cut (single edit, live take, remaster with a longer intro) and its
  * timestamps would drift against what is playing.
  */
-const SYNC_DURATION_TOLERANCE_SECONDS = 3
+// Timed lyrics are used only from a recording within 2 s of the playing one; a different cut
+// (an intro, a radio edit) puts every line off. Others fall back to words without timing.
+const SYNC_DURATION_TOLERANCE_SECONDS = 2
 
 /** What the track being played is, as far as the search results need to know. */
 export interface LyricsTarget {

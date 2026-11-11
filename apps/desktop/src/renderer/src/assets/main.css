@@ -18,27 +18,17 @@
 :root[data-moving-light] .backdrop-blur-xl {
   backdrop-filter: none;
 }
+/* Popovers and tooltips over the moving light: the same, with a near-solid room fill. Full sheets
+   keep their blur: the light settles to a still frame while one is open (sheetCount.ts). */
+:root[data-moving-light] .kissa-glass,
+:root[data-moving-light] .kissa-tooltip {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-moving-light] .kissa-glass {
+  background-color: color-mix(in srgb, var(--deck-bg) 78%, transparent);
+}
 
-/* Support Kissa: a slow breath of the album's colour. Opacity only, on a tiny layer. It breathes
-   twice when it appears and then rests: a loop that never stops keeps the window drawing frames
-   for a detail nobody is looking at. */
-.kissa-glow {
-  opacity: 0.35;
-  animation: kissa-glow 5.5s ease-in-out 4 alternate;
-}
-@keyframes kissa-glow {
-  from { opacity: 0.18; }
-  to { opacity: 0.7; }
-}
-/* Hidden or minimised window: nothing moves (set by Background.tsx). */
-:root[data-window-hidden] .kissa-glow {
-  animation-play-state: paused;
-}
-@media (prefers-reduced-motion: reduce) {
-  .kissa-glow {
-    animation: none;
-  }
-}
 /* The back of the sleeve: three small bars beside the song playing. */
 /* Six steps a second rather than every refresh: it reads the same at this size and leaves the
    window idle between steps. */
@@ -145,11 +135,22 @@
 
 @layer base {
   /*
+   * One keyboard focus ring for every control that does not draw its own: the room's accent,
+   * 2 px, just outside the shape. :where() keeps it at zero specificity, so any control with
+   * its own focus style (outline or ring utilities) keeps that.
+   */
+  :where(button, a[href], summary, [role='button'], [role='tab'], [role='radio'], [role='switch'], [role='slider']):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /*
    * Theme and Match Album colours change instantly at the root. Transitioning these inherited
    * properties on :root made every element in the app recalculate its style on every frame of
    * the fade (20 to 75 ms a frame measured in development), which stalled the record and the
    * window after each track change. Surfaces fade their own backgrounds (paint only), and only
-   * the ambient background layer crossfades these colours.
+   * the ambient background's base and glow crossfade these colours (GradientLayer.tsx), on
+   * their own small wrappers rather than the whole background layer.
    */
   .adaptive-ambient {
     transition:
@@ -190,8 +191,10 @@
   background-clip: text;
   background-image: linear-gradient(
     to right,
-    var(--on-surface) var(--word-progress, 0%),
-    color-mix(in srgb, var(--on-surface) 38%, transparent) var(--word-progress, 0%)
+    /* A soft leading edge, so the fill glides through the word instead of wiping it. */
+    /* Stretched by 12% so 0% is fully dim and 100% fully lit. */
+    var(--on-surface) calc(var(--word-progress, 0%) * 1.12 - 12%),
+    color-mix(in srgb, var(--on-surface) 38%, transparent) calc(var(--word-progress, 0%) * 1.12)
   );
 }
 
@@ -395,11 +398,12 @@ html[data-kissa-cover] #root *:has(> [data-kissa-overlay]) > :not([data-kissa-ov
 /* Wide Deck lyrics reuse the instrument, sheet and editorial type from the listening room. */
 @media (min-width: 1100px) {
   .deck-lyrics-open {
-    grid-template-columns: minmax(0, 1.3125fr) minmax(0, 1fr);
-    gap: 48px;
-    padding: 0 24px;
+    /* The columns (in App.tsx): the words at a comfortable measure, the deck takes the rest. */
+    /* The gap between the deck and the words matches the outer margins: one balanced spread. */
+    gap: clamp(32px, 3.5vw, 80px);
+    padding: 0 clamp(32px, 3.5vw, 80px);
     overflow: visible;
-    max-width: 1576px;
+    max-width: 2400px;
     margin-inline: auto;
   }
   .deck-lyrics-open .deck-details {
@@ -408,23 +412,177 @@ html[data-kissa-cover] #root *:has(> [data-kissa-overlay]) > :not([data-kissa-ov
     width: 30%;
     pointer-events: none;
   }
+  /* The deck centres vertically in the room above the dock. */
   .deck-lyrics-open .deck-instrument {
-    padding: 104px 0 24px;
+    padding: 24px 0;
     overflow: visible;
   }
+  /* The lyrics column: no card, running nearly the full height, the header at the top and the
+     words fading out softly just above the dock. */
   .deck-lyrics-open .deck-lyrics-card {
-    margin: var(--lyrics-top, 104px) 0 24px;
+    margin: clamp(28px, 4.5vh, 56px) 0 clamp(12px, 2vh, 28px);
     align-self: stretch;
-    padding: clamp(24px, 2vw, 32px);
+    padding: 0 8px 0 0;
     width: 100%;
-    max-width: 640px;
-    justify-self: end;
-    border: 0;
-    border-radius: 24px;
-    background: color-mix(in srgb, var(--panel-bg) 72%, transparent);
-    box-shadow: none;
+    max-width: 760px;
+    justify-self: start;
   }
   .deck-lyrics-open .onboarding-deck {
-    max-width: min(840px, calc((100vh - 240px) * 10 / 7));
+    max-width: min(1680px, calc((100vh - 200px) * 10 / 7));
   }
+}
+
+/* The app's tooltip (features/tooltip): room-tinted glass like the dock, a fine inner edge,
+   a soft shadow, and the shortcut as small keycaps. */
+.kissa-tooltip {
+  background: color-mix(in srgb, var(--accent, #d7a76c) 7%, rgba(18, 18, 22, 0.86));
+  -webkit-backdrop-filter: blur(12px) saturate(1.3);
+  backdrop-filter: blur(12px) saturate(1.3);
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 24px -6px rgba(0, 0, 0, 0.55),
+    0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.kissa-keycap {
+  display: inline-flex;
+  min-width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+@keyframes kissa-tooltip-in-down {
+  from { opacity: 0; scale: 0.97; translate: 0 -3px; }
+  to { opacity: 1; scale: 1; translate: 0 0; }
+}
+@keyframes kissa-tooltip-in-up {
+  from { opacity: 0; scale: 0.97; translate: 0 3px; }
+  to { opacity: 1; scale: 1; translate: 0 0; }
+}
+
+/* No stock Windows chrome inside the app: a slim, quiet scrollbar wherever one shows. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16) padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.28);
+}
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Range inputs drawn by the app (appearance-none) get a clean round thumb, not the stock one. */
+input[type='range'].appearance-none::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 0 0 0.5px rgba(0, 0, 0, 0.2);
+}
+input[type='range'].appearance-none:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* Reduce motion from Settings > General > Comfort: the same as Windows asking for it (the blocks
+   above under prefers-reduced-motion), set on <html> by App.tsx. */
+:root[data-reduce-motion] .sleeve-eq {
+  animation: none;
+}
+:root[data-reduce-motion] .adaptive-ambient {
+  transition: none;
+}
+:root[data-reduce-motion] {
+  --duration-micro: 0ms;
+  --duration-ui: 0ms;
+  --duration-content: 0ms;
+  --duration-artwork: 150ms;
+  --duration-ambient: 300ms;
+}
+html[data-kissa-arrive][data-reduce-motion] .kissa-arrive-side,
+html[data-kissa-arrive][data-reduce-motion] .kissa-arrive-dock,
+html[data-kissa-arrive][data-reduce-motion] .kissa-arrive-stage {
+  animation: none;
+}
+
+/* Increase contrast (Settings > General > Comfort sets data-contrast="more"; Windows' contrast
+   setting does the same through the media query). Secondary text is brightened where it is
+   written (AppLayout.tsx); here panels become nearly solid and focus rings thicker. */
+:root {
+  --dock-glass: 58%;
+  --rail-glass: 52%;
+}
+:root[data-contrast='more'] {
+  --dock-glass: 92%;
+  --rail-glass: 92%;
+}
+:root[data-contrast='more'] .kissa-sheet,
+:root[data-contrast='more'] .kissa-glass {
+  background-color: color-mix(in srgb, var(--deck-bg) 94%, transparent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-contrast='more'] .kissa-set-group {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--on-surface) 28%, transparent);
+}
+:root[data-contrast='more'] .kissa-set-row {
+  border-bottom-color: color-mix(in srgb, var(--on-surface) 22%, transparent);
+}
+:root[data-contrast='more'] :focus-visible {
+  outline-width: 3px !important;
+  --tw-ring-offset-width: 1px;
+}
+
+/* Windows high contrast themes (forced colours): system colours for focus, selection and the
+   state of switches; no glass. */
+@media (forced-colors: active) {
+  :where(button, a[href], [role='button'], [role='tab'], [role='radio'], [role='switch'], [role='slider']):focus-visible {
+    outline: 3px solid Highlight;
+  }
+  [role='switch'][aria-checked='true'] {
+    background: Highlight;
+    forced-color-adjust: none;
+  }
+  [aria-pressed='true'],
+  [aria-current='page'],
+  [aria-checked='true'][role='radio'],
+  [aria-selected='true'] {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  .kissa-sheet,
+  .kissa-glass,
+  .kissa-tooltip {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: 1px solid CanvasText;
+  }
+}
+/* A song's colours arrive in one step (useAdaptiveColor): no per-control colour transitions. The
+   ambient layer keeps its own 1.5 s crossfade of the album colours. */
+html[data-palette-swap] *:not(.adaptive-ambient),
+html[data-palette-swap] *::before,
+html[data-palette-swap] *::after {
+  transition: none !important;
 }

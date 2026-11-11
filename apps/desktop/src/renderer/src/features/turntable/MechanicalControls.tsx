@@ -19,6 +19,19 @@ function playMechanicalSound(type: MechanicalSound): void {
   playDeckSound(SOUND_FOR[type])
 }
 
+/*
+ * Keys, the modern way: nearly flush with the plate, one fine lit top edge and a soft shadow.
+ * Pressing one settles it into the plate. Static shadows only; they change on press, never per
+ * frame.
+ */
+const KEY_UP = '0 1px 2px rgba(0,0,0,0.45), 0 0 0 0.5px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.12)'
+const KEY_DOWN = '0 0 0 0.5px rgba(0,0,0,0.5), inset 0 1px 2px rgba(0,0,0,0.55)'
+const KEY_FACE = 'bg-gradient-to-b from-[var(--deck-key-top,#2c2622)] to-[var(--deck-key-bottom,#1c1815)]'
+/** Keys sit straight on the plate: no recessed chip round them. */
+const HOUSING = ''
+/** Printed legend on a key. */
+const KEY_LEGEND = 'text-[#cfc3b5]/80'
+
 // Power Control (Flush Rocker Switch)
 export const PowerControl = memo(({ active, onClick }: { active: boolean; onClick: () => void }) => {
   const [isPressed, setIsPressed] = useState(false)
@@ -58,31 +71,30 @@ export const PowerControl = memo(({ active, onClick }: { active: boolean; onClic
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
         aria-label={tl('a11y.power')}
-        className="relative w-5 h-5 rounded-full p-[1.5px] bg-[var(--deck-housing,#110d0a)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.9),0_0.5px_0.5px_var(--deck-bezel,rgba(255,255,255,0.05))] focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d7a76c] cursor-pointer"
+        className={cn('relative w-5 h-5 rounded-full p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d7a76c] cursor-pointer', HOUSING)}
       >
         <div
           className={cn(
-            'w-full h-full rounded-full border border-black/85 flex items-center justify-center transition duration-instant ease-primary',
-            'bg-gradient-to-b from-[var(--deck-key-top,#2b221d)] via-[var(--deck-key-bottom,#1e1713)] to-[var(--deck-key-bottom,#120d0a)]',
-            isPressed
-              ? 'translate-y-[1px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.9)]'
-              : active
-                ? 'translate-y-[0.5px] shadow-[0_1px_2px_rgba(0,0,0,0.8),inset_0_0.5px_0.5px_rgba(255,255,255,0.06)]'
-                : 'shadow-[0_1.5px_3px_rgba(0,0,0,0.85),inset_0_0.6px_0.6px_rgba(255,255,255,0.08)]'
+            'w-full h-full rounded-full border border-black/40 flex items-center justify-center transition duration-instant ease-primary',
+            KEY_FACE,
+            isPressed ? 'translate-y-[1px]' : active ? 'translate-y-[1px]' : ''
           )}
+          style={{ boxShadow: isPressed || active ? KEY_DOWN : KEY_UP }}
         >
+          {/* Power lamp: a small, clean green LED when the deck is on. */}
           <div
-            className="w-1.5 h-1.5 rounded-full border border-black/90 transition-colors duration-micro ease-primary"
+            data-power-led={active ? 'on' : 'off'}
+            className="w-1.5 h-1.5 rounded-full border border-black/40 transition-[background-color,box-shadow] duration-micro ease-primary"
             style={{
-              backgroundColor: active ? '#22c55e' : '#14100e'
+              backgroundColor: active ? '#5ee08f' : '#14100e',
+              boxShadow: active
+                ? '0 0 3px rgba(94,224,143,0.55)'
+                : 'inset 0 0.5px 1px rgba(0,0,0,0.8)'
             }}
           />
         </div>
       </button>
 
-      <span className="font-sans text-[6px] font-semibold tracking-[0.24em] text-[color:var(--deck-engrave,#635548)] uppercase pointer-events-none [filter:drop-shadow(0_1px_1px_var(--deck-engrave-shadow,rgba(0,0,0,0.9)))]">
-        Power
-      </span>
     </div>
   )
 })
@@ -108,7 +120,7 @@ export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick:
 
   return (
     <div className="flex flex-col items-center gap-1 select-none pointer-events-auto">
-      <div className="flex gap-[2px] p-[1.5px] rounded-[2.5px] bg-[var(--deck-housing,#110d0a)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.9),0_0.5px_0.5px_var(--deck-bezel,rgba(255,255,255,0.05))]">
+      <div className={cn('flex gap-[3px]', HOUSING)}>
         <button
           type="button"
           onPointerDown={handlePointerDown('33')}
@@ -116,18 +128,16 @@ export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick:
           onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerLeave}
           aria-label="33 RPM"
-          className="relative w-5 h-4.5 rounded-[2.5px] border border-black/85 focus:outline-none flex items-center justify-center cursor-pointer transition duration-instant ease-primary bg-gradient-to-b from-[var(--deck-key-top,#281f1a)] to-[var(--deck-key-bottom,#140e0b)]"
+          className={cn('relative w-6 h-5 rounded-[3px] border border-black/40 focus:outline-none flex items-center justify-center cursor-pointer transition duration-instant ease-primary', KEY_FACE)}
           style={{
-            transform: pressedBtn === '33' ? 'translateY(1px)' : rpm === '33' ? 'translateY(0.5px)' : 'translateY(0)',
-            boxShadow: pressedBtn === '33' || rpm === '33'
-              ? 'inset 0 1px 2px rgba(0,0,0,0.85)'
-              : '0 1px 2.5px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -1px 0 rgba(0,0,0,0.35)'
+            transform: pressedBtn === '33' ? 'translateY(1px)' : rpm === '33' ? 'translateY(1px)' : 'translateY(0)',
+            boxShadow: pressedBtn === '33' || rpm === '33' ? KEY_DOWN : KEY_UP
           }}
         >
           <span
             className={cn(
-              'font-sans text-[7.5px] font-semibold tracking-[0.04em] transition-colors duration-micro ease-primary pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]',
-              rpm === '33' ? 'text-[#d7a76c]' : 'text-[#5a4d42]'
+              'font-sans text-[10.5px] font-medium tabular-nums transition-colors duration-micro ease-primary pointer-events-none',
+              rpm === '33' ? 'text-[#e8b97c]' : 'text-[#9c8c7a]'
             )}
           >
             33
@@ -141,18 +151,16 @@ export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick:
           onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerLeave}
           aria-label="45 RPM"
-          className="relative w-5 h-4.5 rounded-[2.5px] border border-black/85 focus:outline-none flex items-center justify-center cursor-pointer transition duration-instant ease-primary bg-gradient-to-b from-[var(--deck-key-top,#281f1a)] to-[var(--deck-key-bottom,#140e0b)]"
+          className={cn('relative w-6 h-5 rounded-[3px] border border-black/40 focus:outline-none flex items-center justify-center cursor-pointer transition duration-instant ease-primary', KEY_FACE)}
           style={{
-            transform: pressedBtn === '45' ? 'translateY(1px)' : rpm === '45' ? 'translateY(0.5px)' : 'translateY(0)',
-            boxShadow: pressedBtn === '45' || rpm === '45'
-              ? 'inset 0 1px 2px rgba(0,0,0,0.85)'
-              : '0 1px 2.5px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -1px 0 rgba(0,0,0,0.35)'
+            transform: pressedBtn === '45' ? 'translateY(1px)' : rpm === '45' ? 'translateY(1px)' : 'translateY(0)',
+            boxShadow: pressedBtn === '45' || rpm === '45' ? KEY_DOWN : KEY_UP
           }}
         >
           <span
             className={cn(
-              'font-sans text-[7.5px] font-semibold tracking-[0.04em] transition-colors duration-micro ease-primary pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]',
-              rpm === '45' ? 'text-[#d7a76c]' : 'text-[#5a4d42]'
+              'font-sans text-[10.5px] font-medium tabular-nums transition-colors duration-micro ease-primary pointer-events-none',
+              rpm === '45' ? 'text-[#e8b97c]' : 'text-[#9c8c7a]'
             )}
           >
             45
@@ -160,9 +168,6 @@ export const SpeedControl = memo(({ rpm, onClick }: { rpm: '33' | '45'; onClick:
         </button>
       </div>
 
-      <span className="font-sans text-[6px] font-semibold tracking-[0.24em] text-[color:var(--deck-engrave,#635548)] uppercase pointer-events-none [filter:drop-shadow(0_1px_1px_var(--deck-engrave-shadow,rgba(0,0,0,0.9)))]">
-        Speed
-      </span>
     </div>
   )
 })
@@ -201,7 +206,7 @@ export const StartStopControl = memo(({ isPlaying, onClick }: { isPlaying: boole
 
   return (
     <div className="flex flex-col items-center select-none pointer-events-auto">
-      <div className="p-[1.5px] rounded-[2.5px] bg-[var(--deck-housing,#110d0a)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.9),0_0.5px_0.5px_var(--deck-bezel,rgba(255,255,255,0.05))]">
+      <div className={HOUSING}>
         <button
           type="button"
           onPointerDown={handlePointerDown}
@@ -210,17 +215,15 @@ export const StartStopControl = memo(({ isPlaying, onClick }: { isPlaying: boole
           onPointerLeave={handlePointerLeave}
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
-          aria-label={isPlaying ? 'Stop Motor' : 'Start Motor'}
-          className="relative w-11 h-5.5 rounded-[2.5px] border border-black/85 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d7a76c] cursor-pointer flex items-center justify-center transition duration-instant ease-primary bg-gradient-to-b from-[var(--deck-key-top,#281f1a)] to-[var(--deck-key-bottom,#140e0b)]"
+          aria-label={isPlaying ? tl('deck.key.stopMotor') : tl('deck.key.startMotor')}
+          className={cn('relative w-12 h-6 rounded-[3px] border border-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d7a76c] cursor-pointer flex items-center justify-center transition duration-instant ease-primary', KEY_FACE)}
           style={{
             transform: isPressed ? 'translateY(1px)' : 'translateY(0)',
-            boxShadow: isPressed
-              ? 'inset 0 1px 2px rgba(0,0,0,0.9)'
-              : '0 1.2px 2.5px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -1px 0 rgba(0,0,0,0.35)'
+            boxShadow: isPressed ? KEY_DOWN : KEY_UP
           }}
         >
-          <span className="font-sans text-[7px] font-semibold tracking-[0.16em] text-[#8e8175] uppercase pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]">
-            {isPlaying ? 'STOP' : 'START'}
+          <span className={cn('font-sans text-[11px] font-medium tracking-normal pointer-events-none', KEY_LEGEND)}>
+            {isPlaying ? tl('deck.key.stop') : tl('deck.key.start')}
           </span>
         </button>
       </div>
@@ -243,7 +246,7 @@ export const LidControl = memo(() => {
 
   return (
     <div className="flex flex-col items-center gap-1 select-none pointer-events-auto">
-      <div className="p-[1.5px] rounded-[2.5px] bg-[var(--deck-housing,#110d0a)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.9),0_0.5px_0.5px_var(--deck-bezel,rgba(255,255,255,0.05))]">
+      <div className={HOUSING}>
         <button
           type="button"
           data-testid="lid-key"
@@ -264,16 +267,14 @@ export const LidControl = memo(() => {
           onKeyUp={() => setIsPressed(false)}
           aria-label={t('lid.close')}
           title={t('lid.close')}
-          className="relative w-8 h-4.5 rounded-[2.5px] border border-black/85 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d7a76c] cursor-pointer flex items-center justify-center transition duration-instant ease-primary bg-gradient-to-b from-[var(--deck-key-top,#281f1a)] to-[var(--deck-key-bottom,#140e0b)]"
+          className={cn('relative w-9 h-5 rounded-[3px] border border-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d7a76c] cursor-pointer flex items-center justify-center transition duration-instant ease-primary', KEY_FACE)}
           style={{
             transform: isPressed ? 'translateY(1px)' : 'translateY(0)',
-            boxShadow: isPressed
-              ? 'inset 0 1px 2px rgba(0,0,0,0.9)'
-              : '0 1.2px 2.5px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -1px 0 rgba(0,0,0,0.35)'
+            boxShadow: isPressed ? KEY_DOWN : KEY_UP
           }}
         >
-          <span className="font-sans text-[6.5px] font-semibold tracking-[0.16em] text-[#8e8175] uppercase pointer-events-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]">
-            Lid
+          <span className={cn('font-sans text-[11px] font-medium tracking-normal pointer-events-none', KEY_LEGEND)}>
+            {t('deck.key.lid')}
           </span>
         </button>
       </div>
@@ -312,23 +313,21 @@ export const MatchAlbumControl = memo(() => {
 
   return (
     <div className="flex flex-col items-center select-none pointer-events-auto onboarding-match-album">
-      <div className="p-[2px] rounded-[3px] bg-[var(--deck-housing,#110d0a)] shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.95),0_0.5px_0.5px_var(--deck-bezel,rgba(255,255,255,0.08))]">
+      <div className={HOUSING}>
         <button
           type="button"
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerLeave}
-          aria-label={isAdaptive ? 'Disable Match Album' : 'Enable Match Album'}
+          aria-label={isAdaptive ? tl('deck.key.matchAlbumOff') : tl('deck.key.matchAlbumOn')}
           className={cn(
-            'relative w-[92px] h-8 rounded-[2px] border border-black/90 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d7a76c] cursor-pointer flex items-center justify-center transition duration-micro ease-primary',
-            'bg-gradient-to-b from-[var(--deck-key-top,#2a221c)] to-[var(--deck-key-bottom,#15100d)]'
+            'relative min-w-[92px] h-8 px-3 rounded-[3px] border border-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d7a76c] cursor-pointer flex items-center justify-center transition duration-micro ease-primary',
+            KEY_FACE
           )}
           style={{
-            transform: (isPressed || isAdaptive) ? 'translateY(1.5px)' : 'translateY(0)',
-            boxShadow: (isPressed || isAdaptive)
-              ? 'inset 0 1.5px 3px rgba(0,0,0,0.9), inset 0 -1px 0 rgba(255,255,255,0.05)'
-              : '0 1.5px 3px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.13), inset 0 -1px 0 rgba(0,0,0,0.35)'
+            transform: isPressed ? 'translateY(1px)' : isAdaptive ? 'translateY(1px)' : 'translateY(0)',
+            boxShadow: isPressed || isAdaptive ? KEY_DOWN : KEY_UP
           }}
         >
           {/* A small indicator lamp beside a printed legend: lit amber when the room follows the album. */}
@@ -338,17 +337,17 @@ export const MatchAlbumControl = memo(() => {
               className={cn(
                 'h-[5px] w-[5px] rounded-full transition-[background-color,box-shadow] duration-micro ease-primary',
                 isAdaptive
-                  ? 'bg-[#f2ad60] shadow-[0_0_4px_rgba(242,173,96,0.75),inset_0_-0.5px_0.5px_rgba(0,0,0,0.3)]'
+                  ? 'bg-[#f2ad60] shadow-[0_0_3px_rgba(242,173,96,0.5)]'
                   : 'bg-[#0d0a08] shadow-[inset_0_0.5px_1px_rgba(0,0,0,0.9),0_0.5px_0_rgba(255,255,255,0.08)]'
               )}
             />
             <span
               className={cn(
-                'font-sans text-[7.5px] font-semibold tracking-[0.18em] uppercase transition-colors duration-micro ease-primary drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]',
-                isAdaptive ? 'text-[#eadccb]' : 'text-[#8a7c6f]'
+                'font-sans text-[11px] font-medium tracking-normal transition-colors duration-micro ease-primary',
+                isAdaptive ? 'text-[#f0e3d2]' : 'text-[#cfc3b5]/75'
               )}
             >
-              Match album
+              {tl('deck.key.matchAlbum')}
             </span>
           </span>
         </button>

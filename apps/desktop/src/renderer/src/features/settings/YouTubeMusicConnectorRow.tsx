@@ -78,10 +78,9 @@ export function YouTubeMusicConnectorRow({
     <div className="mt-3 flex flex-col border-t border-ink/[0.06] pt-3">
       <div className="flex items-center justify-between gap-4">
         <div className="flex flex-col">
-          <span className="text-[12.5px] font-medium text-ink">Also share YouTube Music</span>
+          <span className="text-[12.5px] font-medium text-ink">{tl('ytm.title')}</span>
           <span className="text-[11.5px] leading-relaxed text-dim mt-0.5">
-            From music.youtube.com in Chrome or Edge, with the free Kissa add-on. Other tabs, videos and sites are
-            never shared.
+            {tl('ytm.desc')}
           </span>
         </div>
         <HardwareSwitch
@@ -94,33 +93,33 @@ export function YouTubeMusicConnectorRow({
       {status.shareYouTubeMusic && (
         <div className="mt-3 rounded-xl border border-ink/10 bg-ink/[0.04] p-3.5">
           <ol className="flex flex-col gap-3.5" aria-label={tl('a11y.ytmSetup')}>
-            <Step n={1} done={paired} title="Add “Kissa for YouTube Music” to your browser">
+            <Step n={1} done={paired} title={tl('ytm.step.add')}>
               {!paired && (
                 <div className="flex flex-wrap gap-2">
                   {CONNECTOR_STORE_LINKS.chrome && (
                     <button type="button" className={BUTTON} onClick={() => openExternal(CONNECTOR_STORE_LINKS.chrome!)}>
-                      Chrome Web Store ↗
+                      {tl('ytm.chrome')}
                     </button>
                   )}
                   {CONNECTOR_STORE_LINKS.edge && (
                     <button type="button" className={BUTTON} onClick={() => openExternal(CONNECTOR_STORE_LINKS.edge!)}>
-                      Edge Add-ons ↗
+                      {tl('ytm.edge')}
                     </button>
                   )}
                 </div>
               )}
             </Step>
-            <Step n={2} done={paired && !connector?.pairing} title={connector?.pairing ? 'Type this code into the add-on (click its icon)' : 'Pair it with Kissa'}>
+            <Step n={2} done={paired && !connector?.pairing} title={connector?.pairing ? tl('ytm.step.code') : tl('ytm.step.pair')}>
               {connector?.pairing ? (
                 <div className="flex items-center gap-3">
                   <p
                     className="font-mono text-[22px] font-bold tracking-[0.3em] text-ink"
-                    aria-label={`Pairing code ${connector.pairing.code.split('').join(' ')}`}
+                    aria-label={tl('ytm.code', { code: connector.pairing.code.split('').join(' ') })}
                   >
                     {connector.pairing.code}
                   </p>
                   <button type="button" className={BUTTON} onClick={() => void api.cancelYouTubeMusicPairing?.().then(setConnector)}>
-                    Cancel
+                    {tl('ytm.cancel')}
                   </button>
                 </div>
               ) : (
@@ -131,7 +130,7 @@ export function YouTubeMusicConnectorRow({
                     disabled={!connector?.listening}
                     onClick={() => void api.beginYouTubeMusicPairing?.().then(setConnector)}
                   >
-                    Show pairing code
+                    {tl('ytm.showCode')}
                   </button>
                 )
               )}
@@ -139,16 +138,16 @@ export function YouTubeMusicConnectorRow({
             <Step
               n={3}
               done={Boolean(connector?.connected)}
-              title={connector?.connected ? 'Connected. Sharing what plays on music.youtube.com' : 'Play something on music.youtube.com'}
+              title={connector?.connected ? tl('ytm.step.connected') : tl('ytm.step.play')}
             />
           </ol>
           {paired && !connector?.pairing && (
             <div className="mt-3.5 flex flex-wrap justify-end gap-2 border-t border-ink/[0.06] pt-3">
               <button type="button" className={BUTTON} onClick={() => void api.beginYouTubeMusicPairing?.().then(setConnector)}>
-                Pair another browser
+                {tl('ytm.pairAnother')}
               </button>
               <button type="button" className={BUTTON} onClick={() => void api.forgetYouTubeMusicConnector?.().then(setConnector)}>
-                Forget add-on
+                {tl('ytm.forget')}
               </button>
             </div>
           )}

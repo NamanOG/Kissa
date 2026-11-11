@@ -10,7 +10,8 @@
  * Colours are kept in a range real coloured vinyl has (never neon, never white).
  */
 import { useEffect, useState } from 'react'
-import { extractPalette, oklabToRgb, rgbToOklab, type Swatch } from '@renderer/features/background/colourField'
+import { extractPalette, oklabToRgb, rgbToOklab, type Swatch } from '@renderer/features/background/colourField'
+import { coverBitmap } from '@renderer/utils/coverBitmap'
 
 export interface AlbumPressingPlan {
   style: 'marble' | 'colour' | 'smoke' | 'black'
@@ -95,7 +96,8 @@ export function paintMarble(a: string, b: string, seed = 0): string | null {
   const N = 256
   const c = document.createElement('canvas')
   c.width = c.height = N
-  const ctx = c.getContext('2d')
+  // On the CPU: a GPU canvas read back for the encode holds the GPU process and stalls frames.
+  const ctx = c.getContext('2d', { willReadFrequently: true })
   if (!ctx) return null
   const img = ctx.createImageData(N, N)
   const ca = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16))
@@ -122,10 +124,9 @@ export interface AlbumPressing extends AlbumPressingPlan {
 const cache = new Map<string, AlbumPressing>()
 
 function readCover(url: string): Promise<Swatch[]> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    if (!url.startsWith('data:')) img.crossOrigin = 'Anonymous'
-    img.onload = () => {
+  return coverBitmap(url).then(
+    (img) =>
+      new Promise<Swatch[]>((resolve, reject) => {
       const S = 48
       const c = document.createElement('canvas')
       c.width = c.height = S
@@ -137,10 +138,8 @@ function readCover(url: string): Promise<Swatch[]> {
       } catch (e) {
         reject(e instanceof Error ? e : new Error('cover unreadable'))
       }
-    }
-    img.onerror = () => reject(new Error('cover failed'))
-    img.src = url
-  })
+      })
+  )
 }
 
 /** The pressing for the current cover, or null until it is read (or when not wanted). */
@@ -160,6 +159,8 @@ export function useAlbumPressing(artworkUrl: string | undefined, wanted: boolean
         const made: AlbumPressing = plan.style === 'marble' && plan.b ? { ...plan, texture: paintMarble(plan.a, plan.b, artworkUrl.length % 7) ?? undefined } : plan
         if (cache.size > 30) cache.clear()
         cache.set(artworkUrl, made)
+      // Keyed by the cover's address, which is often a large data: URL: keep only recent ones.
+      while (cache.size > 24) cache.delete(cache.keys().next().value as string)
         if (live) setPressing(made)
       })
       .catch(() => {

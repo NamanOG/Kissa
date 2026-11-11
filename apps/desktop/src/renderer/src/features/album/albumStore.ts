@@ -94,7 +94,7 @@ export const useAlbumStore = create<AlbumState>((set, get) => ({
     // stops reporting the other player, and a second toggle here would start it again.
     if (externalSession.playing) {
       externalSession.playing = false
-      void window.electron?.mediaPlayPause?.()
+      void window.electron?.mediaPlayPause?.('album-start')
     }
     usePlayerStore.setState({
       currentTrack: toTrack(album, track, sourceLabel),

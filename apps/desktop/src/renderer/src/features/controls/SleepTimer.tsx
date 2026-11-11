@@ -1,6 +1,8 @@
+import { useReturnFocus } from '@renderer/hooks/useReturnFocus'
 import React, { memo, useState, useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { Timer, X, Minus, Plus } from 'lucide-react'
 import { useSleepStore } from '@renderer/stores/sleepStore'
 import { cn } from '@renderer/utils/cn'
@@ -15,6 +17,7 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
   const [targetMinutes, setTargetMinutes] = useState<number>(30)
   const popoverRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  useReturnFocus(isOpen, buttonRef)
   const [anchor, setAnchor] = useState<{ left: number; bottom: number } | null>(null)
   const titleId = useId()
   const reduce = useReducedMotion()
@@ -101,7 +104,7 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
   }
 
   const left = anchor
-    ? Math.max(12, Math.min(window.innerWidth - WIDTH - 12, anchor.left - WIDTH / 2))
+    ? Math.max(24, Math.min(window.innerWidth - WIDTH - 24, anchor.left - WIDTH / 2))
     : 0
 
   return (
@@ -141,9 +144,9 @@ export const SleepTimer = memo(({ className }: { className?: string }): React.JS
               aria-labelledby={titleId}
               initial={{ opacity: 0, y: reduce ? 0 : 8, scale: reduce ? 1 : 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: reduce ? 0 : 6 }}
-              transition={{ duration: reduce ? 0.12 : 0.26, ease: EASE }}
-              style={{ left, bottom: anchor.bottom, width: WIDTH, transformOrigin: 'bottom center' }}
+              exit={{ opacity: 0, y: reduce ? 0 : 4, transition: { duration: reduce ? 0.1 : 0.14, ease: [0.4, 0, 1, 1] } }}
+              transition={{ duration: reduce ? 0.12 : 0.22, ease: EASE }}
+              style={{ left, bottom: anchor.bottom, width: WIDTH, transformOrigin: `${anchor.left - left}px 100%` }}
               className="fixed z-[90] overflow-hidden rounded-[22px] border border-white/[0.09] bg-[#16120f]/[0.93] p-4 shadow-[0_30px_80px_-24px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl backdrop-saturate-150"
             >
               <div className="flex items-start justify-between gap-3">

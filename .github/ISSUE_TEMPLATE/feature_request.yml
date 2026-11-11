@@ -1,0 +1,21 @@
+name: Request a feature
+description: An idea that would make Kissa better for you.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: What you would like Kissa to do.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it matters to you
+      description: When you would use it, or what it would make easier.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: How you manage today
+      description: Anything you do instead at the moment, if there is something.

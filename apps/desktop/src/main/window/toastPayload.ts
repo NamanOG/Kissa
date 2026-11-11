@@ -5,6 +5,9 @@ export interface TrackToastPayload {
   artwork?: string
   accent?: string
   label?: string
+  /** Screen-reader names for the card's two buttons, in the app's language. */
+  playPauseLabel?: string
+  nextLabel?: string
   /** Whether the music is playing, for the play/pause button. */
   playing?: boolean
 }
@@ -28,6 +31,8 @@ export function sanitizeToastPayload(raw: unknown): TrackToastPayload | null {
     artwork,
     accent,
     label: text(p.label, 40) || undefined,
+    playPauseLabel: text(p.playPauseLabel, 40) || undefined,
+    nextLabel: text(p.nextLabel, 40) || undefined,
     playing: p.playing !== false
   }
 }

@@ -60,16 +60,52 @@ describe('ControlDock from the keyboard', () => {
     }
   })
 
+  const windowWidth = (px: number): void => {
+    window.matchMedia = ((query: string) => {
+      const min = Number(/min-width:\s*(\d+)px/.exec(query)?.[1] ?? 0)
+      return {
+        matches: px >= min,
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined
+      } as unknown as MediaQueryList
+    }) as typeof window.matchMedia
+  }
+
   it('says whether lyrics and fullscreen are on', () => {
-    usePlayerStore.setState({ showSideLyrics: true })
+    windowWidth(1440)
+    usePlayerStore.setState({ showSideLyrics: true, activeView: 'deck' })
     render(<ControlDock />)
     expect(screen.getByRole('button', { name: 'Lyrics on or off' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Fullscreen' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  // Narrower than the side lyrics card (1100 px), Lyrics opens the Lyrics view instead of
+  // switching on a card that cannot be shown.
+  it('opens the Lyrics view in a narrow window', () => {
+    windowWidth(1000)
+    usePlayerStore.setState({ showSideLyrics: false, activeView: 'deck' })
+    render(<ControlDock />)
+    const button = screen.getByRole('button', { name: 'Lyrics on or off' })
+    expect(button).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(button)
+    expect(usePlayerStore.getState().activeView).toBe('lyrics')
+    expect(usePlayerStore.getState().showSideLyrics).toBe(false)
   })
 
   it('takes the switched-off dock out of the Tab order when nothing is playing', () => {
     usePlayerStore.setState({ currentTrack: null })
     const { container } = render(<ControlDock />)
     expect(container.firstChild as HTMLElement).toHaveAttribute('inert')
+  })
+it('shows the time under the pointer while hovering the bar, without seeking', () => {
+    render(<ControlDock />)
+    const bar = screen.getByRole('slider', { name: 'Track position' })
+    vi.spyOn(bar, 'getBoundingClientRect').mockReturnValue({ left: 100, width: 200, top: 0, height: 20, right: 300, bottom: 20, x: 100, y: 0, toJSON: () => ({}) } as DOMRect)
+    fireEvent.pointerMove(bar, { clientX: 200 })
+    const label = bar.querySelector('.kissa-tooltip')!
+    expect(label.textContent).toBe('2:48') // half of 5:37
+    expect(label.getAttribute('aria-hidden')).toBe('true')
+    expect(seek).not.toHaveBeenCalled()
   })
 })

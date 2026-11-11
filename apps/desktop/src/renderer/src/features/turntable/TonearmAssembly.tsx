@@ -5,6 +5,7 @@ import { PlaybackClock } from '@renderer/utils/PlaybackClock'
 import { needleContact, needleLift, registerTonearm } from '@renderer/utils/needleSounds'
 import { useSidesStore } from '@renderer/features/sides/sidesStore'
 import { useT } from '@renderer/i18n'
+import { geometryFromBoxes, grooveAngles, HEADSHELL_DEG } from './armGeometry'
 
 export interface TonearmAssemblyProps {
   className?: string
@@ -12,12 +13,36 @@ export interface TonearmAssemblyProps {
 }
 
 const REST_ANGLE = 0
-const OUTER_GROOVE_ANGLE = 23.0
-const INNER_GROOVE_ANGLE = 39.5
+// Where the stylus meets the record is worked out from the drawing (armGeometry.ts): the arm's
+// pivot, the stylus tip and the record's own radius, measured flat on the laid-out deck at mount
+// and on every resize, so each deck size (Deck, Party, fullscreen) gets its own exact angles.
+// Until then (and in tests), the angles measured on the 5.1 deck: the lead-in just inside the
+// record's edge and the run-out just outside the label. (17.5° put the stylus off the record; it
+// was measured against the platter's radius on a tilted deck.)
+const FALLBACK_ANGLES = { outer: 18.4, inner: 37.5 }
+
+/** The arm's angle for a place in the song: the lead-in at its start, the run-out at its end. */
+export function grooveAngle(
+  time: number,
+  duration: number | undefined,
+  outer = FALLBACK_ANGLES.outer,
+  inner = FALLBACK_ANGLES.inner
+): number {
+  const ratio = duration && duration > 0 ? Math.min(1, Math.max(0, time / duration)) : 0
+  return outer + ratio * (inner - outer)
+}
+/**
+ * Experiment: a tiny cue light at the stylus and a faint pool of it on the grooves, in the room's
+ * (album's) colour lifted towards white so it never reads as neon. Only while the record plays.
+ * One switch, so it can be removed or turned into a setting.
+ */
+export const NEEDLE_LIGHT = true
+/** The light's colour: the room accent, softened. Falls back to a warm white. */
+const NEEDLE_LIGHT_COLOUR = 'color-mix(in srgb, var(--accent, #f4e3c8) 55%, #fff6ea)'
 
 /**
- * Precision Audiophile Tonearm Assembly.
- * Minimalist, high-end industrial design inspired by Braun / Technics / Dieter Rams.
+ * Tonearm assembly, drawn as modern hardware: a slim aluminium tube, a plain cylindrical
+ * counterweight, a slim cue lever and a clean armboard, each with one fine highlight.
  * Features fluid inertia interpolation, needle drop/lift depth, and localized draggable hitbox.
  */
 export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps): React.JSX.Element => {
@@ -31,6 +56,9 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
   
   const tonearmContainerRef = useRef<HTMLDivElement>(null)
   const tonearmRef = useRef<HTMLDivElement>(null)
+  // The needle light follows the stylus itself: on once it has landed, off as the arm lifts.
+  const needleLightRef = useRef<SVGGElement>(null)
+  const needleLitRef = useRef(false)
 
   const activePlayback = isPlaying && isPowered
 
@@ -45,6 +73,32 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
   // A new song: its position, length and place on the side arrive over a moment. The arm
   // holds still until then and moves once, instead of jumping with each piece.
   const holdUntilRef = useRef<number>(0)
+  // The lead-in and run-out angles for this deck as laid out (see armGeometry.ts).
+  const anglesRef = useRef(FALLBACK_ANGLES)
+
+  // Measure the deck flat: the arm turns in the deck's own plane, which is tilted on screen, so the
+  // tilt is cleared for the length of one synchronous read (no frame is drawn in between).
+  useEffect(() => {
+    const measure = (): void => {
+      const container = tonearmContainerRef.current
+      const plinth = container?.closest<HTMLElement>('[data-deck-plinth]')
+      const record = plinth?.querySelector<HTMLElement>('[data-vinyl-record]')
+      if (!container || !plinth || !record) return
+      const saved = plinth.style.transform
+      plinth.style.transform = 'none'
+      const g = geometryFromBoxes(container.getBoundingClientRect(), record.getBoundingClientRect())
+      plinth.style.transform = saved
+      if (g) anglesRef.current = grooveAngles(g)
+    }
+    measure()
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null
+    if (tonearmContainerRef.current) ro?.observe(tonearmContainerRef.current)
+    window.addEventListener('resize', measure)
+    return () => {
+      ro?.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [])
 
   // While this arm is on screen it decides when the needle is heard: at its visible landing
   // and departure (utils/needleSounds).
@@ -84,8 +138,8 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       // The needle travels the song playing: the outer groove at its start, the label at its end.
       // (Travelling the whole side put the arm near the label at the start of a side's last
       // song, which read as a fault.) With no length yet it waits at the outer groove.
-      const ratio = rawDur && rawDur > 0 ? Math.min(1, Math.max(0, time / rawDur)) : 0
-      const targetGrooveAngle = OUTER_GROOVE_ANGLE + ratio * (INNER_GROOVE_ANGLE - OUTER_GROOVE_ANGLE)
+      const { outer: OUTER, inner: INNER } = anglesRef.current
+      const targetGrooveAngle = grooveAngle(time, rawDur, OUTER, INNER)
 
       if (isPlayingActive && (armStateRef.current === 'RESTING' || armStateRef.current === 'RETURNING')) {
         armStateRef.current = 'MOVING_TO_RECORD'
@@ -97,10 +151,19 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
         transitionStartRef.current = timestamp
         startAngleRef.current = armAngleRef.current
         startScaleRef.current = armScaleRef.current
-      } else if ((isPaused || isStopped) && ['PLAYING', 'LOWERING', 'MOVING_TO_RECORD', 'LIFTING', 'SWEEPING'].includes(armStateRef.current)) {
-        // The arm starts to rise: the stylus leaves the groove (silent if it never landed).
+      } else if ((isStopped || sides.flipping) && ['PLAYING', 'LOWERING', 'MOVING_TO_RECORD', 'LIFTING', 'SWEEPING'].includes(armStateRef.current)) {
+        // Stopped, or the record being turned over: the stylus leaves the groove and the arm
+        // goes home (silent if it never landed).
         needleLift()
         armStateRef.current = 'RETURNING'
+        transitionStartRef.current = timestamp
+        startAngleRef.current = armAngleRef.current
+        startScaleRef.current = armScaleRef.current
+      } else if (isPaused && ['PLAYING', 'LOWERING', 'MOVING_TO_RECORD', 'SWEEPING'].includes(armStateRef.current)) {
+        // Paused: the stylus lifts off the groove and the arm holds where it is, ready to drop
+        // back in the same place.
+        needleLift()
+        armStateRef.current = 'LIFTING'
         transitionStartRef.current = timestamp
         startAngleRef.current = armAngleRef.current
         startScaleRef.current = armScaleRef.current
@@ -164,7 +227,8 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       } else if (armStateRef.current === 'SWEEPING') {
         // Longer for a longer way: 0.45 s for a nudge, up to 0.9 s across the record.
         const span = Math.abs(targetGrooveAngle - startAngleRef.current)
-        const sweepMs = 450 + Math.min(1, span / (INNER_GROOVE_ANGLE - OUTER_GROOVE_ANGLE)) * 450
+        // Up to 0.7 s across the whole record (a song change), shorter for a nudge.
+        const sweepMs = 300 + Math.min(1, span / Math.max(1, INNER - OUTER)) * 400
         const progress = Math.min(1, (timestamp - transitionStartRef.current) / sweepMs)
         nextAngle = startAngleRef.current + (targetGrooveAngle - startAngleRef.current) * easeInOutCubic(progress)
         // The arm rises a little off the record on the way and settles back down.
@@ -175,6 +239,11 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
       }
 
       armAngleRef.current = nextAngle
+      const lit = armStateRef.current === 'PLAYING' || armStateRef.current === 'SWEEPING'
+      if (lit !== needleLitRef.current && needleLightRef.current) {
+        needleLitRef.current = lit
+        needleLightRef.current.style.opacity = lit ? '1' : '0'
+      }
       armScaleRef.current = nextScale
 
       const scaleStr = physicalFeedback ? nextScale : 1.0
@@ -322,8 +391,9 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
     dragContextRef.current = null
     setIsDragging(false)
 
-    // A click without a drag does nothing: the arm settles back where it was.
-    if (!movedRef.current) return
+    // A click without a drag does nothing: the arm settles back where it was. Only a real pointer
+    // release can play, pause or seek: the arm's own motion never reaches this handler.
+    if (!movedRef.current || !event.isTrusted) return
 
     const angle = dragAngleRef.current
     const state = usePlayerStore.getState()
@@ -345,8 +415,9 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
     }
 
     // Dropped on the record: play from that groove (when the source allows seeking).
-    const clamped = Math.max(OUTER_GROOVE_ANGLE, Math.min(INNER_GROOVE_ANGLE, angle))
-    const ratio = (clamped - OUTER_GROOVE_ANGLE) / (INNER_GROOVE_ANGLE - OUTER_GROOVE_ANGLE)
+    const { outer, inner } = anglesRef.current
+    const clamped = Math.max(outer, Math.min(inner, angle))
+    const ratio = (clamped - outer) / (inner - outer)
     const activeDur =
       state.currentTrack?.duration && state.currentTrack.duration > 0 ? state.currentTrack.duration : 210
     state.seek(ratio * activeDur)
@@ -368,24 +439,52 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
         aria-hidden="true"
       >
         <defs>
-          <radialGradient id="base-gimbal-well" cx="40%" cy="35%" r="65%">
-            <stop offset="0%" stopColor="#2c2420" />
-            <stop offset="60%" stopColor="#171210" />
-            <stop offset="100%" stopColor="#0a0807" />
-          </radialGradient>
-          <linearGradient id="rest-clip-metal" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#483e38" />
-            <stop offset="50%" stopColor="#2a221d" />
-            <stop offset="100%" stopColor="#15100e" />
+          <linearGradient id="base-gimbal-well" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#2e2e32" />
+            <stop offset="100%" stopColor="#141416" />
+          </linearGradient>
+          <linearGradient id="armboard-edge" x1="0%" y1="0%" x2="60%" y2="100%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.32)" />
+            <stop offset="50%" stopColor="rgba(255,255,255,0.04)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+          </linearGradient>
+          {/* Aluminium, lit from the upper left. */}
+          <linearGradient id="rest-clip-metal" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#55585d" />
+            <stop offset="40%" stopColor="#d9dbde" />
+            <stop offset="65%" stopColor="#a9acb1" />
+            <stop offset="100%" stopColor="#5d6065" />
           </linearGradient>
         </defs>
 
-        <circle cx="115" cy="36" r="28" fill="url(#base-gimbal-well)" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-        <circle cx="115" cy="36" r="27" fill="none" stroke="rgba(0,0,0,0.85)" strokeWidth="2" />
+        {/* Arm stand: a raised anodised armboard in two steps (board, then bearing housing), with
+            a soft contact shadow on the plinth, so the arm clearly stands on something. */}
+        <g data-tonearm-part="armboard">
+          <circle cx="116" cy="40" r="32" fill="rgba(0,0,0,0.32)" />
+          <circle cx="115" cy="36" r="30.5" fill="url(#base-gimbal-well)" />
+          <circle cx="115" cy="36" r="30" fill="none" stroke="url(#armboard-edge)" strokeWidth="1.1" />
+          <circle cx="115" cy="37.2" r="23" fill="rgba(0,0,0,0.35)" />
+          <circle cx="115" cy="36" r="22.5" fill="#1a1a1d" />
+          <circle cx="115" cy="36" r="22" fill="none" stroke="url(#armboard-edge)" strokeWidth="0.8" />
+        </g>
 
-        <rect x="111" y="210" width="8" height="24" rx="2" fill="url(#rest-clip-metal)" stroke="rgba(0,0,0,0.6)" strokeWidth="0.8" />
-        <path d="M 107 220 L 123 220 L 123 224 L 107 224 Z" fill="#120e0c" />
-        <circle cx="115" cy="222" r="1.5" fill="#d7a76c" opacity={activePlayback ? 0.3 : 0.8} />
+        {/* Arm rest: a slim post with an aluminium cradle under the parked arm, where 5.0 had its
+            rest clip. The arm lies in it when parked and lifts clear of it when it swings out. */}
+        <g data-tonearm-part="rest">
+          <ellipse cx="116.2" cy="227" rx="7.5" ry="3" fill="rgba(0,0,0,0.34)" />
+          <rect x="110.5" y="208" width="9" height="18" rx="3" fill="url(#base-gimbal-well)" />
+          <rect x="110.5" y="208" width="9" height="18" rx="3" fill="none" stroke="url(#armboard-edge)" strokeWidth="0.7" />
+          <path d="M 108.6 209.5 Q 115 216.5 121.4 209.5" fill="none" stroke="rgba(0,0,0,0.4)" strokeWidth="2.6" strokeLinecap="round" transform="translate(0 0.9)" />
+          <path d="M 108.6 209.5 Q 115 216.5 121.4 209.5" fill="none" stroke="url(#rest-clip-metal)" strokeWidth="2" strokeLinecap="round" />
+        </g>
+
+        {/* Cue lever: a short aluminium tab mounted on the armboard's edge, part of the arm
+            assembly. */}
+        <g data-tonearm-part="cue">
+          <circle cx="135" cy="55" r="3.6" fill="#1c1c1f" stroke="url(#armboard-edge)" strokeWidth="0.6" />
+          <line x1="135" y1="55" x2="143.5" y2="60.5" stroke="rgba(0,0,0,0.35)" strokeWidth="3.2" strokeLinecap="round" transform="translate(0 1)" />
+          <line x1="135" y1="55" x2="143.5" y2="60.5" stroke="url(#rest-clip-metal)" strokeWidth="2.6" strokeLinecap="round" />
+        </g>
       </svg>
 
       <div ref={tonearmContainerRef} className="absolute inset-0 pointer-events-none">
@@ -414,111 +513,129 @@ export const TonearmAssembly = memo(({ className, style }: TonearmAssemblyProps)
             >
               <defs>
                 <linearGradient id="tonearm-tube-metal" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#241d18" />
-                  <stop offset="10%" stopColor="#7a6c5f" />
-                  <stop offset="26%" stopColor="#ded6cb" />
-                  <stop offset="42%" stopColor="#ffffff" />
-                  <stop offset="58%" stopColor="#ffffff" />
-                  <stop offset="74%" stopColor="#c8beaf" />
-                  <stop offset="90%" stopColor="#685b4f" />
-                  <stop offset="100%" stopColor="#1a1411" />
+                  <stop offset="0%" stopColor="#2f3134" />
+                  <stop offset="25%" stopColor="#7d8085" />
+                  <stop offset="45%" stopColor="#b9bcc0" />
+                  <stop offset="65%" stopColor="#979a9f" />
+                  <stop offset="85%" stopColor="#585b60" />
+                  <stop offset="100%" stopColor="#242629" />
                 </linearGradient>
-
-                <radialGradient id="gimbal-ring" cx="35%" cy="30%" r="70%">
-                  <stop offset="0%" stopColor="#78685c" />
-                  <stop offset="45%" stopColor="#362c26" />
-                  <stop offset="85%" stopColor="#1c1613" />
-                  <stop offset="100%" stopColor="#0e0b09" />
+                <linearGradient id="headshell-metal" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#6b6e73" />
+                  <stop offset="35%" stopColor="#b7babf" />
+                  <stop offset="55%" stopColor="#d4d6da" />
+                  <stop offset="80%" stopColor="#9a9da2" />
+                  <stop offset="100%" stopColor="#5d6065" />
+                </linearGradient>
+                <radialGradient id="needle-pool" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" style={{ stopColor: NEEDLE_LIGHT_COLOUR }} stopOpacity="0.22" />
+                  <stop offset="60%" style={{ stopColor: NEEDLE_LIGHT_COLOUR }} stopOpacity="0.06" />
+                  <stop offset="100%" style={{ stopColor: NEEDLE_LIGHT_COLOUR }} stopOpacity="0" />
                 </radialGradient>
-
                 <linearGradient id="counterweight-metal" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#543e2a" />
-                  <stop offset="25%" stopColor="#caa474" />
-                  <stop offset="48%" stopColor="#fff3db" />
-                  <stop offset="65%" stopColor="#d7a76c" />
-                  <stop offset="85%" stopColor="#9c7244" />
-                  <stop offset="100%" stopColor="#3d2a1a" />
+                  <stop offset="0%" stopColor="#3a3c40" />
+                  <stop offset="35%" stopColor="#7b7e83" />
+                  <stop offset="55%" stopColor="#9a9da2" />
+                  <stop offset="80%" stopColor="#64676c" />
+                  <stop offset="100%" stopColor="#323438" />
                 </linearGradient>
               </defs>
 
-              <rect x="112.5" y="8" width="5" height="18" rx="2" fill="url(#tonearm-tube-metal)" />
-              <rect x="104" y="6" width="22" height="14" rx="3.5" fill="url(#counterweight-metal)" stroke="rgba(0,0,0,0.6)" strokeWidth="0.8" />
-              <line x1="104" y1="11" x2="126" y2="11" stroke="rgba(0,0,0,0.5)" strokeWidth="0.75" />
-              <line x1="104" y1="15" x2="126" y2="15" stroke="rgba(255,255,255,0.25)" strokeWidth="0.6" />
-              
-              <line x1="126" y1="14" x2="134" y2="14" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />
-              <line x1="134" y1="14" x2="134" y2="18" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" />
-              <rect x="132" y="18" width="4" height="7" rx="1.5" fill="url(#counterweight-metal)" stroke="rgba(0,0,0,0.5)" strokeWidth="0.5" />
+              {/* Counterweight: one plain aluminium cylinder with a fine seam. */}
+              <rect x="112.5" y="10" width="5" height="16" rx="2" fill="url(#tonearm-tube-metal)" />
+              <rect x="103" y="3.5" width="24" height="18" rx="5" fill="rgba(0,0,0,0.3)" transform="translate(0.8 1.6)" />
+              <rect x="103" y="2" width="24" height="18" rx="5" fill="url(#counterweight-metal)" data-tonearm-part="counterweight" />
+              <line x1="103.5" y1="14.5" x2="126.5" y2="14.5" stroke="rgba(0,0,0,0.28)" strokeWidth="0.6" />
+              <line x1="107" y1="2.6" x2="123" y2="2.6" stroke="rgba(255,255,255,0.35)" strokeWidth="0.6" strokeLinecap="round" />
 
-              <circle cx="115" cy="36.5" r="23" fill="rgba(0,0,0,0.6)" filter="blur(2px)" />
-              <circle cx="115" cy="36" r="22" fill="#140f0c" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" />
-              <circle cx="115" cy="36" r="21" fill="none" stroke="rgba(0,0,0,0.8)" strokeWidth="1" />
-              
-              <circle cx="115" cy="36" r="18" fill="url(#gimbal-ring)" stroke="rgba(255,255,255,0.1)" strokeWidth="0.8" />
-              <circle cx="115" cy="36" r="11" fill="#1b1512" stroke="url(#tonearm-tube-metal)" strokeWidth="2.5" />
-              <circle cx="115" cy="36" r="4.5" fill="#e8dfd5" stroke="#120e0b" strokeWidth="1.2" />
+              {/* Pivot: a dark bearing housing, an aluminium collar and cap. */}
+              <circle cx="115" cy="37.5" r="20" fill="rgba(0,0,0,0.3)" />
+              <circle cx="115" cy="36" r="19" fill="#1c1c1f" />
+              <circle cx="115" cy="36" r="18.5" fill="none" stroke="url(#armboard-edge)" strokeWidth="0.9" />
+              <circle cx="115" cy="36" r="11" fill="#141416" stroke="url(#tonearm-tube-metal)" strokeWidth="2" />
+              <circle cx="115" cy="36" r="4.5" fill="url(#counterweight-metal)" />
 
+              {/* The arm's shadow on the record: two soft, offset, low-alpha strokes, no filter. */}
+              <g transform="translate(3 5)" aria-hidden="true">
+                <path d="M 115 52 L 115 178 C 114 260 110 286 64 336 L 46 358" fill="none" stroke="rgba(0,0,0,0.16)" strokeWidth="12" strokeLinecap="round" />
+                <path d="M 115 52 L 115 178 C 114 260 110 286 64 336 L 46 358" fill="none" stroke="rgba(0,0,0,0.22)" strokeWidth="6" strokeLinecap="round" />
+              </g>
+
+              {/* The arm tube: slim aluminium with one fine highlight. */}
               <path
                 d="M 115 52 L 115 178 C 114 260 110 286 64 336 L 46 358"
                 fill="none"
-                stroke="#120e0c"
-                strokeWidth="8.5"
+                stroke="rgba(0,0,0,0.55)"
+                strokeWidth="7"
                 strokeLinecap="round"
               />
               <path
                 d="M 115 52 L 115 178 C 114 260 110 286 64 336 L 46 358"
                 fill="none"
                 stroke="url(#tonearm-tube-metal)"
-                strokeWidth="6.5"
+                strokeWidth="5.6"
                 strokeLinecap="round"
               />
               <path
-                d="M 113.8 54 L 113.8 176 C 112.8 256 108.8 282 63 333"
+                d="M 114 54 L 114 176 C 113 256 109 282 63.4 333"
                 fill="none"
-                stroke="rgba(255,255,255,0.65)"
-                strokeWidth="0.85"
-                strokeLinecap="round"
-              />
-              <path
-                d="M 116.5 54 L 116.5 176 C 115.5 256 111.5 282 66 333"
-                fill="none"
-                stroke="rgba(255,255,255,0.25)"
-                strokeWidth="0.5"
+                stroke="rgba(255,255,255,0.35)"
+                strokeWidth="0.7"
                 strokeLinecap="round"
               />
 
-              <g transform="rotate(22 46 360)">
+              <g transform={`rotate(${HEADSHELL_DEG} 46 360)`}>
+                {/* Its shadow on the record, offset away from the light. */}
+                <path d="M 38 354 L 54 354 L 51.5 381 L 52.5 393 L 35.5 393 L 35.5 381 Z" transform="translate(3 4.5)" fill="rgba(0,0,0,0.3)" aria-hidden="true" />
+                {/* Headshell: a lighter satin aluminium plate with a crisp edge, so its outline
+                    reads against the black record. */}
                 <path
-                  d="M 38 354 L 54 354 L 51 382 L 35 382 Z"
-                  fill="#261f1b"
-                  stroke="rgba(255,255,255,0.1)"
-                  strokeWidth="0.8"
+                  d="M 38 354 L 54 354 L 51.5 381 L 35.5 381 Z"
+                  fill="url(#headshell-metal)"
+                  stroke="rgba(255,255,255,0.32)"
+                  strokeWidth="0.6"
+                  data-tonearm-part="headshell"
                 />
+                <line x1="38.8" y1="354.7" x2="53.2" y2="354.7" stroke="rgba(255,255,255,0.75)" strokeWidth="0.6" />
+                {/* Cartridge: a dark body with a lit edge and a fine seam. */}
                 <rect
                   x="36"
                   y="377"
                   width="16"
-                  height="17"
-                  rx="1.5"
-                  fill="#181310"
-                  stroke="rgba(255,255,255,0.12)"
-                  strokeWidth="0.75"
+                  height="16"
+                  rx="2"
+                  fill="#1d1e21"
+                  stroke="rgba(255,255,255,0.22)"
+                  strokeWidth="0.6"
+                  data-tonearm-part="cartridge"
                 />
-                <circle cx="39" cy="380" r="0.8" fill="#a5978a" stroke="#000" strokeWidth="0.3" />
-                <circle cx="49" cy="380" r="0.8" fill="#a5978a" stroke="#000" strokeWidth="0.3" />
-                <circle cx="39" cy="391" r="0.8" fill="#a5978a" stroke="#000" strokeWidth="0.3" />
-                <circle cx="49" cy="391" r="0.8" fill="#a5978a" stroke="#000" strokeWidth="0.3" />
-
-                <rect x="36" y="388" width="16" height="3" rx="0.75" fill="#d7a76c" />
-                
-                <line x1="44" y1="394" x2="44.5" y2="402" stroke="#e5dfd6" strokeWidth="1.2" strokeLinecap="round" />
-                <circle cx="44.5" cy="402.5" r="1.1" fill="#ffffff" filter="drop-shadow(0px 1px 1.5px rgba(0,0,0,0.8))" />
-
+                <line x1="37" y1="377.8" x2="51" y2="377.8" stroke="rgba(255,255,255,0.35)" strokeWidth="0.6" />
+                {/* A neutral seam: the needle light is the deck's one touch of the room's colour. */}
+                <rect x="37.5" y="388.4" width="13" height="1.1" rx="0.55" fill="rgba(255,255,255,0.26)" />
+                {/* Cantilever and tip: bright, so the needle point is easy to find. */}
+                <line x1="44" y1="393" x2="44.4" y2="400.5" stroke="#f1f2f4" strokeWidth="1.1" strokeLinecap="round" data-tonearm-part="stylus" />
+                <circle cx="44.45" cy="400.9" r="0.85" fill="#ffffff" />
+                {NEEDLE_LIGHT && (
+                  <g
+                    ref={needleLightRef}
+                    data-tonearm-part="needle-light"
+                    aria-hidden="true"
+                    // Opacity is set from the arm's state (see needleLightRef); it fades on and off.
+                    style={{ opacity: 0, transition: 'opacity 400ms cubic-bezier(0.22, 1, 0.36, 1)' }}
+                  >
+                    {/* The faint pool on the grooves under the stylus. */}
+                    <ellipse cx="44.5" cy="402.5" rx="11" ry="6" fill="url(#needle-pool)" />
+                    {/* The point of light itself, with no more than a few pixels of halo. */}
+                    <circle cx="44.45" cy="400.9" r="2.4" style={{ fill: NEEDLE_LIGHT_COLOUR }} opacity="0.28" />
+                    <circle cx="44.45" cy="400.9" r="1.05" style={{ fill: NEEDLE_LIGHT_COLOUR }} />
+                  </g>
+                )}
+                {/* Finger lift: lighter metal so it reads. */}
                 <path
-                  d="M 52 360 C 58 358 64 362 66 368"
+                  d="M 52 360 C 58 358 63.5 362 65.5 367.5"
                   fill="none"
-                  stroke="url(#tonearm-tube-metal)"
-                  strokeWidth="1.8"
+                  stroke="url(#headshell-metal)"
+                  strokeWidth="1.7"
                   strokeLinecap="round"
                 />
               </g>

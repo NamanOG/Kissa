@@ -1,6 +1,7 @@
 import React, { memo, useRef } from 'react'
 import { useDialogFocus } from '../../hooks/useDialogFocus'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { X } from 'lucide-react'
 import { useT, type MessageKey } from '@renderer/i18n'
@@ -37,6 +38,7 @@ const GROUPS: Group[] = [
       { keys: ['T'], action: 'keys.themes' },
       { keys: ['S'], action: 'keys.settings' },
       { keys: ['?'], action: 'keys.help' },
+      { keys: ['F6'], action: 'keys.regions' },
       { keys: ['Esc'], action: 'keys.close' }
     ]
   }

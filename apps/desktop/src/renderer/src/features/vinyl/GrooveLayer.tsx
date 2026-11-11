@@ -50,12 +50,19 @@ export const GrooveLayer = memo(
           }}
         />
 
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="22" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.15" />
-          <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.15" />
-          <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="0.18" />
-          <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="0.2" />
-          <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.15" />
+        {/* Track gaps: the smooth bands between songs, a touch darker than the grooves with a
+            fine lit edge. Rings look the same at
+            every angle, so turning costs nothing extra. */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" data-track-gaps="">
+          {[21.5, 27, 32.8, 38.2, 43.4].map((r) => (
+            <g key={r}>
+              <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(0,0,0,0.38)" strokeWidth="0.32" />
+              <circle cx="50" cy="50" r={r + 0.24} fill="none" stroke="rgba(255,255,255,0.045)" strokeWidth="0.12" />
+            </g>
+          ))}
+          {/* Lead-in at the rim, run-out by the label. */}
+          <circle cx="50" cy="50" r="47.6" fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="0.45" />
+          <circle cx="50" cy="50" r="16.2" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.2" />
         </svg>
       </div>
     )

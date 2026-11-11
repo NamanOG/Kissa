@@ -12,8 +12,11 @@ import { startStudyKeepAwake, stopStudyKeepAwake } from './services/StudyKeepAwa
 import { setupPhoneRemote, stopPhoneRemote } from './services/remote'
 import { DiagnosticsLog } from './services/DiagnosticsLog'
 import { join } from 'path'
+import { listenForPageMarks, startupMark } from './startupTiming'
 import { jumpPlaceFromArgv } from './window/jumpList'
 import { TrackToast } from './window/TrackToast'
+import { DesktopLyricsWindow } from './window/DesktopLyricsWindow'
+import { ReminderStore } from './services/ReminderStore'
 import { installLoopbackHandler } from './audio/loopback'
 import { AlbumFolderService, registerAlbumScheme } from './album/AlbumFolderService'
 import { applyGraphicsChoice, setupGraphicsIpc } from './services/GraphicsSettings'
@@ -48,6 +51,8 @@ if (!gotSingleInstanceLock) {
   // This method will be called when Electron has finished
   // initialization and is ready to create browser windows.
   app.whenReady().then(() => {
+    startupMark('app-ready')
+    listenForPageMarks()
     const isStorePackage = StorePackageService.getInstance().isStorePackage()
 
     // Set app user model id for windows. A Store package already has one,
@@ -66,8 +71,25 @@ if (!gotSingleInstanceLock) {
         exitCode: details.exitCode
       })
     })
-    app.on('render-process-gone', (_, __, details) => {
+    // A window whose page crashed would otherwise stay blank: reload it, at most three times a
+    // minute so a page that crashes at once does not loop.
+    const reloads: number[] = []
+    app.on('render-process-gone', (_, contents, details) => {
       diagnostics.record('render-process-gone', { reason: details.reason, exitCode: details.exitCode })
+      if (details.reason === 'clean-exit' || details.reason === 'killed') return
+      const now = Date.now()
+      while (reloads.length && now - reloads[0] > 60_000) reloads.shift()
+      if (reloads.length >= 3) return
+      reloads.push(now)
+      setTimeout(() => {
+        if (!contents.isDestroyed()) contents.reload()
+      }, 500)
+    })
+    // A promise that failed with nobody listening (a network lookup, a file that went away) is
+    // logged and noted, never turned into an error dialog in the main process.
+    process.on('unhandledRejection', (reason) => {
+      console.error('[Kissa] Unhandled rejection in main:', reason)
+      diagnostics.record('unhandled-rejection', { name: reason instanceof Error ? reason.name : typeof reason })
     })
 
     // Default open or close DevTools by F12 in development
@@ -86,8 +108,6 @@ if (!gotSingleInstanceLock) {
       })
     })
 
-    // Start background system media detection (Apple Music, Spotify, etc.)
-    MediaDetectionService.getInstance().start()
 
     // Album folders the listener picks: read-only, only the files of the album read last.
     AlbumFolderService.getInstance().start()
@@ -111,10 +131,27 @@ if (!gotSingleInstanceLock) {
     const isScreensaver = process.argv.includes('--screensaver')
     if (!isScreensaver) WindowManager.getInstance().pendingJumpPlace = jumpPlaceFromArgv(process.argv)
     const mainWindow = WindowManager.getInstance().createMainWindow(isHidden, isScreensaver)
+    startupMark('window-created')
+    // Start background system media detection (Apple Music, Spotify, etc.) once the window is on
+    // its way, so the helper's start never delays the first frame.
+    MediaDetectionService.getInstance().start()
+    mainWindow.once('ready-to-show', () => startupMark('ready-to-show'))
+    mainWindow.once('show', () => startupMark('shown'))
+    mainWindow.once('maximize', () => startupMark('maximized'))
+    mainWindow.webContents.once('did-finish-load', () => startupMark('page-loaded'))
     // The song-change card is a window too; it must never keep Kissa alive on its own.
     mainWindow.on('closed', () => TrackToast.getInstance().destroy())
     mainWindow.on('show', () => TrackToast.getInstance().hide())
     mainWindow.on('restore', () => TrackToast.getInstance().hide())
+    // Desktop lyrics: its own window and Ctrl+Alt+L; it steps aside while Kissa fills the screen.
+    if (!isScreensaver) {
+      const desktopLyrics = DesktopLyricsWindow.getInstance()
+      desktopLyrics.setup()
+      ReminderStore.getInstance().setup()
+      mainWindow.on('closed', () => desktopLyrics.closeWindow())
+      mainWindow.on('enter-full-screen', () => desktopLyrics.refresh())
+      mainWindow.on('leave-full-screen', () => desktopLyrics.refresh())
+    }
     WindowManager.getInstance().setupIpcHandlers()
     setupGraphicsIpc()
     
@@ -136,6 +173,7 @@ if (!gotSingleInstanceLock) {
 
   app.on('before-quit', () => {
     TrackToast.getInstance().destroy()
+    if (!process.argv.includes('--screensaver')) DesktopLyricsWindow.getInstance().destroy()
     ScreensaverSessionService.getInstance().stop()
     stopDiscordPresence()
     stopStudyKeepAwake()

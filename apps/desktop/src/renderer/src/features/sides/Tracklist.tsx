@@ -1,6 +1,8 @@
+import { ICON_ACTION } from '@renderer/components/ui/iconAction'
 import { memo, useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { ListMusic, X } from 'lucide-react'
 import { useT } from '@renderer/i18n'
 import { cn } from '@renderer/utils/cn'
@@ -15,7 +17,7 @@ const setTurned = (next: boolean): void => useSidesStore.setState({ sleeveTurned
  * over (or, in a narrow window with no sleeve on show, opens the back as a card), and says when
  * there is no list yet and why, instead of disappearing.
  */
-export const TracklistButton = memo(() => {
+export const TracklistButton = memo(({ iconOnly = false }: { iconOnly?: boolean }) => {
   const t = useT()
   const turned = useSidesStore((s) => s.sleeveTurned)
   const lookup = useSidesStore((s) => s.lookup)
@@ -36,20 +38,25 @@ export const TracklistButton = memo(() => {
       data-testid="tracklist-button"
       data-state={hasSides ? 'ready' : lookup}
       aria-expanded={turned}
+      aria-label={iconOnly ? label : undefined}
+      title={iconOnly ? label : undefined}
       onClick={() => setTurned(!turned)}
       className={cn(
-        'inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone active:scale-[0.97]',
-        turned ? 'bg-white/[0.08] text-ink' : hasSides ? 'text-dim' : 'text-dim/70'
+        iconOnly
+          ? cn(ICON_ACTION, turned && 'bg-white/[0.08] text-ink')
+          : 'inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone active:scale-[0.97]',
+        !iconOnly && (turned ? 'bg-white/[0.08] text-ink' : 'text-dim')
       )}
     >
       <ListMusic
         className={cn(
-          'h-3.5 w-3.5',
+          iconOnly ? 'h-4 w-4' : 'h-3.5 w-3.5',
           lookup === 'finding' && !hasSides && 'motion-safe:animate-pulse'
         )}
+        strokeWidth={iconOnly ? 1.75 : undefined}
         aria-hidden="true"
       />
-      <span className="text-[12px]">{label}</span>
+      {!iconOnly && <span className="text-[12px]">{label}</span>}
     </button>
   )
 })

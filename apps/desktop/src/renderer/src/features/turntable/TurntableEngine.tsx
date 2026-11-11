@@ -56,8 +56,9 @@ export const TurntableEngine = memo(
             >
               <div className="relative w-full h-0 pb-[100%]">
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Platter size="100%" />
-                  <Slipmat size="98%" />
+                  {/* The record keeps its size; the platter shows only as a thin satin lip round it. */}
+                  <Platter size="101.8%" />
+                  <Slipmat size="100.4%" />
                   <RecordFlip>
                     <VinylEngine
                       albumArt={albumArt}

@@ -1,5 +1,6 @@
 import React, { memo, useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { Check, X } from 'lucide-react'
 import { usePlayerStore, VINYL_COLORS, type AppTheme, type VinylColor } from '@renderer/stores/playerStore'
 import { useEditionsStore } from '@renderer/stores/editionsStore'
@@ -507,7 +508,7 @@ export const EditionEditor = memo((): React.JSX.Element => {
           <button
             type="button"
             onClick={closeEditor}
-            className={cn('h-9 cursor-pointer rounded-full bg-ink px-5 text-[13px] font-semibold text-[var(--surface)] transition-opacity hover:opacity-90', FOCUS)}
+            className={cn('h-9 cursor-pointer rounded-full bg-tone px-5 text-[13px] font-semibold text-[#170f09] shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] transition-[filter,transform] hover:brightness-110 active:scale-[0.97]', FOCUS)}
           >
             {t('editor.done')}
           </button>

@@ -40,3 +40,19 @@ describe('room colours', () => {
     }
   )
 })
+
+describe('Increase contrast', () => {
+  const rooms = LISTENING_ENVIRONMENTS.filter((room) => room.id !== 'adaptive')
+  // AppLayout.tsx: secondary text moves 60 % of the way to the primary text colour.
+  const boosted = (muted: number[], on: number[]): number[] => muted.map((c, i) => c * 0.4 + on[i] * 0.6)
+
+  it.each(rooms.map((room) => [room.id, room]))('brings secondary text to at least 7:1 in %s', (_id, room) => {
+    const text = boosted(hex(room.mutedColor), hex(room.onSurfaceColor))
+    const bg = hex(room.ambient.bgColor)
+    expect(contrast(text, bg)).toBeGreaterThanOrEqual(7)
+    // Panels go to 92 % of the room's panel colour over the room.
+    const [r, g, b] = rgba(room.ui.dockBg)
+    const dock = [r, g, b].map((c, i) => Math.round(c * 0.92 + bg[i] * 0.08))
+    expect(contrast(text, dock)).toBeGreaterThanOrEqual(7)
+  })
+})

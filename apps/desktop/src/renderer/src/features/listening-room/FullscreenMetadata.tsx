@@ -1,5 +1,6 @@
 import { memo } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { cn } from '@renderer/utils/cn'
 import { useT } from '@renderer/i18n'
@@ -57,7 +58,7 @@ export const FullscreenMetadata = memo(({ className, isCentered = false }: Fulls
             {artist}
           </p>
           {album && album.toLowerCase() !== title.toLowerCase() && (
-            <p className="mt-1 max-w-full text-xs text-dim/60 font-sans tracking-wide line-clamp-1">
+            <p className="mt-1 max-w-full text-[clamp(0.8125rem,0.95vw,0.9375rem)] text-white/65 font-sans line-clamp-1 [text-shadow:0_1px_10px_rgba(0,0,0,0.35)]">
               {album}
             </p>
           )}

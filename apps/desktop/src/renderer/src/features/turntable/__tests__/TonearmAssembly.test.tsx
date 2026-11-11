@@ -94,3 +94,15 @@ describe('TonearmAssembly component', () => {
     expect(usePlayerStore.getState().progress).toBe(50)
   })
 })
+
+describe('where the needle sits in a song', () => {
+  it('every song starts at the lead-in and reaches the run-out at its own end', async () => {
+    const { grooveAngle } = await import('../TonearmAssembly')
+    expect(grooveAngle(0, 194, 18, 37)).toBe(18)
+    expect(grooveAngle(0, 30, 18, 37)).toBe(18) // a short song too
+    expect(grooveAngle(15, 30, 18, 37)).toBeCloseTo(27.5, 5) // halfway through: halfway in
+    expect(grooveAngle(194, 194, 18, 37)).toBe(37)
+    expect(grooveAngle(500, 194, 18, 37)).toBe(37)
+    expect(grooveAngle(40, undefined, 18, 37)).toBe(18) // no length yet: waits at the lead-in
+  })
+})

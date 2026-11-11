@@ -47,7 +47,10 @@ export const AlbumOpenButton = memo(
           className={cn(
             'inline-flex items-center gap-2 rounded-full font-medium transition-[background-color,transform,opacity] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone active:scale-[0.97] disabled:cursor-progress',
             small ? 'h-8 px-3.5 text-[12.5px]' : 'h-9 px-4 text-[13px]',
-            quiet
+            quiet && small
+              ? // In a toolbar it is a text button like its neighbours: it fills only on hover.
+                'px-3 text-ink/75 hover:bg-white/[0.08] hover:text-ink'
+              : quiet
               ? 'bg-white/[0.07] text-ink/85 shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.14)] hover:bg-white/[0.11]'
               : 'bg-tone text-[#14110e] shadow-[0_6px_20px_-8px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.25)] hover:brightness-110'
           )}
@@ -75,7 +78,7 @@ export const AlbumOpenButton = memo(
               type="button"
               onClick={dismiss}
               aria-label={t('album.dismiss')}
-              className="mt-0.5 rounded-full p-0.5 text-ink/50 hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
+              className="mt-0.5 rounded-full p-0.5 text-ink/50 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone"
             >
               <X className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
@@ -161,7 +164,7 @@ export const AlbumTrackList = memo(() => {
                     : t('album.playTrack', { title: tr.title })
                 }
                 className={cn(
-                  'group -mx-1.5 flex w-[calc(100%+0.75rem)] items-baseline gap-2 rounded-[6px] px-1.5 py-[3px] text-left text-[11.5px] leading-snug transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone',
+                  'group -mx-1.5 flex w-[calc(100%+0.75rem)] items-baseline gap-2 rounded-[6px] px-1.5 py-[3px] text-left text-[11.5px] leading-snug transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone',
                   playing ? 'bg-white/[0.10] text-ink' : 'text-ink/75 hover:bg-white/[0.06]',
                   problem && 'cursor-default text-ink/40 hover:bg-transparent'
                 )}

@@ -1,5 +1,7 @@
+import { SPRING_INDICATOR } from '@renderer/utils/motion'
 import React from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { Settings } from 'lucide-react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
@@ -38,8 +40,8 @@ export function CompactTopBar({ className }: { className?: string }): React.JSX.
   return (
     <header
       className={cn(
-        // Leaves 138 px on the right for the Windows caption buttons (title bar overlay).
-        'relative z-[60] flex h-11 shrink-0 items-center gap-1 pl-3 pr-[146px] app-region-drag select-none',
+        // Leaves 128 px on the right for the caption buttons (WindowControls, 3 x 40 px).
+        'relative z-[60] flex h-11 shrink-0 items-center gap-1 pl-3 pr-[128px] app-region-drag select-none',
         className
       )}
     >
@@ -48,7 +50,7 @@ export function CompactTopBar({ className }: { className?: string }): React.JSX.
         onClick={() => setActiveView('deck')}
         className="app-region-no-drag mr-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-tone/70"
         title="Kissa"
-        aria-label="Kissa, back to the deck"
+        aria-label={t('a11y.backToDeck')}
       >
         <img
           src={brandMarkSrc}
@@ -69,7 +71,7 @@ export function CompactTopBar({ className }: { className?: string }): React.JSX.
               type="button"
               onClick={() => setActiveView(v.id)}
               aria-current={on ? 'page' : undefined}
-              title={v.id === 'study' && isStudying ? 'Focus Room (session running)' : v.title}
+              title={v.id === 'study' && isStudying ? tl('nav.focusRunning') : v.title}
               className={cn(
                 'relative h-8 shrink-0 rounded-[10px] px-3 text-[12.5px] font-medium outline-none transition-colors duration-ui ease-primary',
                 'focus-visible:ring-2 focus-visible:ring-tone/70',
@@ -81,7 +83,7 @@ export function CompactTopBar({ className }: { className?: string }): React.JSX.
                   layoutId="kissa-compact-nav"
                   aria-hidden="true"
                   className="absolute inset-0 rounded-[10px] bg-ink/[0.09] ring-1 ring-inset ring-ink/[0.06]"
-                  transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 520, damping: 40 }}
+                  transition={reduceMotion ? { duration: 0 } : SPRING_INDICATOR}
                 />
               )}
               <span className="relative">{t(v.label)}</span>

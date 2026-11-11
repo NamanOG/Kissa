@@ -34,6 +34,14 @@ function stateText(state: DiscordPresenceState, spotify: boolean, youtubeMusic =
  * person's friends (and anyone in shared servers) will see it. Spotify is a second,
  * separate opt-in: Spotify can share itself, and both together put two cards on the profile.
  */
+const OFF_STATUS: DiscordPresenceStatus = {
+  enabled: false,
+  shareSpotify: false,
+  shareStudy: true,
+  shareYouTubeMusic: false,
+  state: 'off'
+}
+
 export function DiscordPresenceRow(): React.JSX.Element | null {
   const t = useT()
   const [status, setStatus] = useState<DiscordPresenceStatus | null>(null)
@@ -43,9 +51,15 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
     const api = window.electron
     if (!api?.getDiscordPresence) return
     let alive = true
-    void api.getDiscordPresence().then((s) => {
-      if (alive) setStatus(s)
-    })
+    void api
+      .getDiscordPresence()
+      .then((s) => {
+        if (alive) setStatus(s)
+      })
+      // No answer from the main process: show the row as off rather than leave an empty group.
+      .catch(() => {
+        if (alive) setStatus((s) => s ?? OFF_STATUS)
+      })
     const unsubscribe = api.onDiscordPresenceChanged?.((s) => setStatus(s))
     return (): void => {
       alive = false
@@ -53,7 +67,21 @@ export function DiscordPresenceRow(): React.JSX.Element | null {
     }
   }, [])
 
-  if (!status) return null
+  // Until the first answer arrives the row is drawn in full with its switch held, so the
+  // Sharing section never shows a bare "Discord" heading.
+  if (!status) {
+    return (
+      <div className="kissa-set-row flex-col items-stretch gap-0" aria-busy="true">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col">
+            <span className="text-[14px] font-medium text-ink">{t('discord.title')}</span>
+            <span className="mt-0.5 min-h-[1.2em] text-[12.5px] leading-relaxed text-dim" />
+          </div>
+          <HardwareSwitch disabled checked={false} onChange={() => undefined} aria-label={t('discord.switch')} />
+        </div>
+      </div>
+    )
+  }
 
   const setEnabled = (enabled: boolean): void => {
     setConfirming(false)

@@ -84,11 +84,11 @@ describe('the Track list button', () => {
   it('is labelled and turns the sleeve over and back', () => {
     render(<MetadataPanel />)
     const button = screen.getByTestId('tracklist-button')
-    expect(button).toHaveTextContent('Track list')
+    expect(button).toHaveAccessibleName('Track list')
     expect(button).toHaveAttribute('aria-expanded', 'false')
     fireEvent.click(button)
     expect(useSidesStore.getState().sleeveTurned).toBe(true)
-    expect(button).toHaveTextContent('Hide track list')
+    expect(button).toHaveAccessibleName('Hide track list')
     fireEvent.click(button)
     expect(useSidesStore.getState().sleeveTurned).toBe(false)
   })
@@ -106,7 +106,7 @@ describe('the Track list button', () => {
     useSidesStore.setState({ sides: null, place: null, lookup: 'missing' })
     render(<MetadataPanel compact />)
     const button = screen.getByTestId('tracklist-button')
-    expect(button).toHaveTextContent('No track list')
+    expect(button).toHaveAccessibleName('No track list')
     fireEvent.click(button)
     expect(
       within(screen.getByTestId('tracklist-card')).getByText(/isn't on MusicBrainz yet/)

@@ -20,7 +20,7 @@ export function SavedLinesView(): React.JSX.Element {
         <button
           type="button"
           onClick={() => usePlayerStore.getState().setActiveView('lyrics')}
-          className="mt-2 inline-flex h-9 items-center gap-2 rounded-full bg-tone px-4 text-[13px] font-semibold text-[#170f09] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_8px_22px_rgba(0,0,0,0.35)] transition-[filter,transform] hover:brightness-110 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-tone active:scale-[0.98]"
+          className="mt-2 inline-flex h-9 items-center gap-2 rounded-full bg-tone/[0.16] px-4 text-[13px] font-semibold text-tone transition-colors hover:bg-tone/[0.24] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone active:scale-[0.98]"
         >
           <Quote className="h-3.5 w-3.5" aria-hidden="true" />
           {t('lines.openLyrics')}

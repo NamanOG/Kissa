@@ -10,6 +10,8 @@ export interface FakeGl {
   contextReleased: boolean
   failCompile: boolean
   failLink: boolean
+  /** The last value set for each uniform, by name. */
+  uniforms: Record<string, number[]>
 }
 
 export function makeFakeGl(opts: { failCompile?: boolean; failLink?: boolean } = {}): FakeGl {
@@ -21,7 +23,8 @@ export function makeFakeGl(opts: { failCompile?: boolean; failLink?: boolean } =
     lost: false,
     contextReleased: false,
     failCompile: Boolean(opts.failCompile),
-    failLink: Boolean(opts.failLink)
+    failLink: Boolean(opts.failLink),
+    uniforms: {}
   }
   const make = (kind: string): string => {
     const id = `${kind}#${++n}`
@@ -84,11 +87,12 @@ export function makeFakeGl(opts: { failCompile?: boolean; failLink?: boolean } =
     getAttribLocation: () => 0,
     enableVertexAttribArray: noop,
     vertexAttribPointer: noop,
-    getUniformLocation: () => ({}),
+    getUniformLocation: (_p: unknown, name: string) => ({ name }),
     uniform1i: noop,
-    uniform1f: noop,
-    uniform4f: noop,
-    uniform2fv: noop,
+    uniform1f: (l: { name: string }, v: number) => void (state.uniforms[l.name] = [v]),
+    uniform4f: (l: { name: string }, ...v: number[]) => void (state.uniforms[l.name] = v),
+    uniform2f: (l: { name: string }, ...v: number[]) => void (state.uniforms[l.name] = v),
+    uniform2fv: (l: { name: string }, v: number[]) => void (state.uniforms[l.name] = [...v]),
     createTexture: () => make('texture'),
     bindTexture: noop,
     texParameteri: noop,

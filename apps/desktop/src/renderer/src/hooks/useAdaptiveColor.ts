@@ -1,6 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { useStudyStore } from '@renderer/stores/studyStore'
+import { coverBitmap } from '@renderer/utils/coverBitmap'
+import { prefersReducedMotion } from '@renderer/hooks/useReducedMotion'
+
+/**
+ * A new song's room colours land once the title and cover crossfade has finished (it ends about
+ * 0.55 s after the change), so the words and cover move first and the room follows a beat later,
+ * and the page restyle never falls in the middle of the crossfade. The first colours of a session,
+ * and every change under reduced motion, land at once.
+ */
+export const RECOLOUR_DELAY_MS = 550
+
+/** How long to hold a new song's colours that resolved `elapsed` ms after the change. */
+export function recolourWait(elapsed: number, firstColours: boolean, reduced: boolean): number {
+  if (firstColours || reduced) return 0
+  return Math.max(0, RECOLOUR_DELAY_MS - elapsed)
+}
 
 export interface AdaptivePalette {
   accent: string
@@ -68,6 +84,37 @@ function hslToRgbString(h: number, s: number, l: number, alpha: number = 1): str
   return `hsl(${h.toFixed(1)}, ${s.toFixed(1)}%, ${l.toFixed(1)}%)`
 }
 
+/** WCAG relative luminance of 0..255 sRGB. */
+function luminance([r, g, b]: number[]): number {
+  const lin = (c: number): number => {
+    const s = c / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+  }
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+}
+
+export function contrastRatio(a: number[], b: number[]): number {
+  const la = luminance(a)
+  const lb = luminance(b)
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
+}
+
+function hslToRgb(h: number, s: number, l: number): number[] {
+  const S = s / 100
+  const L = l / 100
+  const k = (n: number): number => (n + h / 30) % 12
+  const a = S * Math.min(L, 1 - L)
+  const f = (n: number): number => L - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))
+  return [255 * f(0), 255 * f(8), 255 * f(4)]
+}
+
+/** The lightest needed (from `from`, up to 88 %) for a colour to reach `ratio` against `bg`. */
+export function readableLightness(h: number, s: number, from: number, bg: number[], ratio: number): number {
+  let l = from
+  while (l < 88 && contrastRatio(hslToRgb(h, s, l), bg) < ratio) l += 2
+  return Math.min(88, l)
+}
+
 function colorDist(r1: number, g1: number, b1: number, r2: number, g2: number, b2: number) {
   return Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2)
 }
@@ -82,13 +129,8 @@ export function extractColorsFromImage(artworkUrl: string): Promise<AdaptivePale
       return resolve(colorCache.get(artworkUrl)!)
     }
 
-    const img = new Image()
-    if (!artworkUrl.startsWith('data:')) {
-      img.crossOrigin = 'Anonymous'
-    }
-    img.src = artworkUrl
-    
-    img.onload = () => {
+    // A small, already decoded copy shared with the other cover readers (utils/coverBitmap.ts).
+    coverBitmap(artworkUrl).then((img) => {
       try {
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d', { willReadFrequently: true })
@@ -248,7 +290,11 @@ export function extractColorsFromImage(artworkUrl: string): Promise<AdaptivePale
         const [panelR, panelG, panelB] = mixRgb(primary.h, 15, baseL + 3, secondary.h, 15, baseL + 3, 0.3)
         const panelBg = `rgb(${panelR.toFixed(0)}, ${panelG.toFixed(0)}, ${panelB.toFixed(0)})`
         
-        const accent = hslToRgbString(highlight.h, highlight.s, Math.max(highlight.l, 55))
+        // The accent also colours labels (the dock's Moving light, the active page in the side
+        // rail). A grey or dark highlight from a monochrome cover made them 3.3:1 against the panel
+        // (live, 2026-11-10), so the accent is lifted until it reads at 5:1 or better.
+        const accentL = readableLightness(highlight.h, highlight.s, Math.max(highlight.l, 55), [panelR, panelG, panelB], 5)
+        const accent = hslToRgbString(highlight.h, highlight.s, accentL)
         const onSurface = hslToRgbString(primary.h, 10, 92)
         // Never darker than 62% lightness: grey secondary text must stay readable when the room light is
         // full and the album is bright.
@@ -277,12 +323,13 @@ export function extractColorsFromImage(artworkUrl: string): Promise<AdaptivePale
           if (oldestKey) colorCache.delete(oldestKey)
         }
         colorCache.set(artworkUrl, newColors)
+        // Keyed by the cover's address, often a large data: URL: keep only recent covers in memory.
+        while (colorCache.size > 24) colorCache.delete(colorCache.keys().next().value as string)
         resolve(newColors)
       } catch (e) {
         reject(e)
       }
-    }
-    img.onerror = reject
+    }, reject)
   })
 }
 
@@ -290,6 +337,8 @@ export function useAdaptiveColor() {
   const artworkUrl = usePlayerStore((s) => s.currentTrack?.artworkUrl)
   const theme = usePlayerStore((s) => s.theme)
   const [colors, setColors] = useState<AdaptivePalette | null>(null)
+  // Whether this session has shown album colours yet (the first ones land at once).
+  const hadColors = useRef(false)
   // During a study session the room keeps its colour instead of changing with every cover.
   const holdColors = useStudyStore((s) => s.active !== null && s.prefs.holdRoomColor)
 
@@ -305,11 +354,18 @@ export function useAdaptiveColor() {
     }
 
     let isMounted = true
+    const changedAt = performance.now()
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const apply = (palette: AdaptivePalette): void => {
+      if (!isMounted) return
+      const wait = recolourWait(performance.now() - changedAt, !hadColors.current, prefersReducedMotion())
+      hadColors.current = true
+      if (wait <= 0) setColors(palette)
+      else timer = setTimeout(() => isMounted && setColors(palette), wait)
+    }
 
     extractColorsFromImage(artworkUrl)
-      .then((palette) => {
-        if (isMounted) setColors(palette)
-      })
+      .then(apply)
       .catch((err) => {
         console.warn('Could not extract color from artwork', err)
         if (isMounted) setColors(DEFAULT_ADAPTIVE_PALETTE)
@@ -317,12 +373,21 @@ export function useAdaptiveColor() {
 
     return () => {
       isMounted = false
+      if (timer) clearTimeout(timer)
     }
   }, [artworkUrl, theme, holdColors])
 
   const activePalette = colors || DEFAULT_ADAPTIVE_PALETTE
 
   useEffect(() => {
+    const root = document.documentElement
+    // The new colours land in one step: without this, every control with a colour transition
+    // animated its own colour on the main thread for a third of a second after each song change,
+    // under the cover and title crossfades (25-30 ms frames, measured 2026-11-11).
+    root.setAttribute('data-palette-swap', '')
+    let raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame(() => root.removeAttribute('data-palette-swap'))
+    })
     if (theme === 'adaptive') {
       document.documentElement.style.setProperty('--adaptive-accent', activePalette.accent)
       document.documentElement.style.setProperty('--adaptive-panel-bg', activePalette.panelBg)
@@ -355,6 +420,10 @@ export function useAdaptiveColor() {
       document.documentElement.style.removeProperty('--adaptive-secondary-y')
       document.documentElement.style.removeProperty('--adaptive-highlight-x')
       document.documentElement.style.removeProperty('--adaptive-highlight-y')
+    }
+    return () => {
+      cancelAnimationFrame(raf)
+      root.removeAttribute('data-palette-swap')
     }
   }, [activePalette, theme])
 }

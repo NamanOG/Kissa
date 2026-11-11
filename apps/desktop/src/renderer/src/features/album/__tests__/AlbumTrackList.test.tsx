@@ -37,7 +37,7 @@ describe('an album from the PC on the back of the sleeve', () => {
   it('lists the files as buttons, says why one will not play, and plays another on a click', () => {
     render(<MetadataPanel />)
     const button = screen.getByTestId('tracklist-button')
-    expect(button.textContent).toContain('Track list')
+    expect(button.getAttribute('aria-label')).toContain('Track list')
     fireEvent.click(button)
     expect(screen.getByTestId('side-source').textContent).toBe('From your PC')
     expect(screen.getByTestId('album-order').textContent).toContain('file-name order')

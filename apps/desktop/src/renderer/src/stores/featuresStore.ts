@@ -1,5 +1,10 @@
 import { create } from 'zustand'
 
+export type SoundLightAmount = 'gentle' | 'balanced' | 'lively'
+export const SOUND_LIGHT_AMOUNTS: readonly SoundLightAmount[] = ['gentle', 'balanced', 'lively']
+/** The renderer's motion amount for each choice. */
+export const SOUND_LIGHT_SCALE: Record<SoundLightAmount, number> = { gentle: 0.5, balanced: 1, lively: 1.5 }
+
 /**
  * Settings for the big update's room features. Each one is saved on its own key so an older
  * Kissa reading the same storage ignores them.
@@ -19,6 +24,8 @@ export interface FeaturesState {
   sessionWrap: boolean
   /** Moving light breathes and flows with the music. */
   soundLight: boolean
+  /** How much the light moves with the music. */
+  soundLightAmount: SoundLightAmount
   /** Albums play as sides of a record, and the record turns over between them. */
   albumSides: boolean
 
@@ -29,6 +36,7 @@ export interface FeaturesState {
   setClosingHour: (hour: number) => void
   setSessionWrap: (on: boolean) => void
   setSoundLight: (on: boolean) => void
+  setSoundLightAmount: (amount: SoundLightAmount) => void
   setAlbumSides: (on: boolean) => void
 }
 
@@ -50,6 +58,15 @@ function readHour(key: string, fallback: number): number {
   }
 }
 
+function readChoice<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  try {
+    const saved = localStorage.getItem(key)
+    return saved && (allowed as readonly string[]).includes(saved) ? (saved as T) : fallback
+  } catch {
+    return fallback
+  }
+}
+
 function save(key: string, value: string): void {
   try {
     localStorage.setItem(key, value)
@@ -66,6 +83,7 @@ export const useFeaturesStore = create<FeaturesState>((set) => ({
   closingHour: readHour('kissa_closing_hour', 23),
   sessionWrap: readFlag('kissa_session_wrap', true),
   soundLight: readFlag('kissa_sound_light', true),
+  soundLightAmount: readChoice('kissa_sound_light_amount', SOUND_LIGHT_AMOUNTS, 'balanced'),
   albumSides: readFlag('kissa_album_sides', true),
 
   setTrackToast: (on) => {
@@ -96,6 +114,11 @@ export const useFeaturesStore = create<FeaturesState>((set) => ({
   setSoundLight: (on) => {
     save('kissa_sound_light', String(on))
     set({ soundLight: on })
+  },
+  setSoundLightAmount: (amount) => {
+    if (!SOUND_LIGHT_AMOUNTS.includes(amount)) return
+    save('kissa_sound_light_amount', amount)
+    set({ soundLightAmount: amount })
   },
   setAlbumSides: (on) => {
     save('kissa_album_sides', String(on))

@@ -32,7 +32,7 @@ export function tickSleep(now: number = Date.now()): boolean {
   player.pause()
   player.setIsPowered(false)
   if (wasPlaying && player.currentTrack?.sourceAppId && player.currentTrack.sourceAppId !== 'kissa-idle') {
-    void window.electron?.mediaPlayPause?.()
+    void window.electron?.mediaPlayPause?.('sleep-timer')
   }
   return true
 }

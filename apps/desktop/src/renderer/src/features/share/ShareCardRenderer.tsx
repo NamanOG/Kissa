@@ -10,6 +10,7 @@ import { extractColorsFromImage, AdaptivePalette } from '../../hooks/useAdaptive
 import { cn } from '../../utils/cn'
 import { usePlayerStore } from '../../stores/playerStore'
 import { possessive } from '../../utils/greeting'
+import { useLanguageStore, useT } from '../../i18n'
 
 const Label = ({ children }: { children: React.ReactNode }): React.JSX.Element => (
   <span className="font-mono text-[15px] uppercase tracking-[0.22em] opacity-55">{children}</span>
@@ -40,6 +41,8 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
   const [palette, setPalette] = useState<AdaptivePalette | null>(null)
   const [imagesLoaded, setImagesLoaded] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const t = useT()
+  const language = useLanguageStore((s) => s.language)
   const savedName = usePlayerStore((s) => s.listenerName)
   const listenerName = payload.listenerName ?? savedName
 
@@ -139,9 +142,9 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
   const accent = palette?.accent ?? '#d98a4a'
   const owner = possessive(listenerName)
   const monthYear = (time: number): string =>
-    new Date(time).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
-  const plural = (count: number, word: string): string =>
-    `${count} ${word}${count === 1 ? '' : 's'}`
+    new Date(time).toLocaleDateString(language === 'es' ? 'es-ES' : 'en-GB', { month: 'short', year: 'numeric' })
+  const counted = (count: number, key: 'times' | 'albums' | 'playCount'): string =>
+    t(`share.card.${key}.${count === 1 ? 'one' : 'other'}`, { n: count })
 
   const renderAlbum = (): React.JSX.Element => {
     const album = data as AlbumShareData
@@ -166,8 +169,8 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
             className="mt-10 flex gap-20 border-t pt-8"
             style={{ borderColor: 'color-mix(in srgb, currentColor 16%, transparent)' }}
           >
-            <Fact label="Played" value={plural(album.playCount, 'time')} />
-            <Fact label="First played" value={monthYear(album.firstListened)} />
+            <Fact label={t('share.card.played')} value={counted(album.playCount, 'times')} />
+            <Fact label={t('share.card.firstPlayed')} value={monthYear(album.firstListened)} />
           </div>
         </div>
       </div>
@@ -180,28 +183,28 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
     return (
       <div className="relative z-10 flex flex-1 flex-col justify-between gap-10">
         <div>
-          <Label>A focus session in the {room.label} room</Label>
+          <Label>{t('share.card.focusIn', { room: room.label })}</Label>
           <h1 className="mt-6 font-serif text-[100px] leading-none tracking-[-0.025em]">
-            {study.focusMinutes} minutes
+            {t('share.card.focusMinutes', { n: study.focusMinutes })}
             <br />
-            of focus.
+            {t('share.card.ofFocus')}
           </h1>
         </div>
         <img
           src={room.photo}
-          alt={`${room.label} Focus Room`}
+          alt={t('share.card.roomPhoto', { room: room.label })}
           className="w-full rounded-md object-cover"
           style={{ height: isSquare ? 280 : 480 }}
         />
         <div className="flex items-end justify-between gap-12 border-t border-current/15 pt-8">
           {study.stepsTotal > 0 ? (
-            <Fact label="Steps done" value={`${study.stepsDone} of ${study.stepsTotal}`} />
+            <Fact label={t('share.card.stepsDone')} value={t('share.card.stepsOf', { done: study.stepsDone, total: study.stepsTotal })} />
           ) : (
-            <Fact label="Room" value={room.label} />
+            <Fact label={t('share.card.room')} value={room.label} />
           )}
           {study.record && (
             <div className="min-w-0 max-w-[560px] text-right">
-              <Label>On the turntable at the finish</Label>
+              <Label>{t('share.card.onTurntable')}</Label>
               <p className="mt-4 font-serif text-[38px] leading-tight line-clamp-2">
                 {study.record.album}
               </p>
@@ -220,10 +223,10 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
     return (
       <div className="relative z-10 flex flex-1 flex-col">
         <h1 className="font-serif text-[64px] font-medium leading-none tracking-[-0.02em]">
-          {owner ? `${owner} records` : 'From the shelf'}
+          {owner ? t('share.card.ownerRecords', { owner, name: listenerName ?? '' }) : t('share.card.fromShelf')}
         </h1>
         <p className="mt-4">
-          <Label>{plural(albums.length, 'album')}</Label>
+          <Label>{counted(albums.length, 'albums')}</Label>
         </p>
         <div className="flex flex-1 items-center justify-center">
           <div
@@ -250,7 +253,8 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
       <div className="relative z-10 flex flex-1 flex-col justify-between">
         <div>
           <Label>
-            {owner ? `${owner} listening` : 'Listening'} · since {monthYear(stats.firstListenDate)}
+            {owner ? t('share.card.ownerListening', { owner, name: listenerName ?? '' }) : t('share.card.listening')} ·{' '}
+                {t('share.card.since', { date: monthYear(stats.firstListenDate) })}
           </Label>
           <div className="mt-6 flex items-end gap-6">
             <span
@@ -263,18 +267,18 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
               {stats.totalAlbums}
             </span>
             <span className="pb-4 font-serif text-[64px] leading-none">
-              {stats.totalAlbums === 1 ? 'record' : 'records'}
+              {t(stats.totalAlbums === 1 ? 'share.card.records.one' : 'share.card.records.other')}
             </span>
           </div>
           <div
             className="mt-12 flex gap-16 border-t pt-8"
             style={{ borderColor: 'color-mix(in srgb, currentColor 16%, transparent)' }}
           >
-            <Fact label="Artists" value={String(stats.uniqueArtists)} />
-            <Fact label="Plays" value={String(stats.totalPlays)} />
+            <Fact label={t('share.card.artists')} value={String(stats.uniqueArtists)} />
+            <Fact label={t('share.card.plays')} value={String(stats.totalPlays)} />
             {stats.topArtist && (
               <div className="flex min-w-0 flex-col gap-2">
-                <Label>Most played artist</Label>
+                <Label>{t('share.card.topArtist')}</Label>
                 <span className="truncate font-serif text-[40px] leading-none">
                   {stats.topArtist.name}
                 </span>
@@ -288,19 +292,19 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
             <div className="flex items-end gap-10">
               <Cover src={top.artworkUrl} size={isSquare ? 230 : 300} />
               <div className="min-w-0 pb-2">
-                <Label>Most played</Label>
+                <Label>{t('share.card.mostPlayed')}</Label>
                 <h2 className="mt-4 font-serif text-[50px] font-medium leading-[1.04] tracking-[-0.015em] line-clamp-2">
                   {top.album}
                 </h2>
                 <p className="mt-3 font-serif text-[30px] opacity-75 line-clamp-1">{top.artist}</p>
                 <p className="mt-5">
-                  <Label>{plural(top.playCount, 'play')}</Label>
+                  <Label>{counted(top.playCount, 'playCount')}</Label>
                 </p>
               </div>
             </div>
             {!isSquare && stats.runnersUp && stats.runnersUp.length > 0 && (
               <div className="mt-12">
-                <Label>Also on the turntable</Label>
+                <Label>{t('share.card.alsoOn')}</Label>
                 <div className="mt-5 grid grid-cols-4 gap-6">
                   {stats.runnersUp.slice(0, 4).map((a, i) => (
                     <div key={i} className="min-w-0">
@@ -309,7 +313,7 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
                         {a.album}
                       </p>
                       <p className="mt-1 truncate font-mono text-[14px] uppercase tracking-[0.16em] opacity-55">
-                        {plural(a.playCount, 'play')}
+                        {counted(a.playCount, 'playCount')}
                       </p>
                     </div>
                   ))}
@@ -349,7 +353,7 @@ export function ShareCardRenderer({ payload, isExport = false }: ShareCardRender
       <div className="relative z-10 mt-12 flex items-baseline justify-between">
         <span className="flex items-baseline gap-5">
           <span className="font-serif text-[30px]">Kissa</span>
-          <Label>Vinyl player for Windows</Label>
+          <Label>{t('share.card.tagline')}</Label>
         </span>
         <Label>{monthYear(Date.now())}</Label>
       </div>

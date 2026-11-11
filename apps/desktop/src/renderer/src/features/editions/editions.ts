@@ -41,6 +41,12 @@ export interface FinishPalette {
   controls?: { housing: string; keyTop: string; keyBottom: string; bezel: string }
   /** The model nameplate engraved on the front edge. */
   plate: { text: string; shadow: string }
+  /**
+   * How the surface takes the room's light: the strength of the broad, soft highlight (0 to 1,
+   * before the room light dims it), and how much of the room's colour tints it. Matte spreads it, gloss and metal hold more of it. The
+   * finishes differ by colour and sheen, never by texture.
+   */
+  surface: { sheen: number; roomTint: number }
   /** A small sample for the editor. */
   swatch: string
 }
@@ -56,12 +62,12 @@ export const FINISH_PALETTES: Record<DeckFinish, FinishPalette> = {
     },
     // Satin lacquer in a lamp-lit room: a warm lift where the light falls, deep at the front.
     top: ['#5a4a3f', '#3e3229', '#2a211c', '#1c1613', '#110d0b'],
-    front: ['#382e29', '#251e1b', '#171210', '#0a0807'],
+    front: ['#46392f', '#312720', '#211a16', '#130f0c'],
     feet: ['#302824', '#1c1614', '#100c0b', '#060504'],
     well: ['#08080a', '#050506', '#151210'],
     rim: 'rgba(255,255,255,0.08)',
     seam: ['rgba(255,245,225,0.25)', 'rgba(215,167,108,0.2)', 'rgba(255,245,225,0.05)'],
-    engrave: '#635548',
+    engrave: '#a69683',
     engraveShadow: 'rgba(0,0,0,0.9)',
     brushed: false,
     // A cut, lit edge, the platter's lip and one broad satin highlight: depth without ornament.
@@ -71,7 +77,10 @@ export const FINISH_PALETTES: Record<DeckFinish, FinishPalette> = {
       reflection: false,
       sheen: true
     },
-    plate: { text: '#6e5f52', shadow: 'rgba(0,0,0,0.85)' },
+    plate: { text: '#b0a08c', shadow: 'rgba(0,0,0,0.85)' },
+    // Satin lacquer: a low, wide highlight, and only a breath of the room's colour so it stays
+    // a dark deck rather than tinted plastic.
+    surface: { sheen: 0.26, roomTint: 0.055 },
     swatch: 'linear-gradient(135deg, #3c332e 0%, #1c1715 55%, #0d0a09 100%)'
   },
   porcelain: {
@@ -101,7 +110,9 @@ export const FINISH_PALETTES: Record<DeckFinish, FinishPalette> = {
       sheen: true
     },
     controls: { housing: '#1f1c19', keyTop: '#3b3631', keyBottom: '#25211d', bezel: 'rgba(255,255,255,0.65)' },
-    plate: { text: '#4e463c', shadow: 'rgba(255,255,255,0.45)' },
+    plate: { text: '#3d362e', shadow: 'rgba(255,255,255,0.4)' },
+    // Gloss lacquer: a brighter, broader highlight.
+    surface: { sheen: 0.4, roomTint: 0.05 },
     swatch: 'linear-gradient(135deg, #ddd3c1 0%, #cfc3ae 55%, #bcae96 100%)'
   },
   silver: {
@@ -122,7 +133,8 @@ export const FINISH_PALETTES: Record<DeckFinish, FinishPalette> = {
     seam: ['rgba(255,255,255,0.85)', 'rgba(220,226,232,0.55)', 'rgba(255,255,255,0.25)'],
     engrave: '#3c4045',
     engraveShadow: 'rgba(255,255,255,0.45)',
-    brushed: true,
+    // Smooth anodised aluminium: no brushed texture (the modern finish, not the vintage one).
+    brushed: false,
     // Machined plate: tight corners, as cut from a slab, not a moulded tray.
     radius: 7,
     machining: {
@@ -132,6 +144,8 @@ export const FINISH_PALETTES: Record<DeckFinish, FinishPalette> = {
     },
     controls: { housing: '#08090a', keyTop: '#2a2c2f', keyBottom: '#141517', bezel: 'rgba(255,255,255,0.75)' },
     plate: { text: '#c9cdd1', shadow: 'rgba(0,0,0,0.6)' },
+    // Anodised aluminium: smooth, its light mostly in the soft reflection band.
+    surface: { sheen: 0.22, roomTint: 0.04 },
     swatch: 'linear-gradient(135deg, #b4b8bc 0%, #a5a9ae 55%, #92979c 100%)'
   }
 }

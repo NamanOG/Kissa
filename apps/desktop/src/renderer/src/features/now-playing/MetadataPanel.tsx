@@ -4,7 +4,8 @@ import { RotateCcw, Share2 } from 'lucide-react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import albumPlaceholder from '@renderer/media/placeholder-album.png'
-import { HiFiVisualizer } from '@renderer/components/ui/HiFiVisualizer'
+import { SoundBars } from './SoundBars'
+import { ICON_ACTION } from '@renderer/components/ui/iconAction'
 import { ShareTrackModal } from '@renderer/features/share/ShareTrackModal'
 import { SideMeter } from '@renderer/features/sides/SideMeter'
 import { SleeveBack } from '@renderer/features/sides/SleeveBack'
@@ -15,13 +16,6 @@ import { UpNextButton } from '@renderer/features/remote/UpNext'
 import { VinylSoundButton } from '@renderer/features/hifi/VinylSoundButton'
 import { useT, tl } from '@renderer/i18n'
 import { greetingFor } from '@renderer/utils/greeting'
-
-/** Format seconds as m:ss */
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60)
-  const s = Math.floor(seconds % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
 
 /**
  * The full text as a hover tooltip only when the line is actually cut short. A tooltip on text
@@ -43,6 +37,11 @@ const SLEEVE_TURN: Variants = {
   front: { rotateY: 0, scale: [1, 0.94, 1], transition: SLEEVE_TRANSITION },
   back: { rotateY: 180, scale: [1, 0.94, 1], transition: SLEEVE_TRANSITION }
 }
+
+/** The column is the cover's width; everything below it lines up with its edges. */
+const COLUMN_WIDTH = 'max-w-[min(260px,80%,30vh)] min-[1200px]:max-w-[min(300px,33vh)]'
+/** A calm title: about 34 px at 1920, smaller with the window. */
+const TITLE_SIZE = 'text-[clamp(1.5rem,1.8vw,2.125rem)]'
 
 export interface MetadataPanelProps {
   className?: string
@@ -76,7 +75,7 @@ export const MetadataPanel = memo(({ className, compact = false, stage = false }
   const title = currentTrack?.title?.trim() || '—'
   const artist = currentTrack?.artist?.trim() || '—'
   const album = currentTrack?.album?.trim() || ''
-  const duration = currentTrack?.duration ?? 0
+  const shouting = /[A-Z]/.test(title) && title === title.toUpperCase() && title.replace(/[^A-Za-z]/g, '').length > 3
   const showAlbum = !isIdle && album && album.toLowerCase() !== title.toLowerCase()
   // A short id for the picture itself, so a sharper copy of the cover arriving later crossfades in
   // instead of swapping in place.
@@ -86,8 +85,9 @@ export const MetadataPanel = memo(({ className, compact = false, stage = false }
     <div
       className={cn(
         // Sized to the window's height too, so a two-line title never makes the column taller than the deck.
-        'relative w-full max-w-[min(250px,80%,30vh)] min-[1200px]:max-w-[min(290px,32vh)]',
-        stage && 'max-w-[min(340px,32vh,80%)] min-[1200px]:max-w-[min(340px,32vh)]',
+        'relative w-full',
+        // On the Party stage the cover grows with the screen, readable from across the room.
+        stage && 'max-w-[min(clamp(240px,35vh,760px),100%)] min-[1200px]:max-w-[min(clamp(240px,35vh,760px),100%)]',
         compact && 'hidden'
       )}
     >
@@ -122,7 +122,7 @@ export const MetadataPanel = memo(({ className, compact = false, stage = false }
           } else if (e.key === 'Escape') setTurned(false)
         }}
         className={cn(
-          'group/sleeve relative aspect-square w-full rounded-[14px] [perspective:1400px] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-tone',
+          'group/sleeve relative aspect-square w-full rounded-[14px] [perspective:1400px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-tone',
           !isIdle && 'cursor-pointer'
         )}
       >
@@ -185,7 +185,14 @@ export const MetadataPanel = memo(({ className, compact = false, stage = false }
     </div>
   )
 
-  const status = isIdle ? 'The room is quiet' : isPlaying ? 'Now playing' : 'Paused'
+  const source = currentTrack?.source?.trim()
+  const sourceLine = isIdle
+    ? t('deck.status.quiet')
+    : source
+      ? t(isPlaying ? 'np.playingFrom' : 'np.pausedIn', { source })
+      : isPlaying
+        ? t('lr.nowPlaying')
+        : t('deck.status.paused')
 
   return (
     <section
@@ -201,34 +208,31 @@ export const MetadataPanel = memo(({ className, compact = false, stage = false }
       )}
     >
       <div
-        className="flex w-full flex-col items-start transition-opacity duration-75"
+        className={cn(
+          'flex w-full flex-col items-start transition-opacity duration-75',
+          // One column as wide as the cover: every line wraps or clamps inside it.
+          !compact && !stage && COLUMN_WIDTH
+        )}
         style={{ opacity: 'calc(0.4 + 0.6 * var(--room-illumination, 1))' }}
       >
         {cover}
 
-        {/* Where the music is coming from, as one small glass pill. */}
+        {/* Where the music is coming from: one quiet line, led by the sound itself. */}
         <div
+          data-testid="np-source"
           className={cn(
-            'inline-flex h-[26px] max-w-full items-center gap-2 rounded-full bg-white/[0.07] pl-2.5 pr-3 text-[11.5px] font-medium tracking-[-0.005em] text-ink/80 shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.14),0_1px_2px_rgba(0,0,0,0.2)] backdrop-blur-md',
-            compact ? 'mt-0' : 'mt-8 min-[1200px]:mt-9'
+            'flex max-w-full items-center gap-2.5 leading-5 text-dim',
+            stage ? 'text-[clamp(13px,1.6vh,28px)]' : 'text-[13px]',
+            compact ? 'mt-0' : 'mt-6'
           )}
         >
           {isIdle ? (
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-ink/40" />
+            <span aria-hidden="true" className="h-1 w-1 rounded-full bg-ink/40" />
           ) : (
-            <HiFiVisualizer isPlaying={isPlaying} barsCount={4} height={9} showPeaks={false} />
+            <SoundBars playing={isPlaying} />
           )}
-          <span className="text-ink/90">{status}</span>
-          {!isIdle && currentTrack?.source && (
-            <>
-              <span aria-hidden="true" className="text-ink/30">
-                ·
-              </span>
-              <span className="truncate text-dim">{currentTrack.source}</span>
-            </>
-          )}
+          <span className="truncate">{sourceLine}</span>
         </div>
-
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={isIdle ? 'idle' : `${title}|${artist}`}
@@ -261,20 +265,26 @@ export const MetadataPanel = memo(({ className, compact = false, stage = false }
             ) : (
               <>
                 {/*
-                  Room for two lines whatever the title, so the cover above never shifts between
-                  songs. A one-line title sits at the bottom of that room, next to the artist.
+                  The title takes only the lines it needs, so a one-line title sits right under the
+                  source line. (Reserving two lines kept the cover still between songs but left an
+                  empty line above short titles; the column now shifts slightly when a title wraps.)
                 */}
                 <div
                   className={cn(
-                    !compact &&
-                      'flex min-h-[calc(0.75rem+2*1.04em)] flex-col justify-end text-[clamp(1.75rem,2.7vw,3.15rem)]'
+                    !compact && !stage && TITLE_SIZE
                   )}
                 >
                 <h1
                   className={cn(
-                    'mt-[calc(0.75rem-0.14em)] pt-[0.14em] font-kissa-editorial font-medium tracking-[-0.03em] text-ink line-clamp-2 text-balance',
+                    'mt-[calc(1rem-0.14em)] pt-[0.14em] font-kissa-editorial font-medium tracking-[-0.03em] text-ink line-clamp-2 text-balance',
                     // The line height comes after the size: tailwind-merge drops a leading set before a text size.
-                    compact ? 'text-[1.6rem] leading-[1.04]' : 'text-[clamp(1.75rem,2.7vw,3.15rem)] leading-[1.04]'
+                    compact
+                      ? 'text-[1.6rem] leading-[1.04]'
+                      : stage
+                        ? 'text-[clamp(2rem,4vh,5.4rem)] leading-[1.04]'
+                        : // A title set in capitals is a touch smaller and more open, so it does not shout.
+                          // (The line height comes after the size, which tailwind-merge requires.)
+                          cn(shouting ? 'text-[0.9em] tracking-[0.01em]' : TITLE_SIZE, 'leading-[1.08]')
                   )}
                   style={{ textShadow: '0 1px 1px rgba(0,0,0,0.25), 0 8px 30px rgba(0,0,0,0.25)' }}
                   onMouseEnter={titleIfClipped}
@@ -282,47 +292,27 @@ export const MetadataPanel = memo(({ className, compact = false, stage = false }
                   {title}
                 </h1>
                 </div>
+                {/* Who by, in full (two lines at most), then the album on its own quieter line. */}
                 <p
-                  className="mt-2 text-[17px] font-medium leading-snug tracking-[-0.012em] text-ink/85 line-clamp-1"
+                  className={cn(
+                    'mt-2 line-clamp-2 font-medium leading-snug tracking-[-0.01em] text-ink/90',
+                    stage ? 'text-[clamp(17px,2.4vh,44px)]' : 'text-[16px]'
+                  )}
                   onMouseEnter={titleIfClipped}
                 >
                   {artist}
                 </p>
-                {/* Its line is kept even when empty, so the column keeps its height between songs. */}
-                <p
-                  className={cn(
-                    'mt-0.5 text-[14px] leading-snug tracking-[-0.006em] text-dim line-clamp-1',
-                    !showAlbum && 'invisible'
-                  )}
-                  aria-hidden={!showAlbum || undefined}
-                  onMouseEnter={titleIfClipped}
-                >
-                  {showAlbum ? album : ' '}
-                </p>
-
-                <div
-                  className={cn(
-                    'flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-dim',
-                    compact ? 'mt-2.5' : 'mt-4',
-                    stage && 'hidden'
-                  )}
-                >
-                  {duration > 0 && <span className="tabular-nums">{formatTime(duration)}</span>}
-                  <button
-                    type="button"
-                    onClick={() => setIsShareOpen(true)}
-                    className="inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 -ml-1 text-dim transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone active:scale-[0.97]"
-                    title={tl('a11y.share')}
-                    aria-label={tl('a11y.share')}
+                {showAlbum && (
+                  <p
+                    className={cn(
+                      'mt-0.5 truncate leading-snug tracking-[-0.006em] text-dim',
+                      stage ? 'text-[clamp(14px,1.9vh,34px)]' : 'text-[14px]'
+                    )}
+                    onMouseEnter={titleIfClipped}
                   >
-                    <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span className="text-[12px]">Share</span>
-                  </button>
-                  <TracklistButton />
-                  <UpNextButton />
-                  <VinylSoundButton />
-                </div>
-                <div className="mt-2 empty:hidden">
+                    {album}
+                  </p>
+                )}                <div className="mt-2 empty:hidden">
                   <AlbumResumeButton />
                 </div>
               </>
@@ -330,9 +320,38 @@ export const MetadataPanel = memo(({ className, compact = false, stage = false }
           </motion.div>
         </AnimatePresence>
 
-        {/* Outside the per-track animation, so it stays put across a track change. */}
-        {!compact && !isIdle && <SideMeter className="mt-7 hidden min-[720px]:block" />}
-      </div>
+        {/*
+          One footer row, outside the per-track animation so it stays put across a track change:
+          where on the side you are on the left, the record's actions as quiet icons on the right.
+        */}
+        {!isIdle && (
+          <div
+            className={cn(
+              'flex w-full items-end gap-4',
+              compact ? 'mt-3' : 'mt-5',
+              stage && 'mt-[3vh]'
+            )}
+          >
+            {!compact && <SideMeter stage={stage} className={cn('hidden min-w-0 min-[720px]:block', stage && 'w-full')} />}
+            {!stage && (
+              // Beside the side meter, at the right edge; with no side meter, at the left edge.
+              <div className={cn('flex items-center gap-0.5', !compact && 'ml-auto -mr-2 first:ml-[-8px] first:mr-0')}>
+                <button
+                  type="button"
+                  onClick={() => setIsShareOpen(true)}
+                  className={ICON_ACTION}
+                  title={tl('a11y.share')}
+                  aria-label={tl('a11y.share')}
+                >
+                  <Share2 className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+                </button>
+                <TracklistButton iconOnly />
+                <UpNextButton iconOnly />
+                <VinylSoundButton iconOnly />
+              </div>
+            )}
+          </div>
+        )}      </div>
 
       {compact && !isIdle && (
         <TracklistCard

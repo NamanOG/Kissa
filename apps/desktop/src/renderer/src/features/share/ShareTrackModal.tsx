@@ -112,7 +112,7 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
   }
 
   const secondary =
-    'inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-ink/10 bg-ink/[0.05] px-4 text-[12.5px] font-semibold text-ink transition-colors hover:bg-ink/[0.1] cursor-pointer active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone'
+    'inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-ink/[0.07] px-3.5 text-[12.5px] font-medium text-ink/90 transition-colors hover:bg-ink/[0.11] cursor-pointer active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone'
 
   // Rendered at the top of the page: inside the Deck's panel a transformed parent would trap it.
   return createPortal(
@@ -136,7 +136,7 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 10 }}
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            className="relative z-10 w-full max-w-[520px] overflow-hidden rounded-[28px] border border-ink/[0.08] kissa-sheet shadow-[0_30px_80px_rgba(0,0,0,0.65)]"
+            className="relative z-10 w-full max-w-[560px] overflow-hidden rounded-[28px] border border-ink/[0.08] kissa-sheet shadow-[0_30px_80px_rgba(0,0,0,0.65)]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* The record, lit by its own cover. */}
@@ -196,11 +196,13 @@ export const ShareTrackModal: React.FC<ShareTrackModalProps> = ({ isOpen, onClos
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 px-8 pb-8 pt-6">
+            {/* Like a macOS dialog: the secondary actions on the left, the default one on the right
+                (first in keyboard order), proportionate rather than a full-width slab. */}
+            <div className="flex flex-wrap items-center gap-2 px-8 pb-8 pt-6">
               <button
                 type="button"
                 onClick={() => void copy('message', shareText)}
-                className="col-span-2 inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-tone px-5 text-[12.5px] font-bold text-[var(--surface)] transition-transform cursor-pointer active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
+                className="order-last ml-auto inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-tone px-4 text-[12.5px] font-semibold text-[var(--surface)] transition-transform cursor-pointer active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
               >
                 {copied === 'message' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 {copied === 'message' ? t('shareTrack.copied') : t('shareTrack.copy')}

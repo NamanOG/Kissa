@@ -51,6 +51,20 @@ describe('FullscreenControls', () => {
     expect(wrapper).toHaveClass('pointer-events-none')
   })
 
+  // Regression: the full-screen layer used to take every click while shown, so the lyrics
+  // options pill, lyric lines and Party mode's lyrics card underneath could not be clicked.
+  it('never takes the pointer itself; only the control groups do while shown', () => {
+    const { container, rerender } = render(<FullscreenControls isVisible={true} />)
+    const layer = container.firstElementChild as HTMLElement
+    expect(layer).toHaveClass('pointer-events-none')
+    expect(screen.getByTestId('fs-top-controls')).toHaveClass('pointer-events-auto')
+    expect(screen.getByTestId('fs-transport')).toHaveClass('pointer-events-auto')
+
+    rerender(<FullscreenControls isVisible={false} />)
+    expect(screen.getByTestId('fs-top-controls')).toHaveClass('pointer-events-none')
+    expect(screen.getByTestId('fs-transport')).toHaveClass('pointer-events-none')
+  })
+
   it('does not create any native audio elements', () => {
     const { container } = render(<FullscreenControls isVisible={true} />)
     const audioTags = container.querySelectorAll('audio')

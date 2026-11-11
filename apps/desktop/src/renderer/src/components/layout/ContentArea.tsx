@@ -8,6 +8,7 @@ export const ContentArea = React.forwardRef<HTMLDivElement, ContentAreaProps>(
     return (
       <main
         ref={ref}
+        data-region="page"
         className={cn(
           'relative flex min-w-0 flex-1 flex-col overflow-hidden',
           className

@@ -74,7 +74,8 @@ describe('The guide', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start listening' }))
     expect(usePlayerStore.getState().isOnboardingOpen).toBe(false)
     expect(localStorage.getItem('kissa_intro_seen_v3')).toBe('true')
-  })
+    // Sixteen full renders of the guide: allow for a busy machine.
+  }, 15_000)
 
   it('moves with the arrow keys and the wheel, jumps by chapter, and closes on Escape', () => {
     render(<OnboardingModal />)

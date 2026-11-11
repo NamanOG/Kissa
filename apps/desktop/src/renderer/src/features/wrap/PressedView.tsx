@@ -1,5 +1,7 @@
+import { SPRING_INDICATOR } from '@renderer/utils/motion'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { ChevronLeft, ChevronRight, Pause, Play, X } from 'lucide-react'
 import { useDialogFocus } from '@renderer/hooks/useDialogFocus'
 import { useShelfStore } from '@renderer/stores/shelfStore'
@@ -147,8 +149,9 @@ function PressedOverlay(): React.JSX.Element {
       <StoryBackdrop cover={cover} scene={`${kind}-${offset}-${scene}-${run}`} seconds={seconds || 12} reduce={reduce} />
       <LightSweep key={`sweep-${run}`} reduce={reduce} />
 
-      {/* Progress: one track per scene, the current one filling over its time. */}
-      <div className="relative z-10 flex gap-1.5 px-6 pt-4 min-[900px]:px-10" aria-hidden="true">
+      {/* Progress: one track per scene, the current one filling over its time. A single scene
+          (not enough music yet) has nothing to step through, so it shows no track. */}
+      <div className={cn('relative z-10 flex gap-1.5 px-6 pt-4 min-[900px]:px-10', scenes.length < 2 && 'invisible')} aria-hidden="true">
         {scenes.map((s, i) => (
           <div key={s} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/[0.14]">
             <div
@@ -184,7 +187,7 @@ function PressedOverlay(): React.JSX.Element {
               {kind === k && (
                 <motion.span
                   layoutId="pressed-period"
-                  transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+                  transition={SPRING_INDICATOR}
                   className="kissa-raised absolute inset-0 rounded-[9px]"
                 />
               )}
@@ -260,7 +263,7 @@ function PressedOverlay(): React.JSX.Element {
             </motion.p>
           )}
         </AnimatePresence>
-        <div className="ml-auto flex items-center gap-2">
+        <div className={cn('ml-auto flex items-center gap-2', scenes.length < 2 && 'hidden')}>
           <IconButton label={t('pressed.back')} onClick={() => go(-1)} disabled={index === 0}>
             <ChevronLeft className="h-4 w-4" />
           </IconButton>

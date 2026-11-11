@@ -82,5 +82,9 @@ module.exports = {
       }
     }
   },
-  plugins: [require('tailwindcss-animate')]
+  plugins: [
+    require('tailwindcss-animate'),
+    // motion-reduce: also follows Settings > General > Comfort (data-reduce-motion on <html>).
+    ({ addVariant }) => addVariant('motion-reduce', ['@media (prefers-reduced-motion: reduce)', ':root[data-reduce-motion] &'])
+  ]
 }

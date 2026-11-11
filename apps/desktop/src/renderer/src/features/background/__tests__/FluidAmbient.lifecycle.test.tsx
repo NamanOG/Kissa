@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, render } from '@testing-library/react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { FluidAmbient } from '../FluidAmbient'
+import { sheetOpened } from '../sheetCount'
 import { controlledCovers, makeFakeGl, type FakeGl } from './fakeGl'
 
 /*
@@ -185,7 +186,25 @@ describe('Moving light component lifecycle (fake WebGL, controlled covers)', () 
     act(() => usePlayerStore.setState({ isMiniPlayer: true }))
     expect(blurOff()).toBe(true)
     act(() => usePlayerStore.setState({ isPlaying: false }))
-    expect(blurOff()).toBe(false) // nothing plays: one still frame
+    expect(blurOff()).toBe(true) // the colour coasts to a stop with the record
+    await vi.waitFor(() => expect(blurOff()).toBe(false), { timeout: 3000 }) // then one still frame
+  })
+
+  it('settles while a full sheet is open, and moves again when it closes', async () => {
+    const covers = controlledCovers()
+    render(<FluidAmbient artworkUrl="A" coverLoader={covers.load} />)
+    covers.succeed('A')
+    await flush()
+    expect(blurOff()).toBe(true)
+    let release = (): void => {}
+    act(() => {
+      release = sheetOpened()
+    })
+    expect(document.documentElement.hasAttribute('data-kissa-sheet')).toBe(true)
+    await vi.waitFor(() => expect(blurOff()).toBe(false), { timeout: 3000 })
+    act(() => release())
+    expect(document.documentElement.hasAttribute('data-kissa-sheet')).toBe(false)
+    expect(blurOff()).toBe(true)
   })
 
   it('pauses while a full-window story (Pressed) covers the app, and resumes after', async () => {

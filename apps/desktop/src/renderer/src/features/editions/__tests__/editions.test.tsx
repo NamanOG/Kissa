@@ -139,6 +139,8 @@ describe('finish and pressing on the deck', () => {
     expect(container.querySelector('[data-finish-sheen]')).not.toBeNull()
     useEditionsStore.setState({ finish: 'silver' })
     const silver = render(<TurntableBase />)
-    expect(silver.container.querySelector('[data-texture="brushed"] image')).not.toBeNull()
+    // Finishes differ by colour and sheen, not texture: no grain or brushed image on any of them.
+    expect(silver.container.querySelector('[data-finish]')?.getAttribute('data-finish')).toBe('silver')
+    expect(silver.container.querySelector('image')).toBeNull()
   })
 })

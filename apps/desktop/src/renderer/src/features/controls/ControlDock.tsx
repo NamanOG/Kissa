@@ -19,6 +19,7 @@ export interface ControlDockProps {
 }
 
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
+import { useMinWidth } from '@renderer/hooks/useMinWidth'
 import { useT } from '@renderer/i18n'
 
 const Scrubber = memo(() => {
@@ -34,6 +35,7 @@ const Scrubber = memo(() => {
   displayTimeRef.current = displayTime
   const [isDragging, setIsDragging] = useState(false)
   const isDraggingRef = useRef(false)
+  const hoverRef = useRef<HTMLDivElement>(null)
 
   const railRef = useRef<HTMLDivElement>(null)
   const fillRef = useRef<HTMLDivElement>(null)
@@ -150,8 +152,23 @@ const Scrubber = memo(() => {
   }
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDraggingRef.current) return
+    if (!isDraggingRef.current) {
+      showHoverTime(e.clientX)
+      return
+    }
     updateScrubberVisuals(e.clientX)
+  }
+
+  // The time under the pointer, in a small label above the bar: written straight to the element
+  // (no React state per move), hidden while dragging and for sources that cannot seek.
+  const showHoverTime = (clientX: number): void => {
+    const rail = railRef.current
+    const label = hoverRef.current
+    if (!rail || !label || !seekable) return
+    const r = rail.getBoundingClientRect()
+    const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width))
+    label.textContent = formatTime(ratio * duration)
+    label.style.transform = `translateX(calc(${(ratio * r.width).toFixed(1)}px - 50%))`
   }
 
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -201,13 +218,25 @@ const Scrubber = memo(() => {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        <div className="w-full h-[3px] rounded-full relative overflow-hidden bg-ink/25 transition-[height] duration-micro group-hover:h-[5px]">
+        {/* The track grows on hover by scaling (no layout per frame); the fill scales with it. */}
+        <div className="w-full h-[3px] rounded-full relative overflow-hidden bg-ink/25 origin-center transition-transform duration-micro ease-out group-hover:scale-y-[1.67] group-focus-visible:scale-y-[1.67] motion-reduce:transition-none">
           <div
             ref={fillRef}
             className="h-full w-full rounded-full origin-left bg-tone"
             style={{ transform: 'scaleX(0)' }}
           />
         </div>
+
+        {seekable && (
+          <div
+            ref={hoverRef}
+            aria-hidden="true"
+            className={cn(
+              'kissa-tooltip pointer-events-none absolute bottom-full left-0 mb-1.5 rounded-md px-1.5 py-0.5 font-sans text-[11.5px] font-medium tabular-nums text-ink opacity-0 transition-opacity duration-150 max-[899px]:hidden',
+              !isDragging && 'group-hover:opacity-100'
+            )}
+          />
+        )}
 
         <div
           ref={thumbRef}
@@ -244,17 +273,22 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
   const toggleSideLyrics = usePlayerStore((s) => s.toggleSideLyrics)
   const setActiveView = usePlayerStore((s) => s.setActiveView)
   const hasTrack = currentTrack !== null
-  const isLyricsActive = showSideLyrics
+  // The side lyrics card exists only from 1100 px; narrower, the button opens the Lyrics view.
+  const wideDeck = useMinWidth(1100)
+  const isLyricsActive = wideDeck ? showSideLyrics : activeView === 'lyrics'
 
   const isExternalMedia = !!currentTrack?.sourceAppId
   const t = useT()
 
   return (
     <div
+      data-region="dock"
+      role="group"
+      aria-label={t('a11y.playback')}
       className={cn(
         'relative z-30 flex shrink-0 items-center justify-between border transform-gpu overflow-hidden',
-        'mx-2 mb-4 mt-2 h-[64px] min-[900px]:h-[72px] rounded-[36px] backdrop-blur-2xl backdrop-saturate-[1.6] shadow-2xl',
-        'px-4 min-[900px]:px-8 min-[1200px]:px-10 select-none transition-all duration-ui ease-primary',
+        'mx-2 mb-4 mt-2 h-[64px] min-[900px]:h-[72px] rounded-[36px] shadow-2xl',
+        'px-4 min-[900px]:px-8 min-[1200px]:px-10 select-none transition-[opacity,background-color,border-color] duration-ui ease-primary',
         !hasTrack && 'opacity-50 pointer-events-none',
         className
       )}
@@ -263,7 +297,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
       style={{
         // Glass: the room shows through, edged by a hairline and one highlight along the top.
         borderColor: 'rgba(255,255,255,0.08)',
-        backgroundColor: 'color-mix(in srgb, var(--dock-bg) 58%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--dock-bg) var(--dock-glass, 58%), transparent)',
         boxShadow:
           '0 24px 60px -24px rgba(0,0,0,0.7), 0 8px 20px -10px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.2)'
       }}
@@ -293,7 +327,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             }
           }}
           aria-label={t('dock.prev')}
-          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-dim hover:text-ink -m-2 p-2 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
+          className="transition-[color,transform] duration-100 ease-out cursor-pointer active:scale-[0.94] motion-reduce:active:scale-100 shrink-0 text-dim hover:text-ink -m-2 p-2 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 min-[900px]:h-[18px] min-[900px]:w-[18px] fill-current -translate-x-[1px]">
             <path d="M16 6.14v11.72c0 .77-.84 1.25-1.5.86l-9.8-5.86c-.64-.38-.64-1.34 0-1.72l9.8-5.86c.66-.39 1.5.09 1.5.86z" />
@@ -312,7 +346,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           }}
           aria-label={isPlaying ? t('dock.pause') : t('dock.play')}
           className={cn(
-            'relative h-10 w-10 min-[900px]:h-11 min-[900px]:w-11 rounded-full flex items-center justify-center cursor-pointer transition duration-ui ease-primary active:scale-[0.92] shrink-0 border hover:border-tone active:translate-y-px',
+            'relative h-10 w-10 min-[900px]:h-11 min-[900px]:w-11 rounded-full flex items-center justify-center cursor-pointer transition duration-ui ease-primary active:scale-[0.94] motion-reduce:active:scale-100 shrink-0 border hover:border-tone active:translate-y-px',
             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone'
           )}
           style={{
@@ -348,7 +382,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             }
           }}
           aria-label={t('dock.next')}
-          className="transition-colors cursor-pointer active:scale-95 shrink-0 text-dim hover:text-ink -m-2 p-2 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
+          className="transition-[color,transform] duration-100 ease-out cursor-pointer active:scale-[0.94] motion-reduce:active:scale-100 shrink-0 text-dim hover:text-ink -m-2 p-2 rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4 min-[900px]:h-[18px] min-[900px]:w-[18px] fill-current translate-x-[1px]">
             <path d="M8 6.14v11.72c0 .77.84 1.25 1.5.86l9.8-5.86c.64-.38.64-1.34 0-1.72L9.5 5.28C8.84 4.89 8 5.37 8 6.14z" />
@@ -371,7 +405,9 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
         <button
           type="button"
           onClick={() => {
-            if (activeView !== 'deck') {
+            if (!wideDeck) {
+              setActiveView(activeView === 'lyrics' ? 'deck' : 'lyrics')
+            } else if (activeView !== 'deck') {
               setActiveView('deck')
               if (!showSideLyrics) toggleSideLyrics()
             } else {
@@ -379,7 +415,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
             }
           }}
           className={cn(
-            'onboarding-lyrics flex h-8 items-center gap-1.5 px-2.5 min-[900px]:px-3 rounded-full transition duration-ui ease-primary cursor-pointer select-none active:scale-[0.97]',
+            'onboarding-lyrics flex h-8 items-center gap-1.5 px-2.5 min-[900px]:px-3 rounded-full transition duration-ui ease-primary cursor-pointer select-none active:scale-[0.97] motion-reduce:active:scale-100',
             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone',
             isLyricsActive
               ? 'bg-tone/20 text-tone shadow-[inset_0_0_0_0.5px_color-mix(in_srgb,var(--accent)_55%,transparent)]'
@@ -403,7 +439,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
 
         <div
           className={cn(
-            'flex h-8 items-center gap-2 px-2.5 min-[900px]:px-3 rounded-full transition-colors max-[899px]:hidden',
+            'flex h-8 items-center gap-1.5 px-2.5 min-[900px]:px-3 rounded-full transition-colors max-[899px]:hidden',
             'bg-white/[0.06] shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.12)]'
           )}
         >
@@ -451,7 +487,7 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           data-tour="party"
           onClick={() => usePlayerStore.getState().setPartyMode(true)}
           className={cn(
-            'flex items-center justify-center w-[26px] h-[26px] min-[900px]:w-[28px] min-[900px]:h-[28px] rounded-full border transition duration-ui ease-primary cursor-pointer select-none active:scale-95',
+            'relative flex items-center justify-center w-[26px] h-[26px] min-[900px]:w-[28px] min-[900px]:h-[28px] rounded-full border before:absolute before:-inset-[5px] before:rounded-full before:content-[""] transition duration-ui ease-primary cursor-pointer select-none active:scale-[0.94] motion-reduce:active:scale-100',
             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone',
             'border-transparent hover:border-panel-line bg-transparent hover:bg-[var(--surface)] text-dim hover:text-ink'
           )}
@@ -466,10 +502,10 @@ export const ControlDock = memo(({ className }: ControlDockProps) => {
           data-tour="fullscreen"
           onClick={() => usePlayerStore.getState().toggleFullscreen()}
           className={cn(
-            'flex items-center justify-center w-[26px] h-[26px] min-[900px]:w-[28px] min-[900px]:h-[28px] rounded-full border transition duration-ui ease-primary cursor-pointer select-none active:scale-95',
+            'relative flex items-center justify-center w-[26px] h-[26px] min-[900px]:w-[28px] min-[900px]:h-[28px] rounded-full border before:absolute before:-inset-[5px] before:rounded-full before:content-[""] transition duration-ui ease-primary cursor-pointer select-none active:scale-[0.94] motion-reduce:active:scale-100',
             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone',
             isFullscreen
-              ? 'border-tone bg-tone/15 text-tone shadow-[0_0_12px_var(--accent)]'
+              ? 'border-tone bg-tone/15 text-tone'
               : 'border-transparent hover:border-panel-line bg-transparent hover:bg-[var(--surface)] text-dim hover:text-ink'
           )}
           title={t('dock.fullscreenKey')}

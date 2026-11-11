@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COLOUR_FLOW, FLOW_SPEED, FRAG, flowUniforms } from '../fluidRenderer'
+import { COLOUR_FLOW, FLOW_SPEED, FRAG, WARP_MAX, flowUniforms } from '../fluidRenderer'
 
 /*
  * The Moving light seam came from the noise working on ever-growing clock values on the GPU:
@@ -126,5 +126,45 @@ describe('Moving light seam guard', () => {
     const spread = Math.max(...dirs) - Math.min(...dirs)
     expect(new Set(dirs.map((d) => d.toFixed(2))).size).toBe(6)
     expect(spread).toBeGreaterThan(Math.PI)
+  })
+})
+
+describe('Moving light warp does not fold', () => {
+  // The domain warp from the shader: w = p + (r - 0.5) * warp. Folding (the warp turning back on
+  // itself, which drew angular creases) shows as the mapping's Jacobian going negative.
+  const warpAt = (px: number, py: number, warp: number, f: ReturnType<typeof flowUniforms>): [number, number] => {
+    const qx = fbm(px * 0.8 + f.q[0], py * 0.8 + f.q[1])
+    const qy = fbm(px * 0.8 + f.q[2], py * 0.8 + f.q[3])
+    const rx = fbm(px + 2.2 * qx + f.r[0], py + 2.2 * qy + f.r[1])
+    const ry = fbm(px + 2.2 * qx + f.r[2], py + 2.2 * qy + f.r[3])
+    return [px + (rx - 0.5) * warp, py + (ry - 0.5) * warp]
+  }
+  const foldedShare = (warp: number): number => {
+    let folded = 0
+    let n = 0
+    const h = 1e-3
+    for (const time of [0, 7.3, 41, 300, 2400]) {
+      const f = flowUniforms(time)
+      for (let x = -0.9; x <= 0.9; x += 0.03) {
+        for (let y = -0.5; y <= 0.5; y += 0.03) {
+          const a = warpAt(x, y, warp, f)
+          const bx = warpAt(x + h, y, warp, f)
+          const by = warpAt(x, y + h, warp, f)
+          const det = ((bx[0] - a[0]) * (by[1] - a[1]) - (bx[1] - a[1]) * (by[0] - a[0])) / (h * h)
+          n++
+          if (det < 0) folded++
+        }
+      }
+    }
+    return folded / n
+  }
+
+  it('folds no more at the strongest bass warp (WARP_MAX) than at rest (0.9)', () => {
+    // The resting warp already turns over in a few tiny spots (unseen, under the field's blur);
+    // the bass may not add visibly more.
+    const rest = foldedShare(0.9)
+    const bass = foldedShare(WARP_MAX)
+    console.info(`folded share: rest ${(rest * 100).toFixed(2)} %, bass ${(bass * 100).toFixed(2)} %`)
+    expect(bass).toBeLessThanOrEqual(rest + 0.01)
   })
 })

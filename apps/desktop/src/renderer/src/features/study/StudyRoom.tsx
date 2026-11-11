@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import {
   Maximize,
   Minimize,
@@ -9,8 +10,7 @@ import {
   SkipBack,
   SkipForward,
   Volume2,
-  VolumeX,
-  X
+  VolumeX
 } from 'lucide-react'
 import { cn } from '@renderer/utils/cn'
 import { useT } from '@renderer/i18n'
@@ -33,9 +33,9 @@ import { ENVIRONMENTS, environmentInfo } from './scenes'
  */
 
 const ICON_BUTTON =
-  'flex h-10 w-10 items-center justify-center rounded-full text-white/50 transition-[color,background-color,transform] hover:bg-white/10 hover:text-white active:scale-95 focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone cursor-pointer app-region-no-drag'
+  'flex h-10 w-10 items-center justify-center rounded-full text-white/50 transition-[color,background-color,transform] hover:bg-white/10 hover:text-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone cursor-pointer app-region-no-drag'
 const GLASS =
-  'rounded-full border border-white/10 bg-black/40 shadow-[0_24px_48px_rgba(0,0,0,0.45)] backdrop-blur-3xl'
+  'rounded-full border border-white/10 bg-black/50 shadow-[0_24px_48px_rgba(0,0,0,0.45)] backdrop-blur-md'
 
 export function StudyRoom(): React.JSX.Element {
   const tx = useT()
@@ -89,8 +89,9 @@ export function StudyRoom(): React.JSX.Element {
 
       <header
         className={cn(
-          'absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-4 px-8 pt-6 app-region-drag transition-opacity duration-700',
-          // Narrow window: below the Windows caption buttons, and tighter.
+          // Below the 32 px caption strip, so the room's own controls never stack under the capsule's close.
+          'absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-4 px-8 pt-11 app-region-drag transition-opacity duration-700',
+          // Narrow window: tighter.
           'max-[899px]:gap-2 max-[899px]:px-4 max-[899px]:pt-11',
           recede
         )}
@@ -102,7 +103,7 @@ export function StudyRoom(): React.JSX.Element {
           <div
             role="radiogroup"
             aria-label={tx('focus.weather')}
-            className="flex items-center gap-0.5 rounded-full border border-white/10 bg-black/30 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] backdrop-blur-xl app-region-no-drag"
+            className="flex items-center gap-0.5 rounded-full border border-white/10 bg-black/30 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] backdrop-blur-md app-region-no-drag"
           >
             {ENVIRONMENTS.map((env) => (
               <button
@@ -113,7 +114,7 @@ export function StudyRoom(): React.JSX.Element {
                 title={env.keepsTime}
                 onClick={() => setPrefs({ environment: env.id })}
                 className={cn(
-                  'h-7 rounded-full px-3.5 font-sans text-[13px] font-medium transition-colors cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone',
+                  'h-7 rounded-full px-3.5 font-sans text-[13px] font-medium transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone',
                   env.id === info.id
                     ? 'bg-[linear-gradient(180deg,rgba(255,255,255,0.24),rgba(255,255,255,0.14))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_2px_8px_rgba(0,0,0,0.35)]'
                     : 'text-white/60 hover:text-white'
@@ -167,14 +168,15 @@ export function StudyRoom(): React.JSX.Element {
           >
             {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
           </button>
+          {/* A labelled Done, not a second X under the window's own close. */}
           <button
             type="button"
-            className={ICON_BUTTON}
+            className="ml-1 h-9 cursor-pointer rounded-full bg-white/10 px-4 text-[13px] font-medium text-white/90 transition-[background-color,transform] duration-100 ease-out hover:bg-white/15 active:scale-[0.97] motion-reduce:active:scale-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone app-region-no-drag"
             onClick={leave}
             aria-label={tx('focus.leave')}
             title={tx('focus.leaveKey')}
           >
-            <X className="h-4 w-4" />
+            {tx('focus.done')}
           </button>
         </div>
       </header>
@@ -249,16 +251,21 @@ function RecordCorner({ compact = false }: { compact?: boolean }): React.JSX.Ele
             className="h-full w-auto aspect-square"
           />
         </div>
+        {/* The record slides out of its sleeve by transform only: this full-width layer moves by a
+            share of its own width (8 % of the stage), which used to be an animated `left`. */}
         <motion.div
-          className="absolute top-[3%] h-[94%] aspect-square"
+          className="pointer-events-none absolute inset-0"
           initial={false}
-          animate={{ left: out ? '38%' : '30%' }}
+          animate={{ x: out ? '8%' : '0%' }}
           transition={{ duration: reduceMotion ? 0 : 1.1, ease: [0.22, 1, 0.36, 1] }}
         >
-          <VinylEngine
-            albumArt={track?.artworkUrl ?? albumPlaceholder}
-            className="h-full w-full drop-shadow-[0_26px_40px_rgba(0,0,0,0.65)]"
-          />
+          <div className="pointer-events-auto absolute left-[30%] top-[3%] h-[94%] aspect-square">
+            <span aria-hidden="true" className="pointer-events-none absolute inset-[1.5%] rounded-full shadow-[0_26px_40px_rgba(0,0,0,0.65)]" />
+            <VinylEngine
+              albumArt={track?.artworkUrl ?? albumPlaceholder}
+              className="h-full w-full"
+            />
+          </div>
         </motion.div>
       </div>
       <div className={cn('flex w-full flex-col items-center text-center', compact ? 'mt-4' : 'mt-8')}>

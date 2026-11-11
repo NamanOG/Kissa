@@ -1,4 +1,5 @@
 import type { PersistStorage, StorageValue } from 'zustand/middleware'
+import { afterOpening, openingHeld } from '@renderer/features/startup/openingGate'
 
 /**
  * localStorage for zustand `persist` that saves later instead of on every change.
@@ -32,6 +33,11 @@ export function createDeferredStorage<S>(delayMs = 1500): PersistStorage<S> {
     if (timer !== undefined) return
     timer = setTimeout(() => {
       timer = undefined
+      // Not while the opening plays: serialising a big store there was a 60 ms frame.
+      if (openingHeld()) {
+        void afterOpening().then(schedule)
+        return
+      }
       const idle = (globalThis as { requestIdleCallback?: typeof requestIdleCallback })
         .requestIdleCallback
       if (idle) idle(() => flush(), { timeout: 1000 })

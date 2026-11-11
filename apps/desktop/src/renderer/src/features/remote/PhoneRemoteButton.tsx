@@ -1,6 +1,8 @@
+import { useReturnFocus } from '@renderer/hooks/useReturnFocus'
 import { memo, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { Smartphone } from 'lucide-react'
 import { HardwareSwitch } from '@renderer/components/ui/HardwareSwitch'
 import { IconTile, TILE } from '@renderer/components/ui/IconTile'
@@ -78,6 +80,7 @@ export const PhoneRemoteButton = memo(() => {
   const reduce = useReducedMotion()
   const [open, setOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  useReturnFocus(open, buttonRef)
   const panelRef = useRef<HTMLDivElement>(null)
   const [anchor, setAnchor] = useState<{ left: number; bottom: number } | null>(null)
   const titleId = useId()
@@ -141,7 +144,7 @@ export const PhoneRemoteButton = memo(() => {
 
   const width = 340
   const left = anchor
-    ? Math.max(12, Math.min(window.innerWidth - width - 12, anchor.left - width / 2))
+    ? Math.max(24, Math.min(window.innerWidth - width - 24, anchor.left - width / 2))
     : 0
   const connected = status.on && status.phones > 0
   const host = status.url?.replace(/^http:\/\//, '') ?? ''
@@ -158,7 +161,7 @@ export const PhoneRemoteButton = memo(() => {
         title={`${t('remote.title')}: ${state}`}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'relative flex items-center justify-center w-[26px] h-[26px] min-[900px]:w-[28px] min-[900px]:h-[28px] rounded-full border transition duration-ui ease-primary cursor-pointer select-none active:scale-95',
+          'relative flex items-center justify-center w-[26px] h-[26px] min-[900px]:w-[28px] min-[900px]:h-[28px] rounded-full border before:absolute before:-inset-[5px] before:rounded-full before:content-[""] transition duration-ui ease-primary cursor-pointer select-none active:scale-95',
           'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone',
           open || status.on
             ? 'border-tone/60 bg-tone/15 text-tone'
@@ -188,9 +191,9 @@ export const PhoneRemoteButton = memo(() => {
               data-testid="phone-remote-panel"
               initial={{ opacity: 0, y: reduce ? 0 : 8, scale: reduce ? 1 : 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: reduce ? 0 : 6 }}
-              transition={{ duration: reduce ? 0.12 : 0.26, ease: EASE }}
-              style={{ left, bottom: anchor.bottom, width, transformOrigin: 'bottom center' }}
+              exit={{ opacity: 0, y: reduce ? 0 : 4, transition: { duration: reduce ? 0.1 : 0.14, ease: [0.4, 0, 1, 1] } }}
+              transition={{ duration: reduce ? 0.12 : 0.22, ease: EASE }}
+              style={{ left, bottom: anchor.bottom, width, transformOrigin: `${anchor.left - left}px 100%` }}
               className="fixed z-[90] max-h-[calc(100vh-120px)] overflow-y-auto overflow-x-hidden rounded-[22px] border border-white/[0.09] bg-[#16120f]/[0.93] p-4 shadow-[0_30px_80px_-24px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl backdrop-saturate-150"
             >
               <div
@@ -205,19 +208,26 @@ export const PhoneRemoteButton = memo(() => {
                 }}
               />
               <div className="relative">
-                <p
-                  id={titleId}
-                  className="font-kissa-editorial text-[22px] leading-tight tracking-[-0.015em] text-ink"
-                >
-                  {t('remote.title')}
-                </p>
-                <p
-                  className="mt-1 text-[12.5px] text-ink/65"
-                  role="status"
-                  data-testid="phone-remote-state"
-                >
-                  {state}
-                </p>
+                {/* The title and its state on one row: no lone status line under the title. */}
+                <div className="flex items-baseline justify-between gap-3">
+                  <p
+                    id={titleId}
+                    className="font-kissa-editorial text-[22px] leading-tight tracking-[-0.015em] text-ink"
+                  >
+                    {t('remote.title')}
+                  </p>
+                  <p
+                    className="inline-flex shrink-0 items-center gap-1.5 text-[12.5px] text-ink/65"
+                    role="status"
+                    data-testid="phone-remote-state"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={cn('h-1.5 w-1.5 rounded-full', status.on ? 'bg-tone' : 'bg-ink/30')}
+                    />
+                    {state}
+                  </p>
+                </div>
 
                 <div className="mt-2 flex items-center gap-3 border-b border-white/[0.06] py-2.5">
                   <IconTile icon={Smartphone} tint={TILE.sky} />

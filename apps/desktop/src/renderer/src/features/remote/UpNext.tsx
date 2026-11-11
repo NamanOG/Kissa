@@ -1,3 +1,4 @@
+import { ICON_ACTION } from '@renderer/components/ui/iconAction'
 import { memo, useState } from 'react'
 import { ListOrdered } from 'lucide-react'
 import { useT } from '@renderer/i18n'
@@ -96,7 +97,7 @@ export const UpNextList = memo(() => {
 })
 UpNextList.displayName = 'UpNextList'
 
-export const UpNextButton = memo(() => {
+export const UpNextButton = memo(({ iconOnly = false }: { iconOnly?: boolean }) => {
   const t = useT()
   const [open, setOpen] = useState(false)
   const queue = useQueueSnapshot()
@@ -112,10 +113,16 @@ export const UpNextButton = memo(() => {
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(true)}
-        className="inline-flex min-h-8 items-center gap-1.5 rounded-full px-2.5 text-[12px] text-dim hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone"
+        aria-label={iconOnly ? label : undefined}
+        title={iconOnly ? label : undefined}
+        className={
+          iconOnly
+            ? ICON_ACTION
+            : 'inline-flex min-h-8 items-center gap-1.5 rounded-full px-2.5 text-[12px] text-dim hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone'
+        }
       >
-        <ListOrdered className="h-3.5 w-3.5" aria-hidden="true" />
-        {label}
+        <ListOrdered className={iconOnly ? 'h-4 w-4' : 'h-3.5 w-3.5'} strokeWidth={iconOnly ? 1.75 : undefined} aria-hidden="true" />
+        {!iconOnly && label}
       </button>
       <TracklistDialog open={open} onClose={() => setOpen(false)} label={label} wide>
         <UpNextList />

@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react'
+import { useSheet } from '@renderer/features/background/sheetCount'
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -17,6 +18,8 @@ function focusables(root: HTMLElement): HTMLElement[] {
  * Escape handling stays with each overlay.
  */
 export function useDialogFocus(ref: RefObject<HTMLElement | null>, active: boolean): void {
+  // Every overlay that traps focus is a full sheet: Moving light holds still beneath it.
+  useSheet(active)
   useEffect(() => {
     if (!active) return
     const opener = document.activeElement as HTMLElement | null

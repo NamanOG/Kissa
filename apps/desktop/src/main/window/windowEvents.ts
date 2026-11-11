@@ -41,18 +41,12 @@ export function attachVisibilityEventSync(
 }
 
 export function setupWindowEvents(window: BrowserWindow, isHidden: boolean = false): void {
-  window.on('ready-to-show', () => {
-    if (!isHidden) {
-      window.show()
-    }
-  })
-
-  if (!window.isVisible() && !isHidden) {
+  // The window is revealed by WindowManager once its first frame (the opening) has painted:
+  // never earlier, so it is never seen blank. A long safety net covers a page that never paints.
+  if (!isHidden) {
     setTimeout(() => {
-      if (!window.isDestroyed() && !window.isVisible()) {
-        window.show()
-      }
-    }, 500)
+      if (!window.isDestroyed() && !window.isVisible()) window.show()
+    }, 12_000)
   }
 
   window.webContents.setWindowOpenHandler((details) => {
@@ -62,6 +56,7 @@ export function setupWindowEvents(window: BrowserWindow, isHidden: boolean = fal
 
   attachFullscreenEventSync(window)
   attachVisibilityEventSync(window)
+  attachMaximizeEventSync(window)
 
   window.on('close', (event) => {
     const wm = WindowManager.getInstance()
@@ -78,4 +73,35 @@ export function setupWindowEvents(window: BrowserWindow, isHidden: boolean = fal
       window.hide()
     }
   })
+}
+
+export type WindowControl = 'minimize' | 'toggle-maximize' | 'close'
+
+/**
+ * Kissa draws its own caption buttons (no native overlay), so the page asks the window to
+ * minimise, maximise or restore, or close. Close goes through the window's normal close path, so
+ * "run in the background" and the screensaver guard still apply.
+ */
+export function applyWindowControl(
+  window: Pick<BrowserWindow, 'isDestroyed' | 'minimize' | 'isMaximized' | 'maximize' | 'unmaximize' | 'close'> | null,
+  action: unknown
+): void {
+  if (!window || window.isDestroyed()) return
+  if (action === 'minimize') window.minimize()
+  else if (action === 'toggle-maximize') {
+    if (window.isMaximized()) window.unmaximize()
+    else window.maximize()
+  } else if (action === 'close') window.close()
+}
+
+/** Tells the page whether its window is maximised, so the caption button shows Restore. */
+export function attachMaximizeEventSync(
+  window: Pick<BrowserWindow, 'isDestroyed' | 'on' | 'webContents' | 'isMaximized'>
+): void {
+  const send = (): void => {
+    if (window.isDestroyed()) return
+    window.webContents.send('kissa:window-maximized', window.isMaximized())
+  }
+  for (const event of ['maximize', 'unmaximize', 'restore'] as const) window.on(event as 'maximize', send)
+  window.webContents.on('did-finish-load', send)
 }

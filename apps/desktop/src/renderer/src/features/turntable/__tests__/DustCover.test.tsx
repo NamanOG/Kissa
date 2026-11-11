@@ -47,6 +47,17 @@ describe('the dust lid', () => {
     expect(useLidStore.getState().closed).toBe(false)
   })
 
+  it('reads as acrylic through light alone: a lit edge, a reflection, no blur or texture', () => {
+    render(<Deck />)
+    fireEvent.keyDown(screen.getByTestId('lid-key'), { key: 'Enter' })
+    const lid = screen.getByTestId('dust-cover')
+    for (const part of ['sheet', 'reflection', 'edge', 'front']) {
+      expect(lid.querySelector(`[data-lid-${part}]`)).not.toBeNull()
+    }
+    const styles = [lid, ...lid.querySelectorAll<HTMLElement>('*')].map((el) => el.getAttribute('style') ?? '')
+    expect(styles.some((s) => /backdrop-filter|blur\(|url\(/.test(s))).toBe(false)
+  })
+
   it('closes by itself after ten quiet minutes, not before', () => {
     render(<Deck />)
     act(() => vi.advanceTimersByTime(DUST_COVER_DELAY_MS - 1000))

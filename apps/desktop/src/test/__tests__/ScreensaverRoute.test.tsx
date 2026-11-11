@@ -71,7 +71,8 @@ describe('Screensaver Route Integration', () => {
       expect(screen.queryByRole('main', { name: 'Listening Display' })).not.toBeInTheDocument()
     })
 
-    expect(screen.getByTitle('Drag the tonearm to drop the needle and seek')).toBeInTheDocument()
+    // The app's tooltip layer takes over title attributes (features/tooltip), so look for its text.
+    expect(document.querySelector('[data-kissa-tip="Drag the tonearm to drop the needle and seek"]')).not.toBeNull()
   })
 
   it('toggles between album art and synced lyrics via L key in screensaver mode without exiting', async () => {

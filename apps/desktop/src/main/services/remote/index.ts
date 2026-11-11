@@ -1,26 +1,28 @@
-import { app, BrowserWindow, ipcMain, net } from 'electron'
+import { BrowserWindow, ipcMain, net } from 'electron'
 import { readFileSync } from 'fs'
 import { execFile } from 'child_process'
-import { createRequire } from 'module'
-import { join } from 'path'
 import { MediaDetectionService } from '../MediaDetectionService'
 import { WindowManager } from '../../window/WindowManager'
 import { PhoneRemoteService } from './PhoneRemoteService'
-import { PHONE_FONT_FILES } from './phonePage'
+// The phone page's two typefaces, copied into the build by electron-vite (?asset), so the app no
+// longer ships the whole font packages beside the window's own bundled copies.
+import sansFontPath from '@fontsource-variable/archivo/files/archivo-latin-standard-normal.woff2?asset'
+import serifFontPath from '@fontsource-variable/newsreader/files/newsreader-latin-opsz-normal.woff2?asset'
 import type { PhoneRemoteStatus } from '../../../types/remote'
 
 const VOLUME_POLL_MS = 1500
 
 let remote: PhoneRemoteService | null = null
 const fonts = new Map<string, Buffer | null>()
+const PHONE_FONT_PATHS: Record<string, string> = { 'sans.woff2': sansFontPath, 'serif.woff2': serifFontPath }
 
 function readFont(name: string): Buffer | null {
   if (fonts.has(name)) return fonts.get(name) ?? null
   let bytes: Buffer | null = null
-  const id = PHONE_FONT_FILES[name]
-  if (id) {
+  const file = PHONE_FONT_PATHS[name]
+  if (file) {
     try {
-      bytes = readFileSync(createRequire(join(app.getAppPath(), 'package.json')).resolve(id))
+      bytes = readFileSync(file)
     } catch {
       bytes = null
     }

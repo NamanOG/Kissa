@@ -17,7 +17,7 @@ export class Wind {
   }
 }
 
-// ---- Rain ---------------------------------------------------------------------
+// Rain
 
 interface Drop {
   x: number
@@ -72,7 +72,7 @@ export class RainLayer {
   }
 }
 
-// ---- Snow ---------------------------------------------------------------------
+// Snow
 
 interface Flake {
   x: number
@@ -133,7 +133,7 @@ export class SnowLayer {
   }
 }
 
-// ---- Falling leaves ---------------------------------------------------------------
+// Falling leaves
 
 interface Leaf {
   x: number
@@ -217,7 +217,7 @@ export class LeafLayer {
   }
 }
 
-// ---- Shooting stars -----------------------------------------------------------------
+// Shooting stars
 
 interface Meteor {
   x: number

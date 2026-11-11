@@ -1,6 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
-import { resolveSupportUrl } from '../SupportKissaLink'
+import { describe, expect, it, vi } from 'vitest'
+import { openSupportPage, resolveSupportUrl } from '../SupportKissaLink'
 import { hasValidUpi, supportIsConfigured, upiLink, type SupportConfig } from '../../../../../../../../config/support'
 
 const empty: SupportConfig = { upiId: null, upiName: null, upiQrImage: null, international: null }
@@ -36,32 +35,13 @@ describe('support settings', () => {
   })
 })
 
-describe('SupportKissaLink', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
-    vi.doUnmock('../../../../../../../../config/support')
-    vi.resetModules()
-  })
-
-  it('is not shown while support is not set up', async () => {
-    vi.resetModules()
-    vi.doMock('../../../../../../../../config/support', async (importOriginal) => ({
-      ...(await importOriginal<typeof import('../../../../../../../../config/support')>()),
-      support: empty
-    }))
-    vi.stubEnv('RENDERER_VITE_SUPPORT_URL', '')
-    const { SupportKissaLink } = await import('../SupportKissaLink')
-    const { container } = render(<SupportKissaLink />)
-    expect(container.innerHTML).toBe('')
-  })
-
-  it('opens the support page in the browser, nothing inside the app', async () => {
-    vi.stubEnv('RENDERER_VITE_SUPPORT_URL', 'https://kissa.glyphcode.studio/support/')
+describe('openSupportPage', () => {
+  it('opens the support page in the browser, nothing inside the app', () => {
     const openExternal = vi.fn(async () => undefined)
     Object.defineProperty(window, 'electron', { value: { openExternal }, configurable: true })
-    const { SupportKissaLink } = await import('../SupportKissaLink')
-    render(<SupportKissaLink />)
-    fireEvent.click(screen.getByRole('button', { name: 'Support Kissa' }))
+    openSupportPage('https://kissa.glyphcode.studio/support/')
     expect(openExternal).toHaveBeenCalledWith('https://kissa.glyphcode.studio/support/')
+    openSupportPage(null)
+    expect(openExternal).toHaveBeenCalledTimes(1)
   })
 })

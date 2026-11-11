@@ -1,0 +1,56 @@
+name: Report a bug
+description: Something in Kissa does not work as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. When this is opened from Kissa (Settings > About > Report a bug), the version, build and Windows version below are filled in for you.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you saw, and what you expected to see instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The shortest way to make it happen again, if you know one.
+      placeholder: |
+        1. Play a song in Apple Music
+        2. Open Lyrics
+        3. ...
+  - type: dropdown
+    id: player
+    attributes:
+      label: Music player
+      description: What was playing the music, if it matters.
+      options:
+        - Apple Music
+        - Spotify
+        - An album played in Kissa
+        - Another player
+        - Not related to playback
+  - type: input
+    id: version
+    attributes:
+      label: Kissa version
+      placeholder: "5.1.0"
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: Build
+      description: Microsoft Store or GitHub download.
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Screenshots or a short screen recording help a lot. Please leave out anything private.

@@ -1,5 +1,7 @@
+import { SPRING_INDICATOR } from '@renderer/utils/motion'
 import React, { useId, useRef } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { cn } from '@renderer/utils/cn'
 
 export interface SegmentedTab<T extends string> {
@@ -18,9 +20,10 @@ export interface SegmentedTabsProps<T extends string> {
   size?: 'sm' | 'md'
   /**
    * 'outline' is the quiet ring used in Settings. 'inset' is a recessed track with a raised
-   * plate, filling its row, for a panel's main sections.
+   * plate, filling its row, for a panel's main sections. 'glass' is a recessed glass track with
+   * a thumb filled in the room's accent, filling its row (32 px), for a setting in a popover.
    */
-  appearance?: 'outline' | 'inset'
+  appearance?: 'outline' | 'inset' | 'glass'
   className?: string
 }
 
@@ -65,7 +68,9 @@ export function SegmentedTabs<T extends string>({
       className={cn(
         appearance === 'outline'
           ? 'inline-flex select-none items-center gap-0.5 rounded-full border border-ink/[0.14] p-[3px]'
-          : 'flex w-full select-none items-center gap-0.5 rounded-[11px] bg-black/25 p-[3px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.35),inset_0_0_0_1px_rgba(255,255,255,0.04),0_1px_0_rgba(255,255,255,0.04)]',
+          : appearance === 'glass'
+            ? 'flex w-full select-none items-center gap-0.5 rounded-full bg-black/30 p-[3px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.4),inset_0_0_0_1px_rgba(255,255,255,0.05),0_1px_0_rgba(255,255,255,0.05)]'
+            : 'flex w-full select-none items-center gap-0.5 rounded-[11px] bg-black/25 p-[3px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.35),inset_0_0_0_1px_rgba(255,255,255,0.04),0_1px_0_rgba(255,255,255,0.04)]',
         className
       )}
     >
@@ -85,8 +90,10 @@ export function SegmentedTabs<T extends string>({
             onKeyDown={(e) => onKeyDown(e, index)}
             className={cn(
               'relative cursor-pointer rounded-full font-medium outline-none transition-colors duration-micro',
-              'focus-visible:outline focus-visible:outline-1 focus-visible:outline-ink/60',
-              appearance === 'inset'
+              'focus-visible:outline focus-visible:outline-2 focus-visible:outline-ink/60',
+              appearance === 'glass'
+                ? 'h-[26px] flex-1 whitespace-nowrap px-3 text-[12.5px] tracking-[-0.005em]'
+                : appearance === 'inset'
                 ? 'h-[30px] flex-1 rounded-[8px] px-3 text-[12.5px] tracking-[-0.005em]'
                 : size === 'md'
                   ? 'h-7 px-4 text-[13px]'
@@ -98,10 +105,12 @@ export function SegmentedTabs<T extends string>({
               <motion.div
                 layoutId={plateId}
                 aria-hidden="true"
-                transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 34 }}
+                transition={reduceMotion ? { duration: 0 } : SPRING_INDICATOR}
                 className={cn(
                   'absolute inset-0',
-                  appearance === 'inset'
+                  appearance === 'glass'
+                    ? 'rounded-full bg-[color-mix(in_srgb,var(--accent)_34%,rgba(255,255,255,0.06))] shadow-[0_1px_3px_rgba(0,0,0,0.35),inset_0_0.5px_0_rgba(255,255,255,0.2)]'
+                    : appearance === 'inset'
                     ? 'rounded-[8px] bg-[linear-gradient(180deg,rgba(255,255,255,0.13),rgba(255,255,255,0.08))] shadow-[0_1px_3px_rgba(0,0,0,0.35),0_0_0_0.5px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.18)]'
                     : 'rounded-full bg-ink/[0.11]'
                 )}

@@ -1,3 +1,4 @@
+import { useSheet } from '@renderer/features/background/sheetCount'
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Search, Upload, X } from 'lucide-react'
@@ -18,6 +19,7 @@ export function LyricsRecovery({ request, onClose, onSaved }: Props): React.JSX.
   const input = useRef<HTMLInputElement>(null)
   const revision = useRef(0)
   const heading = useId()
+  useSheet(true)
   const [query, setQuery] = useState(`${request.title} ${request.artist}`)
   const [candidates, setCandidates] = useState<LyricsCandidate[]>([])
   const [searched, setSearched] = useState(false)

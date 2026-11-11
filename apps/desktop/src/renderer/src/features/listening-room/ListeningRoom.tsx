@@ -1,5 +1,6 @@
 import { memo, useState, useEffect } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { FullscreenMetadata } from './FullscreenMetadata'
 import { FullscreenProgress } from './FullscreenProgress'
 import { FullscreenControls } from './FullscreenControls'

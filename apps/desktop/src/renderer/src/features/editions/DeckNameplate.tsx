@@ -26,10 +26,12 @@ export const DeckNameplate = memo((): React.JSX.Element => {
         aria-label={`Kissa Edition: ${name}. Change your turntable`}
         aria-expanded={isOpen}
         title={tl('a11y.changeTurntable')}
-        className="group pointer-events-auto flex h-full cursor-pointer items-center gap-[0.7em] rounded-[3px] px-3 font-mono text-[7.5px] font-bold uppercase tracking-[0.32em] text-[color:var(--deck-plate,#5f5146)] [filter:drop-shadow(0_1px_0_var(--deck-plate-shadow,rgba(0,0,0,0.85)))] transition-[filter,color] duration-micro ease-primary hover:brightness-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-[#d7a76c]"
+        // Printed on the front edge in the app's sans, softly lit, like a modern product mark.
+        className="group pointer-events-auto flex h-full cursor-pointer items-center gap-[0.7em] rounded-[3px] px-3 font-sans text-[9.5px] font-medium tracking-[0.01em] text-[color:var(--deck-plate,#b0a08c)] opacity-90 transition-[opacity] duration-micro ease-primary hover:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#d7a76c]"
+        data-deck-badge=""
       >
         <span>Kissa</span>
-        <span aria-hidden="true" className="h-[3px] w-[3px] rounded-full bg-current opacity-70" />
+        <span aria-hidden="true" className="h-[3px] w-[3px] rounded-full bg-current opacity-50" />
         <span>{name}</span>
       </button>
     </div>

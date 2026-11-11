@@ -1,5 +1,6 @@
 import { memo } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { cn } from '@renderer/utils/cn'
 import { tl } from '@renderer/i18n'
@@ -14,8 +15,8 @@ export const DisplayMetadata = memo(({ className, align = 'left' }: DisplayMetad
   const prefersReducedMotion = useReducedMotion()
 
   const isIdle = !currentTrack || currentTrack.sourceAppId === 'kissa-idle'
-  const title = isIdle ? 'Nothing playing' : currentTrack.title
-  const artist = isIdle ? 'Start a song in any app' : currentTrack.artist
+  const title = isIdle ? tl('display.idleTitle') : currentTrack.title
+  const artist = isIdle ? tl('display.idleHint') : currentTrack.artist
   const album =
     !isIdle && currentTrack.album && currentTrack.album.toLowerCase() !== title.toLowerCase()
       ? currentTrack.album

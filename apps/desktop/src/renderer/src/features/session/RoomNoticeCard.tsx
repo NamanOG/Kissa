@@ -1,5 +1,7 @@
+import { SPRING_CARD } from '@renderer/utils/motion'
 import React, { useEffect } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { X } from 'lucide-react'
 import { useNoticeStore } from '@renderer/stores/noticeStore'
 import { useT } from '@renderer/i18n'
@@ -19,7 +21,7 @@ export function RoomNoticeCard(): React.JSX.Element {
   }, [notice, hovered, dismiss])
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[96px] z-[60] flex justify-center px-4">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[108px] z-[60] flex justify-center px-4">
       <AnimatePresence>
         {notice && (
           <motion.div
@@ -32,10 +34,10 @@ export function RoomNoticeCard(): React.JSX.Element {
             initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 26 }}
+            transition={SPRING_CARD}
             className="kissa-sheet pointer-events-auto relative flex w-full max-w-[440px] items-center gap-4 overflow-hidden rounded-[22px] border border-panel-line p-3.5 pr-4 shadow-[var(--panel-shadow)]"
           >
-            <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-tone/70 to-transparent" />
+            <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.14] to-transparent" />
             {notice.covers && notice.covers.length > 0 && (
               <div className="relative h-14 flex-none" style={{ width: 56 + (notice.covers.length - 1) * 14 }}>
                 {notice.covers.slice(0, 3).map((src, i, all) => (
@@ -70,7 +72,7 @@ export function RoomNoticeCard(): React.JSX.Element {
                   notice.action?.run()
                   dismiss(notice.id)
                 }}
-                className="h-8 flex-none cursor-pointer rounded-full bg-tone px-3.5 text-[12px] font-semibold text-[#170f09] shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] transition-[filter,transform] hover:brightness-110 active:scale-95"
+                className="h-8 flex-none cursor-pointer rounded-full bg-tone px-3.5 text-[12px] font-semibold text-[#170f09] shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] transition-[filter,transform] hover:brightness-110 active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-tone/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--deck-bg)]"
               >
                 {notice.action.label}
               </button>

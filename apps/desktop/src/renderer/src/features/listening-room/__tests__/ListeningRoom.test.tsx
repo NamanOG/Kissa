@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { ListeningRoom } from '../ListeningRoom'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 
@@ -65,16 +65,15 @@ describe('ListeningRoom', () => {
     expect(main).toHaveClass('cursor-none')
   })
 
-  it('reveals controls and cursor on pointer move', () => {
+  it('reveals controls and cursor on a real pointer move, not on a key press', () => {
     render(<ListeningRoom />)
     const main = screen.getByRole('main', { name: 'Listening Room' })
-    
-    import('@testing-library/react').then(({ fireEvent }) => {
-      fireEvent.pointerMove(main)
-      expect(main).not.toHaveClass('cursor-none')
-      const exitBtn = screen.getByRole('button', { name: /exit fullscreen/i })
-      const wrapper = exitBtn.parentElement?.parentElement
-      expect(wrapper).toHaveClass('opacity-100')
-    })
+
+    fireEvent.keyDown(window, { key: ' ' })
+    expect(main).toHaveClass('cursor-none')
+
+    fireEvent.pointerMove(main, { clientX: 100, clientY: 100 })
+    fireEvent.pointerMove(main, { clientX: 160, clientY: 130 })
+    expect(main).not.toHaveClass('cursor-none')
   })
 })

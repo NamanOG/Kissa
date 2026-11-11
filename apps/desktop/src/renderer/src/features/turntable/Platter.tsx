@@ -6,89 +6,61 @@ export interface PlatterProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Machined Aluminum Platter Cylinder.
- * Renders the realistic heavy metal platter beneath the vinyl record.
- * Rather than a thick ring on top, this models the actual 3D cylindrical platter:
- * a razor-thin polished top chamfer lip and a brushed aluminum vertical side face
- * with directional metallic reflections and contact shadows on the plinth.
+ * The platter: dark satin aluminium, only a few pixels wider than the record, so it reads as a
+ * quiet lip round it and the record stays the subject. One soft sheen from the room's light and a
+ * single fine highlight on its edge. Static: the light does not turn with the platter, so
+ * nothing here repaints.
  */
-export const Platter = memo(({ className, style, size = '100%', ...props }: PlatterProps): React.JSX.Element => {
+export const Platter = memo(({ className, style, size = '101.8%', ...props }: PlatterProps): React.JSX.Element => {
   return (
     <div
       className={cn('absolute rounded-full select-none pointer-events-none', className)}
       style={{ width: size, height: size, ...style }}
+      data-platter=""
       {...props}
     >
-      <svg
-        className="absolute inset-0 w-full h-full overflow-visible"
-        viewBox="0 0 400 400"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <linearGradient id="platter-side-metal" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#141416" />
-            <stop offset="20%" stopColor="#2c2c34" />
-            <stop offset="40%" stopColor="#484854" />
-            <stop offset="60%" stopColor="#303038" />
-            <stop offset="85%" stopColor="#202024" />
-            <stop offset="100%" stopColor="#121214" />
-          </linearGradient>
-
-          <radialGradient id="platter-top-lip" cx="35%" cy="30%" r="65%">
-            <stop offset="96%" stopColor="#121215" />
-            <stop offset="98.5%" stopColor="#3a3a44" />
-            <stop offset="100%" stopColor="#1e1e22" />
-          </radialGradient>
-
-          <radialGradient id="platter-face-metal" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#141416" />
-            <stop offset="85%" stopColor="#101012" />
-            <stop offset="100%" stopColor="#0a0a0c" />
-          </radialGradient>
-
-          {/* The platter's machined edge: lit where the room light falls (top left), in shade
-              opposite, like turned aluminium. */}
-          <linearGradient id="platter-edge-metal" x1="15%" y1="5%" x2="85%" y2="95%">
-            <stop offset="0%" stopColor="#d9d6d0" />
-            <stop offset="22%" stopColor="#8d8a86" />
-            <stop offset="50%" stopColor="#3c3b3d" />
-            <stop offset="78%" stopColor="#6d6a67" />
-            <stop offset="100%" stopColor="#2a292b" />
-          </linearGradient>
-
-          <radialGradient id="platter-well-shadow" cx="50%" cy="50%" r="50%">
-            <stop offset="78%" stopColor="rgba(0,0,0,0.85)" />
-            <stop offset="92%" stopColor="rgba(0,0,0,0.3)" />
-            <stop offset="100%" stopColor="transparent" />
-          </radialGradient>
-        </defs>
-
-        <ellipse cx="200" cy="204" rx="197" ry="196" fill="url(#platter-well-shadow)" />
-
-        <path
-          d="M 6 200 A 194 194 0 0 0 394 200 L 394 205 A 194 194 0 0 1 6 205 Z"
-          fill="url(#platter-side-metal)"
-        />
-        <path
-          d="M 8 205 A 192 192 0 0 0 392 205"
-          fill="none"
-          stroke="rgba(0,0,0,0.8)"
-          strokeWidth="1.2"
-        />
-
-        <circle cx="200" cy="200" r="194" fill="url(#platter-face-metal)" />
-        <circle cx="200" cy="200" r="194" fill="url(#platter-top-lip)" />
-
-        <circle
-          cx="200"
-          cy="200"
-          r="193.4"
-          fill="none"
-          stroke="url(#platter-edge-metal)"
-          strokeWidth="1.6"
-          opacity="0.85"
-        />
-      </svg>
+      {/* The platter's side, seen below its top face, and its soft shadow in the recess. */}
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{
+          transform: 'translateY(0.7%)',
+          background: 'linear-gradient(90deg, #17181a 0%, #36383c 45%, #2a2b2e 70%, #121315 100%)',
+          boxShadow: '0 4px 10px rgba(0,0,0,0.45)'
+        }}
+      />
+      {/* The top face: smooth aluminium, lighter towards the lamp. */}
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{
+          background: 'linear-gradient(150deg, #5e6065 0%, #46484c 40%, #333539 75%, #26272a 100%)'
+        }}
+      />
+      {/* One soft, even sheen that follows the room light and takes a little of its colour. */}
+      <div
+        className="absolute inset-0 rounded-full"
+        data-platter-light=""
+        style={{
+          background:
+            'radial-gradient(120% 90% at 25% 10%, color-mix(in srgb, color-mix(in srgb, var(--accent, #d7a76c) 14%, #fff) 18%, transparent), transparent 60%)',
+          opacity: 'calc(0.3 + 0.7 * var(--room-illumination, 1))'
+        }}
+      />
+      {/* Fine turning marks on the visible lip: machined aluminium, at low contrast. Static. */}
+      <div
+        className="absolute inset-0 rounded-full"
+        data-platter-turning=""
+        style={{
+          background:
+            'repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,0.07) 0 0.5px, rgba(0,0,0,0.06) 0.5px 1px, transparent 1px 1.6px)',
+          maskImage: 'radial-gradient(circle, transparent 97.6%, #000 98%)',
+          WebkitMaskImage: 'radial-gradient(circle, transparent 97.6%, #000 98%)'
+        }}
+      />
+      {/* A single fine highlight on the lit edge, a crisp dark line on the far one. */}
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.22), 0 0 0 0.5px rgba(0,0,0,0.5)' }}
+      />
     </div>
   )
 })

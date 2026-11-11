@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { Check, Coffee, Pause, Play, Plus, Share2, Square, Trash2, X } from 'lucide-react'
 import { SharePreviewModal } from '../share/SharePreviewModal'
 import type { SharePayload } from '../../../../types/share'
@@ -52,10 +53,10 @@ const SOFT_LABEL = 'text-[12.5px] text-white/70'
 const PRIMARY_BUTTON =
   'inline-flex h-10 items-center justify-center gap-2 rounded-full bg-tone px-5 font-sans text-[13.5px] font-semibold text-[var(--surface)] shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-transform active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone'
 const QUIET_BUTTON =
-  'inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 font-sans text-[13.5px] font-medium text-white/60 transition-[color,background-color,transform] hover:bg-white/10 hover:text-white active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone'
+  'inline-flex h-10 items-center justify-center gap-2 rounded-full px-4 font-sans text-[13.5px] font-medium text-white/60 transition-[color,background-color,transform] hover:bg-white/10 hover:text-white active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone'
 const CHIP = (selected: boolean): string =>
   cn(
-    'h-8 rounded-full px-3.5 font-sans text-[13px] font-medium transition-colors cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone',
+    'h-8 rounded-full px-3.5 font-sans text-[13px] font-medium transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone',
     selected
       ? 'bg-[linear-gradient(180deg,rgba(255,255,255,0.24),rgba(255,255,255,0.14))] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_2px_8px_rgba(0,0,0,0.35)]'
       : 'text-white/70 hover:text-white'
@@ -95,7 +96,7 @@ export function StudyRoomView(): React.JSX.Element {
   )
 }
 
-// ---- Setup ------------------------------------------------------------------
+// Setup
 
 function SetupPage(): React.JSX.Element {
   const tx = useT()
@@ -148,7 +149,7 @@ function SetupPage(): React.JSX.Element {
         <div className="flex flex-wrap gap-x-10 gap-y-8">
           <div className="flex flex-col gap-3">
             <span className={SOFT_LABEL}>{tx('focus.length')}</span>
-            <div role="radiogroup" aria-label={tx('focus.length')} className="inline-flex w-fit flex-wrap gap-0.5 rounded-full border border-white/10 bg-black/30 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+            <div role="radiogroup" aria-label={tx('focus.length')} className="inline-flex w-fit flex-wrap gap-0.5 rounded-full border border-white/10 bg-black/40 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] backdrop-blur-md">
               {([25, 50, 90, 0] as LengthChoice[]).map((m) => (
                 <button
                   key={m}
@@ -166,7 +167,7 @@ function SetupPage(): React.JSX.Element {
 
           <div className="flex flex-col gap-3">
             <span className={SOFT_LABEL}>{tx('focus.breaks')}</span>
-            <div role="radiogroup" aria-label={tx('focus.breakLength')} className="inline-flex w-fit flex-wrap gap-0.5 rounded-full border border-white/10 bg-black/30 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+            <div role="radiogroup" aria-label={tx('focus.breakLength')} className="inline-flex w-fit flex-wrap gap-0.5 rounded-full border border-white/10 bg-black/40 p-1 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] backdrop-blur-md">
               {([0, 5, 10] as BreakChoice[]).map((m) => (
                 <button
                   key={m}
@@ -232,7 +233,7 @@ function StepsEditor({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="-mt-3 inline-flex w-fit items-center gap-2 font-sans text-[13px] font-medium text-white/75 transition-colors hover:text-white cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone rounded"
+        className="-mt-3 inline-flex w-fit items-center gap-2 font-sans text-[13px] font-medium text-white/75 transition-colors hover:text-white cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone rounded"
       >
         <Plus className="h-3.5 w-3.5" aria-hidden="true" /> {tx('focus.breakItDown')}
       </button>
@@ -293,7 +294,7 @@ function StepsEditor({
   )
 }
 
-// ---- Session ----------------------------------------------------------------
+// Session
 
 function SessionPage({ session }: { session: StudySession }): React.JSX.Element {
   const tx = useT()
@@ -350,8 +351,8 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
           aria-hidden="true"
         >
           <div
-            className="h-full rounded-full bg-tone/80 transition-[width] duration-1000 ease-linear"
-            style={{ width: `${progress * 100}%` }}
+            className="h-full w-full origin-left rounded-full bg-tone/80 transition-transform duration-1000 ease-linear"
+            style={{ transform: `scaleX(${progress})` }}
           />
         </div>
       )}
@@ -384,7 +385,7 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
           </div>
         </div>
       ) : segment.ended ? (
-        <div className="mt-7 inline-flex w-fit self-start flex-wrap items-center gap-1 rounded-full border border-white/10 bg-black/40 p-1.5 shadow-[0_24px_48px_rgba(0,0,0,0.45)] backdrop-blur-3xl">
+        <div className="mt-7 inline-flex w-fit self-start flex-wrap items-center gap-1 rounded-full border border-white/10 bg-black/50 p-1.5 shadow-[0_24px_48px_rgba(0,0,0,0.45)] backdrop-blur-md">
           {isBreak ? (
             <button type="button" className={PRIMARY_BUTTON} onClick={backToFocus}>
               <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" /> {tx('focus.backToIt')}
@@ -409,7 +410,7 @@ function SessionPage({ session }: { session: StudySession }): React.JSX.Element 
       ) : (
         <div
           className={cn(
-            'mt-7 inline-flex w-fit self-start flex-wrap items-center gap-1 rounded-full border border-white/10 bg-black/40 p-1.5 shadow-[0_24px_48px_rgba(0,0,0,0.45)] backdrop-blur-3xl transition-opacity duration-500 focus-within:opacity-100 hover:opacity-100',
+            'mt-7 inline-flex w-fit self-start flex-wrap items-center gap-1 rounded-full border border-white/10 bg-black/50 p-1.5 shadow-[0_24px_48px_rgba(0,0,0,0.45)] backdrop-blur-md transition-opacity duration-500 focus-within:opacity-100 hover:opacity-100',
             running ? 'opacity-60' : 'opacity-100'
           )}
         >
@@ -527,7 +528,7 @@ function TaskList({
               />
               <span
                 aria-hidden="true"
-                className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-white/30 transition-colors peer-checked:border-tone peer-checked:bg-tone peer-focus-visible:outline peer-focus-visible:outline-1 peer-focus-visible:outline-tone"
+                className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-white/30 transition-colors peer-checked:border-tone peer-checked:bg-tone peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-tone"
               >
                 {t.done && <Check className="h-3 w-3 text-[var(--surface)]" strokeWidth={3} />}
               </span>
@@ -623,7 +624,7 @@ function ThoughtJar({ session }: { session: StudySession }): React.JSX.Element {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="font-sans inline-flex items-center gap-2 rounded text-[13px] font-semibold text-white/45 transition-colors hover:text-white cursor-pointer focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
+          className="font-sans inline-flex items-center gap-2 rounded text-[13px] font-semibold text-white/45 transition-colors hover:text-white cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone"
           title={tx('focus.noteTitle')}
         >
           <Plus className="h-3.5 w-3.5" aria-hidden="true" />
@@ -639,7 +640,7 @@ function ThoughtJar({ session }: { session: StudySession }): React.JSX.Element {
   )
 }
 
-// ---- Review -----------------------------------------------------------------
+// Review
 
 const RATINGS: Array<{ id: Rating; label: MessageKey }> = [
   { id: 'distracted', label: 'focus.rate.distracted' },
@@ -698,7 +699,7 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
           />
           <span
             aria-hidden="true"
-            className="flex h-5 w-5 items-center justify-center rounded-full border border-white/30 transition-colors peer-checked:border-tone peer-checked:bg-tone peer-focus-visible:outline peer-focus-visible:outline-1 peer-focus-visible:outline-tone"
+            className="flex h-5 w-5 items-center justify-center rounded-full border border-white/30 transition-colors peer-checked:border-tone peer-checked:bg-tone peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-tone"
           >
             {done && <Check className="h-3 w-3 text-[var(--surface)]" strokeWidth={3} />}
           </span>
@@ -801,7 +802,7 @@ function ReviewPage({ session }: { session: StudySession }): React.JSX.Element {
   )
 }
 
-// ---- History and the day ------------------------------------------------------
+// History and the day
 
 const RATING_LABEL: Record<Rating, MessageKey> = {
   distracted: 'focus.rate.distracted',
@@ -1022,18 +1023,18 @@ function TodayLine(): React.JSX.Element {
   const goals = [60, 120, 180, 240]
 
   return (
-    <div className="mt-5 shrink-0 border-t border-white/[0.08] pt-4">
-      <div className="flex items-baseline justify-between gap-3">
+    <div className="mt-6 shrink-0">
+      <div className="flex items-center justify-between gap-3">
         <span className="font-sans text-[12.5px] text-white/45">
           {tx('focus.today')}{' '}
           <span className="text-white/85 tabular-nums">
             {today < 60_000 ? tx('focus.nothingYet') : formatMinutes(today)}
           </span>
-          {goal > 0 && <> {tx('focus.ofGoal', { time: formatMinutes(goalMs) })}</>}
+          {goal > 0 && today >= 60_000 && <> {tx('focus.ofGoal', { time: formatMinutes(goalMs) })}</>}
         </span>
         <button
           type="button"
-          className="font-sans text-[12px] font-semibold text-white/40 hover:text-white cursor-pointer"
+          className="-mr-2.5 h-7 rounded-full px-2.5 font-sans text-[12px] font-medium text-white/55 transition-colors hover:bg-white/10 hover:text-white cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-white/70"
           onClick={() =>
             setPrefs({ dailyGoalMinutes: goals[(goals.indexOf(goal) + 1) % goals.length] ?? 120 })
           }

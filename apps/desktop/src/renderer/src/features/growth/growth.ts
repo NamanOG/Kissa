@@ -1,7 +1,7 @@
 /**
- * Small, rare prompts that help Kissa grow without getting in the way:
- * a "What's new" note once after each update, and a polite request for a Store rating
- * after someone has used Kissa for a while. Everything is kept on this PC.
+ * "What's new" once after each feature update. The rating and support reminders live in
+ * types/reminders.ts; `rating` here is only read once, to carry over an answer given to the
+ * older rating prompt. Everything is kept on this PC.
  */
 
 export const GROWTH_KEY = 'kissa_growth_v1'
@@ -77,21 +77,4 @@ export function whatsNewDecision(state: GrowthState, version: string, firstRun: 
     state.lastSeenVersion === null ||
     isNewer(featureRelease(version), featureRelease(state.lastSeenVersion))
   return { show, next: { ...state, lastSeenVersion: version } }
-}
-
-/** Asked at most twice: after four days and five launches, and once more a month after "Later". */
-export function shouldAskForRating(state: GrowthState, now: number): boolean {
-  return (
-    state.rating === 'pending' &&
-    state.ratingAsked < 2 &&
-    state.launches >= 5 &&
-    now - state.installedAt >= 4 * DAY &&
-    now >= state.ratingNextAt
-  )
-}
-
-export function afterRatingAnswer(state: GrowthState, answer: 'rate' | 'later' | 'never', now: number): GrowthState {
-  if (answer === 'rate') return { ...state, rating: 'done', ratingAsked: state.ratingAsked + 1 }
-  if (answer === 'never') return { ...state, rating: 'never', ratingAsked: state.ratingAsked + 1 }
-  return { ...state, ratingAsked: state.ratingAsked + 1, ratingNextAt: now + 30 * DAY }
 }

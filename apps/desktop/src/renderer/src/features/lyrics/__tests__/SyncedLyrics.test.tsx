@@ -77,13 +77,13 @@ describe('SyncedLyrics Component & Parser', () => {
     render(<SyncedLyrics />)
     await waitFor(() => expect(screen.getByText(/Pool/i)).toBeInTheDocument())
     expect(screen.getByText(/convo/i)).toBeInTheDocument()
-    expect(screen.getByText('Ooh')).toBeInTheDocument()
-    expect(screen.getByText('yeah,')).toBeInTheDocument()
+    // A plain LRC line is one piece of text: it lights whole, with no estimated word sweep.
+    expect(screen.getByText('Ooh yeah, about your summer last night')).toBeInTheDocument()
   })
 
   it('seeks to line timestamp when clicked', async () => {
     render(<SyncedLyrics />)
-    const wordEl = await waitFor(() => screen.getByText('Ooh'))
+    const wordEl = await waitFor(() => screen.getByText('Ooh yeah, about your summer last night'))
     const lineEl = wordEl.closest('.group')!
     await act(async () => fireEvent.click(lineEl))
 
@@ -91,7 +91,7 @@ describe('SyncedLyrics Component & Parser', () => {
     expect(usePlayerStore.getState().isPlaying).toBe(true)
   })
 
-  it('generates estimated tokens correctly bounded within line duration', () => {
+  it('gives a plain line no word tokens, so it lights whole at its timestamp', () => {
     const lrc = `
       [00:03.50] Hello world
       [00:06.50] Next line
@@ -100,20 +100,7 @@ describe('SyncedLyrics Component & Parser', () => {
     const line = parsed[0]
     expect(line.timingType).toBe('estimated')
     expect(line.endTime).toBeCloseTo(6.50) // inferred from next line
-
-    const tokens = line.tokens!
-    expect(tokens.length).toBeGreaterThan(0)
-    
-    expect(tokens[0].startTime).toBeCloseTo(3.50)
-    expect(tokens[tokens.length - 1].endTime).toBeCloseTo(6.50)
-
-    let previousEnd = tokens[0].startTime
-    for (const t of tokens) {
-      expect(t.startTime).toBeGreaterThanOrEqual(3.50)
-      expect(t.endTime).toBeLessThanOrEqual(6.50)
-      expect(t.startTime).toBeCloseTo(previousEnd)
-      previousEnd = t.endTime
-    }
+    expect(line.tokens).toBeUndefined()
   })
 
   it('caps the final line duration correctly', () => {
@@ -162,11 +149,6 @@ describe('SyncedLyrics Component & Parser', () => {
     expect(parsed[0].text).toBe('¿Dónde está mi corazón y mi canción?')
     expect(parsed[1].text).toBe('Viví días felices ahí')
 
-    const words = parsed[0].tokens?.filter((t) => !t.isWhitespace).map((t) => t.text)
-    expect(words).toContain('¿Dónde')
-    expect(words).toContain('está')
-    expect(words).toContain('corazón')
-    expect(words).toContain('canción?')
 
     window.electron = {
       getLyrics: vi.fn().mockResolvedValue({ syncedLyrics: lrc })

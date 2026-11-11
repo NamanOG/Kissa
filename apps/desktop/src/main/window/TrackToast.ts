@@ -1,4 +1,8 @@
 import { BrowserWindow, screen } from 'electron'
+import { readFileSync } from 'fs'
+// Kissa's own typefaces, embedded in the card (its page is a data: URL and cannot load files).
+import sansFontPath from '@fontsource-variable/archivo/files/archivo-latin-standard-normal.woff2?asset'
+import serifFontPath from '@fontsource-variable/newsreader/files/newsreader-latin-opsz-normal.woff2?asset'
 import { WindowManager } from './WindowManager'
 import type { TrackToastPayload } from './toastPayload'
 export { sanitizeToastPayload } from './toastPayload'
@@ -16,14 +20,25 @@ const ACTION_URL = 'https://kissa.invalid/action/'
 
 const SHOW_MS = 5200
 
+/** The page with Kissa's two typefaces as @font-face rules; the system font if they cannot be read. */
+function withFonts(page: string): string {
+  try {
+    const face = (family: string, path: string, weight: string): string =>
+      `@font-face{font-family:"${family}";src:url(data:font/woff2;base64,${readFileSync(path).toString('base64')}) format("woff2");font-weight:${weight};font-display:block}`
+    return page.replace('<style>', `<style>${face('Kissa Sans', sansFontPath, '100 900')}${face('Kissa Serif', serifFontPath, '200 800')}`)
+  } catch {
+    return page
+  }
+}
+
 const PAGE = `<!doctype html><html><head><meta charset="utf-8"><style>
-html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-font-smoothing:antialiased}
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:"Kissa Sans","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-font-smoothing:antialiased}
 :root{--accent:#d9a066}
 .card{position:absolute;right:14px;bottom:14px;width:${WIDTH - 28}px;height:${HEIGHT - 32}px;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:12px 12px 12px 12px;border-radius:24px;cursor:pointer;overflow:hidden;isolation:isolate;
 background:linear-gradient(180deg,#2a2521 0%,#1a1714 100%);
 box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 0 0 1px rgba(255,255,255,.07),0 22px 44px -16px rgba(0,0,0,.75),0 6px 14px -6px rgba(0,0,0,.55);
 opacity:0;transform:translateY(16px) scale(.97);transition:opacity .42s cubic-bezier(.2,.8,.2,1),transform .6s cubic-bezier(.16,1,.3,1)}
-.card::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(120% 140% at 0% 50%,color-mix(in srgb,var(--accent) 26%,transparent),transparent 62%);opacity:.9}
+.card::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(120% 140% at 0% 50%,color-mix(in srgb,var(--accent) 12%,transparent),transparent 62%);opacity:.8}
 .card.in{opacity:1;transform:none}
 .art{position:relative;width:80px;height:80px;border-radius:14px;flex:none;overflow:hidden;
 background:radial-gradient(circle at 50% 50%,#0d0b0a 0 9%,color-mix(in srgb,var(--accent) 55%,#2a221c) 10% 30%,#121010 31% 100%);
@@ -38,7 +53,8 @@ box-shadow:0 10px 20px -8px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.08)}
 .paused .eq i{animation:none;height:3px}
 @keyframes eq{0%,100%{transform:scaleY(.45)}50%{transform:scaleY(1)}}
 .eq i{transform-origin:bottom}
-.title{font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;font-size:16px;font-weight:600;letter-spacing:-.01em;color:#f7f1e9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (prefers-reduced-motion: reduce){.eq i{animation:none}.card{transition:opacity .2s ease;transform:none}.card.in .bar{transition:none;transform:scaleX(0)}}
+.title{font-family:"Kissa Serif","Segoe UI Variable Display","Segoe UI",system-ui,serif;font-size:17px;font-weight:500;letter-spacing:-.015em;color:#f7f1e9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .artist{font-size:13px;color:rgba(247,241,233,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .ctl{display:flex;gap:4px;flex:none;align-items:center}
 .btn{width:36px;height:36px;border-radius:50%;border:0;padding:0;display:grid;place-items:center;cursor:pointer;color:#f7f1e9;background:transparent;transition:background .15s ease,transform .1s ease}
@@ -64,6 +80,7 @@ window.render=function(p){
  const key=p.title+'\u0000'+(p.artist||'');const same=key===shownKey&&c.classList.contains('in');shownKey=key;
  document.getElementById('t').textContent=p.title;document.getElementById('r').textContent=p.artist||'';
  document.getElementById('l').textContent=p.label||'Now playing';
+ if(p.playPauseLabel)pp.setAttribute('aria-label',p.playPauseLabel);if(p.nextLabel)document.getElementById('nx').setAttribute('aria-label',p.nextLabel);
  if(p.accent)document.documentElement.style.setProperty('--accent',p.accent);
  setPlaying(p.playing!==false);
  const src=p.artwork||'';if(img.getAttribute('src')!==src){img.classList.remove('on');if(src)img.src=src;else img.removeAttribute('src')}
@@ -133,7 +150,7 @@ export class TrackToast {
       this.ready = null
     })
     this.win = win
-    this.ready = win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(PAGE)}`).catch(() => undefined)
+    this.ready = win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(withFonts(PAGE))}`).catch(() => undefined)
     return this.ready
   }
 

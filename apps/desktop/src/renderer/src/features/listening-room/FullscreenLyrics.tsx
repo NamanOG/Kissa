@@ -1,5 +1,6 @@
 import { memo } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { SyncedLyrics } from '../lyrics/SyncedLyrics'
 
 export const FullscreenLyrics = memo((): React.JSX.Element => {

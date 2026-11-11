@@ -1,4 +1,5 @@
 import { slotOf } from '@renderer/utils/frameBeat'
+import { follow } from '@renderer/features/sound/levels'
 
 /**
  * Moving light's renderer, kept apart from React so every lifecycle path (start, pause, cover
@@ -39,8 +40,13 @@ uniform float uAspect;
 uniform vec4 uQ;
 uniform vec4 uR;
 uniform vec2 uO[6];
-// Music: a gentle lift with the level and the kick (0 when the light does not follow the sound).
+// Music: a faint lift with the level (0 when the light does not follow the sound).
 uniform float uGlow;
+// Where the record is, in p space: the light gathers there.
+uniform vec2 uSrc;
+// (bloom amount, bloom size, warp, saturation). At rest (0, 0.42, 0.9, 1): no pool, the old
+// warp, colours unchanged.
+uniform vec4 uS;
 
 float hash(vec2 i) {
   i = mod(i, 289.0);
@@ -78,7 +84,7 @@ void main() {
   // A shared, slowly changing domain warp: it stretches and curls everything that flows through it.
   vec2 q = vec2(fbm(p * 0.8 + uQ.xy), fbm(p * 0.8 + uQ.zw));
   vec2 r = vec2(fbm(p + 2.2 * q + uR.xy), fbm(p + 2.2 * q + uR.zw));
-  vec2 w = p + (r - 0.5) * 0.9;
+  vec2 w = p + (r - 0.5) * uS.z;
   // Every colour has its own noise field, travelling its own way (uO, wrapped on the CPU). At each
   // point the colours compete by field strength plus their share of the cover, so a colour's regions
   // appear, stretch, merge and separate as the fields slide past each other, and no colour keeps a
@@ -96,7 +102,13 @@ void main() {
     total += e;
   }
   vec3 col = total > 0.0 ? toGamma(acc / total) : vec3(0.08, 0.07, 0.06);
-  col *= 1.0 + uGlow;
+  // The song fills the colour a little in a chorus, and the light pools around the record,
+  // breathing with the level and pushed by each kick. Never a whole-window flash.
+  float lum = dot(col, vec3(0.299, 0.587, 0.114));
+  col = mix(vec3(lum), col, uS.w);
+  vec2 dv = p - uSrc;
+  float g = exp(-dot(dv, dv) / (2.0 * uS.y * uS.y));
+  col *= 1.0 + uGlow + uS.x * g;
   // Dithering happens in the second pass (SMOOTH_FRAG), at the window's own pixels.
   gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
@@ -128,7 +140,10 @@ void main() {
   vec3 c = texture2D(uField, vUv).rgb;
   vec2 f = gl_FragCoord.xy;
   float n = h(f) + h(f + vec2(41.7, 113.3)) - 1.0;
-  gl_FragColor = vec4(clamp(c + n * DITHER, 0.0, 1.0), 1.0);
+  // The light's 95 % strength, baked in so the canvas stays opaque: a translucent full-window
+  // canvas made the compositor draw and blend every layer beneath it on every frame (live,
+  // 2026-11-10). Over the near-black room base the difference is under 0.2 % of a level.
+  gl_FragColor = vec4(clamp((c + n * DITHER) * 0.95, 0.0, 1.0), 1.0);
 }
 `
 const LATTICE = 289
@@ -166,19 +181,85 @@ export function flowUniforms(time: number): {
 
 export type CoverSource = TexImageSource
 
+export interface SoundSignals {
+  level: number
+  swell: number
+  bass: number
+  kick: number
+  pan: number
+}
+
+/** The sound-driven shader terms at rest (no sound, or sound follow off). */
+export const REST = { bloomAmp: 0, bloomSigma: 0.42, warp: 0.9, sat: 1, glow: 0, speed: 1 } as const
+/** The flow never runs faster than this many times its resting drift. */
+export const MAX_SPEED = 3.2
+/**
+ * The strongest warp the bass may give. The resting warp (0.9) already turns over in a few tiny
+ * spots (about 9 % of points, unseen under the field's softness); above 0.95 that grows by more
+ * than one point (fluidSeam.test.ts), so the plan's 0.16 bass coefficient became 0.05, capped here.
+ */
+export const WARP_MAX = 0.95
+/** The pool's brightest lift, even on Lively. */
+export const BLOOM_MAX = 0.32
+/**
+ * Photosensitivity guard: the light's total lift (glow plus pool) changes by at most this much
+ * between two drawn frames, so no single frame can jump.
+ */
+export const LIFT_SLEW = 0.06
+
+const clamp01 = (x: number): number => (x > 0 ? (x < 1 ? x : 1) : 0)
+
+/**
+ * The light's response to the music for one frame. `a` is the motion amount times the coast
+ * drive; with no sound every term is at rest, so the picture is exactly the old drift.
+ */
+export function soundTerms(s: SoundSignals | null, a: number, amount = 1): {
+  bloomAmp: number
+  bloomSigma: number
+  warp: number
+  sat: number
+  glow: number
+  speed: number
+} {
+  if (!s) return { ...REST }
+  const level = clamp01(s.level)
+  const swell = clamp01(s.swell)
+  const bass = clamp01(s.bass)
+  const kick = clamp01(s.kick)
+  return {
+    bloomAmp: Math.min(BLOOM_MAX, (0.04 + 0.1 * level + 0.14 * kick) * a),
+    bloomSigma: 0.42 + 0.1 * swell,
+    warp: Math.min(WARP_MAX, 0.9 + 0.05 * bass * a),
+    sat: 1 + 0.12 * swell * a,
+    glow: 0.03 * level * a,
+    speed: Math.min(MAX_SPEED, 0.85 + 0.9 * swell + 0.5 * level + 1.6 * kick * amount)
+  }
+}
+
 export interface FluidDeps {
   /** Reads a cover into something texImage2D accepts. */
   loadCover: (url: string) => Promise<CoverSource>
   now?: () => number
   requestFrame?: (cb: (t: number) => void) => number
   cancelFrame?: (id: number) => void
+  /**
+   * Sleeps between drawn frames (setTimeout by default when the display's own frames are used).
+   * Tests that drive frames by hand leave it out and the loop asks for every refresh.
+   */
+  wait?: (ms: number, cb: () => void) => number
+  cancelWait?: (id: number) => void
   /** Target time between drawn frames; rounded to a whole number of display refreshes. */
   frameMs?: number
   /**
-   * The music, when the light follows it: energy (0 to 1) speeds the flow and lifts the light a
-   * little, a kick (pulse, 0 to 1) brightens it for a moment. Null or absent: no effect.
+   * The music, when the light follows it (features/sound/soundListener): level, swell, bass and
+   * kick 0..1, pan -1..1. The swell and level speed the flow, a kick sends a soft surge through
+   * it, and the light pools around the record. Null or absent: today's quiet drift.
    */
-  sound?: () => { energy: number; pulse: number } | null
+  sound?: () => SoundSignals | null
+  /** How much the light moves with the music: 0.5 gentle, 1 balanced, 1.5 lively. */
+  amount?: () => number
+  /** Where the record is, as window fractions (y down). The pool glides there. */
+  source?: () => [number, number]
   /** Development: count drawn frames. */
   onDraw?: () => void
 }
@@ -192,9 +273,34 @@ export interface FluidCallbacks {
   onRunning?: (running: boolean) => void
 }
 
+/** Pausing: the colour slows to a stop over this long. */
+export const COAST_DOWN_S = 0.9
+/** Playing again: the colour picks up over this long. */
+export const COAST_UP_S = 0.6
+/** The first light of a session wakes over this long (later plays use COAST_UP_S). */
+export const FIRST_UP_S = 1.4
+/** A new cover: a soft breath of light, rising over 250 ms and falling away over 1.1 s. */
+export const COVER_PULSE_MS = 1350
+export const COVER_PULSE_AMP = 0.1
+/** The breath's shape for a time since the cover landed (0..1). */
+export function coverPulse(ms: number): number {
+  if (ms < 0 || ms >= COVER_PULSE_MS) return 0
+  const p = ms / COVER_PULSE_MS
+  if (p < 0.18) return p / 0.18
+  const q = 1 - (p - 0.18) / 0.82
+  return q * q
+}
+/** Track change: the new cover's colours blend in over this long, eased. */
+export const FADE_MS = 1600
+
 export interface FluidRenderer {
   setCover: (url: string) => void
-  setActive: (active: boolean) => void
+  /**
+   * Starts or stops the motion. With `coast`, stopping eases the colour to a stop (and keeps
+   * drawing until it has); without it, the loop stops at once. Starting always eases in, and a
+   * start during a coast reverses it from where it is.
+   */
+  setActive: (active: boolean, opts?: { coast?: boolean }) => void
   /**
    * width x height is the colour field (small); outWidth x outHeight the canvas, normally the
    * window's own pixels, where the field is stretched and dithered. Without an output size the
@@ -204,6 +310,8 @@ export interface FluidRenderer {
   dispose: () => void
   readonly running: boolean
   readonly disposed: boolean
+  /** The animation clock, in seconds of flow (for tests). */
+  readonly time: number
 }
 
 type GL = WebGLRenderingContext
@@ -229,6 +337,8 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
   const requestFrame = deps.requestFrame ?? ((f) => requestAnimationFrame(f))
   const cancelFrame = deps.cancelFrame ?? ((id) => cancelAnimationFrame(id))
   const frameMs = deps.frameMs ?? 1000 / 30
+  const wait = deps.wait ?? (deps.requestFrame ? null : (ms: number, cb: () => void) => window.setTimeout(cb, ms))
+  const cancelWait = deps.cancelWait ?? (deps.requestFrame ? null : (id: number) => window.clearTimeout(id))
 
   const gl = canvas.getContext('webgl', {
     alpha: false,
@@ -289,6 +399,8 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
   const uO = gl.getUniformLocation(prog, 'uO')
   const uAspect = gl.getUniformLocation(prog, 'uAspect')
   const uGlow = gl.getUniformLocation(prog, 'uGlow')
+  const uSrc = gl.getUniformLocation(prog, 'uSrc')
+  const uS = gl.getUniformLocation(prog, 'uS')
   gl.uniform1i(gl.getUniformLocation(prog, 'uA'), 0)
   gl.uniform1i(gl.getUniformLocation(prog, 'uB'), 1)
   if (smoothProg) {
@@ -341,9 +453,26 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
   let fadeFrom = 0
   let time = Math.random() * 40
   let frameId = 0
+  let sleepId = 0
   let running = false
   let disposed = false
   let token = 0
+  // Motion amount: 0 = still, 1 = full motion. It eases toward driveTarget, so a pause coasts to
+  // a stop and a play picks up instead of the colour freezing or jumping.
+  let drive = 0
+  let driveTarget = 0
+  // The first light of the session wakes more slowly than a later play.
+  let firstStart = true
+  // When the latest cover landed, for its breath of light (-1: none yet).
+  let pulseFrom = -1
+  // The sound's shader terms (REST when nothing is heard) and where the light pools, eased
+  // toward the record so a page change glides the pool instead of jumping.
+  let terms: { bloomAmp: number; bloomSigma: number; warp: number; sat: number } = { ...REST }
+  const sourceNow = (): [number, number] => deps.source?.() ?? [0.62, 0.5]
+  let src = sourceNow()
+  let panShift = 0
+  // The music's share of the pool, apart from a cover's breath (the slew limit applies to it alone).
+  let soundBloom = 0
 
   const draw = (): void => {
     if (disposed || gl.isContextLost()) return
@@ -358,6 +487,9 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
     gl.bindTexture(gl.TEXTURE_2D, texB)
     gl.uniform1f(uMix, mix)
     gl.uniform1f(uGlow, glow)
+    const aspect = fieldW / Math.max(1, fieldH)
+    gl.uniform2f(uSrc, (src[0] - 0.5) * aspect + panShift, 0.5 - src[1])
+    gl.uniform4f(uS, terms.bloomAmp, terms.bloomSigma, terms.warp, terms.sat)
     const f = flowUniforms(time)
     gl.uniform4f(uQ, f.q[0], f.q[1], f.q[2], f.q[3])
     gl.uniform4f(uR, f.r[0], f.r[1], f.r[2], f.r[3])
@@ -389,14 +521,49 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
       lastSlot = slot
       const dt = lastDraw >= 0 ? Math.min(0.1, (t - lastDraw) / 1000) : 0
       lastDraw = t
-      const s = deps.sound?.()
-      const energy = s ? Math.max(0, Math.min(1, s.energy)) : 0
-      const pulse = s ? Math.max(0, Math.min(1, s.pulse)) : 0
-      glow = energy * 0.1 + pulse * 0.09
-      // Louder music moves the colour faster; quiet passages drift as before.
-      time += dt * (1 + 1.5 * energy)
-      if (mix < 1) mix = Math.min(1, (now() - fadeFrom) / 1200)
+      if (drive < driveTarget) drive = Math.min(driveTarget, drive + dt / (firstStart ? FIRST_UP_S : COAST_UP_S))
+      else if (drive > driveTarget) drive = Math.max(driveTarget, drive - dt / COAST_DOWN_S)
+      if (drive >= 1) firstStart = false
+      const d = drive * drive * (3 - 2 * drive)
+      const s = deps.sound?.() ?? null
+      const amount = Math.max(0, deps.amount?.() ?? 1)
+      const k = soundTerms(s, amount * d, amount)
+      // Slew limit on the total lift (see LIFT_SLEW).
+      const lift = glow + soundBloom
+      const want = k.glow + k.bloomAmp
+      const next = lift + Math.max(-LIFT_SLEW, Math.min(LIFT_SLEW, want - lift))
+      const scale = want > 0 ? next / want : 0
+      // A new cover's breath of light (also with sound follow off), on top of the music's pool.
+      const breath = pulseFrom >= 0 ? COVER_PULSE_AMP * coverPulse(now() - pulseFrom) * d : 0
+      soundBloom = k.bloomAmp * scale
+      terms = { ...k, bloomAmp: soundBloom + breath }
+      glow = k.glow * scale
+      panShift = s ? Math.max(-1, Math.min(1, s.pan)) * 0.06 : 0
+      // The flow: a quiet drift, faster with the song's swell and level, surging on a kick.
+      time += dt * k.speed * d
+      const target = sourceNow()
+      src = [follow(src[0], target[0], dt, 0.5), follow(src[1], target[1], dt, 0.5)]
+      if (mix < 1) {
+        const p = Math.min(1, (now() - fadeFrom) / FADE_MS)
+        mix = p * p * (3 - 2 * p)
+      }
       draw()
+      if (driveTarget === 0 && drive === 0) {
+        // The coast has settled: stop for real.
+        setRunning(false)
+        return
+      }
+      // Sleep until just before the next slot instead of asking for every refresh: a page that
+      // asks for a frame on every refresh keeps the whole window producing frames at the display's
+      // rate (144 Hz on Naman's laptop) even when nothing is drawn.
+      if (wait) {
+        const ms = Math.max(0, (slot + 1) * frameMs - 0.5 - t - 5)
+        sleepId = wait(ms, () => {
+          sleepId = 0
+          if (!disposed && running) frameId = requestFrame(frame)
+        })
+        return
+      }
     }
     frameId = requestFrame(frame)
   }
@@ -409,6 +576,8 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
   const stopLoop = (): void => {
     if (frameId) cancelFrame(frameId)
     frameId = 0
+    if (sleepId && cancelWait) cancelWait(sleepId)
+    sleepId = 0
   }
 
   const setRunning = (on: boolean): void => {
@@ -418,9 +587,12 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
       schedule()
     } else {
       stopLoop()
-      // Finish any crossfade so a still room shows the current cover.
+      // Finish any crossfade so a still room shows the current cover, with no sound in it.
       mix = 1
       glow = 0
+      terms = { ...REST }
+      soundBloom = 0
+      panShift = 0
       draw()
     }
     cb.onRunning?.(on)
@@ -440,9 +612,22 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
     get disposed() {
       return disposed
     },
-    setActive(on) {
+    get time() {
+      return time
+    },
+    setActive(on, opts) {
       if (disposed) return
-      setRunning(on)
+      if (on) {
+        // drive is kept, so a play during a coast reverses from where the colour is.
+        driveTarget = 1
+        setRunning(true)
+      } else if (opts?.coast && running) {
+        driveTarget = 0
+      } else {
+        drive = 0
+        driveTarget = 0
+        setRunning(false)
+      }
     },
     resize(width, height, outWidth = width, outHeight = height) {
       if (disposed) return
@@ -482,6 +667,7 @@ export function createFluidRenderer(canvas: HTMLCanvasElement, deps: FluidDeps, 
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
           mix = 0
           fadeFrom = now()
+          pulseFrom = fadeFrom
           if (!running) {
             mix = 1
             draw()

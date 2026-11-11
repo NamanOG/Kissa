@@ -131,7 +131,9 @@ export const RecordCrate = memo(({ records, onOpen, currentKey, onCurrentChange 
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
-  const S = Math.max(80, Math.min((box.h || 340) * 0.66, 320)) // front sleeve size
+  // Front sleeve size: as tall as the space allows (the bottom 22 % is the floor it reflects in),
+  // never so wide that the neighbouring sleeves lose their place, and at most 460 px.
+  const S = Math.max(80, Math.min((box.h || 340) * 0.74, (box.w || 1000) * 0.3, 460))
   const STEP = S * 0.3 // spacing between angled sleeves
 
   // Dragging sideways flips through the wall: one sleeve per STEP of travel, against the drag.
@@ -174,11 +176,11 @@ export const RecordCrate = memo(({ records, onOpen, currentKey, onCurrentChange 
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
-        className="relative min-h-[180px] max-h-[420px] flex-1 w-full touch-pan-y select-none overflow-hidden outline-none focus-visible:[&_[data-current=true]_[data-sleeve]]:outline focus-visible:[&_[data-current=true]_[data-sleeve]]:outline-1 focus-visible:[&_[data-current=true]_[data-sleeve]]:outline-offset-4 focus-visible:[&_[data-current=true]_[data-sleeve]]:outline-ink/70"
+        className="relative min-h-[180px] flex-1 w-full touch-pan-y select-none overflow-hidden outline-none focus-visible:[&_[data-current=true]_[data-sleeve]]:outline focus-visible:[&_[data-current=true]_[data-sleeve]]:outline-1 focus-visible:[&_[data-current=true]_[data-sleeve]]:outline-offset-4 focus-visible:[&_[data-current=true]_[data-sleeve]]:outline-ink/70"
         style={{ perspective: '1100px', perspectiveOrigin: '50% 40%' }}
       >
         {/* The shop floor: a faint sheen the sleeves stand on and reflect in. */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[30%] bg-[radial-gradient(ellipse_55%_100%_at_50%_0%,rgba(255,235,210,0.045),transparent_70%)]" />
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-[22%] bg-[radial-gradient(ellipse_55%_100%_at_50%_0%,rgba(255,235,210,0.045),transparent_70%)]" />
         {sleeves.map(({ r, i }) => {
           const offset = i - index
           const distance = Math.abs(offset)
@@ -208,7 +210,7 @@ export const RecordCrate = memo(({ records, onOpen, currentKey, onCurrentChange 
               }}
               onMouseEnter={() => setHovered(i)}
               onMouseLeave={() => setHovered((h) => (h === i ? null : h))}
-              className="absolute bottom-[30%] left-1/2 cursor-pointer outline-none transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none [will-change:transform]"
+              className="absolute bottom-[22%] left-1/2 cursor-pointer outline-none transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none [will-change:transform]"
               style={{
                 width: S,
                 height: S,
@@ -264,7 +266,16 @@ export const RecordCrate = memo(({ records, onOpen, currentKey, onCurrentChange 
         <p className="mt-2 text-[12px] text-dim">
           {current.playCount} {t(current.playCount === 1 ? 'shelf.play.one' : 'shelf.play.other')}
         </p>
-        <div className="mt-5 flex w-full items-center gap-5">
+        {/* Details sit with the record they describe, as a quiet button, not a link off to the side. */}
+        <button
+          type="button"
+          onClick={() => onOpen(current.albumKey)}
+          className="mt-3 h-8 cursor-pointer rounded-full bg-white/[0.07] px-3.5 text-[12.5px] font-medium text-ink/85 transition-colors hover:bg-white/[0.11] hover:text-ink outline-none focus-visible:ring-1 focus-visible:ring-tone"
+        >
+          {t('crate.details')}
+        </button>
+        {/* With one record there is nothing to scrub through. */}
+        <div className={cn('mt-5 flex w-full items-center gap-5', records.length < 2 && 'hidden')}>
           {/* A ruler of the records, one tick each (sampled for big collections), with the current
               record marked. The native range input sits over it, invisible, for dragging,
               keyboard and screen readers. */}
@@ -278,7 +289,7 @@ export const RecordCrate = memo(({ records, onOpen, currentKey, onCurrentChange 
             </div>
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute top-1/2 h-5 w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-tone shadow-[0_0_10px_var(--accent)] transition-[left] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+              className="pointer-events-none absolute top-1/2 h-5 w-[3px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-tone transition-[left] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
               style={{ left: `${records.length > 1 ? (index / (records.length - 1)) * 100 : 50}%` }}
             />
             <input
@@ -294,13 +305,6 @@ export const RecordCrate = memo(({ records, onOpen, currentKey, onCurrentChange 
             />
             <span aria-hidden="true" className="pointer-events-none absolute -inset-x-2 -inset-y-1 rounded-md outline-1 outline-offset-2 outline-ink/70 peer-focus-visible:outline" />
           </div>
-          <button
-            type="button"
-            onClick={() => onOpen(current.albumKey)}
-            className="shrink-0 cursor-pointer rounded-md text-[12.5px] text-ink/85 underline decoration-ink/25 underline-offset-4 transition-colors hover:decoration-ink/60 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-ink/70"
-          >
-            {t('crate.details')}
-          </button>
         </div>
       </div>
     </div>

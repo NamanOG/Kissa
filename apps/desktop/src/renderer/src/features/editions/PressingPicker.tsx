@@ -1,5 +1,7 @@
+import { useReturnFocus } from '@renderer/hooks/useReturnFocus'
 import React, { memo, useEffect, useId, useRef, useState } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { usePlayerStore, VINYL_COLORS, type VinylColor } from '@renderer/stores/playerStore'
 import { VINYL_PRESSINGS, pressingGroups, pressingSwatch } from '@renderer/features/vinyl/VinylBase'
 import { cn } from '@renderer/utils/cn'
@@ -18,6 +20,7 @@ export const PressingPicker = memo(({ className }: { className?: string }): Reac
   const reduceMotion = useReducedMotion()
   const rootRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  useReturnFocus(open, buttonRef)
   const listId = useId()
   const current = VINYL_PRESSINGS[vinylColor] ?? VINYL_PRESSINGS.black
 
@@ -61,7 +64,7 @@ export const PressingPicker = memo(({ className }: { className?: string }): Reac
         aria-controls={open ? listId : undefined}
         aria-label={t('picker.label', { name: current.name })}
         title={t('picker.title')}
-        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-white/70"
+        className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/70"
       >
         <span
           aria-hidden="true"
@@ -76,21 +79,22 @@ export const PressingPicker = memo(({ className }: { className?: string }): Reac
         {open && (
           <motion.div
             id={listId}
-            initial={{ opacity: 0, y: reduceMotion ? 0 : -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: reduceMotion ? 0 : -4 }}
+            initial={{ opacity: 0, y: reduceMotion ? 0 : -4, scale: reduceMotion ? 1 : 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: reduceMotion ? 0 : -2, scale: reduceMotion ? 1 : 0.99 }}
+            style={{ transformOrigin: 'top right' }}
             transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute right-0 top-full z-30 mt-2 w-[276px] rounded-[18px] border border-white/10 bg-[rgba(16,14,13,0.92)] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.55)]"
+            className="absolute right-0 top-full z-30 mt-2 w-[308px] rounded-[18px] border border-white/10 bg-[rgba(16,14,13,0.92)] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.55)]"
           >
             <div className="flex items-baseline justify-between">
-              <span className="font-serif text-[17px] leading-none text-white">{t('picker.heading')}</span>
-              <span className="text-[11.5px] text-white/55">{current.name}</span>
+              <span className="text-[13px] font-semibold leading-none text-white">{t('picker.heading')}</span>
+              <span className="text-[12px] text-white/60">{current.name}</span>
             </div>
             <div role="radiogroup" aria-label={t('editor.pressingGroup')} className="mt-3">
               {pressingGroups(VINYL_COLORS).map((group) => (
                 <div key={group.label} className="mt-2.5 first:mt-0">
-                  <div className="mb-2 text-[10.5px] text-white/45">{group.label}</div>
-                  <div className="grid grid-cols-7 gap-1.5">
+                  <div className="mb-2 text-[11px] text-white/55">{group.label}</div>
+                  <div className="grid grid-cols-8 gap-1.5">
                     {group.colors.map((color: VinylColor) => {
                       const i = VINYL_COLORS.indexOf(color)
                       const selected = color === vinylColor
@@ -112,7 +116,7 @@ export const PressingPicker = memo(({ className }: { className?: string }): Reac
                             e.preventDefault()
                           }}
                           className={cn(
-                            'relative mx-auto h-[28px] w-[28px] cursor-pointer rounded-full transition-[box-shadow] duration-150 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-white/70',
+                            'relative mx-auto h-[28px] w-[28px] cursor-pointer rounded-full transition-[box-shadow] duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/70',
                             selected ? 'shadow-[0_0_0_1.5px_rgba(255,255,255,0.85)]' : 'shadow-[0_0_0_1px_rgba(255,255,255,0.12)] hover:shadow-[0_0_0_1px_rgba(255,255,255,0.4)]'
                           )}
                           style={{ background: pressingSwatch(color) }}

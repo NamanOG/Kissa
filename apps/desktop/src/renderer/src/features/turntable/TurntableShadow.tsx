@@ -1,47 +1,23 @@
 import React, { memo } from 'react'
 import { cn } from '@renderer/utils/cn'
 
+/**
+ * The deck's shadow on the room: one soft, wide shade under the plinth. Static (the blur is
+ * painted once). The tight contact line under the feet is drawn with the plinth.
+ */
 export const TurntableShadow = memo(
   ({ className }: { className?: string }): React.JSX.Element => {
     return (
-      <div
-        className={cn('absolute inset-0 pointer-events-none -z-10', className)}
-      >
-        <div
-          className="absolute"
-          style={{
-            left: '6%',
-            right: '6%',
-            top: '70%',
-            bottom: '-12%',
-            background:
-              'radial-gradient(ellipse 85% 70% at 50% 30%, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 50%, transparent 85%)',
-            filter: 'blur(20px)'
-          }}
-        />
-
-        <div
-          className="absolute"
-          style={{
-            left: '8%',
-            right: '8%',
-            bottom: '-4%',
-            height: '14%',
-            background:
-              'radial-gradient(ellipse 90% 50% at 50% 20%, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 60%, transparent 85%)',
-            filter: 'blur(10px)'
-          }}
-        />
-        {/* Contact: where the feet meet the surface, a tight, dark line of shade. */}
+      <div className={cn('absolute inset-0 pointer-events-none -z-10', className)}>
         <div
           className="absolute"
           style={{
             left: '5%',
             right: '5%',
-            bottom: '1.5%',
-            height: '5%',
-            background: 'radial-gradient(ellipse 50% 50% at 50% 50%, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.35) 60%, transparent 100%)',
-            filter: 'blur(6px)'
+            top: '74%',
+            bottom: '-8%',
+            background: 'radial-gradient(ellipse 60% 55% at 50% 40%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.22) 55%, transparent 80%)',
+            filter: 'blur(18px)'
           }}
         />
       </div>

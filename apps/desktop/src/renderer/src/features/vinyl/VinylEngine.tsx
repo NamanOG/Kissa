@@ -1,3 +1,4 @@
+import { useSheetOpen } from '@renderer/features/background/sheetCount'
 import React, { memo, useEffect, useRef } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { VinylEngineProps } from './types'
@@ -67,7 +68,10 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
   const rpm = usePlayerStore((state) => state.rpm)
   const storeTrack = usePlayerStore((state) => state.currentTrack)
 
-  const playing = (isActive ?? storeIsPlaying) && storeIsPowered
+  // Under a full sheet (Settings, What's new, Share) the record eases to a stop, like the light:
+  // the sheet's glass blur is otherwise redrawn for every frame of the spin beneath it.
+  const sheetOpen = useSheetOpen()
+  const playing = (isActive ?? storeIsPlaying) && storeIsPowered && !sheetOpen
   const artwork = albumArt ?? storeTrack?.artworkUrl ?? albumPlaceholder
 
   const vinylRef = useRef<HTMLDivElement>(null)
@@ -163,6 +167,7 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
 
   return (
     <div
+      data-vinyl-record=""
       className={cn(
         'relative flex items-center justify-center',
         'w-full aspect-square',
@@ -192,10 +197,13 @@ export const VinylEngine = memo(({ className, albumArt, isActive, ...props }: Vi
       <EdgeLayer />
       <div
         className="pointer-events-none absolute left-1/2 top-1/2 h-[28%] w-[28%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-tr from-black/20 via-transparent to-white/[0.05] mix-blend-overlay"
-        style={{ boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.7)' }}
+        // The label sits a touch proud of the vinyl: one fine lit edge and a soft step down.
+        style={{
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.16), 0 0 0 0.5px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.5)'
+        }}
         aria-hidden="true"
       />
-      <ReflectionLayer />
+      <ReflectionLayer style={{ opacity: 'calc(0.3 + 0.4 * var(--room-illumination, 1))' }} />
       <Spindle />
     </div>
   )

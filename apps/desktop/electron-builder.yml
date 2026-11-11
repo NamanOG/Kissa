@@ -76,7 +76,8 @@ appx:
   publisher: CN=EA71DE1F-A797-4E0B-B533-577BD634E912
   publisherDisplayName: GlyphCode
   displayName: Kissa
-  backgroundColor: '#0f0b07'
+  # Transparent: Windows 11 Start otherwise draws this colour as a plate behind the icon.
+  backgroundColor: 'transparent'
   languages:
     - en-US
     - es-ES

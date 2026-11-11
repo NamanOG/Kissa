@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
+import { useMoreContrast } from '@renderer/hooks/useReducedMotion'
 import { LISTENING_ENVIRONMENTS } from '@renderer/features/settings/themes'
 
 export interface AppLayoutProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -8,6 +9,11 @@ export interface AppLayoutProps extends React.HTMLAttributes<HTMLDivElement> {}
 export const AppLayout = React.forwardRef<HTMLDivElement, AppLayoutProps>(
   ({ className, children, ...props }, ref) => {
     const theme = usePlayerStore(s => s.theme)
+    // Increase contrast (Settings > General > Comfort, or Windows): secondary text moves 60 % of the
+    // way to the primary text colour, in every room.
+    const moreContrast = useMoreContrast()
+    const muted = (value: string): string =>
+      moreContrast ? `color-mix(in srgb, ${value} 40%, var(--on-surface))` : value
     
     useEffect(() => {
       const activeThemeObj = LISTENING_ENVIRONMENTS.find((t) => t.id === theme) || LISTENING_ENVIRONMENTS[0]
@@ -17,7 +23,7 @@ export const AppLayout = React.forwardRef<HTMLDivElement, AppLayoutProps>(
         root.style.setProperty('--accent', 'var(--adaptive-accent, #e0a868)')
         root.style.setProperty('--surface', activeThemeObj.surfaceColor)
         root.style.setProperty('--on-surface', 'var(--adaptive-on-surface, #faf3ea)')
-        root.style.setProperty('--muted', 'var(--adaptive-muted, #a89f91)')
+        root.style.setProperty('--muted', muted('var(--adaptive-muted, #a89f91)'))
         
         root.style.setProperty('--panel-bg', 'var(--adaptive-panel-bg, rgba(24, 20, 18, 0.75))')
         root.style.setProperty('--panel-border', activeThemeObj.ui.panelBorder)
@@ -37,7 +43,7 @@ export const AppLayout = React.forwardRef<HTMLDivElement, AppLayoutProps>(
         root.style.setProperty('--accent', activeThemeObj.accentColor)
         root.style.setProperty('--surface', activeThemeObj.surfaceColor)
         root.style.setProperty('--on-surface', activeThemeObj.onSurfaceColor)
-        root.style.setProperty('--muted', activeThemeObj.mutedColor)
+        root.style.setProperty('--muted', muted(activeThemeObj.mutedColor))
         
         root.style.setProperty('--panel-bg', activeThemeObj.ui.panelBg)
         root.style.setProperty('--panel-border', activeThemeObj.ui.panelBorder)
@@ -54,7 +60,7 @@ export const AppLayout = React.forwardRef<HTMLDivElement, AppLayoutProps>(
         root.style.setProperty('--typography-glow', activeThemeObj.ui.typographyGlow)
         root.setAttribute('data-vinyl-mood', activeThemeObj.ui.vinylMood)
       }
-    }, [theme])
+    }, [theme, moreContrast])
 
     return (
       <div

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { VinylEngine } from '@renderer/features/vinyl'
 import { Play, Pause, SkipBack, SkipForward, Maximize2, ListMusic, X } from 'lucide-react'
@@ -82,6 +83,8 @@ export const MiniPlayerView = (): React.JSX.Element => {
   }
   
   const fillRef = useRef<HTMLDivElement>(null)
+  const elapsedRef = useRef<HTMLSpanElement>(null)
+  const remainingRef = useRef<HTMLSpanElement>(null)
   const shownRef = useRef(shown)
   shownRef.current = shown
 
@@ -90,6 +93,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
 
     let rafId: number
     let lastBeat = -1
+    let lastSecond = -1
 
     // The bar moves a pixel or two a second, so it steps on the shared 30 Hz beat (with the
     // record and Moving light) and rests while the controls are hidden: written on every refresh
@@ -104,6 +108,13 @@ export const MiniPlayerView = (): React.JSX.Element => {
         const elapsed = Math.max(0, Math.min(time, duration))
         const percent = elapsed / duration
         fillRef.current.style.transform = `scaleX(${percent})`
+        // The times change once a second, written straight to the text: no React render.
+        const second = Math.floor(elapsed)
+        if (second !== lastSecond) {
+          lastSecond = second
+          if (elapsedRef.current) elapsedRef.current.textContent = clockText(second)
+          if (remainingRef.current) remainingRef.current.textContent = `−${clockText(Math.max(0, Math.floor(duration) - second))}`
+        }
       } else if (fillRef.current) {
         fillRef.current.style.transform = `scaleX(0)`
       }
@@ -153,11 +164,12 @@ export const MiniPlayerView = (): React.JSX.Element => {
         <div className="flex-1 min-w-0 app-region-no-drag">
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentTrack?.audioUrl || 'empty'}
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
-              transition={{ duration: 0.3 }}
+              // Keyed by the song itself: other players have no audioUrl, so their songs used to swap
+              // in place with no transition. Same motion as the Deck: in gently, out quickly.
+              key={currentTrack ? `${currentTrack.title}\u0000${currentTrack.artist}` : 'empty'}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0, transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } }}
+              exit={{ opacity: 0, y: -4, transition: { duration: 0.14, ease: [0.4, 0, 1, 1] } }}
               className="flex flex-col"
             >
               <h3 className="font-serif text-lg font-medium line-clamp-1 tracking-tight text-ink">
@@ -175,7 +187,7 @@ export const MiniPlayerView = (): React.JSX.Element => {
           type="button"
           onClick={() => toggleMiniPlayer()}
           aria-label={t('mini.restore')}
-          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors duration-ui ease-primary cursor-pointer app-region-no-drag text-dim hover:text-ink hover:bg-ink/[0.05]"
+          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors duration-ui ease-primary cursor-pointer app-region-no-drag text-dim hover:text-ink hover:bg-ink/[0.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone"
           title={t('mini.restore')}
         >
           <Maximize2 className="w-4 h-4" />
@@ -190,12 +202,11 @@ export const MiniPlayerView = (): React.JSX.Element => {
           transition={{ duration: shown ? 0.4 : 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="w-[180px] h-[180px] relative"
         >
-          <div
-            className="absolute inset-4 rounded-full blur-2xl bg-tone/15"
-          />
+          {/* A still shadow, not a drop-shadow filter redrawn on every frame of the spin. */}
+          <span aria-hidden="true" className="pointer-events-none absolute inset-[1.5%] rounded-full shadow-xl" />
           <VinylEngine
             albumArt={currentTrack?.artworkUrl ?? albumPlaceholder}
-            className="w-full h-full drop-shadow-xl"
+            className="w-full h-full"
           />
         </motion.div>
       </div>
@@ -210,12 +221,22 @@ export const MiniPlayerView = (): React.JSX.Element => {
           shown ? 'app-region-no-drag' : 'pointer-events-none'
         )}
       >
-        <div className="h-1.5 w-full bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
-          <div 
-            ref={fillRef}
-            className="h-full origin-left will-change-transform bg-tone"
-            style={{ transform: 'scaleX(0)' }}
-          />
+        {/* A slim track, like the dock's: the position, not the loudest thing in the window. */}
+        <div>
+          <div className="h-[3px] w-full bg-white/[0.12] rounded-full overflow-hidden">
+            <div
+              ref={fillRef}
+              className="h-full origin-left will-change-transform bg-ink/85"
+              style={{ transform: 'scaleX(0)' }}
+            />
+          </div>
+          {/* Elapsed and remaining, small and quiet, only when the song's length is known. */}
+          {duration > 0 && (
+            <div aria-hidden="true" className="mt-1.5 flex justify-between text-[11px] leading-none tabular-nums text-dim">
+              <span ref={elapsedRef}>0:00</span>
+              <span ref={remainingRef}>{`−${clockText(Math.floor(duration))}`}</span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between">
@@ -281,12 +302,12 @@ export const MiniPlayerView = (): React.JSX.Element => {
             className="absolute inset-0 z-20 flex flex-col p-4 app-region-no-drag bg-[var(--panel-bg)]"
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-kissa-editorial text-lg text-ink">Up Next</h3>
+              <h3 className="font-kissa-editorial text-lg text-ink">{t('queue.title')}</h3>
               <button
                 type="button"
                 onClick={() => setShowQueue(false)}
                 aria-label={t('mini.closeQueue')}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/10 dark:hover:bg-white/10"
+                className="w-8 h-8 flex items-center justify-center rounded-full text-dim transition-colors duration-ui ease-primary hover:text-ink hover:bg-ink/[0.06]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -298,4 +319,10 @@ export const MiniPlayerView = (): React.JSX.Element => {
       </AnimatePresence>
     </div>
   )
+}
+
+/** m:ss for the mini player's times. */
+function clockText(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }

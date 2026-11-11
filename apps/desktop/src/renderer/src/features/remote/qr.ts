@@ -40,7 +40,7 @@ function alignmentPositions(ver: number): number[] {
   return result
 }
 
-// ---- Reed-Solomon over GF(256), polynomial 0x11D -------------------------------------------
+// Reed-Solomon over GF(256), polynomial 0x11D
 
 function multiply(x: number, y: number): number {
   let z = 0
@@ -75,7 +75,7 @@ function remainder(data: number[], div: number[]): number[] {
   return result
 }
 
-// ---- Encoding ------------------------------------------------------------------------------
+// Encoding
 
 function utf8(text: string): number[] {
   return Array.from(new TextEncoder().encode(text))
@@ -134,7 +134,7 @@ export function encodeQr(text: string): boolean[][] {
   return place(ver, codewords)
 }
 
-// ---- Module placement ----------------------------------------------------------------------
+// Module placement
 
 function place(ver: number, codewords: number[]): boolean[][] {
   const size = ver * 4 + 17

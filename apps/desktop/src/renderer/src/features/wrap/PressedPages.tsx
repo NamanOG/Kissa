@@ -83,6 +83,8 @@ export function sceneCover(id: SceneId, recap: Recap, covers: CoverLookup): stri
 }
 
 const SERIF = 'font-kissa-editorial font-medium tracking-[-0.035em] text-ink'
+/** Numbers in the app's sans, like a system readout: serif numerals read as a dashboard template. */
+const NUMERALS = 'font-sans font-semibold tracking-[-0.045em] tabular-nums text-ink'
 const KICKER = 'text-[13px] font-semibold text-tone'
 
 interface SceneProps {
@@ -115,7 +117,6 @@ export function PressedScene({ id, ...props }: SceneProps & { id: SceneId }): Re
   }
 }
 
-/* ---------------------------------------------------------------------------------------- */
 
 /** A length of time as a number to count up to, and its unit. */
 function timeParts(seconds: number, t: Translate): { value: number; decimals: number; unit: string } {
@@ -152,7 +153,6 @@ export function useTitle(recap: Recap, periodText: string): string {
   return t('pressed.title.year', { year: periodText })
 }
 
-/* ---------------------------------------------------------------------------------------- */
 
 /** A record with the cover as its label. Spins up once, after `delay` ms, then rests. */
 export function PressedRecord({
@@ -304,7 +304,7 @@ function Time({ recap, reduce }: SceneProps): React.JSX.Element {
           delay={0.5}
           duration={2.6}
           reduce={reduce}
-          className={cn(SERIF, 'text-[clamp(6rem,17vw,13.5rem)] leading-[0.9]')}
+          className={cn(NUMERALS, 'text-[clamp(5.5rem,15vw,12rem)] leading-[0.9]')}
         />
         <Lift reduce={reduce} delay={1.4}>
           <span className="text-[clamp(1.2rem,2.2vw,1.8rem)] font-medium text-ink/75">{parts.unit}</span>
@@ -351,8 +351,9 @@ function Grooves({ lit, total, reduce }: { lit: number; total: number; reduce: b
             r={34 + i * 2.5}
             fill="none"
             stroke={lights ? 'var(--accent)' : 'rgba(255,240,225,1)'}
-            strokeWidth={lights ? 0.55 : 0.35}
-            strokeOpacity={lights ? 0.42 : 0.07}
+            // Quiet: grooves behind the words, not a graphic competing with them.
+            strokeWidth={lights ? 0.45 : 0.35}
+            strokeOpacity={lights ? 0.16 : 0.06}
             // The cut is a CSS animation (main.css, pressed-cut): no script runs per frame for it.
             pathLength={1}
             strokeDasharray="1"
@@ -504,7 +505,7 @@ function Crate({ recap, covers, reduce }: SceneProps): React.JSX.Element {
               </Lift>
               <Lift reduce={reduce} delay={1.0} className="mt-6 flex items-baseline justify-center gap-6 min-[1000px]:justify-start">
                 <span className="flex items-baseline gap-2">
-                  <CountUp value={top.p} lang={lang} delay={1.1} duration={1.4} reduce={reduce} className={cn(SERIF, 'text-[44px] leading-none')} />
+                  <CountUp value={top.p} lang={lang} delay={1.1} duration={1.4} reduce={reduce} className={cn(NUMERALS, 'text-[40px] leading-none')} />
                   <span className="text-[14px] text-ink/65">{t(top.p === 1 ? 'shelf.play.one' : 'shelf.play.other')}</span>
                 </span>
                 <span className="text-[14px] text-ink/65">{formatTime(top.s, t)}</span>
@@ -557,7 +558,7 @@ function Artists({ recap, reduce }: SceneProps): React.JSX.Element {
       </h2>
       <Lift reduce={reduce} delay={1.3} className="mt-5 flex items-baseline gap-5 text-ink/80">
         <span className="flex items-baseline gap-2">
-          <CountUp value={parts.value} decimals={parts.decimals} lang={lang} delay={1.35} duration={1.6} reduce={reduce} className={cn(SERIF, 'text-[40px] leading-none')} />
+          <CountUp value={parts.value} decimals={parts.decimals} lang={lang} delay={1.35} duration={1.6} reduce={reduce} className={cn(NUMERALS, 'text-[36px] leading-none')} />
           <span className="text-[15px]">{parts.unit}</span>
         </span>
         <span className="h-1 w-1 rounded-full bg-ink/35" aria-hidden="true" />
@@ -604,7 +605,7 @@ function Songs({ recap, reduce }: SceneProps): React.JSX.Element {
             transition={{ duration: 0.85, ease: EASE_OUT, delay: 0.7 + i * 0.16 }}
             className="grid grid-cols-[2.2rem_minmax(0,1fr)_minmax(90px,220px)_4.5rem] items-center gap-4 border-b border-white/[0.07] py-4 last:border-b-0"
           >
-            <span className={cn(SERIF, 'text-[26px] leading-none tabular-nums', i === 0 ? 'text-tone' : 'text-ink/45')}>{i + 1}</span>
+            <span className={cn(NUMERALS, 'text-[22px] leading-none', i === 0 ? 'text-tone' : 'text-ink/45')}>{i + 1}</span>
             <span className="min-w-0">
               <span className={cn('block truncate font-semibold text-ink', i === 0 ? 'text-[19px]' : 'text-[16px]')}>{s.a}</span>
               <span className="block truncate text-[13.5px] text-ink/60">{s.b}</span>
@@ -703,7 +704,7 @@ function When({ recap, reduce }: SceneProps): React.JSX.Element {
           transition={{ rotate: { duration: 1.8, ease: EASE_IN_OUT, delay: 1.9 }, opacity: { duration: 0.4, delay: 1.7 } }}
         >
           <span className="absolute left-1/2 top-[3%] h-[44%] w-[2px] -translate-x-1/2 rounded-full bg-gradient-to-b from-ink to-ink/30" />
-          <span className="absolute left-1/2 top-[3%] h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink shadow-[0_0_14px_rgba(255,240,225,0.6)]" />
+          <span className="absolute left-1/2 top-[3%] h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink shadow-[0_1px_3px_rgba(0,0,0,0.5)]" />
         </motion.div>
         <span className="absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#0b0806] shadow-[0_0_0_2px_rgba(255,255,255,0.08)]" />
       </motion.div>
@@ -752,7 +753,7 @@ function Habits({ recap, reduce }: SceneProps): React.JSX.Element {
             <p className="text-[13px] font-medium text-ink/70">{tile.label}</p>
             {tile.value !== undefined ? (
               <p className="flex items-baseline gap-2">
-                <CountUp value={tile.value} lang={lang} delay={1.2 + i * 0.16} duration={1.6} reduce={reduce} className={cn(SERIF, 'text-[clamp(3rem,5vw,4.4rem)] leading-none')} />
+                <CountUp value={tile.value} lang={lang} delay={1.2 + i * 0.16} duration={1.6} reduce={reduce} className={cn(NUMERALS, 'text-[clamp(2.75rem,4.5vw,4rem)] leading-none')} />
                 {tile.unit && <span className="text-[15px] text-ink/70">{tile.unit}</span>}
               </p>
             ) : (

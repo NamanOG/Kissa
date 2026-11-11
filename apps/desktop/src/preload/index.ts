@@ -12,7 +12,54 @@ import type { ShareExportOptions, SharePayload } from '../types/share'
 import type { UpdateStatusPayload, UpdateInstallResult } from '../types/update'
 import type { DiscordPresenceStatus, StudyPresence, YouTubeMusicConnectorStatus } from '../types/discord'
 import type { RemoteQueue } from '../types/remoteQueue'
+import type { DesktopLyricsFrame, DesktopLyricsSize, DesktopLyricsStatus } from '../types/desktopLyrics'
 import type { PhoneRemoteStatus, RemoteCommand, RemoteLook, RemoteLyricLine, RemoteNowPlaying } from '../types/remote'
+
+/**
+ * Transport commands (play/pause, next, previous, seek) only ever follow something the listener
+ * did. The preload sees every real (trusted) pointer and key event in the window and every action
+ * that arrives from the tray, the taskbar buttons, the song card or the phone remote. A command
+ * with neither in the last moment, and no named reason (the sleep timer ending, an album being
+ * started), is refused in the main process. Every command is logged there with its origin.
+ */
+const INPUT_WINDOW_MS = 800
+let lastTrustedInput = 0
+let lastRemoteAction = 0
+/** The last real input, named for the log: event type, key and the control it reached. */
+let lastInputSource = ''
+const describeTarget = (t: EventTarget | null): string => {
+  if (!(t instanceof Element)) return '?'
+  const el = t.closest('button, a, input, [role], [data-testid], [aria-label]') ?? t
+  const name = el.getAttribute('aria-label') ?? el.getAttribute('data-testid') ?? el.id ?? ''
+  return `${el.tagName.toLowerCase()}${name ? `[${name.slice(0, 40)}]` : ''}`
+}
+if (typeof window !== 'undefined') {
+  const mark = (e: Event): void => {
+    if (!e.isTrusted) return
+    lastTrustedInput = Date.now()
+    const key = e instanceof KeyboardEvent ? ` key=${e.key === ' ' ? 'Space' : e.key}` : ''
+    lastInputSource = `${e.type}${key} on ${describeTarget(e.target)}`
+  }
+  for (const type of ['pointerdown', 'pointerup', 'keydown', 'keyup', 'click']) {
+    window.addEventListener(type, mark, true)
+  }
+}
+
+export type CommandReason = 'sleep-timer' | 'album-start'
+
+function commandOrigin(reason?: CommandReason): { allowed: boolean; why: string; user: boolean | null; from: string; source: string } {
+  const now = Date.now()
+  const input = now - lastTrustedInput < INPUT_WINDOW_MS
+  const remote = now - lastRemoteAction < INPUT_WINDOW_MS
+  const why = reason ?? (input ? 'input' : remote ? 'remote' : 'none')
+  const user = typeof navigator !== 'undefined' && navigator.userActivation ? navigator.userActivation.isActive : null
+  const from = (new Error().stack ?? '')
+    .split(/\r?\n/)
+    .slice(2, 6)
+    .map((line) => line.trim().replace(/^at /, '').replace(/\(?https?:\/\/[^/]+\//, '(').slice(0, 120))
+    .join(' < ')
+  return { allowed: why !== 'none', why, user, from, source: input ? lastInputSource : '' }
+}
 
 /** An album's sides, as the main process returns them (main/services/albumSides.ts). */
 export interface AlbumSidesResult {
@@ -27,7 +74,7 @@ export interface KissaSystemMediaAPI {
   chooseLyrics: (request: LyricsRequest, choice: LyricsChoice) => Promise<LyricsResponse | null>
   onSystemMediaUpdate: (callback: (data: SystemMediaPayload | null) => void) => () => void
   getVolume: () => Promise<{ master: number; isMuted: boolean } | null>
-  mediaPlayPause: () => Promise<void>
+  mediaPlayPause: (reason?: CommandReason) => Promise<void>
   /** Asks for an album folder and reads it; its files become playable, read-only. */
   chooseAlbumFolder: () => Promise<LocalAlbumResult>
   /** Why a kissa-album:// track would not play. */
@@ -39,7 +86,15 @@ export interface KissaSystemMediaAPI {
   getAppVersion: () => Promise<string>
   toggleMiniPlayer: (isMini: boolean, alwaysOnTop?: boolean) => Promise<void>
   setFullScreen: (value: boolean) => Promise<boolean>
+  /** Start-up timeline marks (main/startupTiming.ts). */
+  startupMark?: (name: string) => void
+  /** The opening has drawn its first frame over the room: show the window; resolves once it is on screen. */
+  openingReady?: () => Promise<void>
   onFullscreenChanged: (callback: (isFullscreen: boolean) => void) => () => void
+  /** Kissa's own caption buttons (no native overlay). */
+  windowControl?: (action: 'minimize' | 'toggle-maximize' | 'close') => Promise<void>
+  getWindowMaximized?: () => Promise<boolean>
+  onWindowMaximized?: (callback: (maximized: boolean) => void) => () => void
   onWindowVisibility: (callback: (visible: boolean) => void) => () => void
   onMiniHover: (callback: (inside: boolean) => void) => () => void
   getGraphics: () => Promise<{ hardwareAcceleration: boolean; activeNow: boolean }>
@@ -52,7 +107,7 @@ export interface KissaSystemMediaAPI {
   onTrayAction: (callback: (action: string) => void) => () => void
   takeJumpPlace: () => Promise<string | null>
   getAlbumSides: (artist: string, album: string) => Promise<AlbumSidesResult | null>
-  showTrackToast: (payload: { title: string; artist: string; artwork?: string; accent?: string; label?: string; playing?: boolean }) => Promise<boolean>
+  showTrackToast: (payload: { title: string; artist: string; artwork?: string; accent?: string; label?: string; playPauseLabel?: string; nextLabel?: string; playing?: boolean }) => Promise<boolean>
   setJumpList: (labels: Record<string, string>) => Promise<void>
   exportShare: (options: ShareExportOptions) => Promise<boolean>
   getSharePayload: () => Promise<SharePayload | null>
@@ -82,6 +137,9 @@ export interface KissaSystemMediaAPI {
   installUpdate: () => Promise<UpdateInstallResult>
   openStorePage: () => Promise<void>
   openStoreReview: () => Promise<void>
+  getReminders: () => Promise<unknown>
+  setReminders: (state: unknown) => Promise<unknown>
+  getSystemInfo: () => Promise<{ windows: string; arch: string }>
   onUpdateStatusChanged: (callback: (status: UpdateStatusPayload) => void) => () => void
   getDiscordPresence: () => Promise<DiscordPresenceStatus>
   setStudyKeepAwake: (on: boolean) => Promise<boolean>
@@ -104,6 +162,11 @@ export interface KissaSystemMediaAPI {
   sendRemoteLyrics: (track: { title: string; artist: string }, lines: RemoteLyricLine[]) => void
   onPhoneRemoteChanged: (callback: (status: PhoneRemoteStatus) => void) => () => void
   onRemoteCommand: (callback: (command: RemoteCommand) => void) => () => void
+  getDesktopLyrics: () => Promise<DesktopLyricsStatus>
+  setDesktopLyrics: (change: { enabled?: boolean; locked?: boolean; size?: DesktopLyricsSize }) => Promise<DesktopLyricsStatus>
+  sendDesktopLyricsFrame: (frame: DesktopLyricsFrame) => void
+  sendDesktopLyricsLabels: (labels: { lock: string; unlock: string; close: string; size: string }) => void
+  onDesktopLyricsChanged: (callback: (status: DesktopLyricsStatus) => void) => () => void
 }
 
 // The main process sends an embedded cover once and then marks updates "unchanged".
@@ -137,17 +200,32 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
     }
   },
   getVolume: () => ipcRenderer.invoke('kissa:get-volume'),
-  mediaPlayPause: () => ipcRenderer.invoke('kissa:media-play-pause'),
+  mediaPlayPause: (reason?: CommandReason) => ipcRenderer.invoke('kissa:media-play-pause', commandOrigin(reason)),
   chooseAlbumFolder: () => ipcRenderer.invoke('kissa:album-choose'),
   albumTrackProblem: (url) => ipcRenderer.invoke('kissa:album-problem', url),
-  mediaNext: () => ipcRenderer.invoke('kissa:media-next'),
-  mediaPrev: () => ipcRenderer.invoke('kissa:media-prev'),
-  mediaSeek: (positionSeconds: number) => ipcRenderer.invoke('kissa:media-seek', positionSeconds),
+  mediaNext: () => ipcRenderer.invoke('kissa:media-next', commandOrigin()),
+  mediaPrev: () => ipcRenderer.invoke('kissa:media-prev', commandOrigin()),
+  mediaSeek: (positionSeconds: number) => ipcRenderer.invoke('kissa:media-seek', positionSeconds, commandOrigin()),
   openExternal: (url: string) => ipcRenderer.invoke('kissa:open-external', url),
   getAppVersion: () => ipcRenderer.invoke('kissa:get-app-version'),
   toggleMiniPlayer: (isMini: boolean, alwaysOnTop?: boolean) =>
     ipcRenderer.invoke('kissa:toggle-mini-player', isMini, alwaysOnTop),
   setFullScreen: (value: boolean) => ipcRenderer.invoke('kissa:set-fullscreen', value),
+  startupMark: (name: string) => ipcRenderer.send('kissa:startup-mark', name, Date.now()),
+  openingReady: () =>
+    new Promise<void>((resolve) => {
+      ipcRenderer.once('kissa:opening-shown', () => resolve())
+      ipcRenderer.send('kissa:opening-ready')
+    }),
+  windowControl: (action) => ipcRenderer.invoke('kissa:window-control', action),
+  getWindowMaximized: () => ipcRenderer.invoke('kissa:window-maximized'),
+  onWindowMaximized: (callback) => {
+    const handler = (_event: unknown, maximized: boolean): void => callback(maximized === true)
+    ipcRenderer.on('kissa:window-maximized', handler)
+    return (): void => {
+      ipcRenderer.removeListener('kissa:window-maximized', handler)
+    }
+  },
   onFullscreenChanged: (callback) => {
     const handler = (_event: unknown, isFullscreen: boolean): void => {
       callback(isFullscreen)
@@ -180,6 +258,7 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
   setThumbarButtons: (isPlaying) => ipcRenderer.invoke('kissa:set-thumbar', isPlaying),
   onTrayAction: (callback) => {
     const handler = (_event: unknown, action: string): void => {
+      lastRemoteAction = Date.now()
       callback(action)
     }
     ipcRenderer.on('kissa:tray-action', handler)
@@ -216,6 +295,9 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
   installUpdate: () => ipcRenderer.invoke('kissa:install-update'),
   openStorePage: () => ipcRenderer.invoke('kissa:open-store-page'),
   openStoreReview: () => ipcRenderer.invoke('kissa:open-store-review'),
+  getReminders: () => ipcRenderer.invoke('kissa:reminders-get'),
+  setReminders: (state) => ipcRenderer.invoke('kissa:reminders-set', state),
+  getSystemInfo: () => ipcRenderer.invoke('kissa:system-info'),
   onUpdateStatusChanged: (callback) => {
     const handler = (_event: unknown, status: UpdateStatusPayload): void => {
       callback(status)
@@ -264,10 +346,24 @@ const kissaMediaAPI: KissaSystemMediaAPI = {
     }
   },
   onRemoteCommand: (callback) => {
-    const handler = (_event: unknown, command: RemoteCommand): void => callback(command)
+    const handler = (_event: unknown, command: RemoteCommand): void => {
+      lastRemoteAction = Date.now()
+      callback(command)
+    }
     ipcRenderer.on('kissa:remote-command', handler)
     return (): void => {
       ipcRenderer.removeListener('kissa:remote-command', handler)
+    }
+  },
+  getDesktopLyrics: () => ipcRenderer.invoke('kissa:desktop-lyrics-status'),
+  setDesktopLyrics: (change) => ipcRenderer.invoke('kissa:desktop-lyrics-set', change),
+  sendDesktopLyricsFrame: (frame) => ipcRenderer.send('kissa:desktop-lyrics-frame', frame),
+  sendDesktopLyricsLabels: (labels) => ipcRenderer.send('kissa:desktop-lyrics-labels', labels),
+  onDesktopLyricsChanged: (callback) => {
+    const handler = (_event: unknown, status: DesktopLyricsStatus): void => callback(status)
+    ipcRenderer.on('kissa:desktop-lyrics-changed', handler)
+    return (): void => {
+      ipcRenderer.removeListener('kissa:desktop-lyrics-changed', handler)
     }
   }
 }

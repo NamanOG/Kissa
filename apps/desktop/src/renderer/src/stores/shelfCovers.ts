@@ -47,7 +47,8 @@ function encodeSmall(url: string): Promise<string | null> {
         const canvas = document.createElement('canvas')
         canvas.width = w
         canvas.height = h
-        const ctx = canvas.getContext('2d')
+        // On the CPU: a GPU canvas read back for the encode holds the GPU process and stalls frames.
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })
         if (!ctx) return resolve(null)
         ctx.fillStyle = '#1a1411' // under any transparent edge, like the shelf sleeve
         ctx.fillRect(0, 0, w, h)

@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import React, { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion, useIsPresent } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { useStudyStore } from '@renderer/stores/studyStore'
 import { environmentInfo, type StudyScene } from './scenes'
 import { isRunning, segmentElapsed } from './studySession'
@@ -22,15 +23,40 @@ export function StudyWindowScene({ className }: { className?: string }): React.J
   const hasSession = useStudyStore((s) => s.active !== null)
   const segmentId = useStudyStore((s) => s.active?.segment.id)
   const info = environmentInfo(environment)
+  // The weather is built once the page has arrived: building it (droplets, the photo at full
+  // size) takes a quarter second and froze the page change when it ran in the click (measured
+  // 2026-11-11). The photograph is shown at once beneath it, and the weather fades in over it.
+  const [built, setBuilt] = useState<string | null>(null)
+  // Leaving the Focus Room: the weather holds its last frame while the page fades out, instead
+  // of the rain still falling (and costing frames) under the fade.
+  const present = useIsPresent()
+  const presentRef = useRef(present)
+  presentRef.current = present
+  useEffect(() => {
+    if (!present) sceneRef.current?.stop()
+  }, [present])
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    let cleanup: (() => void) | undefined
+    const timer = window.setTimeout(() => {
+      if (!presentRef.current) return
+      cleanup = startScene(canvas)
+    }, reduceMotion ? 0 : 420)
+    return (): void => {
+      window.clearTimeout(timer)
+      cleanup?.()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [info, reduceMotion])
+
+  function startScene(canvas: HTMLCanvasElement): (() => void) | undefined {
     let scene: StudyScene
     try {
       scene = info.create(canvas, reduceMotion)
     } catch {
-      return
+      return undefined
     }
     sceneRef.current = scene
     scene.setPhoto(info.photo)
@@ -38,16 +64,24 @@ export function StudyWindowScene({ className }: { className?: string }): React.J
     fit()
     const observer = new ResizeObserver(fit)
     observer.observe(canvas)
-    const visibility = (): void => (document.hidden ? scene.stop() : scene.start())
+    const visibility = (): void => (document.hidden || !presentRef.current ? scene.stop() : scene.start())
     document.addEventListener('visibilitychange', visibility)
     visibility()
+    // The scene reads the current focus progress as soon as it exists.
+    const s = useStudyStore.getState().active
+    scene.setActive(Boolean(s && isRunning(s)))
+    if (s && s.segment.kind === 'focus') {
+      const span = s.segment.plannedMs ?? 50 * 60_000
+      scene.setProgress(Math.min(1, segmentElapsed(s.segment, Date.now()) / span))
+    } else scene.setProgress(0)
+    setBuilt(environment)
     return (): void => {
       observer.disconnect()
       document.removeEventListener('visibilitychange', visibility)
       scene.dispose()
       sceneRef.current = null
     }
-  }, [info, reduceMotion])
+  }
 
   useEffect(() => {
     if (segmentId !== undefined) sceneRef.current?.reset()
@@ -82,12 +116,21 @@ export function StudyWindowScene({ className }: { className?: string }): React.J
   return (
     <div aria-hidden="true" className={className}>
       <div className="absolute inset-0 overflow-hidden bg-black">
+        {info.photo && (
+          <img
+            src={info.photo}
+            alt=""
+            draggable={false}
+            decoding="async"
+            className="absolute inset-0 h-full w-full scale-[1.06] object-cover"
+          />
+        )}
         <AnimatePresence initial={false}>
           <motion.canvas
             key={environment}
             ref={canvasRef}
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            animate={{ opacity: built === environment ? 1 : 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: reduceMotion ? 0 : 1.2 }}
             className="absolute inset-0 h-full w-full"

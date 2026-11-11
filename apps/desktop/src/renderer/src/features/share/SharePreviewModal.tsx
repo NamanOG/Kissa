@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
+import { useSheet } from '@renderer/features/background/sheetCount'
 import { X, Copy, Download, Loader2 } from 'lucide-react'
 import { SharePayload, AspectRatio } from '../../../../types/share'
 import { ShareCardRenderer } from './ShareCardRenderer'
@@ -22,6 +24,7 @@ export function SharePreviewModal({ payload, onClose }: SharePreviewModalProps) 
   const dialogRef = useRef<HTMLDialogElement>(null)
   const reducedMotion = useReducedMotion()
   const listenerName = usePlayerStore((s) => s.listenerName)
+  useSheet(Boolean(payload))
 
   useEffect(() => {
     if (!payload) return

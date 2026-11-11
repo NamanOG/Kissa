@@ -91,6 +91,34 @@ function normalizeTime(raw: number | undefined | null): number {
 
 import { ArtworkService } from './ArtworkService'
 import { judgeCover, type CoverOwner } from './coverOwnership'
+import { HelperRestartPolicy } from '../helperRestartPolicy'
+
+/** What the preload says about where a transport command came from (preload/index.ts). */
+interface CommandOrigin {
+  allowed?: boolean
+  why?: string
+  user?: boolean | null
+  from?: string
+  /** The last real input before the command: event type, key and the control (preload). */
+  source?: string
+}
+
+/**
+ * Every play/pause/next/previous/seek Kissa sends to another player is logged with its origin,
+ * and refused unless the listener just did something (a click, a key, a tray or phone action) or
+ * a named reason applies (the sleep timer, starting an album). Kissa must never drive someone's
+ * music on its own.
+ */
+function allowCommand(action: string, origin: CommandOrigin | undefined): boolean {
+  const allowed = origin?.allowed === true
+  const line = `[media-cmd] ${new Date().toISOString()} ${allowed ? 'SENT' : 'REFUSED'} ${action} why=${origin?.why ?? 'unknown'} user=${origin?.user ?? 'n/a'}${origin?.source ? ` input=${String(origin.source).slice(0, 100)}` : ''} from=${origin?.from ?? 'n/a'}`
+  if (allowed) console.log(line)
+  else {
+    console.warn(line)
+    DiagnosticsLog.get()?.record('media-cmd-refused', { action: action.split(' ')[0] })
+  }
+  return allowed
+}
 
 /** The last cover the helper sent. It only resends the image when it changes. */
 let lastThumbnailDataUrl: string | undefined
@@ -238,6 +266,8 @@ export class MediaDetectionService {
   private static instance: MediaDetectionService
   private static readonly FRESHNESS_WINDOW_MS = 3000
   private worker: Worker | null = null
+  private handlersRegistered = false
+  private readonly workerRestarts = new HelperRestartPolicy()
   private latestPayload: SystemMediaPayload | null = null
   private lastPayloadJson: string | null = null
   /** Embedded cover last sent to each window, so position updates do not carry it again. */
@@ -346,6 +376,9 @@ export class MediaDetectionService {
 
   public start(): void {
     if (this.worker) return
+    // A respawned worker (see the 'exit' handler) reuses the handlers registered the first time.
+    if (!this.handlersRegistered) {
+    this.handlersRegistered = true
 
     // Lyrics found earlier are kept in the profile so they show at once after a restart.
     LyricsService.configure({
@@ -380,7 +413,8 @@ export class MediaDetectionService {
       return this.latestVolume
     })
 
-    ipcMain.handle('kissa:media-play-pause', () => {
+    ipcMain.handle('kissa:media-play-pause', (_event, origin?: CommandOrigin) => {
+      if (!allowCommand('playPause', origin)) return
       if (this.worker && this.latestPayload) {
         this.worker.postMessage({ action: 'playPause' })
       } else {
@@ -388,7 +422,8 @@ export class MediaDetectionService {
       }
     })
 
-    ipcMain.handle('kissa:media-next', () => {
+    ipcMain.handle('kissa:media-next', (_event, origin?: CommandOrigin) => {
+      if (!allowCommand('next', origin)) return
       if (this.worker && this.latestPayload) {
         this.worker.postMessage({ action: 'next' })
       } else {
@@ -396,7 +431,8 @@ export class MediaDetectionService {
       }
     })
 
-    ipcMain.handle('kissa:media-prev', () => {
+    ipcMain.handle('kissa:media-prev', (_event, origin?: CommandOrigin) => {
+      if (!allowCommand('prev', origin)) return
       if (this.worker && this.latestPayload) {
         this.worker.postMessage({ action: 'prev' })
       } else {
@@ -404,7 +440,8 @@ export class MediaDetectionService {
       }
     })
 
-    ipcMain.handle('kissa:media-seek', (_event, positionSeconds: number) => {
+    ipcMain.handle('kissa:media-seek', (_event, positionSeconds: number, origin?: CommandOrigin) => {
+      if (!allowCommand(`seek ${Math.round(Number(positionSeconds))}`, origin)) return
       if (
         typeof positionSeconds !== 'number' ||
         isNaN(positionSeconds) ||
@@ -431,6 +468,7 @@ export class MediaDetectionService {
     ipcMain.handle('kissa:get-app-version', () => {
       return electronApp.getVersion()
     })
+    }
 
     try {
       console.log('[MediaDetectionService] Resolving absolute path to SMTC helper...')
@@ -444,9 +482,10 @@ export class MediaDetectionService {
 
       console.log(`[MediaDetectionService] Resolved helper path: ${helperPath}`)
 
-      this.worker = new Worker(join(__dirname, 'smtcWorker.js'), {
+      const worker = new Worker(join(__dirname, 'smtcWorker.js'), {
         workerData: { helperPath }
       })
+      this.worker = worker
 
       this.worker.on('message', (msg) => {
         if (msg.type === 'update') {
@@ -516,6 +555,14 @@ export class MediaDetectionService {
       this.worker.on('exit', (code) => {
         if (code !== 0) {
           console.error(`[MediaDetectionService] Worker stopped with exit code ${code}`)
+        }
+        // A worker that died on its own is started again, with the helper's own limits (a few
+        // tries, growing waits), instead of leaving Kissa deaf to the music until it restarts.
+        if (code !== 0 && this.worker === worker) {
+          this.worker = null
+          const delay = this.workerRestarts.nextDelay(Date.now())
+          DiagnosticsLog.get()?.record('worker-exit', { code, restartInMs: delay })
+          if (delay !== null) setTimeout(() => this.start(), delay)
         }
         this.isWorkerHealthy = false
         this.videoPlaybackState = 'unknown'
@@ -677,6 +724,8 @@ export class MediaDetectionService {
       } catch {}
       this.worker = null
     }
+    // The handlers are removed below, so a later start() registers them again.
+    this.handlersRegistered = false
     if (ipcMain && typeof ipcMain.removeHandler === 'function') {
       ipcMain.removeHandler('kissa:get-system-media')
       ipcMain.removeHandler('kissa:get-lyrics')

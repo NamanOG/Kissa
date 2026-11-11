@@ -1,5 +1,6 @@
 import { memo } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { TurntableEngine } from '../turntable/TurntableEngine'
 import { DisplayMetadata } from './DisplayMetadata'

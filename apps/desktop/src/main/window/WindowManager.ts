@@ -1,7 +1,8 @@
-import { BrowserWindow, app, screen } from 'electron'
+import { BrowserWindow, app, ipcMain, screen } from 'electron'
+import { startupMark } from '../startupTiming'
 import { join } from 'path'
 import { getWindowConfig, MAIN_WINDOW_MIN_SIZE } from './windowConfig'
-import { setupWindowEvents } from './windowEvents'
+import { applyWindowControl, setupWindowEvents } from './windowEvents'
 import { readWindowState, resolveInitialBounds, writeWindowState } from './windowState'
 import { TrackToast, sanitizeToastPayload } from './TrackToast'
 import { buildJumpTasks, type JumpLabels, type JumpPlace } from './jumpList'
@@ -42,6 +43,8 @@ export class WindowManager {
   private savedWindowState: SavedWindowState | null = null
   /** True while the window is shrunk to the mini player; that size is never remembered. */
   public isMiniPlayer: boolean = false
+  /** The restored size of a window that opened maximised, until it is first restored. */
+  private pendingRestoreBounds: Electron.Rectangle | null = null
   /** A jump-list task Kissa was started with, kept until the renderer is ready for it. */
   public pendingJumpPlace: JumpPlace | null = null
   private constructor() {}
@@ -62,12 +65,17 @@ export class WindowManager {
     }
   }
 
+  /** The window's restored size and position (the saved one while it has opened maximised). */
+  private normalBounds(win: BrowserWindow): Electron.Rectangle {
+    return this.pendingRestoreBounds ?? win.getNormalBounds()
+  }
+
   /** Remembers the window's normal size and position, never screensaver or mini-player geometry. */
   private rememberWindowState(win: BrowserWindow): void {
     if (win.isDestroyed() || this.isScreensaver || this.isMiniPlayer || win.isMinimized() || win.isFullScreen()) return
     void writeWindowState(this.windowStateFile(), {
       version: 1,
-      bounds: win.getNormalBounds(),
+      bounds: this.normalBounds(win),
       maximized: win.isMaximized()
     })
   }
@@ -98,22 +106,84 @@ export class WindowManager {
     
     // In screensaver mode, force the window to be fullscreen and hide the menu bar
     const placement = isScreensaver ? null : this.initialPlacement()
+    // A window that opens maximised is created at its maximised size (its display's work area),
+    // so the room lays out once at its final size and the reveal's maximise() resizes nothing.
+    // Its own restored size is kept aside and applied the first time it is restored.
+    const openMaximised = Boolean(placement?.maximized && !isHidden)
+    this.pendingRestoreBounds = openMaximised && placement ? placement.bounds : null
+    const startBounds =
+      openMaximised && placement ? screen.getDisplayMatching(placement.bounds).workArea : placement?.bounds
     const config = isScreensaver
       ? { ...baseConfig, fullscreen: true, autoHideMenuBar: true }
-      : placement
-        ? { ...baseConfig, ...placement.bounds }
+      : startBounds
+        ? { ...baseConfig, ...startBounds }
         : baseConfig
 
     this.mainWindow = new BrowserWindow(config)
-    if (placement?.maximized) {
-      // maximize() shows a hidden window, so wait until it is due to appear anyway
-      // (startup with --hidden opens to the tray and maximizes when first shown).
-      const win = this.mainWindow
-      const maximize = (): void => {
+    const win = this.mainWindow
+    if (openMaximised) {
+      win.once('unmaximize', () => {
+        const restore = this.pendingRestoreBounds
+        this.pendingRestoreBounds = null
+        if (restore && !win.isDestroyed() && !this.isMiniPlayer) win.setBounds(restore)
+      })
+    }
+    if (placement?.maximized && isHidden) {
+      // Started to the tray: maximise when it is first shown.
+      win.once('show', () => {
         if (!win.isDestroyed()) win.maximize()
+      })
+    }
+    // The window is shown when the opening (StartupExperience) has drawn its first frame over the
+    // room, so it opens straight into the opening, and the opening's clock starts only once the
+    // window is on screen (it is told so through 'kissa:opening-shown'). A window that opens
+    // maximised is made transparent, maximised (which shows it), given a moment to lay out at its
+    // final size, then made opaque: it is never seen blank or jumping to the full screen.
+    const shownWaiters: Array<() => void> = []
+    const flushShown = (): void => {
+      while (shownWaiters.length) shownWaiters.shift()?.()
+    }
+    let revealing = false
+    const reveal = (): void => {
+      if (revealing || win.isDestroyed() || win.isVisible()) return
+      revealing = true
+      if (placement?.maximized && !isScreensaver) {
+        win.setOpacity(0)
+        win.maximize()
+        setTimeout(() => {
+          revealing = false
+          startupMark('reveal-timer')
+          if (win.isDestroyed()) return
+          win.setOpacity(1)
+          win.show()
+          flushShown()
+        }, 120)
+      } else {
+        win.show()
+        revealing = false
+        flushShown()
       }
-      if (isHidden) win.once('show', maximize)
-      else win.once('ready-to-show', maximize)
+    }
+    const onOpeningReady = (e: Electron.IpcMainEvent): void => {
+      if (win.isDestroyed() || e.sender !== win.webContents) return
+      startupMark('opening-ready-main')
+      shownWaiters.push(() => {
+        if (!win.isDestroyed()) e.sender.send('kissa:opening-shown')
+      })
+      if (revealing) return // flushed when the reveal completes
+      if (win.isVisible()) flushShown()
+      else if (!isHidden) reveal()
+    }
+    ipcMain.on('kissa:opening-ready', onOpeningReady)
+    win.once('closed', () => ipcMain.removeListener('kissa:opening-ready', onOpeningReady))
+    if (isHidden) {
+      // Started to the tray: the opening waits and plays when the window is first shown.
+      win.once('show', () => setTimeout(flushShown, 150))
+    } else if (isScreensaver) {
+      win.once('ready-to-show', reveal)
+    } else {
+      // Fallback if the renderer never signals (a crash before the opening mounts).
+      win.once('ready-to-show', () => setTimeout(reveal, 4000))
     }
     if (!isScreensaver) this.trackWindowState(this.mainWindow)
     // Keep the renderer alive and responsive even when Kissa is hidden in the tray.
@@ -298,7 +368,7 @@ export class WindowManager {
           this.isMiniPlayer = true
           if (win.isFullScreen()) win.setFullScreen(false)
           // A maximized window ignores setSize, so remember the state and un-maximize first.
-          if (!beforeMini) beforeMini = { maximized: win.isMaximized(), bounds: win.getNormalBounds() }
+          if (!beforeMini) beforeMini = { maximized: win.isMaximized(), bounds: this.normalBounds(win) }
           if (win.isMaximized()) win.unmaximize()
           win.setMinimumSize(320, 320)
           win.setSize(360, 420, true)
@@ -318,6 +388,11 @@ export class WindowManager {
           this.isMiniPlayer = false
         }
       })
+
+      ipcMain.handle('kissa:window-control', (_event, action: unknown) => {
+        applyWindowControl(this.mainWindow, action)
+      })
+      ipcMain.handle('kissa:window-maximized', () => Boolean(this.mainWindow && !this.mainWindow.isDestroyed() && this.mainWindow.isMaximized()))
 
       ipcMain.handle('kissa:set-fullscreen', (_event, value: unknown) => {
         return setWindowFullscreen(this.mainWindow, value)

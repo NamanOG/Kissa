@@ -1,13 +1,15 @@
+import { prefersReducedMotion } from '@renderer/hooks/useReducedMotion'
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '@renderer/utils/cn'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
-import { Bookmark, LocateFixed, Minus, Play, Plus, Quote, RotateCw } from 'lucide-react'
+import { Bookmark, LocateFixed, Play, Quote, RotateCw, X } from 'lucide-react'
 import { savedLineId, useSavedLinesStore } from '@renderer/stores/savedLinesStore'
 import { useNoticeStore } from '@renderer/stores/noticeStore'
 import { useT } from '@renderer/i18n'
-import { parseLrc, type LyricLine } from './lrc'
+import { parseLrc, WORD_LEAD_SECONDS, type LyricLine } from './lrc'
 import { LyricsRecovery } from './LyricsRecovery'
+import { LyricsMenu } from './LyricsMenu'
 
 export { parseLrc } from './lrc'
 export type { LyricLine, LyricToken } from './lrc'
@@ -17,7 +19,7 @@ type LyricsStatus =
 
 /** How long the source must hold a duration before lyrics are looked up with it. */
 const LOOKUP_SETTLE_MS = 350
-/** Lyrics lead the vocal slightly so the highlight lands with the attack, not after it. */
+/** A line starts lighting a moment early, so its 250 ms fade is complete as the vocal lands. */
 const LEAD_IN_SECONDS = 0.15
 /** A silence at least this long between lines shows the "interlude" dots. */
 const INTERLUDE_SECONDS = 5
@@ -26,7 +28,7 @@ const INTERLUDE_SECONDS = 5
 const AUTO_RETRY_MS = [3_000, 10_000, 30_000, 60_000]
 
 const RETRY_BUTTON_CLASS =
-  'mt-4 flex items-center gap-1.5 rounded-full border border-panel-line bg-[var(--panel-bg)] px-3.5 py-1.5 text-[12.5px] font-medium text-tone shadow-[var(--panel-shadow)] transition-colors hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone'
+  'mt-4 flex items-center gap-1.5 rounded-full border border-panel-line bg-[var(--panel-bg)] px-3.5 py-1.5 text-[12.5px] font-medium text-tone shadow-[var(--panel-shadow)] transition-colors hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone'
 
 const SIZE_CLASSES = {
   large: {
@@ -34,11 +36,11 @@ const SIZE_CLASSES = {
     m: 'text-[clamp(1.9rem,3.2vw,3.1rem)] leading-[1.3]',
     l: 'text-[clamp(2.3rem,3.9vw,3.8rem)] leading-[1.26]'
   },
-  // The Deck's side panel: a column beside the turntable, so lines stay whole rather than one or two words each.
+  // The Deck's side panel: the Lyrics page's type, one step smaller to fit the column beside the turntable.
   panel: {
-    s: 'text-[clamp(1.25rem,1.7vw,2rem)] leading-[1.38]',
-    m: 'text-[clamp(1.5rem,2.15vw,2.375rem)] leading-[1.38]',
-    l: 'text-[clamp(1.75rem,2.5vw,2.75rem)] leading-[1.34]'
+    s: 'text-[clamp(1.3rem,1.75vw,2.375rem)] leading-[1.3]',
+    m: 'text-[clamp(1.5rem,2.05vw,2.875rem)] leading-[1.27]',
+    l: 'text-[clamp(1.75rem,2.45vw,3.375rem)] leading-[1.24]'
   },
   compact: {
     s: 'text-[clamp(1.15rem,1.7vw,1.6rem)] leading-[1.3]',
@@ -52,6 +54,8 @@ interface LyricRowProps {
   index: number
   /** 0 = the line being sung, 1 and 2 = its neighbours, 3 = everything further away. */
   distance: 0 | 1 | 2 | 3
+  /** Already sung: dimmer than the lines still to come. */
+  past: boolean
   textClass: string
   seekable: boolean
   onLineClick: (time: number) => void
@@ -61,13 +65,20 @@ interface LyricRowProps {
   panel: boolean
 }
 
-const ROW_OPACITY = ['opacity-100', 'opacity-[0.38]', 'opacity-[0.24]', 'opacity-[0.16]'] as const
+// Lines still to come stay readable; lines already sung step back further.
+const ROW_OPACITY = {
+  large: {
+    next: ['opacity-100', 'opacity-[0.42]', 'opacity-[0.28]', 'opacity-[0.2]'],
+    past: ['opacity-100', 'opacity-[0.26]', 'opacity-[0.18]', 'opacity-[0.12]']
+  }
+} as const
 
 const LyricRow = memo(
   ({
     line,
     index,
     distance,
+    past,
     textClass,
     seekable,
     onLineClick,
@@ -79,10 +90,10 @@ const LyricRow = memo(
     const lineRef = useRef<HTMLParagraphElement>(null)
     const isActive = distance === 0
 
-    // Word-by-word fill for the active line, only when the lyrics carry real word timing.
-    // LRCLIB's line-synced lyrics do not; filling words by guessed timings looked like
-    // karaoke the singer was not following, and repainted the whole lyrics panel every
-    // frame. Line-timed lyrics light the whole line at once instead.
+    // Word-by-word fill on the active line only, and only when the lyrics carry real word
+    // timings (enhanced LRC); plain lines light whole at their timestamp. Only this row's spans
+    // are written, and only when a word's percentage changes, so the rest of the list never
+    // repaints. Reduced motion lights the whole line at once.
     useEffect(() => {
       const el = lineRef.current
       const tokens = line.tokens
@@ -91,10 +102,7 @@ const LyricRow = memo(
       const spans = Array.from(el.querySelectorAll<HTMLElement>('.lyric-word'))
       const words = tokens.filter((t) => !t.isWhitespace)
 
-      if (
-        line.timingType !== 'real' ||
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      ) {
+      if (prefersReducedMotion()) {
         spans.forEach((span) => span.style.setProperty('--word-progress', '100%'))
         return
       }
@@ -102,7 +110,8 @@ const LyricRow = memo(
       const written = new Int16Array(words.length).fill(-1)
       let lastTime = -1
 
-      return PlaybackClock.subscribe((time) => {
+      return PlaybackClock.subscribe((clock) => {
+        const time = clock + WORD_LEAD_SECONDS
         // A jump (seek) may move the fill backwards; ordinary playback never does.
         const jumped = Math.abs(time - lastTime) > 0.5
         lastTime = time
@@ -129,10 +138,16 @@ const LyricRow = memo(
         data-lyric-idx={index}
         onClick={() => onLineClick(line.time)}
         className={cn(
-          'group relative rounded-xl py-2.5 pl-3.5 pr-9 origin-left',
-          'transition-[opacity,transform] duration-[600ms] ease-primary motion-reduce:transition-none',
-          panel ? ['opacity-100', 'opacity-[0.6]', 'opacity-[0.44]', 'opacity-[0.34]'][distance] : ROW_OPACITY[distance],
-          panel ? 'w-full' : isActive ? 'cursor-default scale-100' : 'scale-[0.97]',
+          'group relative rounded-xl pl-3.5 pr-9 origin-left',
+          'py-1.5',
+          // A short, calm change when a line becomes the sung one: it never trails the music.
+          'transition-[opacity,transform] duration-[250ms] ease-primary motion-reduce:transition-none',
+          // The same falloff and settle as the Lyrics page, so the two read as one design.
+          ROW_OPACITY.large[past ? 'past' : 'next'][distance],
+          // On the Lyrics page each line is as wide as its words (same wrapping and height, so
+          // scrolling is measured the same), which keeps the save mark beside the words.
+          panel ? 'w-full' : 'w-fit max-w-full',
+          isActive ? 'cursor-default scale-100' : 'scale-[0.97]',
           !isActive && (seekable ? 'cursor-pointer hover:opacity-70' : 'cursor-default')
         )}
       >
@@ -142,7 +157,9 @@ const LyricRow = memo(
             'py-1 tracking-[-0.015em] text-ink text-pretty',
             panel && 'break-words',
             textClass,
-            isActive ? 'font-semibold' : 'font-normal'
+            // One weight for every line: a bolder sung line used to be wider, so a line could
+            // rewrap the moment it lit and push the lines below it. Light and size carry the focus.
+            'font-semibold'
           )}
         >
           {line.tokens
@@ -175,13 +192,10 @@ const LyricRow = memo(
               onToggleSave(line.text)
             }}
             className={cn(
-              'absolute top-1/2 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full transition-[opacity,background-color,color] duration-micro hover:bg-ink/[0.08] focus-visible:opacity-100 focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone',
+              'absolute top-1/2 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full transition-[opacity,background-color,color] duration-micro hover:bg-ink/[0.08] focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone',
               panel ? 'right-0' : '-right-1',
-              saved
-                ? 'text-tone opacity-90'
-                : isActive
-                  ? 'text-dim opacity-70 hover:opacity-100'
-                  : 'text-dim opacity-0 group-hover:opacity-80'
+              // Shown on hover or keyboard focus only, so the lines stay clean.
+              saved ? 'text-tone opacity-90' : 'text-dim opacity-0 group-hover:opacity-80'
             )}
           >
             <Bookmark className={cn('h-4 w-4 shrink-0', saved && 'fill-current')} strokeWidth={1.8} aria-hidden="true" />
@@ -207,10 +221,15 @@ export interface SyncedLyricsProps {
   isLargeView?: boolean
   /** 'panel': the narrow card beside the Deck's turntable. */
   variant?: 'panel'
+  /** A quiet now-playing line at the start of the toolbar. */
+  header?: React.ReactNode
+  /** Shows a close button at the end of the toolbar. */
+  onClose?: () => void
+  closeLabel?: string
 }
 
 export const SyncedLyrics = memo(
-  ({ className, lyricsSource, isLargeView = false, variant }: SyncedLyricsProps): React.JSX.Element => {
+  ({ className, lyricsSource, isLargeView = false, variant, header, onClose, closeLabel }: SyncedLyricsProps): React.JSX.Element => {
     const title = usePlayerStore((s) => s.currentTrack?.title)
     const artist = usePlayerStore((s) => s.currentTrack?.artist)
     const album = usePlayerStore((s) => s.currentTrack?.album)
@@ -414,6 +433,18 @@ export const SyncedLyrics = memo(
         if (active !== lastActive) {
           lastActive = active
           setActiveIndex(active)
+          // Dev-only timing log: localStorage.kissa_debug_lyrics = '1'.
+          if (import.meta.env.DEV && active >= 0 && localStorage.getItem('kissa_debug_lyrics') === '1') {
+            const report = PlaybackClock.lastReport
+            console.debug('[lyrics timing]', {
+              line: active,
+              lineStart: lyricLines[active].time,
+              clock: Number(time.toFixed(3)),
+              lastReport: report && Number(report.position.toFixed(3)),
+              reportAgeMs: report && Math.round(performance.now() - report.at),
+              wall: Date.now()
+            })
+          }
         }
         if (interlude !== lastInterlude) {
           lastInterlude = interlude
@@ -433,7 +464,7 @@ export const SyncedLyrics = memo(
       scrollAnimRef.current = null
 
       // A long way (a seek across the song) or reduced motion: go straight there.
-      const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      const reduced = prefersReducedMotion()
       if (reduced || Math.abs(distance) > container.clientHeight * 1.5) {
         container.scrollTop = targetTop
         return
@@ -458,7 +489,7 @@ export const SyncedLyrics = memo(
 
       const align = (): void => {
         const top = el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop
-        smoothScrollTo(Math.max(0, top - container.clientHeight * 0.42 + el.clientHeight / 2))
+        smoothScrollTo(Math.max(0, top - container.clientHeight * 0.38 + el.clientHeight / 2))
       }
       align()
       if (variant !== 'panel') return
@@ -502,13 +533,6 @@ export const SyncedLyrics = memo(
       [seek]
     )
 
-    // The line being sung, for the visible Keep this line button above the lyrics.
-    const activeLine =
-      activeIndex >= 0 && lyricLines[activeIndex]?.text.trim() ? lyricLines[activeIndex] : null
-    const activeLineKept = activeLine
-      ? savedIds.has(savedLineId(title ?? '', artist ?? '', activeLine.text))
-      : false
-
     const nudge = (delta: number): void =>
       setLyricsOffset(Math.max(-2, Math.min(2, Math.round((lyricsOffset + delta) * 10) / 10)))
 
@@ -525,32 +549,40 @@ export const SyncedLyrics = memo(
           className
         )}
       >
-        {hasTrack && !quietSurface && (status === 'synced' || (!lyricsSource && typeof window.electron?.chooseLyrics === 'function')) && (
-          <div className={cn('flex shrink-0 gap-2', variant === 'panel' ? 'justify-start flex-wrap gap-y-2 pt-3 pb-5' : 'justify-end px-6 pt-3')}>
-            {status === 'synced' && (
+        {(header || onClose || (hasTrack && !quietSurface)) && (
+          <div
+            className={cn(
+              'flex shrink-0 gap-1',
+              // The panel's header is quiet: its controls brighten on hover or keyboard focus.
+              variant === 'panel'
+                ? 'items-start pb-7 [&>button]:opacity-60 [&>button:hover]:opacity-100 [&>button:focus-visible]:opacity-100 [&>*:not(:first-child)]:transition-opacity'
+                : 'items-center justify-start px-6 pt-3 min-[900px]:px-10'
+            )}
+          >
+            {header && <div className="min-w-0 flex-1">{header}</div>}
+            {hasTrack && !quietSurface && (
+              <LyricsMenu
+                onChoose={
+                  !lyricsSource && typeof window.electron?.chooseLyrics === 'function'
+                    ? () => setRecoveryOpen(true)
+                    : undefined
+                }
+                timed={status === 'synced'}
+                offset={lyricsOffset}
+                onNudge={nudge}
+                onReset={() => setLyricsOffset(0)}
+              />
+            )}
+            {onClose && (
               <button
                 type="button"
-                data-testid="keep-line"
-                disabled={!activeLine}
-                aria-pressed={activeLineKept}
-                onClick={() => activeLine && toggleSave(activeLine.text)}
-                className={cn(
-                  'inline-flex h-8 items-center gap-1.5 rounded-full bg-white/[0.06] px-3.5 text-[12.5px] font-medium shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.12)] transition-colors hover:bg-white/[0.1] hover:text-ink focus-visible:outline focus-visible:outline-tone disabled:cursor-default disabled:opacity-45 disabled:hover:bg-white/[0.06]',
-                  activeLineKept ? 'text-tone' : 'text-ink/70'
-                )}
+                onClick={onClose}
+                aria-label={closeLabel}
+                title={closeLabel}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-dim transition-colors hover:bg-ink/[0.07] hover:text-ink"
               >
-                <Bookmark className={cn('h-3.5 w-3.5', activeLineKept && 'fill-current')} strokeWidth={1.8} aria-hidden="true" />
-                {activeLineKept ? t('lyrics.keptNow') : t('lyrics.keepNow')}
+                <X className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
               </button>
-            )}
-            {!lyricsSource && typeof window.electron?.chooseLyrics === 'function' && (
-            <button
-              type="button"
-              onClick={() => setRecoveryOpen(true)}
-              className="h-8 rounded-full bg-white/[0.06] px-3.5 text-[12.5px] font-medium text-ink/70 shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.12)] transition-colors hover:bg-white/[0.1] hover:text-ink focus-visible:outline focus-visible:outline-tone"
-            >
-              {t('lyrics.options')}
-            </button>
             )}
           </div>
         )}
@@ -573,47 +605,11 @@ export const SyncedLyrics = memo(
           <button
             type="button"
             onClick={() => setUserIsScrolling(false)}
-            className="absolute bottom-6 right-6 z-30 flex items-center gap-1.5 rounded-full border border-panel-line bg-[var(--panel-bg)] px-3.5 py-1.5 text-[12.5px] font-medium text-tone shadow-[var(--panel-shadow)] transition-colors hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
+            className="absolute bottom-6 right-6 z-30 flex items-center gap-1.5 rounded-full border border-panel-line bg-[var(--panel-bg)] px-3.5 py-1.5 text-[12.5px] font-medium text-tone shadow-[var(--panel-shadow)] transition-colors hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone"
           >
             <LocateFixed className="h-3 w-3" aria-hidden="true" />
             <span>{t('lyrics.currentLine')}</span>
           </button>
-        )}
-
-        {status === 'synced' && (
-          <div
-            className="absolute bottom-6 left-6 z-30 flex items-center gap-0.5 rounded-full border border-panel-line bg-[var(--panel-bg)] p-0.5 opacity-0 shadow-[var(--panel-shadow)] transition-opacity duration-ui focus-within:opacity-100 group-hover/lyrics:opacity-100"
-            role="group"
-            aria-label={t('lyrics.timingLabel')}
-          >
-            <button
-              type="button"
-              onClick={() => nudge(-0.1)}
-              aria-label={t('lyrics.earlierLabel')}
-              title={t('lyrics.earlier.hint')}
-              className="flex h-6 w-6 items-center justify-center rounded-full text-dim transition-colors hover:bg-ink/10 hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
-            >
-              <Minus className="h-3 w-3" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setLyricsOffset(0)}
-              title={t('lyrics.resetTiming')}
-              className="min-w-[46px] rounded-full px-1 text-center font-sans text-[11px] font-semibold tabular-nums text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
-            >
-              {lyricsOffset > 0 ? '+' : ''}
-              {lyricsOffset.toFixed(1)}s
-            </button>
-            <button
-              type="button"
-              onClick={() => nudge(0.1)}
-              aria-label={t('lyrics.laterLabel')}
-              title={t('lyrics.later.hint')}
-              className="flex h-6 w-6 items-center justify-center rounded-full text-dim transition-colors hover:bg-ink/10 hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone"
-            >
-              <Plus className="h-3 w-3" aria-hidden="true" />
-            </button>
-          </div>
         )}
 
         <div
@@ -624,15 +620,21 @@ export const SyncedLyrics = memo(
             'no-scrollbar relative min-h-0 flex-1 overflow-y-auto',
             variant === 'panel' ? 'py-6' : 'px-6 py-12 min-[900px]:px-10'
           )}
-          style={{
-            maskImage:
-              'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
-            WebkitMaskImage:
-              'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)'
-          }}
+          style={
+            // A softer, longer feather in the shorter panel, so no line is ever cut mid-glyph.
+            variant === 'panel'
+              ? {
+                  maskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 80%, transparent 100%)'
+                }
+              : {
+                  maskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 12%, black 88%, transparent 100%)'
+                }
+          }
         >
           {status === 'synced' && lyricLines.length > 0 && (
-            <div className={cn('py-[40vh]', variant === 'panel' ? 'space-y-6 min-[900px]:space-y-8' : 'space-y-6 min-[900px]:space-y-9')}>
+            <div className={cn('py-[40vh]', variant === 'panel' ? 'space-y-2 min-[1500px]:space-y-3' : 'space-y-3 min-[900px]:space-y-4')}>
               {lyricLines.map((line, index) => (
                 <React.Fragment key={line.id}>
                   {index === interludeBefore && (
@@ -659,6 +661,7 @@ export const SyncedLyrics = memo(
                         ? 2
                         : (Math.min(3, Math.abs(index - activeIndex)) as 0 | 1 | 2 | 3)
                     }
+                    past={activeIndex >= 0 && index < activeIndex}
                     textClass={textClass}
                     seekable={canSeek}
                     onLineClick={handleLineClick}

@@ -1,12 +1,16 @@
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { memo, useEffect, useRef, useState } from 'react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
 import { AmbientDrift } from './AmbientDrift'
-import { createFluidRenderer, type FluidRenderer } from './fluidRenderer'
-import { useFeaturesStore } from '@renderer/stores/featuresStore'
+import { createFluidRenderer, type FluidRenderer, type SoundSignals } from './fluidRenderer'
+import { getLightSource } from './lightSource'
+import { SOUND_LIGHT_SCALE, useFeaturesStore } from '@renderer/stores/featuresStore'
 import { soundListener } from '@renderer/features/sound/soundListener'
 import { useWindowVisible } from '@renderer/hooks/useWindowVisible'
 import { useDocumentCovered } from '@renderer/hooks/useDocumentCovered'
 import { extractPalette, paletteTexture, SLOTS } from './colourField'
+import { coverBitmap } from '@renderer/utils/coverBitmap'
+import { useSheetOpen } from './sheetCount'
 
 export { VERT, FRAG } from './fluidRenderer'
 
@@ -34,6 +38,9 @@ export { VERT, FRAG } from './fluidRenderer'
 const MAX_WIDTH = 640
 const SAMPLE = 48
 const RETRY_MS = 5000
+/** After a lost context (the GPU process restarted), how long to wait and how often to rebuild. */
+const LOST_RETRY_MS = 3000
+const LOST_RETRIES = 2
 /** Longest side of the canvas in device pixels. */
 const MAX_OUTPUT = 2560
 
@@ -43,10 +50,9 @@ const MAX_OUTPUT = 2560
  * per colour (colourField.ts). Done once per track.
  */
 export function loadCover(url: string): Promise<HTMLCanvasElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    if (!url.startsWith('data:')) img.crossOrigin = 'Anonymous'
-    img.onload = () => {
+  return coverBitmap(url).then(
+    (img) =>
+      new Promise<HTMLCanvasElement>((resolve, reject) => {
       const small = document.createElement('canvas')
       small.width = SAMPLE
       small.height = SAMPLE
@@ -54,7 +60,7 @@ export function loadCover(url: string): Promise<HTMLCanvasElement> {
       const c = document.createElement('canvas')
       c.width = SLOTS
       c.height = 1
-      const ctx = c.getContext('2d')
+      const ctx = c.getContext('2d', { willReadFrequently: true })
       if (!sctx || !ctx) return reject(new Error('no 2d'))
       sctx.drawImage(img, 0, 0, SAMPLE, SAMPLE)
       try {
@@ -64,10 +70,8 @@ export function loadCover(url: string): Promise<HTMLCanvasElement> {
         return reject(e instanceof Error ? e : new Error('cover unreadable'))
       }
       resolve(c)
-    }
-    img.onerror = () => reject(new Error('cover failed'))
-    img.src = url
-  })
+      })
+  )
 }
 
 export function supportsWebGL(): boolean {
@@ -86,22 +90,12 @@ export function surfaceSize(innerWidth: number, innerHeight: number): [number, n
   return [w, h]
 }
 
-/** The canvas size: the window's own pixels, capped so a very large display stays cheap. */
+/** The canvas size: half the window's own pixels, capped so a very large display stays cheap. */
 export function outputSize(innerWidth: number, innerHeight: number, dpr: number): [number, number] {
-  const scale = Math.min(Math.max(1, dpr || 1), MAX_OUTPUT / Math.max(1, innerWidth, innerHeight))
+  // Half the window's pixels: the field is soft and is scaled up by the compositor. At full size it
+  // cost ~40 % of an Intel UHD 630 (live measurement, 2026-11-10); half is a quarter of the work.
+  const scale = Math.min(Math.max(1, dpr || 1) * 0.5, MAX_OUTPUT / Math.max(1, innerWidth, innerHeight))
   return [Math.max(1, Math.round(innerWidth * scale)), Math.max(1, Math.round(innerHeight * scale))]
-}
-
-function useReducedMotion(): boolean {
-  const query = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null
-  const [reduced, setReduced] = useState(() => Boolean(query?.matches))
-  useEffect(() => {
-    if (!query) return
-    const on = (): void => setReduced(query.matches)
-    query.addEventListener?.('change', on)
-    return () => query.removeEventListener?.('change', on)
-  }, [query])
-  return reduced
 }
 
 export const FluidAmbient = memo(({ artworkUrl, coverLoader = loadCover }: { artworkUrl: string; coverLoader?: (url: string) => Promise<TexImageSource> }) => {
@@ -111,12 +105,18 @@ export const FluidAmbient = memo(({ artworkUrl, coverLoader = loadCover }: { art
   loaderRef.current = coverLoader
   // Graphics unavailable (no WebGL, shader failure, lost context): the still image.
   const [glFailed, setGlFailed] = useState(false)
+  // Contexts lost so far (a GPU process restart, a driver reset): the light is rebuilt a few
+  // seconds later, at most LOST_RETRIES times, instead of staying on the still image for good.
+  const lostRef = useRef(0)
   // The outcome of the latest cover load. A failure applies only to that URL.
   const [cover, setCover] = useState<{ url: string; ok: boolean } | null>(null)
 
   const soundLight = useFeaturesStore((s) => s.soundLight)
   const soundRef = useRef(soundLight)
   soundRef.current = soundLight
+  const amount = useFeaturesStore((s) => s.soundLightAmount)
+  const amountRef = useRef(amount)
+  amountRef.current = amount
   const isPlaying = usePlayerStore((s) => s.isPlaying)
   // The mini player does not cover it: there the light runs behind the record, on the same
   // small surface (sized from the mini window) and the same 30 fps beat.
@@ -127,6 +127,8 @@ export const FluidAmbient = memo(({ artworkUrl, coverLoader = loadCover }: { art
   const covered = roomCovered || storyCovered
   const visible = useWindowVisible()
   const reduced = useReducedMotion()
+  // A full sheet (Settings, Share, the guide) is open: the room settles beneath it.
+  const sheetOpen = useSheetOpen()
   const coverFailed = cover?.url === artworkUrl && !cover.ok
 
   // Create the renderer; dispose it on unmount or failure. Every path through here releases
@@ -143,7 +145,16 @@ export const FluidAmbient = memo(({ artworkUrl, coverLoader = loadCover }: { art
       canvas,
       {
         loadCover: (url) => loaderRef.current(url),
-        sound: () => (soundRef.current && soundListener.status === 'live' ? soundListener.levels : null),
+        sound: () => {
+          // Development: a fixed sound for screenshots (window.__kissaSound = {level, swell, bass, kick, pan}).
+          if (import.meta.env.DEV) {
+            const forced = (window as unknown as { __kissaSound?: SoundSignals }).__kissaSound
+            if (forced) return forced
+          }
+          return soundRef.current && soundListener.status === 'live' ? soundListener.levels : null
+        },
+        source: getLightSource,
+        amount: () => SOUND_LIGHT_SCALE[amountRef.current] ?? 1,
         onDraw: import.meta.env.DEV
           ? () => {
               const w = window as unknown as { __kissaAmbientFrames?: number }
@@ -153,7 +164,10 @@ export const FluidAmbient = memo(({ artworkUrl, coverLoader = loadCover }: { art
       },
       {
         onCover: (url, ok) => setCover({ url, ok }),
-        onFail: () => setGlFailed(true),
+        onFail: (reason) => {
+          if (reason === 'context lost') lostRef.current += 1
+          setGlFailed(true)
+        },
         // While the colour moves, glass panels skip their backdrop blur (see main.css): a blur
         // over a moving background has to be recomputed for every frame.
         onRunning: (running) => {
@@ -195,9 +209,21 @@ export const FluidAmbient = memo(({ artworkUrl, coverLoader = loadCover }: { art
     return () => window.clearTimeout(t)
   }, [coverFailed, glFailed, artworkUrl])
 
+  // Hidden, covered, reduced motion or a failed cover: stop at once. Pause, play and a sheet
+  // opening over the room: ease, so the colour coasts with the record instead of freezing.
+  const allowed = !covered && visible && !reduced && !coverFailed
   useEffect(() => {
-    rendererRef.current?.setActive(isPlaying && !covered && visible && !reduced && !coverFailed)
-  }, [isPlaying, covered, visible, reduced, coverFailed, glFailed])
+    const r = rendererRef.current
+    if (!r) return
+    if (!allowed) r.setActive(false)
+    else r.setActive(isPlaying && !sheetOpen, { coast: true })
+  }, [isPlaying, allowed, sheetOpen, glFailed])
+
+  useEffect(() => {
+    if (!glFailed || lostRef.current === 0 || lostRef.current > LOST_RETRIES) return
+    const t = window.setTimeout(() => setGlFailed(false), LOST_RETRY_MS)
+    return () => window.clearTimeout(t)
+  }, [glFailed])
 
   if (glFailed) return <AmbientDrift artworkUrl={artworkUrl} />
 

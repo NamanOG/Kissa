@@ -1,6 +1,9 @@
+import { useReturnFocus } from '@renderer/hooks/useReturnFocus'
+import { ICON_ACTION } from '@renderer/components/ui/iconAction'
 import { memo, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { Disc3, Ear } from 'lucide-react'
 import { HardwareSwitch } from '@renderer/components/ui/HardwareSwitch'
 import { IconTile, TILE } from '@renderer/components/ui/IconTile'
@@ -70,7 +73,7 @@ function WearMark({ wear, active }: { wear: RecordWear; active: boolean }): Reac
  * the button itself. Opens a card with the switch, how worn the record sounds, and Compare to
  * hear the clean file for as long as it is held.
  */
-export const VinylSoundButton = memo(() => {
+export const VinylSoundButton = memo(({ iconOnly = false }: { iconOnly?: boolean }) => {
   const t = useT()
   const reduce = useReducedMotion()
   const onDeck = useAlbumOnDeck()
@@ -85,6 +88,7 @@ export const VinylSoundButton = memo(() => {
   const [open, setOpen] = useState(false)
   const [place, setPlace] = useState<{ left: number; top?: number; bottom?: number } | null>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  useReturnFocus(open, buttonRef)
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
 
@@ -166,16 +170,22 @@ export const VinylSoundButton = memo(() => {
         title={state}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-tone active:scale-[0.97]',
-          open ? 'bg-white/[0.08] text-ink' : on ? 'text-ink/85' : 'text-dim'
+          iconOnly
+            ? cn(ICON_ACTION, open && 'bg-white/[0.08] text-ink')
+            : cn(
+                'inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-tone active:scale-[0.97]',
+                open ? 'bg-white/[0.08] text-ink' : on ? 'text-ink/85' : 'text-dim'
+              )
         )}
       >
-        <Disc3 className={cn('h-3.5 w-3.5', on && 'text-tone')} aria-hidden="true" />
-        <span className="text-[12px]">{t('hifi.button')}</span>
+        <Disc3 className={cn(iconOnly ? 'h-4 w-4' : 'h-3.5 w-3.5', on && 'text-tone')} strokeWidth={iconOnly ? 1.75 : undefined} aria-hidden="true" />
+        {!iconOnly && <span className="text-[12px]">{t('hifi.button')}</span>}
         <span
           aria-hidden="true"
           className={cn(
             'h-1.5 w-1.5 rounded-full transition-colors',
+            iconOnly && 'absolute right-1 top-1 h-1 w-1',
+            iconOnly && !(on && status !== 'unavailable') && 'hidden',
             on && status !== 'unavailable' ? 'bg-tone shadow-[0_0_6px_var(--accent)]' : 'bg-ink/25'
           )}
         />
@@ -196,8 +206,8 @@ export const VinylSoundButton = memo(() => {
                 scale: reduce ? 1 : 0.98
               }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: reduce ? 0.12 : 0.26, ease: EASE }}
+              exit={{ opacity: 0, transition: { duration: reduce ? 0.1 : 0.14, ease: [0.4, 0, 1, 1] } }}
+              transition={{ duration: reduce ? 0.12 : 0.22, ease: EASE }}
               style={{ left: place.left, top: place.top, bottom: place.bottom, width: WIDTH }}
               className="fixed z-[90] overflow-hidden rounded-[22px] border border-white/[0.09] bg-[#16120f]/[0.94] p-4 shadow-[0_30px_80px_-24px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl backdrop-saturate-150"
             >

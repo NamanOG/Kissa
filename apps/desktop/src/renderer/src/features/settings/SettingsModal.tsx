@@ -12,8 +12,25 @@ import { TurntableIcon } from '@renderer/components/layout/TurntableIcon'
 import { brandMarkSrc, brandMarkSrcSet } from '@renderer/utils/brandMark'
 import { LANGUAGES, useLanguageStore, useT, type MessageKey } from '@renderer/i18n'
 import { useStudyStore } from '@renderer/stores/studyStore'
+
+/** Under 760 px the section names collapse to icons; only then do the sections need a tooltip. */
+const ICON_ONLY = '(max-width: 760px)'
+function useIconOnly(): boolean {
+  const [iconOnly, setIconOnly] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(ICON_ONLY).matches)
+  useEffect(() => {
+    const q = window.matchMedia?.(ICON_ONLY)
+    if (!q) return
+    const on = (): void => setIconOnly(q.matches)
+    q.addEventListener('change', on)
+    return () => q.removeEventListener('change', on)
+  }, [])
+  return iconOnly
+}
 import { LISTENING_ENVIRONMENTS } from './themes'
 import { SegmentedTabs } from '@renderer/components/ui/SegmentedTabs'
+import { SoundAmountTabs } from '@renderer/features/background/SoundAmountTabs'
+import { useSystemMoreContrast, useSystemReducedMotion } from '@renderer/hooks/useReducedMotion'
+import { useDesktopLyricsStore } from '@renderer/features/desktop-lyrics/desktopLyricsStore'
 import { IconTile, TILE, type TileIcon, type TileTint } from '@renderer/components/ui/IconTile'
 import { AboutRow, BTN, BTN_PRIMARY, ListenerNameRow } from './PersonalSettings'
 import { DiscordPresenceRow } from './DiscordPresenceRow'
@@ -53,6 +70,7 @@ export interface SettingsModalProps {
 export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX.Element | null => {
   const isSettingsOpen = usePlayerStore((s) => s.isSettingsOpen)
   const panelRef = useRef<HTMLDivElement>(null)
+  const iconOnly = useIconOnly()
   useDialogFocus(panelRef, isSettingsOpen)
   const isStudyActive = useStudyStore((s) => s.active !== null)
   const toggleSettings = usePlayerStore((s) => s.toggleSettings)
@@ -86,6 +104,9 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
   const setStartWithWindows = usePlayerStore((s) => s.setStartWithWindows)
   const runInBackground = usePlayerStore((s) => s.runInBackground)
   const trackToast = useFeaturesStore((s) => s.trackToast)
+  const desktopLyrics = useDesktopLyricsStore((s) => s.status)
+  const desktopLyricsAvailable = useDesktopLyricsStore((s) => s.available)
+  const changeDesktopLyrics = useDesktopLyricsStore((s) => s.change)
   const setTrackToast = useFeaturesStore((s) => s.setTrackToast)
   const followDaylight = useFeaturesStore((s) => s.followDaylight)
   const setFollowDaylight = useFeaturesStore((s) => s.setFollowDaylight)
@@ -373,12 +394,24 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
     <AnimatePresence>
       {isSettingsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 min-[640px]:p-8">
+          {/* The blur is there at once and leaves at once; only the dim fades. Fading the blur
+              itself re-blurred the whole window on every frame of the fade (about 10 long frames
+              on open and on close on the UHD 630, measured 2026-11-11). */}
           <motion.div
+            data-testid="settings-blur"
+            aria-hidden="true"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0 } }}
+            className="pointer-events-none fixed inset-0 backdrop-blur-[6px]"
+          />
+          <motion.div
+            data-testid="settings-dim"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="fixed inset-0 bg-black/55 backdrop-blur-[6px]"
+            className="fixed inset-0 bg-black/55"
             onClick={toggleSettings}
           />
 
@@ -417,7 +450,9 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                       aria-selected={selected}
                       aria-controls="settings-panel"
                       tabIndex={selected ? 0 : -1}
-                      title={t(item.label)}
+                      // A tooltip that repeats a visible label covered the next section when Settings
+                      // opened with keyboard focus on the first one.
+                      title={iconOnly ? t(item.label) : undefined}
                       onClick={() => setSettingsTab(item.id)}
                       onKeyDown={(e) => {
                         const step = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0
@@ -518,7 +553,48 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                     <Row title={t('general.toast')} desc={t('general.toast.desc')}>
                       <HardwareSwitch checked={trackToast} onChange={setTrackToast} aria-label={t('general.toast')} />
                     </Row>
+                    {desktopLyricsAvailable && (
+                      <>
+                        <Row
+                          title={t('dlyrics.title')}
+                          desc={desktopLyrics.enabled && !desktopLyrics.shortcut ? t('dlyrics.keyTaken') : t('dlyrics.desc')}
+                        >
+                          <HardwareSwitch
+                            checked={desktopLyrics.enabled}
+                            onChange={(on) => changeDesktopLyrics({ enabled: on })}
+                            aria-label={t('dlyrics.title')}
+                          />
+                        </Row>
+                        {desktopLyrics.enabled && (
+                          <>
+                            <Row title={t('dlyrics.locked')} desc={t('dlyrics.locked.desc')}>
+                              <HardwareSwitch
+                                checked={desktopLyrics.locked}
+                                onChange={(on) => changeDesktopLyrics({ locked: on })}
+                                aria-label={t('dlyrics.locked')}
+                              />
+                            </Row>
+                            <Row title={t('dlyrics.sizeRow')}>
+                              <SegmentedTabs
+                                kind="radio"
+                                size="sm"
+                                label={t('dlyrics.sizeRow')}
+                                value={desktopLyrics.size}
+                                onChange={(size) => changeDesktopLyrics({ size })}
+                                tabs={[
+                                  { id: 's', label: t('dlyrics.small') },
+                                  { id: 'm', label: t('dlyrics.medium') },
+                                  { id: 'l', label: t('dlyrics.large') }
+                                ]}
+                              />
+                            </Row>
+                          </>
+                        )}
+                      </>
+                    )}
                   </Group>
+
+                  <ComfortGroup />
 
                   <Group heading={t('general.performance')}>
                     <GraphicsRow />
@@ -598,8 +674,12 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                   </Group>
 
                   <Group heading={t('turntable.sound')}>
-                    <Row title={t('turntable.soundLight')} desc={t('turntable.soundLight.desc')}>
-                      <HardwareSwitch checked={soundLight} onChange={setSoundLight} aria-label={t('turntable.soundLight')} />
+                    <Row title={t('turntable.soundLight')} desc={t(ambientMotion ? 'turntable.soundLight.desc' : 'turntable.soundLight.needsMotion')}>
+                      {/* It only moves Moving light, so it rests while Moving light is off. */}
+                      <HardwareSwitch checked={soundLight} disabled={!ambientMotion} onChange={setSoundLight} aria-label={t('turntable.soundLight')} />
+                    </Row>
+                    <Row title={t('turntable.soundAmount')}>
+                      <SoundAmountTabs disabled={!ambientMotion || !soundLight} />
                     </Row>
                   </Group>
                   <p className="-mt-3 px-1 text-[12px] leading-relaxed text-dim">{t('turntable.sound.note')}</p>
@@ -609,13 +689,13 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                       <div className="flex items-center gap-3">
                         {closingTime && (
                           <div className="flex h-8 items-center rounded-full bg-black/25 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]">
-                            <button type="button" onClick={() => setClosingHour((closingHour + 23) % 24)} className="flex h-full w-9 cursor-pointer items-center justify-center rounded-l-full text-dim transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-ink/60" aria-label={t('turntable.closing.earlier')} title={t('turntable.closing.earlier')}>
+                            <button type="button" onClick={() => setClosingHour((closingHour + 23) % 24)} className="flex h-full w-9 cursor-pointer items-center justify-center rounded-l-full text-dim transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-ink/60" aria-label={t('turntable.closing.earlier')} title={t('turntable.closing.earlier')}>
                               <Minus className="h-3.5 w-3.5" />
                             </button>
                             <span className="min-w-[64px] px-1 text-center text-[12.5px] font-medium tabular-nums text-ink" data-testid="closing-hour">
                               {formatHour(closingHour)}
                             </span>
-                            <button type="button" onClick={() => setClosingHour((closingHour + 1) % 24)} className="flex h-full w-9 cursor-pointer items-center justify-center rounded-r-full text-dim transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-ink/60" aria-label={t('turntable.closing.later')} title={t('turntable.closing.later')}>
+                            <button type="button" onClick={() => setClosingHour((closingHour + 1) % 24)} className="flex h-full w-9 cursor-pointer items-center justify-center rounded-r-full text-dim transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-ink/60" aria-label={t('turntable.closing.later')} title={t('turntable.closing.later')}>
                               <Plus className="h-3.5 w-3.5" />
                             </button>
                           </div>
@@ -709,7 +789,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                         <button
                           type="button"
                           onClick={() => setLyricsOffset(Math.max(-2.0, Math.round((lyricsOffset - 0.1) * 10) / 10))}
-                          className="flex h-full w-9 cursor-pointer items-center justify-center rounded-l-full text-dim transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-ink/60"
+                          className="flex h-full w-9 cursor-pointer items-center justify-center rounded-l-full text-dim transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-ink/60"
                           aria-label={t('lyrics.earlier')}
                           title={t('lyrics.earlier')}
                         >
@@ -718,7 +798,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                         <button
                           type="button"
                           onClick={() => setLyricsOffset(0)}
-                          className="h-full min-w-[60px] cursor-pointer px-2 text-center text-[12.5px] font-medium tabular-nums text-ink transition-colors hover:bg-white/[0.05] focus-visible:outline focus-visible:outline-1 focus-visible:outline-ink/60"
+                          className="h-full min-w-[60px] cursor-pointer px-2 text-center text-[12.5px] font-medium tabular-nums text-ink transition-colors hover:bg-white/[0.05] focus-visible:outline focus-visible:outline-2 focus-visible:outline-ink/60"
                           aria-label={`${t('lyrics.timing')} ${lyricsOffset.toFixed(1)} s. ${t('lyrics.reset')}`}
                           title={t('lyrics.reset')}
                         >
@@ -727,7 +807,7 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                         <button
                           type="button"
                           onClick={() => setLyricsOffset(Math.min(2.0, Math.round((lyricsOffset + 0.1) * 10) / 10))}
-                          className="flex h-full w-9 cursor-pointer items-center justify-center rounded-r-full text-dim transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-1 focus-visible:outline-ink/60"
+                          className="flex h-full w-9 cursor-pointer items-center justify-center rounded-r-full text-dim transition-colors hover:bg-white/[0.07] hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-ink/60"
                           aria-label={t('lyrics.later')}
                           title={t('lyrics.later')}
                         >
@@ -749,7 +829,8 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                         toggleSettings()
                         usePlayerStore.getState().setIsListeningDisplay(true)
                       }}
-                      className={BTN_PRIMARY}
+                      // One amber action per section: "Use Kissa" below is the one that matters here.
+                      className={BTN}
                     >
                       {t('saver.display.action')}
                     </button>
@@ -783,9 +864,13 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
               )}
 
               {section.id === 'sharing' && (
-                <Group heading={t('sharing.discord')}>
-                  <DiscordPresenceRow />
-                </Group>
+                <>
+                  <Group heading={t('sharing.discord')}>
+                    <DiscordPresenceRow />
+                  </Group>
+                  {/* What leaves the PC, said plainly, so the section is not a lone switch over an empty panel. */}
+                  <p className="-mt-3 px-1 text-[12px] leading-relaxed text-dim">{t('sharing.note')}</p>
+                </>
               )}
 
               {section.id === 'about' && (
@@ -803,7 +888,6 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                       <p className="font-kissa-editorial text-[28px] leading-none text-ink">Kissa</p>
                       <p className="mt-1.5 text-[13px] text-dim">
                         {t('about.tagline')}
-                        {appVersion ? ` · ${appVersion}` : ''}
                       </p>
                     </div>
                   </div>
@@ -943,8 +1027,8 @@ export const SettingsModal = memo(({ className }: SettingsModalProps): React.JSX
                       {currentState === 'downloading' && (
                         <div className="w-full bg-white/[0.08] h-1.5 rounded-full overflow-hidden">
                           <div
-                            className="bg-tone h-full transition-all duration-150 rounded-full"
-                            style={{ width: `${updatePayload?.progress?.percent ?? 0}%` }}
+                            className="bg-tone h-full w-full origin-left rounded-full transition-transform duration-150"
+                            style={{ transform: `scaleX(${(updatePayload?.progress?.percent ?? 0) / 100})` }}
                           />
                         </div>
                       )}
@@ -1013,5 +1097,39 @@ function Row({ title, desc, children }: { title: string; desc?: string; children
       </div>
       {children && <div className="flex shrink-0 items-center">{children}</div>}
     </div>
+  )
+}
+
+/**
+ * Settings > General > Comfort: reduce motion and increase contrast for Kissa itself. When Windows
+ * already asks for one, its switch shows on and rests, with a note saying so.
+ */
+function ComfortGroup(): React.JSX.Element {
+  const t = useT()
+  const motionPref = usePlayerStore((s) => s.motionPref)
+  const setMotionPref = usePlayerStore((s) => s.setMotionPref)
+  const contrastPref = usePlayerStore((s) => s.contrastPref)
+  const setContrastPref = usePlayerStore((s) => s.setContrastPref)
+  const systemMotion = useSystemReducedMotion()
+  const systemContrast = useSystemMoreContrast()
+  return (
+    <Group heading={t('general.comfort')}>
+      <Row title={t('comfort.motion')} desc={t(systemMotion ? 'comfort.motion.system' : 'comfort.motion.desc')}>
+        <HardwareSwitch
+          checked={systemMotion || motionPref === 'reduced'}
+          disabled={systemMotion}
+          onChange={(on) => setMotionPref(on ? 'reduced' : 'system')}
+          aria-label={t('comfort.motion')}
+        />
+      </Row>
+      <Row title={t('comfort.contrast')} desc={t(systemContrast ? 'comfort.contrast.system' : 'comfort.contrast.desc')}>
+        <HardwareSwitch
+          checked={systemContrast || contrastPref === 'more'}
+          disabled={systemContrast}
+          onChange={(on) => setContrastPref(on ? 'more' : 'system')}
+          aria-label={t('comfort.contrast')}
+        />
+      </Row>
+    </Group>
   )
 }

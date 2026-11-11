@@ -3,6 +3,7 @@ import { usePlayerStore } from '@renderer/stores/playerStore'
 import { greetingFor } from '@renderer/utils/greeting'
 import { Heart } from 'lucide-react'
 import { SUPPORT_PAGE_URL, openSupportPage } from '@renderer/features/support/SupportKissaLink'
+import { openBugReport, openFeatureRequest } from '@renderer/features/support/feedback'
 import { useT } from '@renderer/i18n'
 
 // Shared with SettingsModal; styled in assets/main.css (Settings).
@@ -48,6 +49,7 @@ ListenerNameRow.displayName = 'ListenerNameRow'
 
 /** Who made this. Lives here so the deck itself stays free of credits. */
 export const AboutRow = memo((): React.JSX.Element => {
+  const t = useT()
   const open = (url: string): void => {
     if (window.electron?.openExternal) void window.electron.openExternal(url)
     else window.open(url, '_blank', 'noopener,noreferrer')
@@ -57,24 +59,38 @@ export const AboutRow = memo((): React.JSX.Element => {
       {SUPPORT_PAGE_URL && (
         <div className={ROW}>
           <div className="flex min-w-0 flex-col pr-2">
-            <span className="text-[14px] font-medium text-ink">Support Kissa</span>
+            <span className="text-[14px] font-medium text-ink">{t('nav.support')}</span>
             <span className="mt-0.5 text-[12.5px] leading-relaxed text-dim">
-              If Kissa is part of your day, you can help keep it going. Opens Kissa&apos;s website.
+              {t('about.support.desc')}
             </span>
           </div>
           <button type="button" onClick={() => openSupportPage()} className={`${BTN} gap-1.5`}>
             <Heart aria-hidden="true" className="h-3 w-3 fill-tone text-tone" strokeWidth={1.75} />
-            Support Kissa
+            {t('nav.support')}
           </button>
         </div>
       )}
       <div className={ROW}>
         <div className="flex min-w-0 flex-col pr-2">
+          <span className="text-[14px] font-medium text-ink">{t('feedback.title')}</span>
+          <span className="mt-0.5 text-[12.5px] leading-relaxed text-dim">{t('feedback.desc')}</span>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <button type="button" onClick={openFeatureRequest} className={BTN}>
+            {t('feedback.feature')}
+          </button>
+          <button type="button" onClick={() => void openBugReport()} className={BTN}>
+            {t('feedback.bug')}
+          </button>
+        </div>
+      </div>
+      <div className={ROW}>
+        <div className="flex min-w-0 flex-col pr-2">
           <span className="text-[14px] font-medium text-ink">GlyphCode</span>
-          <span className="mt-0.5 text-[12.5px] leading-relaxed text-dim">Made by GlyphCode. Free, with nothing locked.</span>
+          <span className="mt-0.5 text-[12.5px] leading-relaxed text-dim">{t('about.made')}</span>
         </div>
         <button type="button" onClick={() => open('https://github.com/NamanOG/Kissa')} className={BTN}>
-          View on GitHub
+          {t('about.github')}
         </button>
       </div>
     </>

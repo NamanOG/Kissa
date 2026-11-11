@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { PlaybackClock } from '@renderer/utils/PlaybackClock'
+import { loadLyricsOffset, lyricsSourceKey, saveLyricsOffset } from '@renderer/features/lyrics/lyricsOffsets'
 
 import kissaIdleCover from '@renderer/media/kissa_idle_cover.jpg'
 
@@ -99,6 +100,10 @@ export interface PlayerState {
   volume: number
   illuminationLevel: number
   rpm: '33' | '45'
+  /** Comfort: 'reduced' asks for fades instead of movement even when Windows does not. */
+  motionPref: 'system' | 'reduced'
+  /** Comfort: 'more' brightens secondary text and makes panels more solid. */
+  contrastPref: 'system' | 'more'
   isPowered: boolean
   activeView: 'deck' | 'lyrics' | 'shelf' | 'study'
   showSideLyrics: boolean
@@ -142,6 +147,8 @@ export interface PlayerState {
   setVolume: (volume: number) => void
   setIlluminationLevel: (level: number) => void
   setRpm: (rpm: '33' | '45') => void
+  setMotionPref: (pref: 'system' | 'reduced') => void
+  setContrastPref: (pref: 'system' | 'more') => void
   toggleRpm: () => void
   setIsPowered: (isPowered: boolean) => void
   togglePower: () => void
@@ -261,6 +268,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   volume: 78,
   illuminationLevel: getInitialIllumination(),
   rpm: readChoice('kissa_rpm', ['33', '45'] as const, '33'),
+  motionPref: readChoice('kissa_motion', ['system', 'reduced'] as const, 'system'),
+  contrastPref: readChoice('kissa_contrast', ['system', 'more'] as const, 'system'),
   isPowered: true,
   activeView: 'deck',
   showSideLyrics: false,
@@ -290,7 +299,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   lyricsFace: readChoice('kissa_lyrics_face', ['sans', 'serif'] as const, 'sans'),
   listenerName: typeof localStorage !== 'undefined' ? (localStorage.getItem('kissa_listener_name') || '').slice(0, 24) : '',
   vinylColor: readChoice('kissa_vinyl_color', VINYL_COLORS, 'black'),
-  lyricsOffset: typeof localStorage !== 'undefined' ? parseFloat(localStorage.getItem('kissa_lyrics_offset') || '0') || 0 : 0,
+  lyricsOffset: typeof localStorage !== 'undefined' ? loadLyricsOffset(undefined) : 0,
   isKeyboardHelpOpen: false,
   runInBackground: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_run_in_background') === 'true' : false,
   startWithWindows: typeof localStorage !== 'undefined' ? localStorage.getItem('kissa_start_with_windows') === 'true' : false,
@@ -346,6 +355,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('kissa_illumination', clamped.toString())
     }
+  },
+  setMotionPref: (pref) => {
+    save('kissa_motion', pref)
+    set({ motionPref: pref })
+  },
+  setContrastPref: (pref) => {
+    save('kissa_contrast', pref)
+    set({ contrastPref: pref })
   },
   setRpm: (rpm) => {
     save('kissa_rpm', rpm)
@@ -475,10 +492,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     save('kissa_vinyl_color', vinylColor)
     set({ vinylColor })
   },
-  setLyricsOffset: (lyricsOffset) => {
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('kissa_lyrics_offset', lyricsOffset.toString())
-    }
+  setLyricsOffset: (offset) => {
+    // Remembered for the player that is playing now (features/lyrics/lyricsOffsets.ts).
+    const lyricsOffset =
+      typeof localStorage !== 'undefined' ? saveLyricsOffset(get().currentTrack?.sourceAppId, offset) : offset
     set({ lyricsOffset })
   },
   toggleKeyboardHelp: () => set((state) => ({ isKeyboardHelpOpen: !state.isKeyboardHelpOpen })),
@@ -538,3 +555,16 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   
   clearQueue: () => set({ queue: [] })
 }))
+
+// Each player keeps its own lyrics timing: switching from Apple Music to Spotify brings back
+// Spotify's nudge rather than carrying Apple Music's over.
+if (typeof localStorage !== 'undefined') {
+  let lastSource = lyricsSourceKey(usePlayerStore.getState().currentTrack?.sourceAppId)
+  usePlayerStore.subscribe((s) => {
+    const key = lyricsSourceKey(s.currentTrack?.sourceAppId)
+    if (key === lastSource) return
+    lastSource = key
+    const offset = loadLyricsOffset(s.currentTrack?.sourceAppId)
+    if (offset !== s.lyricsOffset) usePlayerStore.setState({ lyricsOffset: offset })
+  })
+}

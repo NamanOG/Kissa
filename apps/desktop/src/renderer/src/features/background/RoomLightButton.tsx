@@ -1,43 +1,46 @@
+import { useReturnFocus } from '@renderer/hooks/useReturnFocus'
 import { memo, useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { AudioWaveform, Blend, SunMedium, WandSparkles } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useReducedMotion } from '@renderer/hooks/useReducedMotion'
+import { AudioWaveform, Blend, SunMedium, WandSparkles, type LucideIcon } from 'lucide-react'
 import { usePlayerStore } from '@renderer/stores/playerStore'
+import { SoundAmountTabs } from './SoundAmountTabs'
 import { useFeaturesStore } from '@renderer/stores/featuresStore'
 import { HardwareSwitch } from '@renderer/components/ui/HardwareSwitch'
-import { IconTile, TILE, type TileIcon, type TileTint } from '@renderer/components/ui/IconTile'
 import { useT } from '@renderer/i18n'
 import { cn } from '@renderer/utils/cn'
 
 const EASE = [0.22, 1, 0.36, 1] as const
+const EASE_EXIT = [0.4, 0, 1, 1] as const
 
 function LightRow({
-  icon,
-  tint,
+  icon: Icon,
   title,
   desc,
   children,
   dim
 }: {
-  icon: TileIcon
-  tint: TileTint
+  icon: LucideIcon
   title: string
   desc: string
   children: React.ReactNode
   dim?: boolean
 }): React.JSX.Element {
   return (
-    <li className={cn('flex items-center gap-3 py-2.5 transition-opacity', dim && 'opacity-50')}>
-      <IconTile icon={icon} tint={tint} />
+    <li className={cn('flex items-center gap-3 py-3 transition-opacity duration-200', dim && 'opacity-45')}>
+      {/* A calm line glyph in the room's text colour, not a coloured tile. */}
+      <Icon aria-hidden="true" className="h-[17px] w-[17px] shrink-0 text-ink/70" strokeWidth={1.6} />
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-[13.5px] font-medium leading-snug text-ink">{title}</span>
-        <span className="mt-0.5 text-[12px] leading-snug text-ink/60">{desc}</span>
+        <span className="truncate text-[13.5px] font-medium leading-5 text-ink">{title}</span>
+        <span className="truncate text-[12px] leading-[18px] text-ink/60" title={desc}>
+          {desc}
+        </span>
       </span>
       {children}
     </li>
   )
 }
-
 /**
  * Moving light's home: a named button on the dock that shows whether the light is moving, and
  * opens the room's light in one place (Moving light, moving with the music, following the day).
@@ -48,6 +51,7 @@ export const RoomLightButton = memo(() => {
   const reduce = useReducedMotion()
   const [open, setOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
+  useReturnFocus(open, buttonRef)
   const panelRef = useRef<HTMLDivElement>(null)
   const [anchor, setAnchor] = useState<{ left: number; bottom: number } | null>(null)
   const titleId = useId()
@@ -104,9 +108,10 @@ export const RoomLightButton = memo(() => {
     }
   }, [open])
 
-  const width = 340
+  // Wide enough that no label or description wraps, in English or Spanish.
+  const width = 432
   const left = anchor
-    ? Math.max(12, Math.min(window.innerWidth - width - 12, anchor.left - width / 2))
+    ? Math.max(24, Math.min(window.innerWidth - width - 24, anchor.left - width / 2))
     : 0
 
   return (
@@ -155,18 +160,19 @@ export const RoomLightButton = memo(() => {
               aria-labelledby={titleId}
               data-testid="room-light-panel"
               initial={{ opacity: 0, y: reduce ? 0 : 8, scale: reduce ? 1 : 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: reduce ? 0 : 6 }}
-              transition={{ duration: reduce ? 0.12 : 0.26, ease: EASE }}
-              style={{ left, bottom: anchor.bottom, width, transformOrigin: 'bottom center' }}
-              className="fixed z-[90] overflow-hidden rounded-[22px] border border-white/[0.09] bg-[#16120f]/[0.93] p-4 shadow-[0_30px_80px_-24px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl backdrop-saturate-150"
+              animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: reduce ? 0.12 : 0.22, ease: EASE } }}
+              exit={{ opacity: 0, y: reduce ? 0 : 4, transition: { duration: reduce ? 0.1 : 0.14, ease: EASE_EXIT } }}
+              style={{ left, bottom: anchor.bottom, width, transformOrigin: `${anchor.left - left}px 100%` }}
+              // A solid room-dark base: nothing behind (the dock's labels, the moving light) reads
+              // through, and no backdrop blur has to be redrawn over the moving light.
+              className="fixed z-[90] overflow-hidden rounded-[22px] border border-white/[0.08] bg-[#15110e] px-5 pb-4 pt-5 shadow-[0_30px_80px_-24px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.07)]"
             >
-              {/* The light itself, small: the album's colours drifting when it moves. */}
+              {/* The light itself, small: the album's colour glowing at the top when it moves. */}
               <div
                 aria-hidden="true"
                 className={cn(
-                  'pointer-events-none absolute -top-16 left-1/2 h-40 w-[130%] -translate-x-1/2 rounded-full blur-3xl transition-opacity duration-700',
-                  on ? 'opacity-60' : 'opacity-20'
+                  'pointer-events-none absolute -top-20 left-1/2 h-40 w-[120%] -translate-x-1/2 rounded-full blur-3xl transition-opacity duration-700',
+                  on ? 'opacity-40' : 'opacity-10'
                 )}
                 style={{
                   background:
@@ -176,22 +182,16 @@ export const RoomLightButton = memo(() => {
               <div className="relative">
                 <p
                   id={titleId}
-                  className="font-kissa-editorial text-[22px] leading-tight tracking-[-0.015em] text-ink"
+                  className="font-kissa-editorial text-[22px] leading-7 tracking-[-0.015em] text-ink"
                 >
                   {t('light.title')}
                 </p>
-                <p className="mt-1 text-[12.5px] text-ink/65" role="status">
+                <p className="mt-1 truncate text-[12.5px] leading-5 text-ink/65" role="status">
                   {state}
                 </p>
 
-                <ul className="mt-2 divide-y divide-white/[0.06]">
-                  <LightRow
-                    icon={Blend}
-                    tint={TILE.violet}
-                    title={t('turntable.moving')}
-                    desc={t('light.moving.desc')}
-                    dim={!matchAlbum}
-                  >
+                <ul className="mt-3 divide-y divide-white/[0.06] border-t border-white/[0.06]">
+                  <LightRow icon={Blend} title={t('turntable.moving')} desc={t('light.short.moving')} dim={!matchAlbum}>
                     <HardwareSwitch
                       checked={on}
                       onChange={setMoving}
@@ -199,13 +199,7 @@ export const RoomLightButton = memo(() => {
                       aria-label={t('turntable.moving')}
                     />
                   </LightRow>
-                  <LightRow
-                    icon={AudioWaveform}
-                    tint={TILE.rose}
-                    title={t('turntable.soundLight')}
-                    desc={t('turntable.soundLight.desc')}
-                    dim={!on}
-                  >
+                  <LightRow icon={AudioWaveform} title={t('turntable.soundLight')} desc={t('light.short.sound')} dim={!on}>
                     <HardwareSwitch
                       checked={soundLight}
                       onChange={setSoundLight}
@@ -213,12 +207,12 @@ export const RoomLightButton = memo(() => {
                       aria-label={t('turntable.soundLight')}
                     />
                   </LightRow>
-                  <LightRow
-                    icon={SunMedium}
-                    tint={TILE.amber}
-                    title={t('turntable.daylight')}
-                    desc={t('turntable.daylight.desc')}
-                  >
+                  {/* Its own full-width row, so neither the label nor the choices are squeezed. */}
+                  <li className="pb-3 pl-[29px] pt-1">
+                    <p className={cn('mb-2 text-[12px] leading-[18px] text-ink/60 transition-opacity duration-200', (!on || !soundLight) && 'opacity-45')}>{t('turntable.soundAmount')}</p>
+                    <SoundAmountTabs appearance="glass" disabled={!on || !soundLight} />
+                  </li>
+                  <LightRow icon={SunMedium} title={t('turntable.daylight')} desc={t('light.short.daylight')}>
                     <HardwareSwitch
                       checked={daylight}
                       onChange={setDaylight}
@@ -229,8 +223,8 @@ export const RoomLightButton = memo(() => {
 
                 {!matchAlbum && (
                   <div className="mt-2 flex items-center gap-3 rounded-[14px] bg-white/[0.05] p-3 shadow-[inset_0_0_0_0.5px_rgba(255,255,255,0.1)]">
-                    <IconTile icon={WandSparkles} tint={TILE.indigo} />
-                    <p className="min-w-0 flex-1 text-[12px] leading-snug text-ink/75">
+                    <WandSparkles aria-hidden="true" className="h-[17px] w-[17px] shrink-0 text-ink/70" strokeWidth={1.6} />
+                    <p className="min-w-0 flex-1 text-[12px] leading-[18px] text-ink/75">
                       {t('light.needsMatch')}
                     </p>
                     <button
@@ -240,18 +234,17 @@ export const RoomLightButton = memo(() => {
                         setTheme('adaptive')
                         setMoving(true)
                       }}
-                      className="h-8 shrink-0 rounded-full bg-tone px-3.5 text-[12.5px] font-semibold text-[#170f09] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] transition-[filter,transform] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone active:scale-[0.97]"
+                      className="h-8 shrink-0 rounded-full bg-tone px-3.5 text-[12.5px] font-semibold text-[#170f09] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] transition-[filter,transform] duration-100 ease-out hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone active:scale-[0.97] motion-reduce:active:scale-100"
                     >
                       {t('light.useMatch')}
                     </button>
                   </div>
                 )}
 
-                <p className="mt-3 text-[11.5px] leading-snug text-ink/45">
+                <p className="mt-3 border-t border-white/[0.06] pt-3 text-[11.5px] leading-4 text-ink/40">
                   {t('turntable.sound.note')}
                 </p>
-              </div>
-            </motion.div>
+              </div>            </motion.div>
           )}
         </AnimatePresence>,
         document.body

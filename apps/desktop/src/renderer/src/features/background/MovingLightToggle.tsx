@@ -60,7 +60,7 @@ export const MovingLightToggle = memo(({ variant }: { variant: 'dock' | 'fullscr
       title={tip}
       onClick={() => available && setOn(!on)}
       className={cn(
-        'relative flex items-center justify-center w-[26px] h-[26px] min-[900px]:w-[28px] min-[900px]:h-[28px] rounded-full border transition duration-ui ease-primary select-none',
+        'relative flex items-center justify-center w-[26px] h-[26px] min-[900px]:w-[28px] min-[900px]:h-[28px] rounded-full border before:absolute before:-inset-[5px] before:rounded-full before:content-[""] transition duration-ui ease-primary select-none',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tone',
         !available
           ? 'border-transparent text-dim/40 cursor-default'

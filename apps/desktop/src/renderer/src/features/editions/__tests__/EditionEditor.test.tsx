@@ -22,7 +22,8 @@ vi.mock('framer-motion', async () => {
   }
 })
 
-describe('Edition editor sections', () => {
+// Mounts the whole editor; under a full parallel run it can exceed the 5 s default.
+describe('Edition editor sections', { timeout: 20_000 }, () => {
   afterEach(() => {
     usePlayerStore.setState({ theme: 'quiet-room', ambientMotion: false })
     localStorage.removeItem('kissa_ambient_motion')

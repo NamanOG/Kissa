@@ -1,16 +1,20 @@
 import { useAlbumSides } from './features/sides/useAlbumSides'
 import { useSoundCapture } from './features/sound/useSoundCapture'
-import React, { useEffect, useCallback, useRef, useState } from 'react'
-import { motion, AnimatePresence, MotionConfig, useReducedMotion } from 'framer-motion'
-import { X } from 'lucide-react'
+import React, { Suspense, lazy, useEffect, useCallback, useRef, useState } from 'react'
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion'
+import { useMoreContrast, useReducedMotion } from '@renderer/hooks/useReducedMotion'
 import { VinylEngine } from './features/vinyl'
 import albumPlaceholder from './media/placeholder-album.png'
 import { AppLayout, ContentArea, Sidebar, CompactTopBar } from './components/layout'
+import { WindowControls } from './components/layout/WindowControls'
+import { LIGHT_SOURCE_ATTR, useLightSource } from './features/background/lightSource'
 import { useLayoutMode } from './hooks/useLayoutMode'
 import { Background } from './features/background'
 import { MetadataPanel } from './features/now-playing'
 import { TurntableEngine } from './features/turntable'
 import { ControlDock } from './features/controls'
+import { TooltipLayer } from './features/tooltip/TooltipLayer'
+import { NowPlayingAnnouncer } from './features/now-playing/NowPlayingAnnouncer'
 import { SyncedLyrics } from './features/lyrics'
 import { SettingsModal } from './features/settings'
 import { OnboardingModal } from './features/onboarding'
@@ -21,6 +25,8 @@ import { useSystemMediaSync } from './hooks/useSystemMediaSync'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useJumpList } from './hooks/useJumpList'
 import { useTrackToast } from './hooks/useTrackToast'
+import { useMinWidth } from './hooks/useMinWidth'
+import { useDesktopLyricsFeed } from './features/desktop-lyrics/useDesktopLyricsFeed'
 import { usePhoneRemote } from './features/remote/usePhoneRemote'
 import { useSleepClock } from './hooks/useSleepClock'
 import { RoomNoticeCard, useClosingTime, useListeningSession } from './features/session'
@@ -28,6 +34,7 @@ import { PressedView, usePressedReady } from './features/wrap'
 import { RecordShelfView } from './features/shelf/RecordShelfView'
 import { MiniPlayerView, useMiniMovingLight } from './features/mini-player'
 import { cn } from './utils/cn'
+import { DUR, EASE_EXIT, EASE_OUT } from './utils/motion'
 import { useAdaptiveColor } from './hooks/useAdaptiveColor'
 import { useShelfStore } from './stores/shelfStore'
 import { ShareExportMount } from './features/share/ShareExportMount'
@@ -35,11 +42,23 @@ import { ListeningRoom } from './features/listening-room'
 import { ListeningDisplay } from './features/listening-room/ListeningDisplay'
 import { PartyOverlay } from './features/listening-room/PartyOverlay'
 import { StartupExperience } from './features/startup/StartupExperience'
+import { holdForOpening } from './features/startup/openingGate'
 import { GrowthPrompts } from './features/growth/GrowthPrompts'
 import { NewInKissaPrompt } from './features/onboarding/NewInKissaPrompt'
-import { StudyRoom, useStudyEngine } from './features/study'
+import { useStudyEngine } from './features/study/useStudyEngine'
+// The Focus Room is its own chunk: it is not parsed at start-up, only when it is first opened.
+/**
+ * Deck, Lyrics and Shelf overlap as they change: the old page leaves quickly while the new one
+ * arrives, so the stage is never empty (was 0.28 s out, then 0.28 s in). The leaving page lets
+ * clicks through and sits beneath the arriving one.
+ */
+const PAGE_MOTION = {
+  initial: { opacity: 0, scale: 0.985, zIndex: 1 },
+  animate: { opacity: 1, scale: 1, zIndex: 1, pointerEvents: 'auto' as const, transition: { duration: DUR.pageIn, ease: EASE_OUT, delay: 0.04 } },
+  exit: { opacity: 0, scale: 1, zIndex: 0, pointerEvents: 'none' as const, transition: { duration: DUR.pageOut, ease: EASE_EXIT } }
+}
+const StudyRoom = lazy(() => import('./features/study/StudyRoom').then((m) => ({ default: m.StudyRoom })))
 import { EditionEditor } from './features/editions/EditionEditor'
-import { SupportKissaLink } from './features/support/SupportKissaLink'
 import { useEditionsStore } from './stores/editionsStore'
 import { tl } from '@renderer/i18n'
 
@@ -57,18 +76,12 @@ function KissaApp(): React.JSX.Element {
   const isPartyMode = usePlayerStore((s) => s.isPartyMode)
   const theme = usePlayerStore((s) => s.theme)
   const { compact, short } = useLayoutMode()
-  const [wideDeck, setWideDeck] = useState(() => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1100px)').matches)
+  // The side lyrics card needs this width (min-[1100px] in its classes); narrower, Lyrics opens the Lyrics view.
+  const wideDeck = useMinWidth(1100)
   const lyricsDeck = showSideLyrics && wideDeck
   const deckStageRef = useRef<HTMLDivElement>(null)
   const instrumentRef = useRef<HTMLElement>(null)
 
-  useEffect(() => {
-    if (typeof window.matchMedia !== 'function') return
-    const query = window.matchMedia('(min-width: 1100px)')
-    const update = (): void => setWideDeck(query.matches)
-    query.addEventListener('change', update)
-    return () => query.removeEventListener('change', update)
-  }, [])
 
 
 
@@ -76,27 +89,75 @@ function KissaApp(): React.JSX.Element {
   const setIsScreensaver = usePlayerStore((s) => s.setIsScreensaver)
   const [isScreensaverReady, setIsScreensaverReady] = useState<boolean>(false)
   const [hasStarted, setHasStarted] = useState<boolean>(false)
+  // Start-up timeline (main/startupTiming.ts): the room's first render, and its first frame once
+  // the opening has gone.
+  useEffect(() => {
+    window.electron?.startupMark?.('first-render')
+  }, [])
+  // Work that would stall the opening's frames (the system-audio capture) waits until the opening
+  // and the room's arrival have played (openingGate.ts). Held from the first render, before the
+  // room's own effects run; the screensaver has no opening and opens it at once.
+  const [openOpeningGate] = useState(holdForOpening)
+  const finishOpening = useCallback(() => {
+    setHasStarted(true)
+    window.setTimeout(openOpeningGate, 1700)
+  }, [openOpeningGate])
+  useEffect(() => {
+    if (isScreensaverReady && isScreensaver) openOpeningGate()
+  }, [isScreensaverReady, isScreensaver, openOpeningGate])
+  useEffect(() => {
+    if (!hasStarted) return
+    let raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame(() => window.electron?.startupMark?.('interactive'))
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [hasStarted])
 
   const alignmentObserver = useRef<ResizeObserver | null>(null)
+  // Moving light gathers around the record: the deck's turntable or the Lyrics page's record.
+  useLightSource(
+    isFullscreen || isPartyMode || isMiniPlayer
+      ? null
+      : activeView === 'deck'
+        ? () => instrumentRef.current
+        : activeView === 'lyrics'
+          ? () => document.querySelector<HTMLElement>(`[${LIGHT_SOURCE_ATTR}]`)
+          : null,
+    `${activeView}|${isFullscreen}|${isPartyMode}|${isMiniPlayer}|${lyricsDeck}`
+  )
   const alignLyrics = useRef<() => void>(() => {})
-  // The stage mounts after the opening/screensaver check. Register on its actual
-  // mount, then remeasure when the entrance finishes or the instrument resizes.
+  // The stage mounts after the opening/screensaver check, so its ref records it and the
+  // effect below measures. (framer-motion keeps the first ref callback it is given, so a ref
+  // callback that changes with lyricsDeck never ran when lyrics were switched on later.)
+  const [deckStage, setDeckStage] = useState<HTMLDivElement | null>(null)
   const registerDeckStage = useCallback((stage: HTMLDivElement | null): void => {
-    alignmentObserver.current?.disconnect()
     deckStageRef.current = stage
+    setDeckStage(stage)
+  }, [])
+
+  // Lyrics beside the deck: line the column up with the turntable's top and bottom edges, and
+  // measure again when the entrance finishes or the instrument resizes.
+  useEffect(() => {
+    alignmentObserver.current?.disconnect()
     alignLyrics.current = () => {}
+    const stage = deckStage
     const instrument = instrumentRef.current
     if (!stage || !instrument || !lyricsDeck) return
     const align = (): void => {
       const plinth = instrument.querySelector('[data-deck-plinth]')
       if (!plinth) return
-      stage.style.setProperty('--lyrics-top', `${Math.max(104, plinth.getBoundingClientRect().top - stage.getBoundingClientRect().top)}px`)
+      const p = plinth.getBoundingClientRect()
+      const s = stage.getBoundingClientRect()
+      stage.style.setProperty('--lyrics-top', `${Math.max(48, p.top - s.top)}px`)
+      stage.style.setProperty('--lyrics-bottom', `${Math.max(24, s.bottom - p.bottom)}px`)
     }
     alignLyrics.current = align
-    alignmentObserver.current = new ResizeObserver(align)
-    alignmentObserver.current.observe(instrument)
+    const observer = new ResizeObserver(align)
+    observer.observe(instrument)
+    alignmentObserver.current = observer
     align()
-  }, [lyricsDeck])
+    return () => observer.disconnect()
+  }, [deckStage, lyricsDeck])
 
   // Real audio playback engine (handles audio elements, time sync, seeking & volume)
   useAudioPlayback()
@@ -108,6 +169,7 @@ function KissaApp(): React.JSX.Element {
   useJumpList()
 
   useTrackToast()
+  useDesktopLyricsFeed()
   usePhoneRemote()
 
   useSleepClock()
@@ -212,7 +274,9 @@ function KissaApp(): React.JSX.Element {
         ) : isListeningDisplay ? (
           <ListeningDisplay key="listening-display" mode="interactive" />
         ) : activeView === 'study' ? (
-          <StudyRoom key="study-room" />
+          <Suspense key="study-room" fallback={null}>
+            <StudyRoom />
+          </Suspense>
         ) : isFullscreen && !isPartyMode ? (
           <ListeningRoom key="listening-room" />
         ) : (
@@ -235,27 +299,25 @@ function KissaApp(): React.JSX.Element {
 
               <ContentArea>
                 <div className="kissa-arrive-stage relative flex-1 min-h-0 w-full overflow-hidden">
-                  <AnimatePresence mode="wait">
+                  <AnimatePresence>
                     {activeView === 'deck' && (
                       /* Vinyl deck and listening room */
                       <motion.div
                         key="deck-view"
+                        data-page="deck"
                         ref={registerDeckStage}
                         onAnimationComplete={() => alignLyrics.current()}
-                        initial={{ opacity: 0, scale: 0.985 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.985 }}
-                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        {...PAGE_MOTION}
                         className={cn(
                           'absolute inset-0 min-h-0 overflow-hidden transform-gpu',
                           lyricsDeck && 'deck-lyrics-open',
                           !compact &&
                             (isPartyMode && !showSideLyrics
-                              ? // One centred group: the words, a fixed gutter, the deck.
-                                'grid grid-cols-[minmax(0,30rem)_auto] justify-center'
+                              ? // One centred group: the words, a gutter, the deck, all scaled to the screen.
+                                'grid grid-cols-[minmax(0,clamp(24rem,44vh,64rem))_auto] justify-center'
                               : showSideLyrics
                               ? // Wide windows move the track details into the lyrics card.
-                                'grid grid-cols-1 min-[900px]:grid-cols-[minmax(280px,0.9fr)_minmax(320px,1.4fr)] min-[1100px]:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]'
+                                'grid grid-cols-1 min-[900px]:grid-cols-[minmax(280px,0.9fr)_minmax(320px,1.4fr)] min-[1100px]:grid-cols-[minmax(0,1fr)_clamp(380px,30vw,760px)]'
                               : 'grid grid-cols-1 min-[900px]:grid-cols-[minmax(280px,0.9fr)_minmax(340px,1.5fr)] min-[1200px]:grid-cols-[minmax(320px,1fr)_minmax(400px,1.7fr)]'),
                           // Narrow window: the instrument first, the words beneath it. When the
                           // turntable editor is open it takes the lower part and the deck stays
@@ -263,17 +325,13 @@ function KissaApp(): React.JSX.Element {
                           compact && !short && 'flex flex-col',
                           // Narrow and short: the instrument beside the words.
                           compact && short && 'grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] items-center',
-                          // Party mode: one stage with even margins. The side margins match the
-                          // full-screen controls (48 px), the top clears their top row and the
-                          // bottom their transport bar, and both columns centre on one line.
+                          // Party mode, for a TV across the room: one centred group with even outer
+                          // margins and a gutter of the same size (7% of the width), centred
+                          // vertically. The controls are overlays shown only when the pointer moves.
                           isPartyMode &&
-                            'items-center gap-x-[clamp(40px,6vw,120px)] px-12 pt-[124px] pb-[148px]'
+                            'items-center gap-x-[7vw] px-[7vw] pt-[7vh] pb-[9vh]'
                         )}
                       >
-                        {/* Quiet and always in the same place; hidden until the support page is live. */}
-                        {!compact && !isPartyMode && (
-                          <SupportKissaLink className="absolute right-6 top-12 z-20" />
-                        )}
 
                         <motion.aside
                           aria-hidden={lyricsDeck || undefined}
@@ -282,7 +340,9 @@ function KissaApp(): React.JSX.Element {
                           animate={{ opacity: lyricsDeck ? 0 : 1, x: reduceMotion ? 0 : lyricsDeck ? -16 : 0 }}
                           transition={{ duration: reduceMotion ? 0 : 0.2 }}
                           className={cn(
-                            'deck-details min-h-0 flex flex-col justify-center overflow-y-auto no-scrollbar transform-gpu',
+                            // Safe centring: when the details are taller than the column they start at the top and
+                            // scroll, instead of overflowing above it (which cut the cover off).
+                            'deck-details min-h-0 flex flex-col [justify-content:safe_center] overflow-y-auto no-scrollbar transform-gpu',
                             compact && 'order-2 mx-auto w-full max-w-[600px]',
                             compact && !short && (isEditionEditorOpen ? 'flex-1 justify-start' : 'shrink-0'),
                             compact && short && 'h-full'
@@ -300,7 +360,7 @@ function KissaApp(): React.JSX.Element {
                               animate={{ opacity: 1, x: 0 }}
                               exit={{ opacity: 0, x: reduceMotion ? 0 : -10 }}
                               transition={{ duration: reduceMotion ? 0.12 : 0.22, ease: [0.22, 1, 0.36, 1] }}
-                              className="flex min-h-0 flex-col justify-center"
+                              className="flex min-h-0 flex-col [justify-content:safe_center]"
                             >
                               {isEditionEditorOpen ? (
                                 <EditionEditor />
@@ -314,7 +374,8 @@ function KissaApp(): React.JSX.Element {
                         <section
                           ref={instrumentRef}
                           className={cn(
-                            'deck-instrument min-h-0 flex items-center justify-center p-2 min-[900px]:p-4 overflow-hidden transform-gpu',
+                            // A right margin to match the left, so the deck never runs to the window edge.
+                            'deck-instrument min-h-0 flex items-center justify-center p-2 min-[900px]:p-4 min-[900px]:pr-10 overflow-hidden transform-gpu',
                             compact && 'order-1 flex-1 px-5 pt-1 pb-0 [container-type:size]',
                             // With the editor open the deck becomes a preview band, so the panel gets the height.
                             compact && !short && isEditionEditorOpen && 'flex-none basis-[26%]',
@@ -337,8 +398,8 @@ function KissaApp(): React.JSX.Element {
                                   : isPartyMode
                                     ? // As big as the stage allows: its height (the deck is 10:7), or the width left beside the words.
                                       showSideLyrics
-                                      ? 'max-w-[min(1180px,calc((100vh-272px)*10/7*0.94))]'
-                                      : 'w-[min(1180px,calc((100vh-272px)*10/7*0.94),calc(100vw-30rem-96px-6vw))] max-w-none'
+                                      ? 'max-w-[calc(76vh*10/7*0.94)]'
+                                      : 'w-[min(calc(76vh*10/7*0.94),calc(100vw-21vw-clamp(24rem,44vh,64rem)))] max-w-none'
                                     : undefined
                               }
                             />
@@ -351,38 +412,33 @@ function KissaApp(): React.JSX.Element {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: reduceMotion ? 0 : 16 }}
                             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                            // Starts below the Support pill (top-12, about 40 px tall) so the pill never sits on the card's close button.
+                            // No box: the words sit on the room itself. The header lines up with the
+                            // turntable's top edge (--lyrics-top, measured from the plinth); the words
+                            // use the height below it and fade out softly.
                             className={cn(
-                              'deck-lyrics-card hidden min-[1100px]:flex flex-col min-h-0 px-7 pt-6 pb-4 mt-[6.5rem] mb-4 mr-6 rounded-[36px] border border-white/[0.07] kissa-sheet',
-                              // Party mode: the stage already sets the margins; the card fills the column height.
-                              isPartyMode && 'mt-0 mb-0 mr-0 self-stretch'
+                              'deck-lyrics-card hidden min-[1100px]:flex flex-col min-h-0',
+                              // Party mode has its own controls along the top and a transport pill at the
+                              // bottom: the words (and their "..." and close buttons) sit between them.
+                              isPartyMode && 'self-stretch !mt-0 !mb-0 !pt-[clamp(100px,10vh,160px)] !pb-[clamp(100px,12vh,180px)]'
                             )}
                           >
-                            <div className="flex items-start justify-between gap-3 pb-2 shrink-0">
-                              <div className="flex min-w-0 items-center gap-4 pr-3">
-                                <img src={currentTrack?.artworkUrl || albumPlaceholder} alt=""
-                                  className="h-14 w-14 shrink-0 rounded-xl object-cover min-[1600px]:h-16 min-[1600px]:w-16" />
-                                <div className="min-w-0">
-                                  <h2 className="font-kissa-editorial text-[clamp(1.25rem,1.45vw,1.75rem)] leading-[1.12] text-ink [overflow-wrap:anywhere]">
-                                    {currentTrack?.title || tl('nav.lyrics')}
-                                  </h2>
-                                  <p className="mt-1.5 text-[13px] leading-snug text-ink/70 [overflow-wrap:anywhere]">
-                                    {[currentTrack?.artist, currentTrack?.album].filter(Boolean).join(' · ')}
-                                  </p>
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={toggleSideLyrics}
-                                className="w-6 h-6 rounded-full flex items-center justify-center transition-colors duration-ui ease-primary cursor-pointer text-dim hover:text-ink hover:bg-ink/[0.08]"
-                                title={tl('a11y.closeSideLyrics')}
-                                aria-label={tl('a11y.closeSideLyrics')}
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
                             <div className="relative flex-1 min-h-0 overflow-hidden">
-                              <SyncedLyrics variant="panel" />
+                              <SyncedLyrics
+                                variant="panel"
+                                onClose={toggleSideLyrics}
+                                closeLabel={tl('a11y.closeSideLyrics')}
+                                header={
+                                  // Sits on the turntable's top edge, so the deck and the words read as one spread.
+                                  <div className="min-w-0 pl-3.5">
+                                    <h2 className="truncate font-kissa-editorial text-[clamp(1.125rem,1.25vw,1.375rem)] leading-[1.15] tracking-[-0.01em] text-ink/90">
+                                      {currentTrack?.title || tl('nav.lyrics')}
+                                    </h2>
+                                    {currentTrack?.artist && (
+                                      <p className="mt-0.5 truncate text-[12.5px] leading-snug text-dim">{currentTrack.artist}</p>
+                                    )}
+                                  </div>
+                                }
+                              />
                             </div>
                           </motion.div>
                         )}
@@ -393,20 +449,23 @@ function KissaApp(): React.JSX.Element {
                       /* Immersive lyrics view */
                       <motion.div
                         key="lyrics-view"
-                        initial={{ opacity: 0, scale: 0.985 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.985 }}
-                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                        className="absolute inset-0 grid grid-cols-1 min-[900px]:grid-cols-[minmax(0,0.65fr)_minmax(280px,0.35fr)] overflow-hidden transform-gpu"
+                        data-page="lyrics"
+                        {...PAGE_MOTION}
+                        // The words at a readable measure and the record beside them, centred as one group,
+                        // so the options button and the record sit by the text rather than across a void.
+                        className="absolute inset-0 grid grid-cols-1 min-[900px]:grid-cols-[minmax(0,56rem)_minmax(260px,24rem)] min-[900px]:justify-center min-[900px]:gap-x-[clamp(24px,4vw,96px)] overflow-hidden transform-gpu"
                       >
                         <div className="relative h-full min-h-0 flex flex-col px-4 min-[900px]:px-10 py-6 min-[900px]:py-8">
                           <SyncedLyrics isLargeView />
                         </div>
-                        <div className="hidden min-[900px]:flex flex-col items-center justify-center p-8 mt-10 mb-2 mr-4">
-                          <div className="relative w-full max-w-[280px] aspect-square flex items-center justify-center">
+                        <div className="hidden min-[900px]:flex flex-col items-center justify-center py-8">
+                          <div data-light-source="" className="relative w-full max-w-[280px] aspect-square flex items-center justify-center">
+                            {/* A still shadow under the record: a drop-shadow filter on the spinning
+                                record was redrawn on every frame of the spin. */}
+                            <span aria-hidden="true" className="pointer-events-none absolute inset-[1.5%] rounded-full shadow-[0_30px_40px_rgba(0,0,0,0.5)]" />
                             <VinylEngine
                               albumArt={currentTrack?.artworkUrl ?? albumPlaceholder}
-                              className="w-full h-full drop-shadow-[0_30px_40px_rgba(0,0,0,0.5)]"
+                              className="w-full h-full"
                             />
                           </div>
 
@@ -434,10 +493,8 @@ function KissaApp(): React.JSX.Element {
                       /* Record shelf */
                       <motion.div
                         key="shelf-view"
-                        initial={{ opacity: 0, scale: 0.985 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.985 }}
-                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                        data-page="shelf"
+                        {...PAGE_MOTION}
                         className="absolute inset-0 z-10"
                       >
                         <RecordShelfView />
@@ -452,6 +509,10 @@ function KissaApp(): React.JSX.Element {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* The app's one tooltip: replaces the stock Windows tooltips from title attributes. */}
+      {!isScreensaver && !isMiniPlayer && !isFullscreen && !isPartyMode && <WindowControls />}
+      {!isScreensaver && <TooltipLayer />}
+      {!isScreensaver && <NowPlayingAnnouncer />}
       {!isScreensaver && <SettingsModal />}
 
       {!isScreensaver && <OnboardingModal />}
@@ -464,9 +525,8 @@ function KissaApp(): React.JSX.Element {
 
       {hasStarted && !isScreensaver && !isMiniPlayer && <RoomNoticeCard />}
 
-      {!hasStarted && isScreensaver === false && (
-        <StartupExperience onComplete={() => setHasStarted(true)} />
-      )}
+      {!hasStarted && isScreensaver === false && <StartupExperience onComplete={finishOpening} />}
+
     </AppLayout>
   )
 }
@@ -476,10 +536,27 @@ export default function App(): React.JSX.Element {
   if (isShareExport) {
     return <ShareExportMount />
   }
-  // Windows' "Animation effects" off (prefers-reduced-motion): every framer animation in the
-  // app drops its movement and keeps only fades, not just the views that check it themselves.
+  return <ComfortRoot />
+}
+
+/**
+ * Comfort settings for the whole app. Reduce motion (Settings > General > Comfort, or Windows'
+ * "Animation effects" off): every framer animation drops its movement and keeps only fades, and
+ * CSS follows data-reduce-motion. More contrast (the switch, or Windows asking for it):
+ * data-contrast="more" on <html> (main.css).
+ */
+function ComfortRoot(): React.JSX.Element {
+  const reduced = useReducedMotion()
+  const moreContrast = useMoreContrast()
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-reduce-motion', reduced)
+  }, [reduced])
+  useEffect(() => {
+    if (moreContrast) document.documentElement.dataset.contrast = 'more'
+    else delete document.documentElement.dataset.contrast
+  }, [moreContrast])
   return (
-    <MotionConfig reducedMotion="user">
+    <MotionConfig reducedMotion={reduced ? 'always' : 'never'}>
       <KissaApp />
     </MotionConfig>
   )
