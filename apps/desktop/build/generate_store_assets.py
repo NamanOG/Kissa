@@ -22,6 +22,7 @@ the right file by its qualifiers:
                               Without an exact match Windows shrinks the next larger file, which
                               blurs it, so every size Windows asks for at 100-200% is provided.
   _altform-unplated           drawn without the coloured plate behind it
+  _altform-lightunplated      the same, for the light taskbar and Start theme
 
 The classic (NSIS / portable) build takes its executable and shortcut icon from build/icon.ico,
 which holds the same sizes as PNG frames. The running app's window and tray icon use the same ICO
@@ -56,6 +57,7 @@ REC_X, REC_Y, REC_R = 247.05, 256.05, 244.3
 WAVE_SCALE, WAVE_DX, WAVE_DY = 1.2463, -72, -63
 SUPERSAMPLE = 8  # the small-size strokes are drawn this much larger, then reduced
 
+TILE_FILL = 0.92  # share of a Start tile the record covers
 TARGET_SIZES = (16, 20, 24, 30, 32, 36, 40, 48, 60, 64, 72, 80, 96, 256)
 ICO_SIZES = (16, 20, 24, 30, 32, 36, 40, 48, 60, 64, 72, 80, 96, 128, 256)
 
@@ -110,7 +112,7 @@ def _hex(h: str):
 
 TEAL = [(0, _hex('#2f97a1')), (0.5, _hex('#46b9c2')), (1, _hex('#2f97a1'))]
 COPPER = [(0, _hex('#d49a66')), (0.55, _hex('#a06438')), (1, _hex('#8a5530'))]
-EDGE = _hex('#9a8270')
+EDGE = _hex('#e2a468')  # brighter copper, so the mark holds against a dark taskbar
 
 
 def _layer(colour: Image.Image, mask: Image.Image, n: int, opacity: float = 1.0) -> Image.Image:
@@ -163,7 +165,7 @@ def small_mark(n: int) -> Image.Image:
     r_edge = REC_R * k
     ImageDraw.Draw(edge).ellipse([REC_X * k - r_edge, REC_Y * k - r_edge, REC_X * k + r_edge, REC_Y * k + r_edge],
                                  outline=255, width=max(1, round(u * k)))
-    out.alpha_composite(_layer(Image.new('RGB', (m, m), EDGE), edge, n, opacity=0.5))
+    out.alpha_composite(_layer(Image.new('RGB', (m, m), EDGE), edge, n, opacity=0.95))
     return out
 
 
@@ -198,13 +200,15 @@ def write_package() -> None:
     save(mark(50), 'StoreLogo.png')
     save(mark(100), 'StoreLogo.scale-200.png')
 
-    # Start menu tiles: the mark sits inside the tile with breathing room
+    # Start menu tiles (Windows 11 Start "Pinned" draws these): the record fills the tile like the
+    # other apps' icons, on a transparent tile (BackgroundColor "transparent" in the manifest).
+    # 2026-11-05: was 0.66 on a dark #0f0b07 tile, which read as a small mark on a dark plate.
     for base, name in ((150, 'Square150x150Logo'), (71, 'SmallTile'), (310, 'LargeTile')):
-        save(tile(base, base, 0.66), f'{name}.png')
-        save(tile(base * 2, base * 2, 0.66), f'{name}.scale-200.png')
+        save(tile(base, base, TILE_FILL), f'{name}.png')
+        save(tile(base * 2, base * 2, TILE_FILL), f'{name}.scale-200.png')
 
-    save(tile(310, 150, 0.7), 'Wide310x150Logo.png')
-    save(tile(620, 300, 0.7), 'Wide310x150Logo.scale-200.png')
+    save(tile(310, 150, 0.84), 'Wide310x150Logo.png')
+    save(tile(620, 300, 0.84), 'Wide310x150Logo.scale-200.png')
 
     # App list, Search, taskbar and Alt-Tab icon
     save(mark(44), 'Square44x44Logo.png')
@@ -214,6 +218,8 @@ def write_package() -> None:
         image = mark(size)
         save(image, f'Square44x44Logo.targetsize-{size}.png')
         save(image, f'Square44x44Logo.targetsize-{size}_altform-unplated.png')
+        # Light taskbar and Start: the same mark (its copper edge holds on light backgrounds too).
+        save(image, f'Square44x44Logo.targetsize-{size}_altform-lightunplated.png')
 
     # Classic build: executable, shortcut and installer icon
     frames = [mark(size) for size in ICO_SIZES]
