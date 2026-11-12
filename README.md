@@ -19,7 +19,7 @@
 </div>
 
 <p align="center">
-  <img src="./apps/website/public/og-kissa-deck.png" alt="Kissa's turntable, playing a record in a warm listening room" width="100%" />
+  <img src="./assets/readme/kissa-5.1.0.png" alt="Kissa's deck with a record playing, Moving light active, and the current song displayed" width="100%" />
 </p>
 
 <p align="center">
