@@ -1,151 +1,144 @@
 <div align="center">
-  <img src="./apps/desktop/src/renderer/src/assets/brand/kissa-mark-384.webp" width="112" height="112" alt="Kissa's copper-edged record mark" />
+  <img src="./apps/desktop/src/renderer/src/assets/brand/kissa-mark-384.webp" width="76" height="76" alt="Kissa's copper-edged record mark" />
 
   <h1>Kissa</h1>
 
   <p><strong>A listening room for the music already playing on your Windows PC.</strong></p>
-
-  <p>
-    <img src="https://img.shields.io/badge/Version-5.1.0-c77b43?style=flat-square" alt="Version 5.1.0" />
-    <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4?style=flat-square&logo=windows&logoColor=white" alt="Windows 10 and 11" />
-    <img src="https://img.shields.io/badge/Electron-39-47848f?style=flat-square&logo=electron&logoColor=white" alt="Electron 39" />
-  </p>
+  <p>Keep listening where you are. Kissa takes care of the room.</p>
 
   <a href="https://apps.microsoft.com/detail/9p3n4x4wm80j">
     <img src="https://get.microsoft.com/images/en-us%20dark.svg" height="44" alt="Get Kissa from Microsoft Store" />
   </a>
 
-  <p><sub>Free for Windows 10 and 11 · installed and updated through Microsoft Store</sub></p>
+  <p><sub>Version 5.1.0 &nbsp;·&nbsp; Free for Windows 10 and 11 (64-bit)</sub></p>
 </div>
 
 <p align="center">
-  <img src="./assets/readme/kissa-5.1.0.png" alt="Kissa's deck with a record playing, Moving light active, and the current song displayed" width="100%" />
+  <img src="./assets/readme/kissa-5.1.0.png" alt="Kissa's listening room with the current song and album art, record, tonearm, and Moving light enabled" width="100%" />
 </p>
+
+<p align="center"><sub>THE DECK &nbsp;·&nbsp; A live Windows music session, brought into the room</sub></p>
 
 <p align="center">
-  <a href="#whats-new-in-510">What's new</a> ·
-  <a href="#the-listening-room">Features</a> ·
-  <a href="#getting-started">Getting started</a> ·
-  <a href="#development--building">Development</a>
+  <a href="#whats-new-in-510">The 5.1 update</a> &nbsp;·&nbsp;
+  <a href="#the-listening-room">Explore the room</a> &nbsp;·&nbsp;
+  <a href="#getting-started">Get started</a> &nbsp;·&nbsp;
+  <a href="#development--building">Build Kissa</a>
 </p>
 
 ---
 
-Kissa is inspired by Japan's *jazz kissa* (ジャズ喫茶), intimate places built around attentive listening, analog warmth, and atmosphere. It follows active Windows media sessions and brings the music into a tactile turntable, a record shelf, synchronized lyrics, and quiet listening rooms.
+## Music has a place here
 
-> **The music plays. The room responds.**
+Kissa is inspired by Japan's *jazz kissa* (ジャズ喫茶): intimate rooms built around attentive listening, analog warmth and atmosphere. It follows the music already playing on your PC, then gives that listening session a turntable, a shelf, synchronized lyrics and a room that can move with the album.
 
----
+Your music stays in its player. Kissa brings the listening room around it.
 
 ## What's new in 5.1.0
 
-- Kissa opens straight into its full introduction, without a blank window. Pages, songs, and the Focus Room move more smoothly.
-- Minimise, maximise, and close sit together in a compact glass capsule.
-- Choose how much Moving light follows the music: **Gentle**, **Balanced**, or **Lively**.
-- Sound bars respond to the music and rest when it pauses. The tonearm settles on the record, moves inward during playback, and holds when paused.
-- **Reduce motion** and **Increase contrast** are in **Settings → General**.
+The new version gets out of the way sooner and makes the room feel more connected to the music.
 
-[Read the full 5.1.0 release notes](https://github.com/NamanOG/Kissa/releases/tag/v5.1.0) · [See what's new on the Kissa website](https://kissa.glyphcode.studio/whats-new/)
+**A smoother arrival.** Kissa opens directly into its introduction, with more fluid page changes, song transitions and Focus Room entry.
 
----
+**A room that listens.** Moving light now has **Gentle**, **Balanced** and **Lively** settings. Sound bars rest when playback pauses; the tonearm settles on the record and tracks inward as a song plays.
 
-## Download & Installation
+**A calmer finish.** Minimise, maximise and close sit together in a compact control capsule. **Reduce motion** and **Increase contrast** are available in **Settings → General**.
 
-The **Microsoft Store is the recommended way to get Kissa**. It handles installation and updates for you.
-
-<p align="center">
-  <a href="https://apps.microsoft.com/detail/9p3n4x4wm80j">
-    <img src="https://get.microsoft.com/images/en-us%20dark.svg" height="44" alt="Get Kissa from Microsoft Store" />
-  </a>
-</p>
-
-If Kissa is part of your listening routine, please [rate and review it on the Microsoft Store](https://apps.microsoft.com/detail/9p3n4x4wm80j). Your feedback helps other listeners find it.
-
-Kissa is free for **Windows 10 and Windows 11 (64-bit)**.
+[Read the full 5.1.0 release notes](https://github.com/NamanOG/Kissa/releases/tag/v5.1.0) &nbsp;·&nbsp; [See what's new on the Kissa website](https://kissa.glyphcode.studio/whats-new/)
 
 ---
 
 ## The Listening Room
 
+The Deck is where a listening session begins: album art sits beside a turning record, the tonearm moves with playback, and controls stay close without getting between you and the music.
+
+<p align="center">
+  <a href="./apps/website/public/media/modes/shelf.webp"><img src="./apps/website/public/media/modes/shelf.webp" width="49%" alt="Kissa's record shelf, arranged as a collection of album sleeves" /></a>
+  <a href="./apps/website/public/media/study/study-forest-800.webp"><img src="./apps/website/public/media/study/study-forest-800.webp" width="49%" alt="Kissa's Focus Room with a forest setting, sitting controls and the current record" /></a>
+</p>
+
+<p align="center"><sub>THE SHELF &nbsp;·&nbsp; Browse the records that shaped your listening</sub><br /><sub>THE FOCUS ROOM &nbsp;·&nbsp; Make space for one thing at a time</sub></p>
+
+The **Record Shelf** keeps your listening history close, with album views and crate-style browsing. **Listening rooms** shift between eight considered settings, or let **Match Album** draw its light from the artwork. For quieter work, the **Focus Room** pairs a timed sitting and small steps with the record still turning.
+
+Lyrics follow the playback clock, with line-level timing, word progression when the source allows it, and controls to find or correct a match. When you want less between you and the music, use the full-screen Listening Display, mini player, native screensaver or phone remote on the same Wi-Fi.
+
+<details>
+<summary>Explore all features</summary>
+
 ### Physical Turntable
 
-- Machined, hardware-inspired turntable assembly with realistic depth and lighting
-- Animated vinyl rotation at 33 ⅓ RPM and 45 RPM speeds
-- Rotational phase preservation across pause and track changes
-- Physical tonearm placement and needle-drop response
-- Real-time tonearm seeking across the record groove
+- Hardware-inspired turntable with realistic depth and lighting
+- Vinyl rotation at 33 ⅓ RPM and 45 RPM, with rotational phase preserved across pauses and track changes
+- Physical tonearm placement, needle-drop response and real-time seeking through the record groove
 - Tactile rotary dials and hardware switches for speed and power
 
 ### Windows System Media Integration
 
 - Native Windows System Media Transport Controls (SMTC) synchronization
-- Automatic session detection for Spotify, Apple Music, Tidal, and Chromium-based browsers
-- Bidirectional transport controls: Play, Pause, Previous, Next
-- External media seeking through SMTC (`TryChangePlaybackPositionAsync`) where supported by the source player
-- Accurate UTF-8 metadata synchronization for international titles and artist names
-- Reconciled playback clock compensating for external media state drift
+- Automatic session detection for Spotify, Apple Music, Tidal and Chromium-based browsers
+- Bidirectional Play, Pause, Previous and Next controls
+- External seeking through SMTC (`TryChangePlaybackPositionAsync`) where the player supports it
+- Accurate UTF-8 metadata and a playback clock that reconciles timing drift
 - System tray background operation with quick playback access
 
 ### Synchronized Lyrics
 
 - Real-time lyric synchronization powered by LRCLIB
-- Word-level karaoke progression where source LRC data permits
-- Dedicated instrumental break indicators and countdowns
-- Manual lyrics timing offset calibration (-5.0s to +5.0s) with persistent per-track recall
-- Interactive click-to-seek directly from lyric lines
-- Optical depth hierarchy between past, active, and upcoming lines
-- Automatic, smooth scrolling with manual scroll lock recovery
+- Word-level progression where source LRC data permits
+- Instrumental break indicators and countdowns
+- Per-track timing offset calibration (-5.0s to +5.0s)
+- Click-to-seek from lyric lines and smooth scrolling with manual scroll recovery
 
 ### Listening Environments & Match Album
 
-- Eight curated listening environments:
-  1. **Quiet Listening Room:** Walnut, warm paper, and late-night lamp glow
-  2. **Dusty Record Store:** Faded sleeves, cardboard, and muted olive
-  3. **Japanese Jazz Bar:** Charcoal, indigo, warm wood, and dim light
-  4. **Midnight Apartment:** Smoky blue, graphite, and midnight quiet
-  5. **Rainy Window:** Slate grey, soft reflections, and indoor warmth
-  6. **Hi-Fi Library:** Dark mahogany, parchment, and aged brass
-  7. **Concrete & Vinyl:** Architectural concrete, terracotta, and matte black
-  8. **Sunday Morning:** Pale birch, warm linen, and faded sage
-- **Match Album:** Dynamic ambient illumination driven by dominant and accent colors extracted from the current album art
+Eight listening environments: **Quiet Listening Room**, **Dusty Record Store**, **Japanese Jazz Bar**, **Midnight Apartment**, **Rainy Window**, **Hi-Fi Library**, **Concrete & Vinyl** and **Sunday Morning**. **Match Album** uses the dominant and accent colours in the current artwork to shape the room's light.
 
 ### Focus Room, Party Mode & Phone Remote
 
-- A Focus Room for timed sittings, small steps, and a quieter place to work while the record keeps turning.
-- Party mode and Listening Display offer full-screen ways to stay with the music; the mini player keeps the record and controls close by.
-- Pair a phone over the same Wi-Fi with a QR code and short code to control Kissa. No account is needed.
+- Timed Focus Room sittings, small steps and a quieter place to work while the record keeps turning
+- Party mode and Listening Display for full-screen listening; a mini player keeps the record and controls close
+- Pair a phone over the same Wi-Fi with a QR code and short code; no account is needed
 
 ### Listening Display & Native Screensaver
 
-- **Manual Listening Display:** Immersive, full-screen listening mode switchable between a 12" album cover stand and turntable presentation
-- **Native Windows Screensaver (`Kissa.scr`):** Full-fidelity screensaver that activates during Windows idle periods
-- **Safe HKCU Registration:** Optional user-activated screensaver registration that only sets `SCRNSAVE.EXE` without modifying system timeout policies
-- **Windows Screensaver Settings Shortcut:** Direct button in Kissa Settings to launch the native Windows Screen Saver control panel (`control.exe desk.cpl,,@screensaver`)
-- **Clean wake:** Kissa exits the screensaver on mouse movement, keyboard input, or touch without leaving a background process behind.
+- Full-screen Listening Display with a 12-inch album stand or turntable presentation
+- Native Windows screensaver (`Kissa.scr`) that activates during Windows idle periods
+- Optional registration that sets `SCRNSAVE.EXE` without changing Windows timeout policies
+- Settings shortcut to the Windows Screen Saver control panel
+- Clean exit on mouse movement, keyboard input or touch
 
 ### Record Shelf & Crate Browsing
 
-- Archival catalog presentation for your music history
-- Stable grid layout with detailed record spine and sleeve aesthetics
-- Sorting by Recently Played, Recently Added, Play Count, and Alphabetical
-- Album inspection drawer with full track listings and metadata
-- Source-aware track sharing modal supporting direct links for Spotify, Apple Music, Tidal, YouTube, or clean text citations
+- Album catalog with grid, crate and spine views
+- Sort by Recently Played, Recently Added, Play Count, Alphabetical or Colour
+- Album inspection with full track listings and metadata
+- Share tracks with links for Spotify, Apple Music, Tidal and YouTube, or as clean text citations
 
-### Startup Experience & Interactive Setup
+### Startup, Setup & Updates
 
-- Restrained, cinematic startup screen with animated vinyl transitions
-- Interactive first-run setup modal allowing users to configure preferred RPM, environment, and display preferences
-- Settings persistence backed by local storage and Zustand state management
+- Interactive first-run setup for RPM, listening environment and display preferences
+- In-app update checks with download progress, cancellation and an explicit install confirmation
+- Installed updates hand off to the NSIS installer; portable updates are saved to Downloads for the user to launch
+- Update checks and install handoffs are suppressed in screensaver mode
 
-### In-App Update System
+</details>
 
-- **User-Controlled Lifecycle:** In-app update checking, streaming download with live transfer progress, and explicit confirmation before installation
-- **Installed NSIS Workflow:** Downloads the installer securely into your local update cache, confirms readiness, cleanly quits active playback processes, and hands off to the NSIS installer
-- **Portable Build Awareness:** Respects running portable executables by downloading the updated portable `.exe` to your Downloads directory and providing a direct "Show in Folder" action—never attempting unsafe in-place file replacement
-- **Screensaver Guard:** Update checks, downloads, and restarts are strictly suppressed while Kissa is running in Windows screensaver mode (`--screensaver`)
-  
 ---
 
+## Download & Installation
+
+For the simplest install and automatic updates, **get Kissa from the Microsoft Store**.
+
+<p align="center">
+  <a href="https://apps.microsoft.com/detail/9p3n4x4wm80j">
+    <img src="https://get.microsoft.com/images/en-us%20dark.svg" height="48" alt="Get Kissa from Microsoft Store" />
+  </a>
+</p>
+
+If Kissa has found a place in your listening routine, [leave a rating and review in the Microsoft Store](https://apps.microsoft.com/detail/9p3n4x4wm80j). Your feedback helps other listeners decide whether it belongs in theirs.
+
+---
 ## Windows Screensaver Architecture
 
 Kissa includes a dedicated Windows screensaver implementation that renders the full-fidelity **Listening Display** when invoked by Windows.
