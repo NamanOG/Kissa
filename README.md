@@ -1,47 +1,71 @@
-<p align="center">
-  <img src="./apps/desktop/src/renderer/src/media/kissa_logo.png" width="140" height="140" alt="Kissa Logo" style="border-radius: 50%;" />
-</p>
+<div align="center">
+  <img src="./apps/desktop/src/renderer/src/assets/brand/kissa-mark-384.webp" width="112" height="112" alt="Kissa's copper-edged record mark" />
 
-<h1 align="center">Kissa</h1>
+  <h1>Kissa</h1>
 
-<p align="center">
-  <strong>A contemplative desktop vinyl player and listening companion for Windows.</strong>
-</p>
+  <p><strong>A listening room for the music already playing on your Windows PC.</strong></p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Version-5.0.0-blue?style=flat-square" alt="Version 5.0.0" />
-  <img src="https://img.shields.io/badge/Electron-39-blue?style=flat-square&logo=electron" alt="Electron 39" />
-  <img src="https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react" alt="React 19" />
-  <img src="https://img.shields.io/badge/TypeScript-Strict-blue?style=flat-square&logo=typescript" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078d4?style=flat-square&logo=windows" alt="Windows" />
-  <img src="https://img.shields.io/badge/License-Free%20to%20use-green?style=flat-square" alt="License" />
-</p>
+  <p>
+    <img src="https://img.shields.io/badge/Version-5.1.0-c77b43?style=flat-square" alt="Version 5.1.0" />
+    <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4?style=flat-square&logo=windows&logoColor=white" alt="Windows 10 and 11" />
+    <img src="https://img.shields.io/badge/Electron-39-47848f?style=flat-square&logo=electron&logoColor=white" alt="Electron 39" />
+  </p>
 
-<p align="center">
   <a href="https://apps.microsoft.com/detail/9p3n4x4wm80j">
-    <img src="https://img.shields.io/badge/Get%20it%20from-Microsoft%20Store-0078d4?style=for-the-badge&logo=windows&logoColor=white" alt="Get Kissa from the Microsoft Store" />
+    <img src="https://get.microsoft.com/images/en-us%20dark.svg" height="44" alt="Get Kissa from Microsoft Store" />
   </a>
+
+  <p><sub>Free for Windows 10 and 11 · installed and updated through Microsoft Store</sub></p>
+</div>
+
+<p align="center">
+  <img src="./apps/website/public/og-kissa-deck.png" alt="Kissa's turntable, playing a record in a warm listening room" width="100%" />
+</p>
+
+<p align="center">
+  <a href="#whats-new-in-510">What's new</a> ·
+  <a href="#the-listening-room">Features</a> ·
+  <a href="#getting-started">Getting started</a> ·
+  <a href="#development--building">Development</a>
 </p>
 
 ---
 
-Kissa is a music vinyl player for windows, inspired by Japan's iconic *Jazz Kissa* (ジャズ喫茶) — intimate spaces built around attentive listening, analog warmth, and atmosphere.
-
-Rather than competing with your music library or acting as another web streaming wrapper, Kissa turns your Windows desktop into a quiet listening space. It centers your listening around a physical turntable, an archival record shelf, ambient lighting environments, synchronized lyrics, and tactile hardware-inspired controls.
-
-Kissa connects directly to active Windows System Media Transport Controls (SMTC) sessions. Whether you are playing through Spotify, Apple Music, Tidal, or a supported web browser, Kissa follows the session, rendering artwork, synchronized lyrics, and turntable motion in real time.
+Kissa is inspired by Japan's *jazz kissa* (ジャズ喫茶), intimate places built around attentive listening, analog warmth, and atmosphere. It follows active Windows media sessions and brings the music into a tactile turntable, a record shelf, synchronized lyrics, and quiet listening rooms.
 
 > **The music plays. The room responds.**
 
 ---
 
-## Download & Installation
+## What's new in 5.1.0
 
-Kissa is free on the [**Microsoft Store**](https://apps.microsoft.com/detail/9p3n4x4wm80j) for **Windows 10 and Windows 11 (64-bit)**. The Store installs it and keeps it up to date.
+- Kissa opens straight into its full introduction, without a blank window. Pages, songs, and the Focus Room move more smoothly.
+- Minimise, maximise, and close sit together in a compact glass capsule.
+- Choose how much Moving light follows the music: **Gentle**, **Balanced**, or **Lively**.
+- Sound bars respond to the music and rest when it pauses. The tonearm settles on the record, moves inward during playback, and holds when paused.
+- **Reduce motion** and **Increase contrast** are in **Settings → General**.
+
+[Read the full 5.1.0 release notes](https://github.com/NamanOG/Kissa/releases/tag/v5.1.0) · [See what's new on the Kissa website](https://kissa.glyphcode.studio/whats-new/)
 
 ---
 
-## Core Features
+## Download & Installation
+
+The **Microsoft Store is the recommended way to get Kissa**. It handles installation and updates for you.
+
+<p align="center">
+  <a href="https://apps.microsoft.com/detail/9p3n4x4wm80j">
+    <img src="https://get.microsoft.com/images/en-us%20dark.svg" height="44" alt="Get Kissa from Microsoft Store" />
+  </a>
+</p>
+
+If Kissa is part of your listening routine, please [rate and review it on the Microsoft Store](https://apps.microsoft.com/detail/9p3n4x4wm80j). Your feedback helps other listeners find it.
+
+Kissa is free for **Windows 10 and Windows 11 (64-bit)**.
+
+---
+
+## The Listening Room
 
 ### Physical Turntable
 
@@ -75,15 +99,21 @@ Kissa is free on the [**Microsoft Store**](https://apps.microsoft.com/detail/9p3
 ### Listening Environments & Match Album
 
 - Eight curated listening environments:
-  1. **Quiet Listening Room** — Walnut, warm paper, and late-night lamp glow
-  2. **Dusty Record Store** — Faded sleeves, cardboard, and muted olive
-  3. **Japanese Jazz Bar** — Charcoal, indigo, warm wood, and dim light
-  4. **Midnight Apartment** — Smoky blue, graphite, and midnight quiet
-  5. **Rainy Window** — Slate grey, soft reflections, and indoor warmth
-  6. **Hi-Fi Library** — Dark mahogany, parchment, and aged brass
-  7. **Concrete & Vinyl** — Architectural concrete, terracotta, and matte black
-  8. **Sunday Morning** — Pale birch, warm linen, and faded sage
+  1. **Quiet Listening Room:** Walnut, warm paper, and late-night lamp glow
+  2. **Dusty Record Store:** Faded sleeves, cardboard, and muted olive
+  3. **Japanese Jazz Bar:** Charcoal, indigo, warm wood, and dim light
+  4. **Midnight Apartment:** Smoky blue, graphite, and midnight quiet
+  5. **Rainy Window:** Slate grey, soft reflections, and indoor warmth
+  6. **Hi-Fi Library:** Dark mahogany, parchment, and aged brass
+  7. **Concrete & Vinyl:** Architectural concrete, terracotta, and matte black
+  8. **Sunday Morning:** Pale birch, warm linen, and faded sage
 - **Match Album:** Dynamic ambient illumination driven by dominant and accent colors extracted from the current album art
+
+### Focus Room, Party Mode & Phone Remote
+
+- A Focus Room for timed sittings, small steps, and a quieter place to work while the record keeps turning.
+- Party mode and Listening Display offer full-screen ways to stay with the music; the mini player keeps the record and controls close by.
+- Pair a phone over the same Wi-Fi with a QR code and short code to control Kissa. No account is needed.
 
 ### Listening Display & Native Screensaver
 
@@ -91,7 +121,7 @@ Kissa is free on the [**Microsoft Store**](https://apps.microsoft.com/detail/9p3
 - **Native Windows Screensaver (`Kissa.scr`):** Full-fidelity screensaver that activates during Windows idle periods
 - **Safe HKCU Registration:** Optional user-activated screensaver registration that only sets `SCRNSAVE.EXE` without modifying system timeout policies
 - **Windows Screensaver Settings Shortcut:** Direct button in Kissa Settings to launch the native Windows Screen Saver control panel (`control.exe desk.cpl,,@screensaver`)
-- **Clean Wake Detection:** Seamlessly resumes your desktop on mouse movement, keyboard input, or touch without leaving orphaned processes
+- **Clean wake:** Kissa exits the screensaver on mouse movement, keyboard input, or touch without leaving a background process behind.
 
 ### Record Shelf & Crate Browsing
 
@@ -200,6 +230,8 @@ Kissa includes a dedicated Windows screensaver implementation that renders the f
 
 ## Development & Building
 
+The commands below are for people building or maintaining Kissa. For a normal installation, use the Microsoft Store link above so the Store can install and update the app.
+
 ### Prerequisites
 
 - Windows 10 or Windows 11 (64-bit)
@@ -250,7 +282,7 @@ npm run build:unpack
 ### Production Build
 
 ```bash
-# Package production installer and portable binary
+# Build Windows installer and portable packages for release validation
 npm run build:win
 
 # Build the separate Microsoft Store upload package (does not publish)
@@ -259,12 +291,27 @@ npm run build:store
 
 Production artifacts are output to `apps/desktop/dist/`:
 
-- `Kissa-Setup-5.0.0.exe`
-- `Kissa-Portable-5.0.0.exe`
+- `Kissa-Setup-5.1.0.exe`
+- `Kissa-Portable-5.1.0.exe`
 
 ---
 
 ## Version History
+
+### v5.1.0 — A smoother listening room
+
+- Opens straight into the introduction, with smoother page changes, song transitions, and Focus Room entry.
+- Adds Gentle, Balanced, and Lively Moving light settings, sound-reactive bars, and a tonearm that settles and tracks playback.
+- Adds Reduce motion and Increase contrast options in Settings → General.
+- [Full release notes](https://github.com/NamanOG/Kissa/releases/tag/v5.1.0)
+
+### v5.0.0 — A new way to listen
+
+- Pressed turns your week, month, or year in music into a moving story with a share card. Listening data stays on your PC.
+- Control Kissa from your phone on the same Wi-Fi, with a QR code and 6-digit code. No account is needed.
+- Play your own album folders with optional vinyl sound, a dust lid, record sides, and sleeve backs.
+- Adds Party mode, Listening Display, a record-only mini player, room-light controls, and a sleep timer.
+- [Full release notes](https://github.com/NamanOG/Kissa/releases/tag/v5.0.0)
 
 ### v4.4.0 — Your turntable
 
@@ -326,7 +373,7 @@ Production artifacts are output to `apps/desktop/dist/`:
 
 - **External SMTC Seeking:** Real-time bidirectional seeking through Windows System Media Transport Controls via `TryChangePlaybackPositionAsync` with optimistic clock settlement.
 - **Native Windows Screensaver:** Bundled `Kissa.scr` supervisor with safe HKCU user registration and unregistration.
-- **Listening Display Refinement:** Expanded 12" album cover stand with centered typography, atmospheric lighting, and seamless manual/screensaver transitions.
+- **Listening Display:** A larger 12-inch album display, centered type, room lighting, and one view shared by manual and screensaver modes.
 - **Windows Screensaver Settings Shortcut:** Direct button in application settings to open Windows Screen Saver control panel (`control.exe desk.cpl,,@screensaver`).
 - **Synchronized Lyrics Improvements:** Instrumental break countdowns, fine-grained offset adjustment (-5.0s to +5.0s), and click-to-seek navigation.
 - **Source-Aware Track Sharing:** Contextual modal generating direct links for Spotify, Apple Music, Tidal, and YouTube.

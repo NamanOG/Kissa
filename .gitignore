@@ -49,9 +49,6 @@ Thumbs.db
 apps/website/captures/*
 !apps/website/captures/README.md
 
-# Local assistant tooling
-.claude/
-
 # Internal maintainer guides and instructions
 docs/
 
