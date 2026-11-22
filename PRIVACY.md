@@ -17,7 +17,7 @@ To show lyrics and cover artwork, Kissa looks them up from public services. Thes
 | [LRCLIB](https://lrclib.net) | Synced lyrics and alternate matches | Track title and artist, with album and duration where known; a search you enter and the ID of a match you choose |
 | iTunes Search API (Apple) | Cover artwork and track matching | A search term built from title and artist |
 | Deezer API | Cover artwork, as a fallback | A search term built from title and artist |
-| GitHub | Checking for and downloading updates | A request for the latest Kissa release |
+| GitHub | Older GitHub downloads only: checking for and downloading updates. Microsoft Store installs update through the Store | A request for the latest Kissa release |
 
 Each of those services handles requests under its own privacy policy.
 
@@ -47,7 +47,7 @@ Focus session cards are rendered on your PC and saved or copied only when you ch
 
 ## The website
 
-The Kissa website sets no cookies. It counts page visits with Vercel Web Analytics, which is cookieless and records pages viewed, referrer, browser, operating system, device type and country, without identifying individual visitors. It asks GitHub's public API for the latest release so the download button is current, and loads its typefaces from Google Fonts (the app itself carries its own fonts and contacts no font server). It remembers the latest release number in your browser's local storage for a few minutes to avoid repeating that request.
+The Kissa website sets no cookies. It counts page visits with Vercel Web Analytics, which is cookieless and records pages viewed, referrer, browser, operating system, device type and country, without identifying individual visitors. It loads its typefaces from Google Fonts (the app itself carries its own fonts and contacts no font server).
 
 ## Changes and contact
 

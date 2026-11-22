@@ -1,9 +1,7 @@
 name: Release Kissa
 
+# GitHub installers have stopped. Kissa ships through the Microsoft Store, so tags no longer publish a release.
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 permissions:

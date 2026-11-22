@@ -14,7 +14,9 @@ Open the room, start your music in the player you already use, and let the album
 
 **Free for Windows 10 and 11 · 64-bit · Version 5.1.0**
 
-The Microsoft Store is the recommended place to install Kissa and receive updates. If the room becomes part of your listening ritual, leave a [rating or review in the Microsoft Store](https://apps.microsoft.com/detail/9p3n4x4wm80j) to help another listener find it.
+> **Kissa is now available only from the Microsoft Store.** GitHub installers have stopped, and 5.1.0 is the last Setup and Portable build published here. If you installed Kissa from GitHub, your copy keeps working but will not receive new versions, so install it from the [Microsoft Store](https://apps.microsoft.com/detail/9p3n4x4wm80j) to stay up to date.
+
+If the room becomes part of your listening ritual, leave a [rating or review in the Microsoft Store](https://apps.microsoft.com/detail/9p3n4x4wm80j) to help another listener find it.
 
 ---
 
@@ -78,16 +80,16 @@ Take a moment to [rate or review Kissa in the Microsoft Store](https://apps.micr
 
 ## Notes from the listening room
 
-Kissa has no accounts, analytics or telemetry. It looks up lyrics and cover artwork from public services and checks GitHub for updates. Optional sharing features and their data use are described in the [privacy policy](PRIVACY.md).
+Kissa has no accounts, analytics or telemetry. It looks up lyrics and cover artwork from public services. Updates arrive through the Microsoft Store; older GitHub downloads still check GitHub for a newer release. Optional sharing features and their data use are described in the [privacy policy](PRIVACY.md).
 
-Kissa is free to use. The source is published so people can see how it works; it is not open source and may not be copied or redistributed. See the [LICENSE](LICENSE).
+Kissa is free to use. It is not open source, and its code may not be copied or redistributed. New versions are developed privately, and this repository remains the home for notices, the privacy policy and issue reports. See the [LICENSE](LICENSE).
 
 © 2026 Naman Bagdiya · [GlyphCode](https://www.glyphcode.studio/)
 
 <details>
 <summary>For people who build Kissa</summary>
 
-The Microsoft Store is the installation path for listeners. These notes are for contributors building the Windows app from source.
+The Microsoft Store is the only installation path for listeners. These notes are for people working on the Windows app from source.
 
 ### The cabinet
 
