@@ -37,7 +37,15 @@ Windows does not say which website a browser tab is playing, so Kissa can only f
 
 ## Supporting Kissa
 
-The website's support page lists a UPI ID and QR code and a Buy Me a Coffee link. Payments go directly through your UPI app or Buy Me a Coffee under their own privacy policies; Kissa and its website never see your payment details. Kissa never asks for payment inside the app.
+The website's support page lists a UPI ID and QR code and a Buy Me a Coffee link. Payments go directly through your UPI app or Buy Me a Coffee under their own privacy policies; Kissa and its website never see your payment details.
+
+## Kissa Reserve (optional purchase)
+
+Kissa Reserve is an optional one-time add-on sold through the Microsoft Store. Microsoft handles the purchase, your payment details and your license under its own privacy policy, and gives the developer its usual sales reports. Kissa asks the Store only for the price and whether you own Reserve, and never sees your payment details.
+
+- **Your photo:** if you choose a photo as a room, Kissa keeps a resized copy in its data folder on your PC. It is never uploaded, and you can remove it in Reserve.
+- **Your name:** a name you enter for your records stays on your PC.
+- **The trial:** whether you have used the 30-minute trial, and when it ends, is stored on your PC.
 
 ## Links you open yourself
 
