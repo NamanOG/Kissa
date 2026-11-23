@@ -1,0 +1,156 @@
+/* One room's arrangement inside the story window: a card on the left, a picture on the wall. */
+.layout {
+  position: absolute;
+  inset: var(--nav-height) 0 0;
+  display: grid;
+  grid-template-columns: clamp(300px, 26vw, 470px) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(1.5rem, 5vw, 7rem);
+  padding: clamp(0.9rem, 2.4svh, 2rem) clamp(1.25rem, 3.6vw, 5rem);
+}
+
+.part {
+  will-change: transform, opacity;
+  min-width: 0;
+}
+
+.picture {
+  justify-self: end;
+  width: min(100%, calc((100svh - var(--nav-height) - 8rem) * 1.66));
+}
+
+.title {
+  margin-bottom: var(--space-3);
+  font-size: clamp(1.8rem, 2.45vw, 3rem);
+}
+
+.title em {
+  font-style: normal;
+  color: var(--lantern);
+}
+
+.lead {
+  margin-bottom: var(--space-3);
+  font-size: 0.96rem;
+  line-height: 1.55;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 4px;
+}
+
+.choices button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 32px;
+  padding: 0.12rem 0.55rem;
+  color: #4a3122;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 180ms ease-out, color 180ms ease-out;
+}
+
+.choices button:hover {
+  background: rgba(44, 26, 16, 0.08);
+}
+
+.choices button[aria-pressed='true'] {
+  background: #a8321a;
+  color: #fff2de;
+}
+
+.choices span {
+  width: 10px;
+  height: 13px;
+  flex: none;
+  border-radius: 1px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4), 0 0 0 0.5px rgba(44, 26, 16, 0.5);
+}
+
+.detail {
+  min-height: 4.6em;
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  font-size: 0.93rem;
+  line-height: 1.52;
+}
+
+.media {
+  position: absolute;
+  inset: 0;
+}
+
+.media video,
+.media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.more {
+  margin-top: var(--space-2);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--lantern);
+}
+
+.more a {
+  display: inline-block;
+  padding-block: 0.25rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 1040px) {
+  .layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding: 0.75rem 1rem;
+  }
+
+  .picture {
+    order: -1;
+    width: min(100%, calc((100svh - var(--nav-height)) * 0.62));
+    align-self: center;
+    margin-top: 0.7rem;
+  }
+
+  .picture figcaption {
+    display: none;
+  }
+
+  .part:not(.picture) {
+    width: 100%;
+    max-width: 620px;
+    align-self: center;
+    margin-top: auto;
+  }
+
+  .choices {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: -0.2rem;
+  }
+
+  .detail {
+    min-height: 4.1em;
+  }
+}
+
+@media (max-width: 1040px) and (max-height: 720px) {
+  .lead {
+    display: none;
+  }
+}

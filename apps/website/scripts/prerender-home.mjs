@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { createElement } from 'react'
@@ -18,6 +19,7 @@ const server = await createServer({
   root,
   base: new URL(canonical).pathname,
   plugins: [react()],
+  resolve: { alias: { '@': resolve(root, 'src'), '@reserve': resolve(root, process.env.KISSA_RESERVE_LIVE === '1' && existsSync(resolve(root, 'src/reserve/index.tsx')) ? 'src/reserve/index.tsx' : 'src/reserve/off.tsx') } },
   server: { middlewareMode: true },
   appType: 'custom'
 })

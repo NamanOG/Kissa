@@ -1,21 +1,21 @@
 import styles from './Faq.module.css'
+import { Card, Room } from './Room'
 import { RevealHeading } from './ui/Reveal'
+import { Cat, Teacup } from './ui/Cat'
 import faq from '../data/faq.json'
 
-/**
- * Questions people actually search for. The same list is published as
- * FAQPage structured data in index.html (see vite.config.ts).
- */
+/** The same questions are published as FAQPage structured data (see vite.config.ts). */
 export function Faq() {
   return (
-    <section id="faq" className={styles.section} aria-labelledby="faq-heading">
-      <div className={`container ${styles.layout}`}>
-        <header className={styles.header}>
-          <span className="label">Questions</span>
-          <RevealHeading id="faq-heading" className="section-title" lines={['Before you', '*drop the needle.*']} />
-        </header>
+    <Room id="faq" scene="faq" labelledBy="faq-heading" fit>
+      <Card className={styles.intro}>
+        <RevealHeading id="faq-heading" className={styles.title} lines={['Before you', '*drop the needle.*']} />
+        <Teacup />
+      </Card>
 
-        <div className={styles.list}>
+      <Card className={styles.menu}>
+        <Cat className={styles.cat} />
+        <div className={styles.columns}>
           {faq.map((item) => (
             <details key={item.q} className={styles.item} name="kissa-faq">
               <summary className={styles.question}>
@@ -26,7 +26,7 @@ export function Faq() {
             </details>
           ))}
         </div>
-      </div>
-    </section>
+      </Card>
+    </Room>
   )
 }

@@ -1,3 +1,4 @@
+import { PRIVACY_URL } from '../lib/links'
 import type { FeaturePageData } from '../data/featurePages'
 import { brandMark } from '../lib/brandMark'
 
@@ -11,10 +12,9 @@ export function FeaturePage({ page, base = '/' }: { page: FeaturePageData; base?
         <a href={base}>Back to the listening room</a>
       </header>
       <main id="main-content" tabIndex={-1} className="guide container">
-        <p className="label">{page.label}</p>
         <h1>{page.heading}</h1>
         <p className="guide-intro">{page.intro}</p>
-        <a className="guide-download" href="https://apps.microsoft.com/detail/9p3n4x4wm80j">Get Kissa from Microsoft Store ↗</a>
+        <a className="guide-download" href="https://apps.microsoft.com/detail/9p3n4x4wm80j">Get Kissa from Microsoft Store</a>
         <p className="guide-platform">Free · Windows 10 &amp; 11</p>
         <figure>
           <img src={`${base}${page.image}`} width="1600" height="1000" alt={page.imageAlt} fetchPriority="high" />
@@ -30,13 +30,13 @@ export function FeaturePage({ page, base = '/' }: { page: FeaturePageData; base?
         </div>
         <aside className="guide-related" aria-label="More about Kissa">
           <span className="label">Keep exploring</span>
-          <a href={`${base}${page.related}/`}>{page.related === 'study-room' ? 'Inside the Focus Room' : 'Music and focus status on Discord'} →</a>
-          <a href={`${base}#faq`}>Questions about Kissa →</a>
+          <a href={`${base}${page.related}/`}>{page.related === 'study-room' ? 'Inside the Focus Room' : 'Music and focus status on Discord'}</a>
+          <a href={`${base}#faq`}>Questions about Kissa</a>
         </aside>
       </main>
       <footer className="guide-footer container">
         <p>Kissa · Vinyl player for Windows</p>
-        <a href="https://github.com/NamanOG/Kissa/blob/main/PRIVACY.md">Privacy</a>
+        <a href={PRIVACY_URL}>Privacy</a>
         <a href="https://www.glyphcode.studio/">Made by GlyphCode</a>
         <p className="guide-legal">
           Album artwork, song titles and lyrics shown belong to their respective owners and appear only to show how

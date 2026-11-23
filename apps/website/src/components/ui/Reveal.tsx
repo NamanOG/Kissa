@@ -68,7 +68,7 @@ export function RevealHeading({
       transition={{ staggerChildren: 0.09, delayChildren: delay }}
     >
       {lines.map((line, i) => (
-        <span key={i} style={{ display: 'block', overflow: 'hidden', paddingBottom: '0.08em', marginBottom: '-0.08em' }}>
+        <span key={i} style={{ display: 'block', overflow: 'hidden', paddingBottom: '0.26em', marginBottom: '-0.26em' }}>
           <motion.span variants={lineVariants} style={{ display: 'block' }}>
             {renderLine(line)}
           </motion.span>

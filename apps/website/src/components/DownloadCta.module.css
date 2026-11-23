@@ -1,60 +1,111 @@
 .section {
-  --size: min(78vw, 940px);
   position: relative;
-  /* room below the copy for the visible part of the record */
-  padding-block: var(--section-pad) calc(var(--size) * 0.44 + var(--space-16));
-  overflow: hidden;
   isolation: isolate;
-  text-align: center;
+  container-type: size;
+  height: max(calc(100svh - var(--footer, 11rem)), 540px);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: calc(var(--nav-height) + 1rem) clamp(1.25rem, 5vw, 7rem) 1rem;
+  background: #3b1f1c;
 }
 
-/* Cropped so the top of the label - and its turning artwork - stays in view */
+.art {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+
+.art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 20%;
+}
+
+.art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(30, 12, 8, 0.1), rgba(30, 12, 8, 0.56));
+}
+
+/* A big record rising over the sill like a moon: whole across, its lower part below the edge. */
 .record {
+  --size: min(122cqh, 56cqw);
   position: absolute;
   z-index: -1;
-  left: 50%;
-  bottom: calc(var(--size) * -0.56);
+  right: 5cqw;
+  bottom: calc(var(--size) * -0.3);
   width: var(--size);
-  margin-left: calc(var(--size) / -2);
+  will-change: transform;
+  filter: drop-shadow(0 30px 44px rgba(10, 3, 1, 0.65));
 }
 
-.content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-6);
+.card {
+  --color-fg: #2c1a10;
+  --color-fg-muted: #553a29;
+  position: relative;
+  width: clamp(300px, 27vw, 470px);
+  padding: clamp(1.5rem, 2.2vw, 2.5rem);
+  background: #f4e8cf url('/media/paper.webp');
+  color: #2c1a10;
+  border-radius: 2px;
+  rotate: -0.8deg;
+  box-shadow:
+    0 12px 18px -8px rgba(20, 8, 2, 0.42),
+    0 38px 58px -22px rgba(12, 5, 2, 0.72);
 }
 
 .title {
-  font-size: var(--text-hero);
-  line-height: 0.92;
+  margin-bottom: var(--space-4);
+  font-size: clamp(2.2rem, min(3.4vw, 7cqh), 4.2rem);
+  font-weight: 800;
 }
 
 .lead {
-  font-size: var(--text-lead);
-  max-width: 38ch;
-}
-
-.button {
-  align-items: center;
-  margin-top: var(--space-4);
+  margin-bottom: var(--space-5);
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 .alt {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-2) var(--space-6);
-  list-style: none;
-  font-size: var(--text-small);
-  color: var(--color-fg-muted);
+  gap: 0 var(--space-5);
+  margin-top: var(--space-2);
+  font-weight: 700;
 }
 
 .alt a {
-  background: linear-gradient(var(--color-border-strong), var(--color-border-strong)) no-repeat 0 100% / 100% 1px;
-  transition: color var(--dur-micro) var(--ease-out);
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--lantern);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
 }
 
-.alt a:hover {
-  color: var(--color-fg);
+@media (max-width: 860px) {
+  .section {
+    container-type: normal;
+    height: auto;
+    min-height: 0;
+    align-items: flex-start;
+    padding: calc(var(--nav-height) + 1rem) 1rem 66vw;
+  }
+
+  .record {
+    --size: 116vw;
+    right: auto;
+    left: -8vw;
+    bottom: -54vw;
+  }
+
+  .card {
+    width: 100%;
+    rotate: 0deg;
+  }
 }

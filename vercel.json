@@ -3,6 +3,7 @@
   "buildCommand": "npm run website:build",
   "outputDirectory": "apps/website/dist",
   "framework": "vite",
+  "git": { "deploymentEnabled": { "main": false } },
   "redirects": [
     {
       "source": "/(.*)",

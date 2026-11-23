@@ -1,3 +1,4 @@
+import { PRIVACY_URL } from '../lib/links'
 import { useEffect, useRef, useState } from 'react'
 import { hasInternational, hasValidUpi, support as defaultSupport, upiLink, type SupportConfig } from '../data/support'
 import { brandMark } from '../lib/brandMark'
@@ -106,7 +107,6 @@ export function SupportPage({ base = '/', config = defaultSupport, preview = fal
                 rel="noopener noreferrer"
                 aria-label={`Support Kissa on ${config.international!.label} (opens in a new tab)`}
               >
-                <span aria-hidden="true">💿</span>
                 Support Kissa
               </a>
               <p className="support-page-providerNote">You&apos;ll continue on {config.international!.label}.</p>
@@ -127,7 +127,7 @@ export function SupportPage({ base = '/', config = defaultSupport, preview = fal
         <p>Made independently, by <a href="https://www.glyphcode.studio/">GlyphCode</a>.</p>
         <nav aria-label="Support page links">
           <a className="support-page-secondaryButton" href={`${base}#faq`}>Questions?</a>
-          <a className="support-page-secondaryButton" href="https://github.com/NamanOG/Kissa/blob/main/PRIVACY.md">Privacy</a>
+          <a className="support-page-secondaryButton" href={PRIVACY_URL}>Privacy</a>
         </nav>
       </footer>
     </div>

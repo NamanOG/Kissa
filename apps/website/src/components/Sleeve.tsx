@@ -1,12 +1,9 @@
-import { useRef } from 'react'
-import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react'
+import { useState } from 'react'
+import { motion, useReducedMotion } from 'motion/react'
 import styles from './Sleeve.module.css'
 import { RevealHeading } from './ui/Reveal'
 import { Vinyl } from './ui/Vinyl'
-import { ArrowOut, SideMark } from './ui/Marks'
-import { GITHUB_URL } from '../lib/links'
-
-const AUTHOR_URL = 'https://github.com/NamanOG'
+import { SideMark } from './ui/Marks'
 
 const SIDES = [
   {
@@ -21,7 +18,9 @@ const SIDES = [
       { no: 'A6', name: 'Real turntable sounds', note: 'Recorded needle drops and soft mechanical keys. One switch turns them off.' },
       { no: 'A7', name: 'Your albums', note: 'Play your own album folders with the Kissa Hi-Fi vinyl sound.' },
       { no: 'A8', name: 'Dust lid and record sides', note: 'Lift the dust lid, turn the record over and read the sleeve back.' },
-      { no: 'A9', name: 'Its own window buttons', note: 'Minimise, maximise and close in a small glass capsule, made for the room.' }
+      { no: 'A9', name: 'Your music library', note: 'Add your music folders and your albums line the Shelf. MP3, FLAC, AAC, Ogg, Opus and WAV.' },
+      { no: 'A10', name: 'Gapless and crossfade', note: 'Albums play as pressed. Records from different albums crossfade for up to 12 seconds, with even loudness.' },
+      { no: 'A11', name: 'Its own window buttons', note: 'Minimise, maximise and close in a small glass capsule, made for the room.' }
     ]
   },
   {
@@ -37,34 +36,43 @@ const SIDES = [
       { no: 'B7', name: 'Pressed', note: 'Your week, month or year in music, told as a short moving story with a card to share. Stays on your PC.' },
       { no: 'B8', name: 'Phone remote', note: 'Control Kissa from your phone on the same Wi-Fi. Scan a QR code or enter a 6-digit code. No account.' },
       { no: 'B9', name: 'English and Spanish', note: 'Use Kissa in English or Spanish.' },
-      { no: 'B10', name: 'Comfort', note: 'Reduce motion and increase contrast. Each follows Windows until you choose.' }
+      { no: 'B10', name: 'Comfort', note: 'Reduce motion and increase contrast. Each follows Windows until you choose.' },
+      { no: 'B11', name: 'Sessions', note: 'A page for every day you listen: records played, albums heard whole, lines you kept and a note of your own.' },
+      { no: 'B12', name: 'Find anything', note: 'Ctrl+K searches records, rooms, days and actions from anywhere in the room.' },
+      { no: 'B13', name: 'Discover Kissa', note: 'A short walkthrough of what the app can do, with a button that tries each thing.' }
+    ]
+  },
+  {
+    name: 'Side C',
+    title: 'The Focus Room',
+    tracks: [
+      { no: 'C1', name: 'Real recordings', note: 'Rain, snow, a forest stream, crickets at night and a crackling fire, as loud or as quiet as you like.' },
+      { no: 'C2', name: 'Focus sessions and breaks', note: '25, 50 or 90 minutes, or an open session. After sleep or a long absence, choose to resume or finish.' },
+      { no: 'C3', name: 'Small steps', note: 'Write what you are working on, break it into steps, and park stray thoughts for later.' },
+      { no: 'C4', name: 'Your week', note: 'A daily goal, a quiet line of the last seven days, and a streak when you keep it.' },
+      { no: 'C5', name: 'On Discord, if you like', note: 'Show "Focusing · Rain room" with a timer. What you are working on stays private.' }
     ]
   }
 ]
 
-/**
- * Sleeve - the feature list as the back of an LP: two sides of notes.
- * As the section scrolls in, the record slides out of its sleeve.
- */
+/** The feature list as the back of an LP. Choose a track and its note appears beside the record. */
 export function Sleeve() {
-  const ref = useRef<HTMLElement>(null)
   const reduced = useReducedMotion()
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 85%', 'center 45%'] })
-  const pull = useSpring(scrollYProgress, { stiffness: 120, damping: 26, mass: 0.4 })
-  const x = useTransform(pull, [0, 1], ['2%', '54%'])
-  const rotate = useTransform(pull, [0, 1], [-70, 0])
+  const [picked, setPicked] = useState(SIDES[0].tracks[0])
 
   return (
-    <section ref={ref} id="notes" className={styles.section} aria-labelledby="sleeve-heading">
+    <section id="notes" className={`hour hour-paper ${styles.section}`} aria-labelledby="sleeve-heading">
       <div className={`container ${styles.inner}`}>
-        <header className={styles.header}>
-          <span className={styles.label}>Liner notes</span>
-          <RevealHeading id="sleeve-heading" className={styles.title} lines={['What’s on', 'the record.']} />
-        </header>
-
-        <div className={styles.layout}>
+        <div>
+          <RevealHeading id="sleeve-heading" className={styles.title} lines={['What\u2019s on', 'the record.']} />
           <div className={styles.pack} aria-hidden="true">
-            <motion.div className={styles.record} style={reduced ? { x: '54%' } : { x, rotate }}>
+            <motion.div
+              className={styles.record}
+              initial={reduced ? { x: '40%' } : { x: '2%', rotate: -70 }}
+              whileInView={{ x: '40%', rotate: 0 }}
+              viewport={{ once: true, amount: 0.5 }}
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+            >
               <Vinyl />
             </motion.div>
             <div className={styles.jacket}>
@@ -78,45 +86,45 @@ export function Sleeve() {
               </span>
             </div>
           </div>
+          <div className={styles.note} aria-live="polite">
+            <h3>{picked.name}</h3>
+            <p>{picked.note}</p>
+          </div>
+          <p className={styles.credits}>
+            Designed and built by <strong>Naman Bagdiya</strong>, GlyphCode.
+          </p>
+        </div>
 
-          <div className={styles.sides}>
-            {SIDES.map((side) => (
-              <section key={side.name} className={styles.side} aria-label={`${side.name}: ${side.title}`}>
-                <h3 className={styles.sideHead}>
-                  <span className={styles.sideName}>
-                    <SideMark side={side.name.endsWith('A') ? 'A' : 'B'} />
-                    {side.name}
-                  </span>
-                  <span>{side.title}</span>
-                </h3>
-                <ol className={styles.tracks} role="list">
-                  {side.tracks.map((t) => (
-                    <li key={t.no} className={styles.track}>
+        <div className={styles.sides}>
+          {SIDES.map((side) => (
+            <section key={side.name} className={styles.side} aria-label={`${side.name}: ${side.title}`}>
+              <h3 className={styles.sideHead}>
+                <span className={styles.sideName}>
+                  <SideMark side={side.name.slice(-1) as 'A' | 'B' | 'C'} />
+                  {side.name}
+                </span>
+                <span>{side.title}</span>
+              </h3>
+              <ol className={styles.tracks} role="list">
+                {side.tracks.map((t) => (
+                  <li key={t.no}>
+                    <button
+                      type="button"
+                      className={styles.track}
+                      aria-pressed={picked.no === t.no}
+                      onMouseEnter={() => setPicked(t)}
+                      onFocus={() => setPicked(t)}
+                      onClick={() => setPicked(t)}
+                    >
                       <span className={styles.no}>{t.no}</span>
                       <span className={styles.name}>{t.name}</span>
-                      <span className={styles.note}>{t.note}</span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            ))}
-
-            <p className={styles.credits}>
-              <span>
-                Designed and built by <strong>Naman Bagdiya</strong>, GlyphCode.
-              </span>
-              <span className={styles.links}>
-                <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
-                  Source
-              <ArrowOut />
-                </a>
-                <a href={AUTHOR_URL} target="_blank" rel="noopener noreferrer">
-                  @NamanOG
-              <ArrowOut />
-                </a>
-              </span>
-            </p>
-          </div>
+                      <span className="sr-only">{t.note}</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ))}
         </div>
       </div>
     </section>

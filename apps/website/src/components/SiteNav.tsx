@@ -1,20 +1,19 @@
 import { useEffect, useState } from 'react'
+import { ReserveSection } from '@reserve'
 import styles from './SiteNav.module.css'
 import { DownloadButton } from './ui/DownloadButton'
 import { brandMark } from '../lib/brandMark'
 
 const NAV_ITEMS = [
+  { label: 'Listen', id: 'listen' },
   { label: 'Modes', id: 'modes' },
   { label: 'Rooms', id: 'rooms' },
   { label: 'Focus', id: 'study' },
+  ...(ReserveSection ? [{ label: 'Reserve', id: 'reserve' }] : []),
   { label: 'Features', id: 'notes' }
 ]
 
-/**
- * A plain floating bar: brand, three links, download. The one flourish is the
- * marker for the section being read - a tiny record that drops in beside the
- * label and spins, the way the deck shows what is playing.
- */
+/** A strip of label paper across the top. The section being read gets a small turning record. */
 export function SiteNav() {
   const [activeSection, setActiveSection] = useState('')
 
@@ -27,7 +26,7 @@ export function SiteNav() {
       },
       { rootMargin: '-50% 0px -50% 0px' }
     )
-    document.querySelectorAll('main > section').forEach((el) => observer.observe(el))
+    document.querySelectorAll('main section[id], main [data-nav]').forEach((el) => observer.observe(el))
     return () => observer.disconnect()
   }, [])
 
@@ -39,8 +38,9 @@ export function SiteNav() {
 
       <nav className={styles.bar} aria-label="Main">
         <a href="#top" className={styles.brand} aria-label="Kissa, back to top">
-          <img {...brandMark(import.meta.env.BASE_URL, 26)} alt="" width={26} height={26} className={styles.logo} />
+          <img {...brandMark(import.meta.env.BASE_URL, 28)} alt="" width={28} height={28} className={styles.logo} />
           <span className={styles.wordmark}>Kissa</span>
+          <span className={styles.jp} lang="ja" aria-hidden="true">喫茶</span>
         </a>
 
         <ul className={styles.links} role="list">

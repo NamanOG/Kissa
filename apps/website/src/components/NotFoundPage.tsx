@@ -1,3 +1,4 @@
+import { PRIVACY_URL } from '../lib/links'
 import { brandMark } from '../lib/brandMark'
 
 export function NotFoundPage({ base = '/', showSupport = false }: { base?: string; showSupport?: boolean }) {
@@ -42,7 +43,7 @@ export function NotFoundPage({ base = '/', showSupport = false }: { base?: strin
       <footer className="not-found-page-footer">
         <p>Kissa. A free vinyl player for Windows.</p>
         <nav aria-label="Site information">
-          <a href="https://github.com/NamanOG/Kissa/blob/main/PRIVACY.md" className="not-found-page-button">Privacy</a>
+          <a href={PRIVACY_URL} className="not-found-page-button">Privacy</a>
           <a href="https://www.glyphcode.studio/" className="not-found-page-button">Made by GlyphCode</a>
         </nav>
       </footer>

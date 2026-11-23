@@ -1,91 +1,97 @@
 /**
- * Kissa Website - Design Tokens
+ * Kissa website tokens.
  *
- * Minimal by rule: flat lacquer black, warm ivory, and copper as the only
- * accent (the platter ring and tonearm of the Kissa mark). No gradients,
- * glows or textures - hierarchy comes from type, space and thin rules.
- *
- * Add tokens here, not inline. Every visual value that appears more than
- * once must be a token.
+ * The page is one evening at the kissa. Each section is an hour with its own
+ * colour field, taken from the painted rooms, and redefines the --color-*
+ * roles below, so every component reads correctly on whichever hour holds it.
  */
 
 :root {
-  /* Color */
-  --color-bg:          #0d0c0b;
-  --color-bg-raised:   #161513;
-  --color-vinyl:       #121110;
+  --paper: #f3e6cc;
+  --paper-deep: #e8d5b1;
+  --bark: #2c1a10;
+  --walnut: #5a3219;
+  --copper: #b85c22;
+  --copper-deep: #8f4316;
+  --lantern: #a8321a;
+  --marigold: #f2a73b;
+  --apricot: #f0a552;
+  --persimmon: #e0713a;
+  --moss: #35593f;
+  --plum: #5b2747;
+  --sea: #0e5e62;
+  --indigo: #1b2148;
 
-  --color-fg:          #edeae3;
-  --color-fg-muted:    #a6a199;
-  --color-fg-subtle:   #837e76;
+  --color-bg: var(--paper);
+  --color-bg-raised: #fbf3e2;
+  --color-vinyl: #121110;
 
-  --color-accent:      #d98a4a;
-  --color-accent-ink:  #170d06; /* text on copper */
+  --color-fg: var(--bark);
+  --color-fg-muted: #5e4130;
+  --color-fg-subtle: #6f5040;
 
-  --color-border:        rgba(237, 234, 227, 0.1);
-  --color-border-strong: rgba(237, 234, 227, 0.2);
-  --color-ink-rule:      rgba(23, 13, 6, 0.2); /* rules on copper */
+  --color-accent: #a94f18;
+  --color-accent-ink: #fff6e8;
+
+  --color-border: rgba(44, 26, 16, 0.16);
+  --color-border-strong: rgba(44, 26, 16, 0.32);
+  --color-ink-rule: rgba(44, 26, 16, 0.2);
 
   --color-focus: var(--color-fg);
 
-  /* Typography */
+  --font-display: 'Shippori Mincho', 'Yu Mincho', Georgia, serif;
+  --font-sans: 'Zen Maru Gothic', 'Yu Gothic UI', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: var(--font-sans);
+  --font-jp: 'Shippori Mincho', 'Yu Mincho', serif;
 
-  /* Mona Sans, one family at two widths: an extended cut for display
-     (the lettering on hi-fi faceplates) and the normal cut for reading.
-     Martian Mono for small technical labels. */
-  --font-sans: 'Mona Sans', 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'Martian Mono', 'Cascadia Mono', Consolas, monospace;
-  --font-jp:   'Zen Kaku Gothic New', 'Yu Gothic', sans-serif;
+  --width-display: 100%;
+  --weight-display: 700;
 
-  --width-display: 118%;
-  --weight-display: 500;
+  --text-hero: clamp(2.7rem, 1.2rem + 3.5vw, 5.4rem);
+  --text-title: clamp(2.2rem, 1.3rem + 3vw, 4.5rem);
+  --text-heading: clamp(1.45rem, 1.15rem + 1vw, 2.2rem);
+  --text-lead: clamp(1.06rem, 0.98rem + 0.3vw, 1.25rem);
+  --text-body: 1rem;
+  --text-small: 0.9rem;
+  --text-label: 0.8125rem;
 
-  --text-hero:    clamp(2.4rem, 1rem + 5.2vw, 6.25rem);
-  --text-title:   clamp(2.1rem, 1.2rem + 3.2vw, 4rem);
-  --text-heading: clamp(1.5rem, 1.15rem + 1.3vw, 2.4rem);
-  --text-lead:    clamp(1.05rem, 0.98rem + 0.3vw, 1.2rem);
-  --text-body:    1rem;
-  --text-small:   0.875rem;
-  --text-label:   0.6875rem;
+  --leading-display: 1.08;
+  --leading-body: 1.7;
 
-  --leading-display: 0.98;
-  --leading-body:    1.55;
+  --tracking-display: -0.02em;
+  --tracking-label: 0;
 
-  --tracking-display: -0.045em;
-  --tracking-label:   0.12em;
-
-  /* Spacing */
-  --space-1:  0.25rem;
-  --space-2:  0.5rem;
-  --space-3:  0.75rem;
-  --space-4:  1rem;
-  --space-5:  1.25rem;
-  --space-6:  1.5rem;
-  --space-8:  2rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
   --space-10: 2.5rem;
   --space-12: 3rem;
   --space-16: 4rem;
   --space-20: 5rem;
   --space-24: 6rem;
 
-  --section-pad: clamp(5rem, 3rem + 7vw, 10rem);
+  --section-pad: clamp(4.5rem, 2.5rem + 6vw, 9rem);
 
-  /* Layout */
-  --container-max: 1320px;
-  --gutter:        clamp(1.25rem, 0.5rem + 3vw, 3rem);
-  --nav-height:    64px;
+  --container-max: 1360px;
+  --gutter: clamp(1.25rem, 0.5rem + 3vw, 3.5rem);
+  --nav-height: 58px;
 
-  /* Radius */
-  --radius-sm:   4px;
-  --radius-md:   10px;
-  --radius-lg:   16px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
   --radius-full: 9999px;
 
-  /* Motion */
-  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --dur-micro:   160ms;
-  --dur-ui:      280ms;
-  --dur-content: 600ms;
+  --dur-micro: 160ms;
+  --dur-ui: 280ms;
+  --dur-content: 640ms;
+
+  --paper-grain: url('/media/paper.webp');
 }

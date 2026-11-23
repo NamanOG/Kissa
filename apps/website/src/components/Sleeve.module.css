@@ -1,61 +1,31 @@
-/* The one loud colour on the page: a copper sleeve, printed in lacquer ink. */
 .section {
-  background: var(--color-accent);
-  color: var(--color-accent-ink);
-  padding-block: var(--section-pad);
+  padding-block: clamp(3rem, 7svh, 5rem);
   overflow: clip;
+  background: #f3e6cc url('/media/paper.webp');
 }
 
 .inner {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(3rem, 2rem + 4vw, 5.5rem);
-}
-
-.header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-}
-
-.label,
-.no,
-.sideHead,
-.jacketTop,
-.jacketBottom {
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  font-weight: 400;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-}
-
-.title {
-  font-size: var(--text-title);
-  color: var(--color-accent-ink);
-}
-
-.layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: clamp(2.5rem, 1rem + 5vw, 6rem);
+  grid-template-columns: clamp(250px, 23vw, 380px) minmax(0, 1fr);
+  gap: clamp(2rem, 4vw, 5rem);
   align-items: start;
 }
 
-/* Jacket and record */
+.title {
+  margin-bottom: var(--space-6);
+  font-size: clamp(2.2rem, 3.2vw, 3.9rem);
+}
 
 .pack {
-  --s: min(27vw, 380px);
-  position: sticky;
-  top: calc(var(--nav-height) + var(--space-10));
-  width: var(--s);
+  position: relative;
+  width: 72%;
   aspect-ratio: 1;
+  margin-bottom: var(--space-5);
 }
 
 .record {
   position: absolute;
   inset: 2%;
-  will-change: transform;
 }
 
 .jacket {
@@ -65,132 +35,176 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 7%;
-  background: var(--color-accent-ink);
-  color: var(--color-fg);
+  background: var(--lantern);
+  color: #fff0dc;
   border-radius: 2px;
-  /* the opening the record slides out of */
-  box-shadow: inset -3px 0 0 rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 240, 220, 0.2),
+    0 22px 36px -14px rgba(40, 14, 4, 0.62);
+}
+
+.jacketTop {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
 }
 
 .glyph {
   font-family: var(--font-jp);
-  font-weight: 500;
-  font-size: calc(var(--s) * 0.34);
+  font-size: clamp(2.5rem, 4.4vw, 4.4rem);
+  font-weight: 800;
   line-height: 1;
-  letter-spacing: 0.02em;
-  color: var(--color-accent);
+  color: var(--marigold);
 }
 
 .jacketBottom {
   display: flex;
   justify-content: space-between;
-  color: var(--color-fg-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
-/* Track listing */
+.note {
+  min-height: 8.4em;
+}
+
+.note h3 {
+  margin-bottom: 4px;
+  color: var(--lantern);
+  font-size: 1.28rem;
+}
+
+.note p {
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
 
 .sides {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-12);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-8) clamp(1.5rem, 2.8vw, 3rem);
+}
+
+.side {
+  min-width: 0;
 }
 
 .sideHead {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-accent-ink);
-  color: var(--color-accent-ink);
-  line-height: 1.4;
+  gap: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 2px solid var(--bark);
+  font-size: 1.25rem;
 }
 
 .sideName {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  color: var(--lantern);
 }
 
 .tracks {
-  list-style: none;
+  display: flex;
+  flex-direction: column;
 }
 
 .track {
   display: grid;
-  grid-template-columns: 2.5rem minmax(0, 0.8fr) minmax(0, 1.2fr);
-  align-items: baseline;
-  gap: var(--space-4);
-  padding-block: var(--space-4);
-  border-bottom: 1px solid var(--color-ink-rule);
+  grid-template-columns: 2.4rem 1fr;
+  align-items: center;
+  width: 100%;
+  min-height: 35px;
+  padding-inline: 0.25rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background-color 160ms ease-out, translate 260ms var(--ease-out);
+}
+
+.track:hover,
+.track[aria-pressed='true'] {
+  background: rgba(242, 167, 59, 0.24);
+}
+
+.track[aria-pressed='true'] {
+  translate: 3px 0;
 }
 
 .no {
-  opacity: 0.75;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--lantern);
+  font-variant-numeric: tabular-nums;
 }
 
 .name {
-  font-size: clamp(1.15rem, 1rem + 0.6vw, 1.5rem);
-  font-stretch: var(--width-display);
-  font-weight: 500;
-  letter-spacing: -0.035em;
-  line-height: 1.15;
-}
-
-.note {
-  font-size: var(--text-small);
-  line-height: 1.45;
-  opacity: 0.82;
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--bark);
 }
 
 .credits {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--space-2) var(--space-8);
-  font-size: var(--text-small);
-  color: var(--color-accent-ink);
+  margin-top: var(--space-4);
+  font-size: 0.9rem;
 }
 
 .credits strong {
-  font-weight: 600;
+  color: var(--bark);
 }
 
-.links {
-  display: flex;
-  gap: var(--space-6);
-  font-weight: 500;
-}
-
-.links a {
-  background: linear-gradient(currentColor, currentColor) no-repeat 0 100% / 100% 1px;
-  transition: background-size var(--dur-ui) var(--ease-out);
-}
-
-.links a:hover {
-  background-size: 0% 1px;
-  background-position-x: 100%;
-}
-
-.section :focus-visible {
-  outline-color: var(--color-accent-ink);
-}
-
-@media (max-width: 860px) {
-  .layout {
+@media (max-width: 1040px) {
+  .inner {
     grid-template-columns: 1fr;
   }
 
   .pack {
-    --s: 52vw;
-    position: relative;
-    top: 0;
-  }
-
-  .track {
-    grid-template-columns: 2.25rem minmax(0, 1fr);
+    display: none;
   }
 
   .note {
-    grid-column: 2;
+    position: sticky;
+    top: calc(var(--nav-height) + 0.5rem);
+    z-index: 2;
+    min-height: 7.5em;
+    padding: var(--space-3);
+    background: #f8efdc;
+    border-radius: 3px;
+    box-shadow: 0 8px 16px -10px rgba(40, 14, 4, 0.6);
+  }
+
+  .sides {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .sides {
+    grid-template-columns: 1fr;
+    gap: var(--space-5);
+  }
+
+  .tracks {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-3);
+  }
+
+  .track {
+    grid-template-columns: 1fr;
+    height: 100%;
+    min-height: 42px;
+  }
+
+  .no {
+    display: none;
+  }
+
+  .name {
+    font-size: 0.9rem;
   }
 }

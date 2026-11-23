@@ -53,8 +53,6 @@
   font-family: var(--font-mono);
   font-size: var(--text-label);
   font-weight: 400;
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--color-fg-subtle);
 }
 

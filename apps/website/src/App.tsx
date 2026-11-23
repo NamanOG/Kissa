@@ -1,13 +1,10 @@
 import { MotionConfig } from 'motion/react'
 import { Analytics } from '@vercel/analytics/react'
+import { ReserveSection } from '@reserve'
 import { SiteNav } from './components/SiteNav'
-import { Stage } from './components/Stage'
-import { Waveline } from './components/Waveline'
-import { PluckString } from './components/ui/PluckString'
-import { Modes } from './components/Modes'
-import { Rooms } from './components/Rooms'
-import { YourDeck } from './components/YourDeck'
-import { StudyRoom } from './components/StudyRoom'
+import { Story } from './components/Story'
+import { Noren } from './components/Noren'
+import { useSmoothScroll } from './lib/useSmoothScroll'
 import { Sleeve } from './components/Sleeve'
 import { Faq } from './components/Faq'
 import { DownloadCta } from './components/DownloadCta'
@@ -17,6 +14,41 @@ import { featurePages } from './data/featurePages'
 import { SupportPage } from './components/SupportPage'
 import { NotFoundPage } from './components/NotFoundPage'
 import { support, supportIsConfigured, SUPPORT_PREVIEW_CONFIG } from './data/support'
+import { SCENE_TONES as T } from './data/scenes'
+
+const PAPER = '#f3e6cc'
+const NIGHT = '#171a3d'
+
+function Home() {
+  useSmoothScroll()
+  return (
+    <MotionConfig reducedMotion="user">
+      <div id="top" />
+      <SiteNav />
+
+      <main id="main-content">
+        <Story />
+        {ReserveSection ? (
+          <>
+            <Noren from={T.study.floor} to={NIGHT} />
+            <ReserveSection />
+            <Noren from={NIGHT} to={PAPER} />
+          </>
+        ) : (
+          <Noren from={T.study.floor} to={PAPER} />
+        )}
+        <Sleeve />
+        <Noren from="#a8321a" to={T.faq.top} />
+        <Faq />
+        <Noren from={T.faq.floor} to={T.cta.top} />
+        <DownloadCta />
+      </main>
+
+      <SiteFooter />
+      <Analytics />
+    </MotionConfig>
+  )
+}
 
 export default function App() {
   const base = import.meta.env.BASE_URL
@@ -39,30 +71,5 @@ export default function App() {
     if (typeof document !== 'undefined') document.title = 'Page not found | Kissa'
     return <><NotFoundPage base={base} showSupport={supportIsConfigured()} /><Analytics /></>
   }
-  return (
-    <MotionConfig reducedMotion="user">
-      <div id="top" />
-      <SiteNav />
-
-      <main id="main-content">
-        <Stage />
-        <Waveline />
-        <PluckString />
-        <Modes />
-        <PluckString />
-        <Rooms />
-        <YourDeck />
-        <PluckString />
-        <StudyRoom />
-        <Sleeve />
-        <Faq />
-        <PluckString />
-        <DownloadCta />
-      </main>
-
-      <PluckString />
-      <SiteFooter />
-      <Analytics />
-    </MotionConfig>
-  )
+  return <Home />
 }

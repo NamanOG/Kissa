@@ -1,77 +1,65 @@
 .footer {
-  position: relative;
-  background: var(--color-bg);
-  padding-block: var(--space-6) var(--space-8);
+  --color-fg: #f6e6cd;
+  --color-fg-muted: #dcc4a6;
+  background: #2c1a10;
+  color: var(--color-fg-muted);
+  padding-block: var(--space-10) var(--space-8);
+  font-size: var(--text-small);
 }
 
 .row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-3) var(--space-8);
-  font-size: var(--text-small);
-  color: var(--color-fg-muted);
 }
 
 .links {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-6);
-  list-style: none;
+  gap: 0 var(--space-5);
 }
 
-.links a {
-  transition: color var(--dur-micro) var(--ease-out);
-}
-
-.links a:hover {
-  color: var(--color-fg);
-}
-
-.legal {
-  margin-top: var(--space-4);
-  font-size: 0.8125rem;
-  color: var(--color-fg-subtle);
-}
-
-.studio {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3) var(--space-4);
-  margin-top: var(--space-8);
-}
-
+.links a,
 .studioLink {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-full);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  min-height: 44px;
   color: var(--color-fg);
-  transition:
-    border-color var(--dur-ui) var(--ease-out),
-    background-color var(--dur-ui) var(--ease-out);
+  font-weight: 700;
+  transition: color var(--dur-micro) ease-out;
 }
 
+.links a:hover,
 .studioLink:hover {
-  border-color: var(--color-fg-subtle);
-  background: var(--color-bg-raised);
+  color: var(--marigold);
+}
+
+.studioLink {
+  gap: var(--space-2);
 }
 
 .studioMark {
-  display: grid;
-  place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 0.5rem;
-  background: #f4f2ec;
+  width: 24px;
+  height: 24px;
+  padding: 2px;
+  background: var(--paper);
+  border-radius: 4px;
 }
 
 .studioMark svg {
-  width: 72%;
-  height: 72%;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.legal {
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid rgba(246, 230, 205, 0.16);
+  max-width: 96ch;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--color-fg-muted);
 }

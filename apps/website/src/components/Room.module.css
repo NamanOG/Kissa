@@ -1,0 +1,239 @@
+.room {
+  --room-pad: clamp(1.25rem, 4vw, 5.5rem);
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  background: var(--floor);
+  color: #f8eedb;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 66vw;
+  --color-fg: #f8eedb;
+  --color-fg-muted: #eadfca;
+  --color-fg-subtle: #dccfb8;
+  --color-border: rgba(248, 238, 219, 0.2);
+  --color-border-strong: rgba(248, 238, 219, 0.4);
+}
+
+/* The painting keeps its whole 3:2 picture at every width. */
+.art {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: -1;
+  aspect-ratio: 3 / 2;
+  -webkit-mask-image: linear-gradient(#000 90%, transparent);
+  mask-image: linear-gradient(#000 90%, transparent);
+}
+
+.art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: minmax(310px, 27vw) minmax(0, 1fr);
+  gap: clamp(1.5rem, 15vw, 16rem);
+  align-items: start;
+  min-height: 66.67vw;
+  padding: clamp(2.5rem, 6.5vw, 8rem) var(--room-pad) clamp(3rem, 7vw, 8rem);
+}
+
+.room[data-fit] {
+  content-visibility: visible;
+}
+
+.room[data-fit] .art {
+  inset: 0;
+  aspect-ratio: auto;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.room[data-fit] .art img {
+  object-fit: cover;
+  object-position: 50% 30%;
+}
+
+.room[data-fit] .stage {
+  grid-template-columns: minmax(250px, 22vw) minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 5rem);
+  align-items: center;
+  min-height: 100svh;
+  padding: calc(var(--nav-height) + 1.25rem) var(--room-pad) 1.5rem;
+}
+
+.card {
+  --color-fg: #2c1a10;
+  --color-fg-muted: #553a29;
+  --color-fg-subtle: #6a4b37;
+  --color-accent: #a8321a;
+  --color-border: rgba(44, 26, 16, 0.16);
+  --color-border-strong: rgba(44, 26, 16, 0.34);
+  position: relative;
+  padding: clamp(1.5rem, 2.2vw, 2.4rem);
+  background: #f4e8cf url('/media/paper.webp');
+  color: #2c1a10;
+  border-radius: 2px;
+  rotate: -0.7deg;
+  box-shadow:
+    0 1px 1px rgba(30, 14, 6, 0.3),
+    0 12px 18px -8px rgba(20, 8, 2, 0.42),
+    0 34px 54px -22px rgba(12, 5, 2, 0.72);
+}
+
+.pin {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #ffe6a8, #c58a35 52%, #6b4315);
+  box-shadow: 1px 3px 3px rgba(30, 14, 6, 0.5);
+}
+
+.frame {
+  position: relative;
+  margin-top: clamp(1.25rem, 2.6vw, 3rem);
+  min-width: 0;
+}
+
+.wire {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - 3px);
+  width: 34%;
+  height: clamp(16px, 2.2vw, 34px);
+  translate: -50% 0;
+  background: linear-gradient(to top right, transparent calc(50% - 0.7px), rgba(26, 14, 8, 0.75) 50%, transparent calc(50% + 0.7px)) left / 50% 100% no-repeat,
+    linear-gradient(to top left, transparent calc(50% - 0.7px), rgba(26, 14, 8, 0.75) 50%, transparent calc(50% + 0.7px)) right / 50% 100% no-repeat;
+}
+
+.wire::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4d58c, #7c5522);
+  box-shadow: 0 2px 3px rgba(10, 4, 1, 0.6);
+}
+
+.moulding {
+  --wood-a: #8d5a31;
+  --wood-b: #5b3419;
+  --wood-c: #39200f;
+  --slip: #d6a956;
+  padding: clamp(7px, 0.95vw, 15px);
+  background:
+    linear-gradient(90deg, rgba(255, 224, 180, 0.26), transparent 3%, transparent 97%, rgba(10, 4, 1, 0.34)),
+    linear-gradient(180deg, rgba(255, 224, 180, 0.34), transparent 4%, transparent 95%, rgba(10, 4, 1, 0.4)),
+    linear-gradient(140deg, var(--wood-a), var(--wood-b) 54%, var(--wood-c));
+  border-radius: 2px;
+  box-shadow:
+    0 1px 1px rgba(255, 228, 188, 0.3) inset,
+    0 2px 3px rgba(12, 5, 2, 0.5),
+    4px 22px 28px -8px rgba(10, 4, 1, 0.56),
+    10px 48px 70px -22px rgba(6, 2, 0, 0.72);
+}
+
+.frame[data-kind='gilt'] .moulding {
+  --wood-a: #ecc877;
+  --wood-b: #b98a3c;
+  --wood-c: #6f4c1b;
+  --slip: #2c1a10;
+}
+
+.frame[data-kind='lacquer'] .moulding {
+  --wood-a: #4c2c26;
+  --wood-b: #24130f;
+  --wood-c: #120907;
+  --slip: #c99a4a;
+}
+
+.mat {
+  padding: clamp(5px, 0.9vw, 16px);
+  background: #efe2c6 url('/media/paper.webp');
+  box-shadow:
+    0 0 0 1.5px var(--slip),
+    inset 0 2px 5px rgba(50, 28, 12, 0.34);
+}
+
+.glass {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: #17110d;
+  box-shadow: 0 0 0 1px rgba(44, 26, 16, 0.5);
+}
+
+.glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(116deg, rgba(255, 255, 255, 0.09) 0 15%, transparent 15.2% 23%, rgba(255, 255, 255, 0.045) 23.2% 27%, transparent 27.2%);
+}
+
+.plate {
+  width: fit-content;
+  max-width: 92%;
+  margin: var(--space-3) auto 0;
+  padding: 0.3rem 0.8rem;
+  background: linear-gradient(180deg, #e7c67c, #b98a3c);
+  color: #2c1a10;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  border-radius: 1px;
+  box-shadow: 0 2px 3px rgba(10, 4, 1, 0.5);
+}
+
+@media (max-width: 1040px) {
+  .art {
+    position: relative;
+    -webkit-mask-image: linear-gradient(#000 84%, transparent);
+    mask-image: linear-gradient(#000 84%, transparent);
+  }
+
+  .stage {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-8);
+    min-height: 0;
+    margin-top: -14vw;
+    padding-top: 0;
+  }
+
+  .room[data-fit] .art {
+    position: absolute;
+  }
+
+  .room[data-fit] .stage {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-5);
+    min-height: 0;
+    margin-top: 0;
+    padding: calc(var(--nav-height) + 1rem) 1rem 2rem;
+  }
+
+  .room:not([data-painted]) .stage {
+    margin-top: 0;
+    padding-top: var(--space-12);
+  }
+
+  .card {
+    rotate: 0deg;
+  }
+
+  .frame {
+    order: -1;
+  }
+}

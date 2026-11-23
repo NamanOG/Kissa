@@ -16,7 +16,7 @@ export function Seal({ className = '' }: { className?: string }) {
 }
 
 /** A record side, as printed on a label: the letter inside a ring. */
-export function SideMark({ side }: { side: 'A' | 'B' }) {
+export function SideMark({ side }: { side: 'A' | 'B' | 'C' }) {
   return (
     <svg className={styles.side} viewBox="0 0 20 20" aria-hidden="true">
       <circle cx="10" cy="10" r="9.25" fill="none" stroke="currentColor" strokeWidth="1" />

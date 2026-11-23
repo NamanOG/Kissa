@@ -14,19 +14,20 @@ export interface FeaturePageData {
 export const featurePages: FeaturePageData[] = [
   {
     slug: 'whats-new',
-    title: 'What’s New in Kissa 5.1, the Vinyl Player for Windows | Kissa',
-    description: 'Kissa 5.1 for Windows: a smoother opening, window buttons made for the room, Moving light that moves as much as you like, a sound meter that listens, a tonearm that lands on the record and new Comfort settings.',
-    label: 'Kissa 5.1',
-    heading: 'What’s new in Kissa 5.1.',
-    intro: 'A release about feel. Kissa opens straight into its opening, moves more smoothly from page to page and song to song, and gains a few things you asked for. It updates through the Microsoft Store.',
+    title: 'What’s New in Kissa 5.2, the Vinyl Player for Windows | Kissa',
+    description: 'Kissa 5.2 for Windows: play your own music folders gapless, with crossfade and even loudness, move around one listening room, keep a page for every day you listen, and find anything with Ctrl+K.',
+    label: 'Kissa 5.2',
+    heading: 'What’s new in Kissa 5.2.',
+    intro: 'Kissa becomes a record player for your own music as well as a room for whatever you play elsewhere. Everything new is free, and it updates through the Microsoft Store.',
     image: 'media/whats-new/deck-5-1.webp',
-    imageAlt: 'Kissa 5.1 on Windows: the turntable with Moving light, the album on the left and the new window buttons in the corner',
+    imageAlt: 'Kissa on Windows: the turntable with Moving light, the album on the left and the window buttons in the corner',
     sections: [
-      { heading: 'Smoother from the first second.', paragraphs: ['Kissa opens straight into its full opening, with no blank window and no jump to full screen. Page changes, song changes and the Focus Room ask less of your PC, and the room takes a new album’s colours just after the cover and title have changed.'] },
-      { heading: 'Window buttons made for the room.', paragraphs: ['Minimise, maximise and close sit together in a small glass capsule in the corner, in place of the plain Windows buttons. Snap and the keyboard shortcuts work as before.'] },
-      { heading: 'Light that moves as much as you like.', paragraphs: ['When Moving light follows the music, choose how much it moves: Gentle, Balanced or Lively. It is under Room light on the dock, and in Settings.'] },
-      { heading: 'A sound meter that listens, and a tonearm that lands.', paragraphs: ['The bars beside “Playing from” move with the song itself and rest when it pauses. The tonearm sets down at the edge of the record, travels inwards as the song plays, and holds still when you pause.'] },
-      { heading: 'Comfort settings.', paragraphs: ['Reduce motion and Increase contrast are in Settings, General. Each follows Windows until you change it. Screen readers hear the new song when it changes.'] },
+      { heading: 'Your own records.', paragraphs: ['Add the folders where your music lives and your albums line the Shelf under Your files, with new ones found as they arrive. Choose a single song, drop a folder onto Kissa, or right-click a file and choose Open with Kissa. Kissa plays MP3, FLAC, AAC, Ogg, Opus and WAV.'] },
+      { heading: 'Gapless, crossfade and even loudness.', paragraphs: ['Albums play as pressed, with no gaps between tracks. Records from different albums crossfade, for up to 12 seconds, and ReplayGain from your files keeps one record from being louder than the next. Spotify, Apple Music and your browser play their own way.'] },
+      { heading: 'One listening room.', paragraphs: ['Deck, Shelf, Lyrics, Focus and Sessions are places in one room, and moving between them is a short camera move. Settings opens in the middle of the room, lit by its colour, so you see each change land.'] },
+      { heading: 'Sessions.', paragraphs: ['A page for every day you listen: the records that played, the albums you heard whole, the lines you kept, your Focus sittings and a note of your own. On this day brings back a month or a year ago. It all stays on your PC.'] },
+      { heading: 'Find anything with Ctrl+K.', paragraphs: ['Records, rooms, days and actions in one search, from anywhere in the room.'] },
+      { heading: 'A sleeve for every record.', paragraphs: ['Songs without cover art get a Kissa sleeve and a printed record label of their own, in colour. Pressed, the story of your month or year, is redesigned around the colours of your records.'] },
       { heading: 'Tell us what to make next.', paragraphs: ['Request a feature or report a bug from Settings, About, or from the links at the foot of this page. A bug report arrives with your Kissa and Windows versions filled in.'] }
     ],
     related: 'study-room'

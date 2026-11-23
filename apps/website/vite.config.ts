@@ -4,14 +4,13 @@ import { resolve } from 'path'
 import faq from './src/data/faq.json'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { readFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { featurePages } from './src/data/featurePages'
 import { FeaturePage } from './src/components/FeaturePage'
 import { SupportPage } from './src/components/SupportPage'
 import { NotFoundPage } from './src/components/NotFoundPage'
 import { support, supportIsConfigured, SUPPORT_PREVIEW_CONFIG } from './src/data/support'
 
-const REPO = 'NamanOG/Kissa'
 const STORE_URL = 'https://apps.microsoft.com/detail/9p3n4x4wm80j'
 
 /**
@@ -80,7 +79,7 @@ function structuredData() {
       name: 'Naman Bagdiya',
       alternateName: ['NamanOG', 'GlyphCode'],
       url: 'https://github.com/NamanOG',
-      sameAs: ['https://github.com/NamanOG', `https://github.com/${REPO}`]
+      sameAs: ['https://github.com/NamanOG']
     },
     {
       '@type': 'WebSite',
@@ -193,7 +192,8 @@ export default defineConfig(({ command }) => {
     plugins: [react(), seo()],
     resolve: {
       alias: {
-        '@': resolve(__dirname, 'src')
+        '@': resolve(__dirname, 'src'),
+        '@reserve': resolve(__dirname, (command === 'serve' || process.env.KISSA_RESERVE_LIVE === '1') && existsSync(resolve(__dirname, 'src/reserve/index.tsx')) ? 'src/reserve/index.tsx' : 'src/reserve/off.tsx')
       }
     },
     build: {

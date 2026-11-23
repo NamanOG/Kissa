@@ -1,0 +1,105 @@
+.cat {
+  display: block;
+  width: 120px;
+  height: auto;
+  fill: currentColor;
+  overflow: visible;
+  pointer-events: auto;
+}
+
+.breath {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: breathe 4.6s ease-in-out infinite;
+  will-change: auto;
+}
+
+.tail {
+  transform-box: fill-box;
+  transform-origin: 100% 80%;
+  transition: rotate 500ms var(--ease-settle);
+}
+
+.head {
+  transform-box: fill-box;
+  transform-origin: 30% 90%;
+  transition: rotate 420ms var(--ease-settle);
+}
+
+.eye {
+  fill: none;
+  stroke: var(--cat-eye, rgba(255, 240, 215, 0.72));
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.cat:hover .tail {
+  rotate: 16deg;
+}
+
+.cat:hover .head {
+  rotate: -4deg;
+}
+
+@keyframes breathe {
+  50% {
+    transform: scaleY(1.035);
+  }
+}
+
+.lantern {
+  display: block;
+  width: clamp(38px, 4.2vw, 64px);
+  height: auto;
+  transform-origin: 50% 0;
+  animation: lanternSway 6.2s ease-in-out infinite;
+  filter: drop-shadow(0 8px 14px rgba(255, 160, 50, 0.4));
+}
+
+@keyframes lanternSway {
+  0%,
+  100% {
+    rotate: -2.4deg;
+  }
+  50% {
+    rotate: 2.4deg;
+  }
+}
+
+.teacup {
+  display: block;
+  width: 92px;
+  height: auto;
+  margin-top: var(--space-8);
+  color: rgba(43, 22, 8, 0.55);
+  overflow: visible;
+}
+
+.steam {
+  stroke-dasharray: 8 7;
+  animation: steamRise 2.8s linear infinite;
+}
+
+.steam:nth-child(2) {
+  animation-delay: -1.3s;
+}
+
+@keyframes steamRise {
+  to {
+    stroke-dashoffset: -30;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breath,
+  .lantern,
+  .steam {
+    animation: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .teacup {
+    display: none;
+  }
+}

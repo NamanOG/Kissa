@@ -1,16 +1,13 @@
 import styles from './SiteFooter.module.css'
 import { ArrowOut } from './ui/Marks'
-import { GITHUB_URL } from '../lib/links'
+import { ISSUES_URL, PRIVACY_URL } from '../lib/links'
 import { asset } from '../lib/asset'
 import { supportIsConfigured } from '../data/support'
 
 const LINKS = [
-  { label: 'GitHub', href: GITHUB_URL },
-  { label: 'Request a feature', href: `${GITHUB_URL}/issues/new?template=feature_request.yml` },
-  { label: 'Report a bug', href: `${GITHUB_URL}/issues/new?template=bug_report.yml` },
-  { label: 'License', href: `${GITHUB_URL}/blob/main/LICENSE` },
-  { label: 'Privacy', href: `${GITHUB_URL}/blob/main/PRIVACY.md` },
-  { label: '@NamanOG', href: 'https://github.com/NamanOG' }
+  { label: 'Request a feature', href: `${ISSUES_URL}?template=feature_request.yml` },
+  { label: 'Report a bug', href: `${ISSUES_URL}?template=bug_report.yml` },
+  { label: 'Privacy', href: PRIVACY_URL }
 ]
 
 /** GlyphCode's mark, from the studio's own brand files. */
@@ -33,9 +30,7 @@ export function SiteFooter() {
     <footer className={styles.footer}>
       <div className="container">
         <div className={styles.row}>
-          <span>
-            &copy; {new Date().getFullYear()} Naman Bagdiya, GlyphCode
-          </span>
+          <span>&copy; {new Date().getFullYear()} Naman Bagdiya, GlyphCode</span>
           <ul className={styles.links} role="list">
             <li><a href={asset('study-room/')}>Focus Room</a></li>
             <li><a href={asset('discord-music-status/')}>Discord status</a></li>
@@ -48,9 +43,6 @@ export function SiteFooter() {
               </li>
             ))}
           </ul>
-        </div>
-        <div className={styles.studio}>
-          <span className="label">Developed by</span>
           <a
             href="https://www.glyphcode.studio/"
             target="_blank"

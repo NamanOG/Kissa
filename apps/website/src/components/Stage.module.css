@@ -1,388 +1,189 @@
-/* One screen for the hero plus one per step; the sticky child pins for the rest. */
 .stage {
-  position: relative;
-  height: 520vh;
-}
-
-.sticky {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  height: 100svh;
-  overflow: clip;
-}
-
-/* Deck */
-
-.deckSlot {
   position: absolute;
-  inset: 0 0 0 50%;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
+  inset: 0;
+  overflow: clip;
+  background: linear-gradient(#f2a24c 0 62%, #5a2d17 62%);
 }
 
-/* The box is the record; the tonearm hangs off its right edge, so the whole
-   composition is nudged left to sit centred in the slot. */
-.deck {
-  --d: min(58vh, 31vw);
-  position: relative;
-  width: var(--d);
-  aspect-ratio: 1;
-  margin-right: calc(var(--d) * 0.42);
+.painting {
+  position: absolute;
+  inset: var(--nav-height) 0 0;
+  overflow: hidden;
+  transform-origin: 50% 24%;
   will-change: transform;
 }
 
-/* Placement taken from the app's turntable: arm box relative to the record. */
-.tonearm {
-  left: 101.6%;
-  top: -4.3%;
-  height: 110.9%;
-}
-
-/* Grab area over the headshell - same region the app uses */
-.grip {
-  position: absolute;
-  left: 8%;
-  top: 68%;
-  width: 52%;
-  height: 31%;
-  border-radius: 50%;
-  cursor: grab;
-  pointer-events: auto;
-  touch-action: none;
-}
-
-.gripHeld {
-  cursor: grabbing;
-}
-
-.overlay {
+.layer {
   position: absolute;
   inset: 0;
+}
+
+.layer img {
+  display: block;
   width: 100%;
   height: 100%;
-  overflow: visible;
+  object-fit: cover;
+  object-position: 50% 0;
 }
 
-.listen {
-  fill: none;
-  stroke: var(--color-accent);
-  stroke-width: 1.5;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-
-/* Status line under the platter - the app's "now playing" row */
-.status {
+.cardSlot {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + var(--d) * 0.09);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75em;
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--color-fg-muted);
-}
-
-.status i {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: var(--color-fg-subtle);
-}
-
-.statusDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-accent);
-}
-
-.roll {
-  display: inline-flex;
-  overflow: hidden;
-  color: var(--color-fg);
-}
-
-.roll > span {
-  display: block;
-}
-
-.time {
-  color: var(--color-fg);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Chapters */
-
-.chapter {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
+  left: clamp(1.25rem, 3.2vw, 4rem);
+  top: calc(var(--nav-height) + clamp(0.8rem, 3.4svh, 2.6rem));
+  width: clamp(320px, 27vw, 500px);
   will-change: transform, opacity;
-  /* Chapters cover the whole scene; only their own content takes the pointer,
-     so the tonearm underneath can be picked up. */
-  pointer-events: none;
 }
 
-.chapter[data-active='true'] .chapterInner > * {
-  pointer-events: auto;
+.card {
+  --color-fg: #2c1a10;
+  --color-fg-muted: #553a29;
+  --color-accent: #a8321a;
+  position: relative;
+  padding: clamp(1.4rem, 2.2vw, 2.6rem);
+  background: #f4e8cf url('/media/paper.webp');
+  color: #2c1a10;
+  border-radius: 2px;
+  rotate: -0.8deg;
+  box-shadow:
+    0 1px 1px rgba(30, 14, 6, 0.3),
+    0 12px 18px -8px rgba(20, 8, 2, 0.42),
+    0 38px 58px -22px rgba(12, 5, 2, 0.72);
 }
 
-.chapterInner {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-6);
+.pin {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #ffe6a8, #c58a35 52%, #6b4315);
+  box-shadow: 1px 3px 3px rgba(30, 14, 6, 0.5);
 }
 
-/* Steps keep to the left half so the deck has the right */
-.chapter:not(.hero) .chapterInner > * {
-  max-width: min(34rem, 42vw);
-}
-
-.kicker {
-  /* The page's h1: keeps the label's look, not the display heading's. */
-  font-stretch: normal;
-  line-height: 1.4;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  color: var(--color-fg-muted);
-}
-
-.jp {
+.seal {
+  position: absolute;
+  top: clamp(1.2rem, 1.7vw, 2rem);
+  right: clamp(1rem, 1.4vw, 1.6rem);
+  writing-mode: vertical-rl;
+  padding: 0.35em 0.16em;
+  background: var(--lantern);
+  color: #fff0dc;
   font-family: var(--font-jp);
-  font-size: 0.9rem;
-  letter-spacing: 0.1em;
-  color: var(--color-accent);
+  font-size: clamp(0.95rem, 1.25vw, 1.4rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  border-radius: 2px;
+  rotate: 2deg;
 }
 
-.dash {
-  width: 1.75rem;
-  height: 1px;
-  background: var(--color-border-strong);
+.title {
+  max-width: 84%;
+  margin-bottom: var(--space-4);
+  font-size: clamp(2.4rem, min(3.65vw, 6.6svh), 4.7rem);
+  font-weight: 800;
+  line-height: 1.06;
 }
 
-.heroTitle {
-  font-size: var(--text-hero);
-  line-height: 0.92;
+.lead {
+  margin-bottom: var(--space-4);
+  font-size: clamp(0.96rem, 1.03vw, 1.16rem);
+  line-height: 1.58;
 }
 
-.heroBody {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-  margin-top: var(--space-2);
+.deck {
+  position: absolute;
+  right: clamp(1rem, 2.6vw, 3.5rem);
+  bottom: clamp(1.25rem, 4.4svh, 3.25rem);
+  width: min(50vw, calc((100svh - var(--nav-height) - 5rem) * 1.36));
+  will-change: transform, opacity;
 }
 
-.heroBody :global(.lead) {
-  max-width: 34ch;
-}
-
-.actions {
+.picker {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--space-4) var(--space-8);
+  gap: 2px 3px;
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(44, 26, 16, 0.18);
 }
 
-.textLink {
-  display: inline-flex;
-  align-items: center;
-  height: 3.25rem;
-  font-weight: 500;
-  background: linear-gradient(currentColor, currentColor) no-repeat 0 calc(50% + 0.75em) / 100% 1px;
-  transition: background-size var(--dur-ui) var(--ease-out);
-}
-
-.textLink:hover {
-  background-size: 0% 1px;
-  background-position-x: 100%;
-}
-
-.stepTitle {
-  font-size: var(--text-title);
-}
-
-.stepTitle em {
-  font-style: normal;
-  color: var(--color-fg-subtle);
-}
-
-.stepBody {
-  font-size: var(--text-lead);
-}
-
-/* Lyrics */
-
-.lyricsWindow {
-  --lh: calc(var(--text-heading) * 1.5);
-  width: 100%;
-  height: calc(var(--lh) * 4);
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 70%, transparent);
-  mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 70%, transparent);
-}
-
-.lyrics {
-  list-style: none;
-  /* the sung line sits on the second row of the window */
-  transform: translateY(calc(var(--lh) * (1 - var(--line))));
-  transition: transform 0.7s var(--ease-out);
-}
-
-.lyrics li {
-  height: var(--lh);
-  font-size: var(--text-heading);
-  font-stretch: var(--width-display);
-  letter-spacing: -0.03em;
-  line-height: var(--lh);
+.picker button {
+  min-height: 32px;
+  padding-inline: 0.55rem;
+  color: #4a3122;
+  font-size: 0.84rem;
+  font-weight: 700;
   white-space: nowrap;
-  color: var(--color-fg);
-  transform-origin: left center;
-  transition:
-    opacity 0.5s var(--ease-out),
-    transform 0.5s var(--ease-out),
-    filter 0.5s var(--ease-out);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background-color 180ms ease-out, color 180ms ease-out;
 }
 
-.lyrics li[data-distance='0'] {
-  font-weight: 600;
-  opacity: 1;
-  transform: scale(1.01);
+.picker button:hover {
+  background: rgba(44, 26, 16, 0.08);
 }
 
-.lyrics li[data-distance='1'] {
-  opacity: 0.3;
-  transform: scale(0.99);
+.picker button[aria-pressed='true'] {
+  background: #a8321a;
+  color: #fff2de;
 }
 
-.lyrics li[data-distance='2'] {
-  opacity: 0.2;
-  transform: scale(0.98);
-  filter: blur(0.5px);
-}
-
-.lyrics li[data-distance='3'] {
-  opacity: 0.15;
-  transform: scale(0.96);
-  filter: blur(1px);
-}
-
-/* Small screens: let content set the height. The desktop's pinned layers
-   cannot share a phone viewport without obscuring the copy and actions. */
-
-@media (max-width: 860px) {
-  .stage {
-    height: auto;
-    padding-top: calc(var(--nav-height) + var(--space-8));
-    padding-bottom: var(--space-12);
+@media (max-height: 700px) and (min-width: 1041px) {
+  .lead {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
-  .sticky {
-    position: relative;
-    height: auto;
-    display: flex;
-    flex-direction: column;
-    overflow: clip;
-  }
-
-  .deckSlot {
-    position: relative;
-    inset: auto;
-    order: 1;
-    padding-block: var(--space-12) var(--space-20);
-  }
-
-  .deck {
-    --d: min(60vw, 22rem);
-    margin-right: calc(var(--d) * 0.42);
-    will-change: auto;
-  }
-
-  .grip,
-  .overlay {
+  .picker {
     display: none;
   }
+}
 
-  .chapter {
-    position: relative;
-    inset: auto;
-    order: 2;
-    padding-block: var(--space-8);
-    will-change: auto;
+@media (max-width: 1040px) {
+  .deck {
+    top: calc(var(--nav-height) + 0.9rem);
+    right: auto;
+    bottom: auto;
+    left: 50%;
+    width: min(86vw, calc((100svh - var(--nav-height)) * 0.54));
+    margin-left: calc(min(86vw, calc((100svh - var(--nav-height)) * 0.54)) / -2);
   }
 
-  .chapter.hero {
-    order: 0;
-    padding-block: 0;
+  .cardSlot {
+    left: 0.75rem;
+    right: 0.75rem;
+    top: auto;
+    bottom: 0.75rem;
+    width: auto;
+    max-width: 620px;
+    margin-inline: auto;
   }
 
-  .chapter:not(.hero) .chapterInner {
-    padding-top: var(--space-6);
-    position: relative;
+  .card {
+    rotate: 0deg;
+    padding: 1.25rem;
   }
 
-  .chapter:not(.hero) .chapterInner::before {
-    content: '';
-    position: absolute;
-    inset: 0 var(--gutter) auto;
-    height: 1px;
-    background: var(--color-border);
+  .title {
+    margin-bottom: var(--space-2);
+    font-size: clamp(2.05rem, 9vw, 3.4rem);
   }
 
-  .chapter:not(.hero) .chapterInner > * {
-    max-width: none;
-  }
-
-  .chapterInner {
-    gap: var(--space-4);
-  }
-
-  .kicker {
-    gap: var(--space-2);
-    max-width: 34rem;
-  }
-
-  .heroTitle {
-    font-size: clamp(2.25rem, 10.2vw, 4.5rem);
-  }
-
-  .heroBody {
-    gap: var(--space-6);
-  }
-
-  .heroBody :global(.lead) {
-    max-width: 38ch;
-  }
-
-  .actions {
-    flex-direction: column;
-    gap: var(--space-3);
-  }
-
-  .textLink {
-    height: 2.75rem;
+  .lead {
+    margin-bottom: var(--space-3);
+    font-size: 0.92rem;
+    line-height: 1.48;
   }
 }
 
-@media (max-width: 400px) {
-  .kicker {
-    font-size: 0.625rem;
-    letter-spacing: 0.08em;
-  }
-
-  .dash {
-    width: var(--space-3);
-    flex-shrink: 0;
+@media (max-width: 1040px) and (max-height: 720px) {
+  .lead,
+  .picker {
+    display: none;
   }
 }
