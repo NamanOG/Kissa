@@ -12,9 +12,9 @@ Open the room, start your music in the player you already use, and let the album
 
 <a href="https://apps.microsoft.com/detail/9p3n4x4wm80j"><img src="https://get.microsoft.com/images/en-us%20dark.svg" height="52" alt="Get Kissa from Microsoft Store" /></a>
 
-**Free for Windows 10 and 11 · 64-bit · Version 5.1.0**
+**Free for Windows 10 and 11 · 64-bit · Version 5.2.0**
 
-> **Kissa is now available only from the Microsoft Store.** GitHub installers have stopped, and 5.1.0 is the last Setup and Portable build published here. If you installed Kissa from GitHub, your copy keeps working but will not receive new versions, so install it from the [Microsoft Store](https://apps.microsoft.com/detail/9p3n4x4wm80j) to stay up to date.
+> **Kissa is available only from the Microsoft Store.** GitHub installers stopped at 5.1.0. A copy installed from GitHub keeps working but will not receive new versions, so install Kissa from the [Microsoft Store](https://apps.microsoft.com/detail/9p3n4x4wm80j) to stay up to date.
 
 If the room becomes part of your listening ritual, leave a [rating or review in the Microsoft Store](https://apps.microsoft.com/detail/9p3n4x4wm80j) to help another listener find it.
 
@@ -54,11 +54,17 @@ The same deck can feel entirely different from one album to the next. Here, “S
 
 The Record Shelf keeps the albums you've heard close by, ready to browse as sleeves, a grid, or a crate. **Pressed** turns a week, month or year of listening into a personal story. For a quieter screen, open the mini player or the full-screen Listening Display; pair the phone remote on the same Wi-Fi when you want playback controls in hand.
 
-## In 5.1, the room listens more closely
+## In 5.2, your own records move in
 
-The latest update gives Kissa a smoother arrival and more composed transitions between pages and songs. Moving light now has **Gentle**, **Balanced** and **Lively** settings. Sound bars rest when playback pauses; the tonearm settles onto the record and tracks inward as the song plays. **Reduce motion** and **Increase contrast** live in **Settings → General**.
+Add the folders where your music lives and your albums line the Shelf, found again as new ones arrive. Kissa plays MP3, FLAC, AAC, Ogg, Opus and WAV: albums play gapless, records from different albums crossfade for up to 12 seconds, and ReplayGain keeps one record from being louder than the next.
 
-[Read the full 5.1.0 release notes](https://github.com/NamanOG/Kissa/releases/tag/v5.1.0) · [See what's new on the Kissa website](https://kissa.glyphcode.studio/whats-new/)
+The Deck, Shelf, Lyrics, Focus and **Sessions** are now places in one room, reached by a short camera move. Sessions keeps a page for every day you listen: the records that played, the albums heard whole and a note of your own. Press **Ctrl+K** to find any record, room, day or action, and open **Discover Kissa** for a short tour that lets you try each feature.
+
+[See what's new on the Kissa website](https://kissa.glyphcode.studio/whats-new/)
+
+## Kissa Reserve
+
+An optional add-on for the room you already use, bought once inside Kissa. Twelve illustrated rooms stand behind the deck, each with its own light, weather and sound, and you can make one from a photo of your own. Records can be pressed as picture discs with your name in the run-out, and the deck comes in three more finishes. Try all of it once for 30 minutes before deciding, at a founding price until 25 December. Everything else in Kissa stays free.
 
 ---
 
@@ -80,7 +86,7 @@ Take a moment to [rate or review Kissa in the Microsoft Store](https://apps.micr
 
 ## Notes from the listening room
 
-Kissa has no accounts, analytics or telemetry. It looks up lyrics and cover artwork from public services. Updates arrive through the Microsoft Store; older GitHub downloads still check GitHub for a newer release. Optional sharing features and their data use are described in the [privacy policy](PRIVACY.md).
+Kissa has no accounts, analytics or telemetry. Kissa Reserve is bought through the Microsoft Store, which handles the payment. It looks up lyrics and cover artwork from public services. Updates arrive through the Microsoft Store; older GitHub downloads still check GitHub for a newer release. Optional sharing features and their data use are described in the [privacy policy](PRIVACY.md).
 
 Kissa is free to use. It is not open source, and its code may not be copied or redistributed. New versions are developed privately, and this repository remains the home for notices, the privacy policy and issue reports. See the [LICENSE](LICENSE).
 
@@ -136,6 +142,7 @@ The optional `Kissa.scr` supervisor receives the Windows screensaver arguments a
 <details>
 <summary>Earlier chapters</summary>
 
+- **5.1.0:** A smoother arrival, Moving light settings, a tonearm that tracks the song, Reduce motion and Increase contrast. [Release notes](https://github.com/NamanOG/Kissa/releases/tag/v5.1.0)
 - **5.0.0:** Pressed listening stories, phone remote, local albums, Party mode, Listening Display, mini player and sleep timer. [Release notes](https://github.com/NamanOG/Kissa/releases/tag/v5.0.0)
 - **4.4.0:** Turntable finishes and pressings, Record Crate, refined controls and settings. [Release notes](https://github.com/NamanOG/Kissa/releases/tag/v4.4.0)
 - **4.3.1:** More reliable media detection, artwork and lyrics handling, plus a lighter Deck.
