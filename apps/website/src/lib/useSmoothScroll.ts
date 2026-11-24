@@ -5,9 +5,11 @@ import Lenis from 'lenis'
 export const smoothScroll: { lenis: Lenis | null; gliding: 0 | 1 | -1 } = { lenis: null, gliding: 0 }
 
 /* One wheel notch moves at most this share of a room, whatever the mouse reports. */
-const MOST_OF_A_ROOM = 0.1
-const WHEEL_IN_STORY = 0.55
-const MOST_ELSEWHERE = 110
+const MOST_OF_A_ROOM = 0.06
+const MOST_IN_STORY = 64
+const WHEEL_IN_STORY = 0.45
+const WHEEL_ELSEWHERE = 0.7
+const MOST_ELSEWHERE = 80
 
 /**
  * Eases mouse-wheel steps so the scroll-driven rooms move calmly. Touch keeps the platform's own
@@ -20,7 +22,7 @@ export function useSmoothScroll() {
     const rooms = Number(story?.dataset.story) || 1
 
     const lenis = new Lenis({
-      lerp: 0.075,
+      lerp: 0.06,
       anchors: true,
       autoRaf: true,
       virtualScroll: (data) => {
@@ -29,8 +31,8 @@ export function useSmoothScroll() {
         if (smoothScroll.gliding && direction === smoothScroll.gliding) return false
         const span = story ? story.offsetHeight - window.innerHeight : 0
         const inStory = story !== null && lenis.scroll >= story.offsetTop - 1 && lenis.scroll < story.offsetTop + span - 1
-        const limit = inStory ? (span / rooms) * MOST_OF_A_ROOM : MOST_ELSEWHERE
-        const eased = inStory ? data.deltaY * WHEEL_IN_STORY : data.deltaY
+        const limit = inStory ? Math.min((span / rooms) * MOST_OF_A_ROOM, MOST_IN_STORY) : MOST_ELSEWHERE
+        const eased = data.deltaY * (inStory ? WHEEL_IN_STORY : WHEEL_ELSEWHERE)
         data.deltaY = Math.max(-limit, Math.min(limit, eased))
         return true
       }

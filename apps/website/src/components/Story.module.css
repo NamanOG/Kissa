@@ -1,6 +1,6 @@
 .track {
   position: relative;
-  height: calc(100svh + var(--chapters) * 58svh);
+  height: calc(100svh + var(--chapters) * 112svh);
   background: #2c1a10;
 }
 
